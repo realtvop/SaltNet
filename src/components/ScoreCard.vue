@@ -20,13 +20,13 @@
             <div class="achievement">{{ $attrs.data.achievements.toFixed(4) }}<span class="percentage-mark">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" src="/sssplus.png">
+                    <img class="achievement-icon" :src="`/icons/${$attrs.data.rate.replace('p', 'plus')}.png`">
                 </div>
                 <div class="fc-achievement">
-                    <img class="achievement-icon" src="" v-if="false">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${$attrs.data.fc}.png`" v-if="$attrs.data.fc">
                 </div>
                 <div class="sync-achievement">
-                    <img class="achievement-icon" src="" v-if="false">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${$attrs.data.fs.replace('sd', 'dx')}.png`" v-if="$attrs.data.fs">
                 </div>
             </div>
         </div>
@@ -54,6 +54,12 @@
     height: auto;
     min-height: 90px;
     text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease; /* 添加过渡效果让颜色变化更平滑 */
+}
+
+.maimai-result-card:hover {
+    border-color: white;
 }
 
 .song-jacket-section {
@@ -177,16 +183,21 @@
 .fc-achievement, .sync-achievement {
     background: #666;
     border-radius: 50%;
+    position: relative;
+    overflow: hidden;
 }
 
 .achievement-icon {
-    width: 80%;
-    height: 80%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    position: absolute;
 }
 
 .rank-achievement .achievement-icon {
-    width: 100%;
-    height: 100%;
+    position: relative;
+    top: unset;
+    left: unset;
+    transform: none;
 }
 </style>
