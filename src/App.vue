@@ -9,15 +9,15 @@ import RatingPlate from "./components/ratingPlate.vue";
 
 // window.g = getDivingFishData;
 const fishData = ref('');
-getDivingFishData("realtvop").then(data => fishData.value = data);
+const ra = ref(0);
+getDivingFishData("realtvop").then(data => { fishData.value = data; ra.value = data.rating; });
 
-const ra = "14555";
 // const aaa = generateRatingSvg(ra, plates["10"]);
 </script>
 
 <template>
   <!-- {{ fishData.rating }} -->
-    <RatingPlate :ra="ra" />
+  <RatingPlate :ra="ra" />
 </template>
 
 <style scoped>
