@@ -19,10 +19,10 @@
                 </div>
             </div>
             <div class="song-name">きゅうくらりん</div>
-            <div class="accuracy-score">100.5000<span class="percentage-mark">%</span></div>
+            <div class="achievement">100.5000<span class="percentage-mark">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" src="" alt="SSS+">
+                    <img class="achievement-icon" src="/sssplus.png" alt="SSS+">
                 </div>
                 <div class="fc-achievement">
                     <img class="achievement-icon" src="" alt="FC">
@@ -132,7 +132,7 @@
     flex-shrink: 0;
 }
 
-.accuracy-score {
+.achievement {
     font-size: 26px;
     font-weight: bold;
     line-height: 1;
@@ -153,38 +153,38 @@
     gap: 6px;
     flex-shrink: 0;
     margin-left: -5%;
+    width: 100%;
 }
 
 .rank-achievement, .fc-achievement, .sync-achievement {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .rank-achievement {
-    background: radial-gradient(circle, #ffcc33 0%, #ff9900 100%);
-    border: 2px solid #ffdd66;
-    box-shadow: 0 0 5px #ffcc33;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    flex-grow: 0.4;
 }
 
-.fc-achievement {
-    background: radial-gradient(circle, #33cc33 0%, #009900 100%);
-    border: 2px solid #66ff66;
-    box-shadow: 0 0 5px #33cc33;
-}
-
-.sync-achievement {
-    background: radial-gradient(circle, #66ccff 0%, #0099cc 100%);
-    border: 2px solid #99ddff;
-    box-shadow: 0 0 5px #66ccff;
+.fc-achievement, .sync-achievement {
+    background: #666;
+    border-radius: 50%;
 }
 
 .achievement-icon {
     width: 80%;
     height: 80%;
     object-fit: contain;
+}
+
+/* Add a specific rule to make the rank achievement icon match height of circled ones */
+.rank-achievement .achievement-icon {
+    width: 100%;
+    height: 100%;
 }
 </style>
