@@ -71,7 +71,7 @@ const dxStats = computed(() => {
 <template>
   <div class="wrapper">
     <div class="app-container">
-      <h1 class="section-title player-name">{{ player }}</h1>
+      <h1 class="section-title player-name">{{ fishData ? fishData.nickname : player }}</h1>
       <RatingPlate :ra="fishData ? fishData.rating : 0" />
       
       <!-- SD Scores Section -->

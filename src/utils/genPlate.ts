@@ -17,18 +17,18 @@ export function getPlateId(rating: number): string {
 }
 
 // Generate SVG image with rating and plate
-export function generateRatingSvg(rating: number, plate: string): string {
-    const digits = rating.toString()
-    const startX = 5 - digits.length - 1
+// export function generateRatingSvg(rating: number, plate: string): string {
+//     const digits = rating.toString()
+//     const startX = 5 - digits.length - 1
 
-    return `<image href="${plate}" x="0" y="0" height="1.2em"/>
-      ${digits.split('').map((char, i) => `
-        <text
-          x="${4.9 + (startX + i + 1) * 0.8}em"
-          y="1.45em"
-          font-family="Monaco, 'JetBrains Mono', Monospaced, monospace"
-          font-size="0.6em"
-          fill="#FCD41B">
-          ${char}
-        </text>`).join('')}`
-}
+//     return `<image href="${plate}" x="0" y="0" height="1.2em"/>
+//       ${digits.split('').map((char, i) => `
+//         <text
+//           x="${4.9 + (startX + i + 1) * 0.8}em"
+//           y="1.45em"
+//           font-family="Monaco, 'JetBrains Mono', Monospaced, monospace"
+//           font-size="0.6em"
+//           fill="#FCD41B">
+//           ${char}
+//         </text>`).join('')}`
+// }
