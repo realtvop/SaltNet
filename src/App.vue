@@ -6,22 +6,18 @@ import RatingPlate from "./components/ratingPlate.vue";
 import ScoreCard from "./components/ScoreCard.vue";
 
 const fishData = ref<any>(null);
-const ra = ref(0);
 
-getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => { 
-  fishData.value = data;
-  console.log(fishData.value); 
-  ra.value = data.rating; 
-});
+getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => fishData.value = data);
 </script>
 
 <template>
   <div class="wrapper">
     <div class="app-container">
-      <RatingPlate :ra="ra" />
+      <h1 class="section-title">realtvop</h1>
+      <RatingPlate :ra="fishData ? fishData.rating : 0" />
       
       <!-- SD Scores Section -->
-      <h2 class="section-title">Standard Scores</h2>
+      <h2 class="section-title">旧版本</h2>
       <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.sd">
         <div class="score-grid">
           <div v-for="(score, index) in fishData.charts.sd" :key="`sd-cell-${index}`" class="score-cell">
@@ -31,7 +27,7 @@ getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => {
       </div>
       
       <!-- DX Scores Section -->
-      <h2 class="section-title">Deluxe Scores</h2>
+      <h2 class="section-title">新版本</h2>
       <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.dx">
         <div class="score-grid">
           <div v-for="(score, index) in fishData.charts.dx" :key="`dx-cell-${index}`" class="score-cell">
@@ -49,6 +45,7 @@ html, body {
   padding: 0;
   width: 100%;
   overflow-x: hidden;
+  color: white;
 }
 </style>
 
@@ -134,7 +131,7 @@ html, body {
   text-align: center;
   font-size: 1.8rem;
   font-weight: bold;
-  color: #333;
+  /* color: #333; */
 }
 
 /* Add this to ensure the first title has proper spacing */

@@ -12,7 +12,7 @@
             <div class="result-header">
                 <div class="header-pill">
                     <div class="pill-section charttype">{{ $attrs.data.type }}</div>
-                    <div class="pill-section level">{{ $attrs.data.ds }}</div>
+                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][$attrs.data.level_index]}` }">{{ $attrs.data.ds }}</div>
                     <div class="pill-section points">{{ $attrs.data.ra }}</div>
                 </div>
             </div>
@@ -76,6 +76,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 60%;
+    box-sizing: border-box;
 }
 
 .result-header {
@@ -111,7 +113,6 @@
 }
 
 .pill-section.level {
-    background: linear-gradient(90deg, #9966cc 0%, #6633cc 100%);
     color: white;
     flex-grow: 0.75;
 }
@@ -129,6 +130,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     flex-shrink: 0;
+    width: 100%;
+    max-width: 100%;
+    display: block;
+    box-sizing: border-box;
 }
 
 .achievement {
