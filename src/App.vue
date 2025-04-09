@@ -1,23 +1,72 @@
 <script setup lang="ts">
 import { getDivingFishData } from "./divingfish";
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 import RatingPlate from "./components/ratingPlate.vue";
 import ScoreCard from "./components/ScoreCard.vue";
 
 const fishData = ref<any>(null);
+const player = "realtvop" // "蓝原柚子";
+// const player = "蓝原柚子";
 
-getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => fishData.value = data);
+getDivingFishData(player).then(data => fishData.value = data);
+
+// Calculate statistics for the SD scores based on ra values
+const sdStats = computed(() => {
+  if (!fishData.value?.charts?.sd?.length) return null;
+  
+  const scores = fishData.value.charts.sd.map((item: any) => item.ra);
+  scores.sort((a: number, b: number) => a - b);
+  
+  const avg = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
+  const median = scores.length % 2 === 0 
+    ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
+    : scores[Math.floor(scores.length/2)];
+  const range = scores[scores.length - 1] - scores[0];
+  
+  return {
+    avg: avg.toFixed(2),
+    median: median,
+    range: range,
+  };
+});
+
+// Calculate statistics for the DX scores based on ra values
+const dxStats = computed(() => {
+  if (!fishData.value?.charts?.dx?.length) return null;
+  
+  const scores = fishData.value.charts.dx.map((item: any) => item.ra);
+  scores.sort((a: number, b: number) => a - b);
+  
+  const avg = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
+  const median = scores.length % 2 === 0 
+    ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
+    : scores[Math.floor(scores.length/2)];
+  const range = scores[scores.length - 1] - scores[0];
+  
+  return {
+    avg: avg.toFixed(2),
+    median: median,
+    range: range,
+  };
+});
 </script>
 
 <template>
   <div class="wrapper">
     <div class="app-container">
-      <h1 class="section-title">realtvop</h1>
+      <h1 class="section-title player-name">{{ player }}</h1>
       <RatingPlate :ra="fishData ? fishData.rating : 0" />
       
       <!-- SD Scores Section -->
-      <h2 class="section-title">旧版本</h2>
+      <h2 class="section-title">
+        旧版本
+        <span class="stats-info" v-if="sdStats">
+          <span class="stat-item">平均: {{ sdStats.avg }}</span>
+          <span class="stat-item">中位数: {{ sdStats.median }}</span>
+          <span class="stat-item">极差: {{ sdStats.range }}</span>
+        </span>
+      </h2>
       <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.sd">
         <div class="score-grid">
           <div v-for="(score, index) in fishData.charts.sd" :key="`sd-cell-${index}`" class="score-cell">
@@ -27,7 +76,14 @@ getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => fishData.value = 
       </div>
       
       <!-- DX Scores Section -->
-      <h2 class="section-title">新版本</h2>
+      <h2 class="section-title">
+        新版本
+        <span class="stats-info" v-if="dxStats">
+          <span class="stat-item">平均: {{ dxStats.avg }}</span>
+          <span class="stat-item">中位数: {{ dxStats.median }}</span>
+          <span class="stat-item">极差: {{ dxStats.range }}</span>
+        </span>
+      </h2>
       <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.dx">
         <div class="score-grid">
           <div v-for="(score, index) in fishData.charts.dx" :key="`dx-cell-${index}`" class="score-cell">
@@ -128,14 +184,50 @@ html, body {
   width: 100%;
   margin-top: 30px;
   margin-bottom: 10px;
-  text-align: center;
+  text-align: left;
   font-size: 1.8rem;
   font-weight: bold;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 15px;
   /* color: #333; */
+}
+
+.stats-info {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: #aaa;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stat-item {
+  white-space: nowrap;
+}
+
+/* Add a class for player name to keep it centered */
+.player-name {
+  text-align: center;
+  justify-content: center;
 }
 
 /* Add this to ensure the first title has proper spacing */
 .section-title:first-of-type {
   margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .stats-info {
+    margin-left: 5px;
+    font-size: 0.8rem;
+  }
 }
 </style>

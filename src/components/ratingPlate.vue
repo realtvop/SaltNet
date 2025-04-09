@@ -27,4 +27,8 @@ const props = defineProps<{
 </template>
 
 <style scoped>
+/* svg {
+  transform: scale(2);
+  transform-origin: left left;
+} */
 </style>
