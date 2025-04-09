@@ -24,10 +24,17 @@ const sdStats = computed(() => {
     : scores[Math.floor(scores.length/2)];
   const range = scores[scores.length - 1] - scores[0];
   
+  // Calculate difficulty constant range
+  const constants = fishData.value.charts.sd.map((item: any) => item.ds);
+  constants.sort((a: number, b: number) => a - b);
+  const minConstant = constants[0];
+  const maxConstant = constants[constants.length - 1];
+  
   return {
     avg: avg.toFixed(2),
     median: median,
     range: range,
+    levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
   };
 });
 
@@ -44,10 +51,17 @@ const dxStats = computed(() => {
     : scores[Math.floor(scores.length/2)];
   const range = scores[scores.length - 1] - scores[0];
   
+  // Calculate difficulty constant range
+  const constants = fishData.value.charts.dx.map((item: any) => item.ds);
+  constants.sort((a: number, b: number) => a - b);
+  const minConstant = constants[0];
+  const maxConstant = constants[constants.length - 1];
+  
   return {
     avg: avg.toFixed(2),
     median: median,
     range: range,
+    levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
   };
 });
 </script>
@@ -62,6 +76,7 @@ const dxStats = computed(() => {
       <h2 class="section-title">
         旧版本
         <span class="stats-info" v-if="sdStats">
+          <span class="stat-item">定数: {{ sdStats.levelRange }}</span>
           <span class="stat-item">平均: {{ sdStats.avg }}</span>
           <span class="stat-item">中位数: {{ sdStats.median }}</span>
           <span class="stat-item">极差: {{ sdStats.range }}</span>
@@ -79,6 +94,7 @@ const dxStats = computed(() => {
       <h2 class="section-title">
         新版本
         <span class="stats-info" v-if="dxStats">
+          <span class="stat-item">定数: {{ dxStats.levelRange }}</span>
           <span class="stat-item">平均: {{ dxStats.avg }}</span>
           <span class="stat-item">中位数: {{ dxStats.median }}</span>
           <span class="stat-item">极差: {{ dxStats.range }}</span>
