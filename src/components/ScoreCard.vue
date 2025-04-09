@@ -3,12 +3,10 @@
 </script>
 
 <template>
-  <div class="maimai-card-wrapper">
+<div class="maimai-card-wrapper">
     <div class="maimai-result-card">
         <div class="song-jacket-section">
-            <div class="song-jacket-image" style="background-image: url('https://www.diving-fish.com/covers/11512.png');">
-                <!-- Song jacket image loaded from background-image -->
-            </div>
+            <div class="song-jacket-image" style="background-image: url('https://www.diving-fish.com/covers/11512.png');"></div>
         </div>
         <div class="result-details-section">
             <div class="result-header">
@@ -40,7 +38,7 @@
 .maimai-card-wrapper {
     width: 100%;
     max-width: 450px;
-    padding: 10px;
+    padding: 2px;
     box-sizing: border-box;
 }
 
