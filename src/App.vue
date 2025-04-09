@@ -9,7 +9,7 @@ const fishData = ref<any>(null);
 // const player = "realtvop" // "蓝原柚子";
 // const player = "蓝原柚子";
 // const player = "Kaosas";
-const player = window.location.pathname.split("/").pop() || "realtvop"; // Get the player name from the URL
+const player = decodeURI(window.location.pathname.split("/").pop() || "realtvop"); // Get the player name from the URL
 
 getDivingFishData(player).then(data => fishData.value = data);
 
