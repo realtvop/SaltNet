@@ -19,7 +19,7 @@ getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => { fishData.value 
 <template>
   <!-- {{ fishData.rating }} -->
   <RatingPlate :ra="ra" />
-  <ScoreCard style="width: 250px;" />
+  <ScoreCard />
 </template>
 
 <style scoped>

@@ -22,13 +22,13 @@
             <div class="achievement">100.5000<span class="percentage-mark">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" src="/sssplus.png" alt="SSS+">
+                    <img class="achievement-icon" src="/sssplus.png">
                 </div>
                 <div class="fc-achievement">
-                    <img class="achievement-icon" src="" alt="FC">
+                    <img class="achievement-icon" src="" v-if="false">
                 </div>
                 <div class="sync-achievement">
-                    <img class="achievement-icon" src="" alt="SYNC">
+                    <img class="achievement-icon" src="" v-if="false">
                 </div>
             </div>
         </div>
@@ -125,7 +125,8 @@
 .song-name {
     font-size: 14px;
     font-weight: bold;
-    margin-bottom: 2px;
+    margin-top: 2px;
+    /* margin-bottom: 2px; */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -154,6 +155,7 @@
     flex-shrink: 0;
     margin-left: -5%;
     width: 100%;
+    margin-top: 2px;
 }
 
 .rank-achievement, .fc-achievement, .sync-achievement {
