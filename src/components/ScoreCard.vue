@@ -36,22 +36,22 @@
 
 <style scoped>
 .maimai-card-wrapper {
-    width: 100%;
-    max-width: 450px;
-    padding: 2px;
+    width: 75%;  /* Reduced from 100% to 75% */
+    max-width: 337.5px;  /* Reduced from 450px to 337.5px */
+    padding: 5px;  /* Reduced from 2px to 1.5px */
     box-sizing: border-box;
 }
 
 .maimai-result-card {
     display: flex;
-    border-radius: 16px;
+    border-radius: 12px;  /* Reduced from 16px to 12px */
     overflow: hidden;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);  /* Adjusted from 0 8px 16px */
     background: #333;
-    border: 2px solid #555;
+    border: 1.5px solid #555;  /* Reduced from 2px to 1.5px */
     aspect-ratio: 2.5 / 1;
     height: auto;
-    min-height: 120px;
+    min-height: 90px;  /* Reduced from 120px to 90px */
     text-align: left;
 }
 
@@ -70,7 +70,7 @@
 
 .result-details-section {
     flex: 0 0 60%;
-    padding: 8px;
+    padding: 6px;  /* Reduced from 8px to 6px */
     color: white;
     display: flex;
     flex-direction: column;
@@ -78,15 +78,15 @@
 }
 
 .result-header {
-    margin-bottom: 2px;
-    height: 20px;
+    margin-bottom: 1.5px;  /* Reduced from 2px to 1.5px */
+    height: 15px;  /* Reduced from 20px to 15px */
     flex-shrink: 0;
 }
 
 .header-pill {
     display: flex;
     height: 100%;
-    border-radius: 10px;
+    border-radius: 7.5px;  /* Reduced from 10px to 7.5px */
     overflow: hidden;
     margin-left: 1.5%;
     width: 90%;
@@ -98,9 +98,9 @@
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 9px;  /* Reduced from 12px to 9px */
     text-align: center;
-    padding: 0 3px;
+    padding: 0 2.25px;  /* Reduced from 0 3px to 0 2.25px */
 }
 
 .pill-section.charttype {
@@ -121,10 +121,9 @@
 }
 
 .song-name {
-    font-size: 14px;
+    font-size: 10.5px;  /* Reduced from 14px to 10.5px */
     font-weight: bold;
-    margin-top: 2px;
-    /* margin-bottom: 2px; */
+    margin-top: 1.5px;  /* Reduced from 2px to 1.5px */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -132,33 +131,31 @@
 }
 
 .achievement {
-    font-size: 26px;
+    font-size: 19.5px;  /* Reduced from 26px to 19.5px */
     font-weight: bold;
     line-height: 1;
-    margin-bottom: 2px;
+    margin-bottom: 1.5px;  /* Reduced from 2px to 1.5px */
     flex-shrink: 0;
 }
 
 .percentage-mark {
-    font-size: 16px;
+    font-size: 12px;  /* Reduced from 16px to 12px */
 }
 
 .achievement-badges {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    /* margin-top: auto; */
-    /* padding-top: 2px; */
-    gap: 6px;
+    gap: 4.5px;  /* Reduced from 6px to 4.5px */
     flex-shrink: 0;
     margin-left: -5%;
     width: 100%;
-    margin-top: 2px;
+    margin-top: 1.5px;  /* Reduced from 2px to 1.5px */
 }
 
 .rank-achievement, .fc-achievement, .sync-achievement {
-    width: 30px;
-    height: 30px;
+    width: 22.5px;  /* Reduced from 30px to 22.5px */
+    height: 22.5px;  /* Reduced from 30px to 22.5px */
     display: flex;
     justify-content: center;
     align-items: center;
