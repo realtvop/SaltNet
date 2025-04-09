@@ -5,7 +5,7 @@ import plates from "../assets/plates";
 import { getPlateId } from "../utils/genPlate";
 
 const props = defineProps<{
-  ra: number[],
+  ra: number,
 }>();
 </script>
 

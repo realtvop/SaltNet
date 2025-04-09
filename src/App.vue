@@ -3,6 +3,7 @@ import { getDivingFishData } from "./divingfish";
 import { ref } from 'vue';
 
 import RatingPlate from "./components/ratingPlate.vue";
+import ScoreCard from "./components/ScoreCard.vue";
 
 // import { generateRatingSvg } from "./utils/genPlate";
 
@@ -10,7 +11,7 @@ import RatingPlate from "./components/ratingPlate.vue";
 // window.g = getDivingFishData;
 const fishData = ref('');
 const ra = ref(0);
-getDivingFishData("realtvop").then(data => { fishData.value = data; ra.value = data.rating; });
+getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => { fishData.value = data; ra.value = data.rating; });
 
 // const aaa = generateRatingSvg(ra, plates["10"]);
 </script>
@@ -18,6 +19,7 @@ getDivingFishData("realtvop").then(data => { fishData.value = data; ra.value = d
 <template>
   <!-- {{ fishData.rating }} -->
   <RatingPlate :ra="ra" />
+  <ScoreCard style="width: 250px;" />
 </template>
 
 <style scoped>
