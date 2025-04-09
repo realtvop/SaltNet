@@ -5,22 +5,37 @@ import { ref } from 'vue';
 import RatingPlate from "./components/ratingPlate.vue";
 import ScoreCard from "./components/ScoreCard.vue";
 
-// window.g = getDivingFishData;
-const fishData = ref('');
+const fishData = ref<any>(null);
 const ra = ref(0);
-getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => { fishData.value = data; ra.value = data.rating; });
+
+getDivingFishData("realtvop"/* "蓝原柚子" */).then(data => { 
+  fishData.value = data;
+  console.log(fishData.value); 
+  ra.value = data.rating; 
+});
 </script>
 
 <template>
   <div class="wrapper">
     <div class="app-container">
-      <!-- {{ fishData.rating }} -->
       <RatingPlate :ra="ra" />
       
-      <div class="score-grid-wrapper">
+      <!-- SD Scores Section -->
+      <h2 class="section-title">Standard Scores</h2>
+      <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.sd">
         <div class="score-grid">
-          <div v-for="index in 35" :key="`cell-${index}`" class="score-cell">
-            <ScoreCard />
+          <div v-for="(score, index) in fishData.charts.sd" :key="`sd-cell-${index}`" class="score-cell">
+            <ScoreCard :data="score" />
+          </div>
+        </div>
+      </div>
+      
+      <!-- DX Scores Section -->
+      <h2 class="section-title">Deluxe Scores</h2>
+      <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.dx">
+        <div class="score-grid">
+          <div v-for="(score, index) in fishData.charts.dx" :key="`dx-cell-${index}`" class="score-cell">
+            <ScoreCard :data="score" />
           </div>
         </div>
       </div>
@@ -110,5 +125,20 @@ html, body {
 .score-cell {
   display: flex;
   justify-content: center;
+}
+
+.section-title {
+  width: 100%;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Add this to ensure the first title has proper spacing */
+.section-title:first-of-type {
+  margin-top: 20px;
 }
 </style>

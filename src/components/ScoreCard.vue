@@ -6,18 +6,18 @@
 <div class="maimai-card-wrapper">
     <div class="maimai-result-card">
         <div class="song-jacket-section">
-            <div class="song-jacket-image" style="background-image: url('https://www.diving-fish.com/covers/11512.png');"></div>
+            <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - $attrs.data.song_id.toString().length)}${$attrs.data.song_id}.png')`}"></div>
         </div>
         <div class="result-details-section">
             <div class="result-header">
                 <div class="header-pill">
-                    <div class="pill-section charttype">DX</div>
-                    <div class="pill-section level">13.7</div>
-                    <div class="pill-section points">308</div>
+                    <div class="pill-section charttype">{{ $attrs.data.type }}</div>
+                    <div class="pill-section level">{{ $attrs.data.ds }}</div>
+                    <div class="pill-section points">{{ $attrs.data.ra }}</div>
                 </div>
             </div>
-            <div class="song-name">きゅうくらりん</div>
-            <div class="achievement">100.5000<span class="percentage-mark">%</span></div>
+            <div class="song-name">{{ $attrs.data.title }}</div>
+            <div class="achievement">{{ $attrs.data.achievements.toFixed(4) }}<span class="percentage-mark">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
                     <img class="achievement-icon" src="/sssplus.png">
