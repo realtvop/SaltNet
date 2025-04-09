@@ -1,32 +1,36 @@
-<script>
+<script setup lang="ts">
+import { defineProps } from 'vue';
 
+const props = defineProps<{
+    data: any,
+}>();
 </script>
 
 <template>
 <div class="maimai-card-wrapper">
     <div class="maimai-result-card">
         <div class="song-jacket-section">
-            <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - $attrs.data.song_id.toString().length)}${$attrs.data.song_id}.png')`}"></div>
+            <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - props.data.song_id.toString().length)}${props.data.song_id}.png')`}"></div>
         </div>
         <div class="result-details-section">
             <div class="result-header">
                 <div class="header-pill">
-                    <div class="pill-section charttype">{{ $attrs.data.type }}</div>
-                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][$attrs.data.level_index]}` }">{{ $attrs.data.ds }}</div>
-                    <div class="pill-section points">{{ $attrs.data.ra }}</div>
+                    <div class="pill-section charttype">{{ props.data.type }}</div>
+                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.level_index]}` }">{{ props.data.ds }}</div>
+                    <div class="pill-section points">{{ props.data.ra }}</div>
                 </div>
             </div>
-            <div class="song-name">{{ $attrs.data.title }}</div>
-            <div class="achievement">{{ $attrs.data.achievements.toFixed(4) }}<span class="percentage-mark">%</span></div>
+            <div class="song-name">{{ props.data.title }}</div>
+            <div class="achievement">{{ props.data.achievements.toFixed(4) }}<span class="percentage-mark">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" :src="`/icons/${$attrs.data.rate.replace('p', 'plus')}.png`">
+                    <img class="achievement-icon" :src="`/icons/${props.data.rate.replace('p', 'plus')}.png`">
                 </div>
                 <div class="fc-achievement">
-                    <img class="achievement-icon" :src="`/icons/music_icon_${$attrs.data.fc}.png`" v-if="$attrs.data.fc">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fc}.png`" v-if="props.data.fc">
                 </div>
                 <div class="sync-achievement">
-                    <img class="achievement-icon" :src="`/icons/music_icon_${$attrs.data.fs.replace('sd', 'dx')}.png`" v-if="$attrs.data.fs">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fs.replace('sd', 'dx')}.png`" v-if="props.data.fs">
                 </div>
             </div>
         </div>

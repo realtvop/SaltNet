@@ -11,7 +11,7 @@ const props = defineProps<{
 
 <template>
   <svg xmlns="http://www.w3.org/2000/svg" width="100px" height="20px">
-    <image :href="plates[getPlateId(props.ra)]" x="0" y="0" height="1.2em" />
+    <image :href="plates[getPlateId(props.ra) as keyof typeof plates]" x="0" y="0" height="1.2em" />
     <text
       v-for="i in 5"
       :key="i"

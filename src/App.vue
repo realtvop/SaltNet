@@ -2,12 +2,14 @@
 import { getDivingFishData } from "./divingfish";
 import { ref, computed } from 'vue';
 
-import RatingPlate from "./components/ratingPlate.vue";
+import RatingPlate from "./components/RatingPlate.vue";
 import ScoreCard from "./components/ScoreCard.vue";
 
 const fishData = ref<any>(null);
-const player = "realtvop" // "蓝原柚子";
+// const player = "realtvop" // "蓝原柚子";
 // const player = "蓝原柚子";
+// const player = "Kaosas";
+const player = window.location.pathname.split("/").pop() || "realtvop"; // Get the player name from the URL
 
 getDivingFishData(player).then(data => fishData.value = data);
 
@@ -76,7 +78,7 @@ const dxStats = computed(() => {
       <h2 class="section-title">
         旧版本
         <span class="stats-info" v-if="sdStats">
-          <span class="stat-item">定数: {{ sdStats.levelRange }}</span>
+          <span class="stat-item">{{ sdStats.levelRange }}</span>
           <span class="stat-item">平均: {{ sdStats.avg }}</span>
           <span class="stat-item">中位数: {{ sdStats.median }}</span>
           <span class="stat-item">极差: {{ sdStats.range }}</span>
@@ -94,7 +96,7 @@ const dxStats = computed(() => {
       <h2 class="section-title">
         新版本
         <span class="stats-info" v-if="dxStats">
-          <span class="stat-item">定数: {{ dxStats.levelRange }}</span>
+          <span class="stat-item">{{ dxStats.levelRange }}</span>
           <span class="stat-item">平均: {{ dxStats.avg }}</span>
           <span class="stat-item">中位数: {{ dxStats.median }}</span>
           <span class="stat-item">极差: {{ dxStats.range }}</span>

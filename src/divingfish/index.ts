@@ -1,4 +1,4 @@
-import type { DivingFishResponse } from './types'
+import type { DivingFishResponse } from './type'
 
 // Fetch player data from DivingFish API
 export async function getDivingFishData(username: string): Promise<string | DivingFishResponse> {
