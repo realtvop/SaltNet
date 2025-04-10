@@ -30,6 +30,24 @@ const shouldShowHomepage = computed(() => {
   return path === '/' || path === '';
 });
 
+// Compute page title based on current page and player data
+const pageTitle = computed(() => {
+  if (shouldShowHomepage.value) {
+    return 'SaltWeb';
+  } else if (showPlayerInfo.value && playerInfo.value.data?.nickname) {
+    return `${playerInfo.value.data.nickname} - SaltWeb`;
+  } else {
+    // Extract username from path when player data isn't loaded yet
+    const username = currentPath.value.substring(1);
+    return username ? `${username} - SaltWeb` : 'SaltWeb';
+  }
+});
+
+// Set page title
+useHead({
+  title: pageTitle,
+});
+
 // Navigate to another player's page
 const navigateToPlayer = () => {
   if (searchInput.value.trim()) {
