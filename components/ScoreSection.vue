@@ -66,6 +66,12 @@ const stats = computed(() => {
 <style scoped>
 .score-section {
   width: 100%;
+  max-width: 1300px; /* 限制最大宽度 */
+  margin: 0 auto; /* 居中显示 */
+  padding: 0 20px; /* 两侧添加内边距 */
+  box-sizing: border-box;
+  border-left: 1px solid transparent; /* 左侧边框，颜色可调整 */
+  border-right: 1px solid transparent; /* 右侧边框，颜色可调整 */
 }
 
 .section-title {
@@ -102,7 +108,7 @@ const stats = computed(() => {
 
 .score-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, 220px); /* 固定卡片宽度 */
   gap: 15px;
   margin-top: 20px;
   width: 100%;
@@ -113,7 +119,7 @@ const stats = computed(() => {
 .score-cell {
   display: flex;
   justify-content: center;
-  width: 100%;
+  width: 220px; /* 固定宽度 */
   box-sizing: border-box;
   padding: 0;
   height: auto;
@@ -121,31 +127,40 @@ const stats = computed(() => {
 
 @media (min-width: 1254px) {
   .score-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, 220px);
+    justify-content: center;
   }
 }
 
 @media (max-width: 1253px) and (min-width: 1000px) {
   .score-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, 220px);
+    justify-content: center;
   }
 }
 
 @media (max-width: 999px) and (min-width: 768px) {
   .score-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, 220px);
+    justify-content: center;
   }
 }
 
 @media (max-width: 767px) and (min-width: 500px) {
   .score-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 220px);
+    justify-content: center;
   }
 }
 
 @media (max-width: 499px) {
   .score-grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: repeat(1, 220px);
+    justify-content: center;
+  }
+  
+  .score-section {
+    padding: 0 10px; /* 小屏幕减少内边距 */
   }
 }
 
