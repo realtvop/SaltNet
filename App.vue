@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import ScoreSection from "./components/ScoreSection.vue";
 
@@ -24,27 +24,35 @@ if (process.server) {
 const fishData = ref(playerInfo.value?.data || null);
 const player = ref(playerInfo.value?.name || 'realtvop');
 
+// Determine if we're on the homepage (no specific player requested)
+const isHomepage = ref(true);
+
 // If we're on client-side and don't have data, try to fetch it
 onMounted(async () => {
-  if (!fishData.value) {
-    try {
-      // Get current player name from URL
-      const path = window.location.pathname;
-      const pathParts = path.split('/').filter(Boolean);
-      const playerFromPath = pathParts.length > 0 ? pathParts[pathParts.length - 1] : '';
-      const targetPlayer = playerFromPath || 'realtvop';
-      
-      // Fetch player data from API
-      const response = await fetch(`/api/player/${encodeURIComponent(targetPlayer)}`);
-      const data = await response.json();
-      
-      if (data && data.data) {
-        fishData.value = data.data;
-        player.value = data.name;
-        playerInfo.value = { name: data.name, data: data.data };
+  // Get current player name from URL
+  const path = window.location.pathname;
+  const pathParts = path.split('/').filter(Boolean);
+  
+  // Check if we're on a player page
+  if (pathParts.length > 0 && pathParts[0] === 'player') {
+    isHomepage.value = false;
+    const playerFromPath = pathParts.length > 1 ? pathParts[1] : '';
+    const targetPlayer = playerFromPath || 'realtvop';
+    
+    if (!fishData.value) {
+      try {
+        // Fetch player data from API
+        const response = await fetch(`/api/player/${encodeURIComponent(targetPlayer)}`);
+        const data = await response.json();
+        
+        if (data && data.data) {
+          fishData.value = data.data;
+          player.value = data.name;
+          playerInfo.value = { name: data.name, data: data.data };
+        }
+      } catch (error) {
+        console.error('Failed to fetch player data:', error);
       }
-    } catch (error) {
-      console.error('Failed to fetch player data:', error);
     }
   }
 });
@@ -72,9 +80,12 @@ const handleKeyPress = (event: KeyboardEvent) => {
     <!-- Fixed App Bar -->
     <div class="app-bar">
       <div class="app-bar-content">
-        <div class="user-info">
+        <div class="user-info" v-if="!isHomepage">
           <h2 class="app-bar-player-name">{{ fishData ? fishData.nickname : player }}</h2>
           <RatingPlate :ra="fishData ? fishData.rating : 0" :small="true" />
+        </div>
+        <div class="logo" v-else>
+          <h2 class="app-title">maimai成绩查询</h2>
         </div>
         <div class="search-container">
           <input 
@@ -88,8 +99,25 @@ const handleKeyPress = (event: KeyboardEvent) => {
       </div>
     </div>
     
-    <div class="app-container">
-      <!-- Main content starts below the app bar -->
+    <!-- Homepage view when no player is selected -->
+    <div class="app-container" v-if="isHomepage">
+      <div class="content-padding"></div>
+      <div class="homepage-container">
+        <h1 class="homepage-title">maimai成绩查询系统</h1>
+        <div class="homepage-search-container">
+          <input 
+            v-model="searchInput" 
+            @keyup="handleKeyPress"
+            placeholder="输入用户名查询" 
+            class="homepage-search-input"
+          />
+          <button @click="navigateToPlayer" class="homepage-search-button">搜索</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Player profile view when a player is selected -->
+    <div class="app-container" v-else>
       <div class="content-padding"></div>
       
       <!-- SD Scores Section -->
@@ -100,16 +128,6 @@ const handleKeyPress = (event: KeyboardEvent) => {
     </div>
   </div>
 </template>
-
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  overflow-x: hidden;
-  color: white;
-}
-</style>
 
 <style scoped>
 .wrapper {
@@ -321,6 +339,67 @@ html, body {
 /* Add this to ensure the first title has proper spacing */
 .section-title:first-of-type {
   margin-top: 20px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary-color);
+  font-weight: bold;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+/* Homepage styles */
+.homepage-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  width: 100%;
+  padding: 0 20px;
+}
+
+.homepage-title {
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  color: var(--text-primary-color);
+}
+
+.homepage-search-container {
+  display: flex;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.homepage-search-input {
+  flex: 1;
+  padding: 15px;
+  font-size: 1.1rem;
+  border-radius: 4px 0 0 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg-color);
+  color: var(--text-primary-color);
+  outline: none;
+}
+
+.homepage-search-button {
+  padding: 15px 25px;
+  font-size: 1.1rem;
+  border-radius: 0 4px 4px 0;
+  background-color: #535bf2;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.homepage-search-button:hover {
+  background-color: #646cff;
 }
 
 @media (max-width: 768px) {
