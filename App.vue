@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
-import ScoreCard from "./components/ScoreCard.vue";
+import ScoreSection from "./components/ScoreSection.vue";
 
 // Create shared state for player data
 const playerInfo = useState('playerInfo', () => {
@@ -65,60 +65,6 @@ const handleKeyPress = (event: KeyboardEvent) => {
     navigateToPlayer();
   }
 };
-
-// Calculate statistics for the SD scores based on ra values
-const sdStats = computed(() => {
-  if (!fishData.value?.charts?.sd?.length) return null;
-  
-  const scores = fishData.value.charts.sd.map((item: any) => item.ra);
-  scores.sort((a: number, b: number) => a - b);
-  
-  const avg = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
-  const median = scores.length % 2 === 0 
-    ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
-    : scores[Math.floor(scores.length/2)];
-  const range = scores[scores.length - 1] - scores[0];
-  
-  // Calculate difficulty constant range
-  const constants = fishData.value.charts.sd.map((item: any) => item.ds);
-  constants.sort((a: number, b: number) => a - b);
-  const minConstant = constants[0];
-  const maxConstant = constants[constants.length - 1];
-  
-  return {
-    avg: avg.toFixed(2),
-    median: median,
-    range: range,
-    levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
-  };
-});
-
-// Calculate statistics for the DX scores based on ra values
-const dxStats = computed(() => {
-  if (!fishData.value?.charts?.dx?.length) return null;
-  
-  const scores = fishData.value.charts.dx.map((item: any) => item.ra);
-  scores.sort((a: number, b: number) => a - b);
-  
-  const avg = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
-  const median = scores.length % 2 === 0 
-    ? (scores[scores.length/2 - 1] + scores[scores.length/2]) / 2 
-    : scores[Math.floor(scores.length/2)];
-  const range = scores[scores.length - 1] - scores[0];
-  
-  // Calculate difficulty constant range
-  const constants = fishData.value.charts.dx.map((item: any) => item.ds);
-  constants.sort((a: number, b: number) => a - b);
-  const minConstant = constants[0];
-  const maxConstant = constants[constants.length - 1];
-  
-  return {
-    avg: avg.toFixed(2),
-    median: median,
-    range: range,
-    levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
-  };
-});
 </script>
 
 <template>
@@ -147,40 +93,10 @@ const dxStats = computed(() => {
       <div class="content-padding"></div>
       
       <!-- SD Scores Section -->
-      <h2 class="section-title">
-        旧版本
-        <span class="stats-info" v-if="sdStats">
-          <span class="stat-item">{{ sdStats.levelRange }}</span>
-          <span class="stat-item">平均: {{ sdStats.avg }}</span>
-          <span class="stat-item">中位数: {{ sdStats.median }}</span>
-          <span class="stat-item">极差: {{ sdStats.range }}</span>
-        </span>
-      </h2>
-      <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.sd">
-        <div class="score-grid">
-          <div v-for="(score, index) in fishData.charts.sd" :key="`sd-cell-${index}`" class="score-cell">
-            <ScoreCard :data="score" />
-          </div>
-        </div>
-      </div>
+      <ScoreSection title="旧版本成绩" :scores="fishData?.charts?.sd || []" />
       
       <!-- DX Scores Section -->
-      <h2 class="section-title">
-        新版本
-        <span class="stats-info" v-if="dxStats">
-          <span class="stat-item">{{ dxStats.levelRange }}</span>
-          <span class="stat-item">平均: {{ dxStats.avg }}</span>
-          <span class="stat-item">中位数: {{ dxStats.median }}</span>
-          <span class="stat-item">极差: {{ dxStats.range }}</span>
-        </span>
-      </h2>
-      <div class="score-grid-wrapper" v-if="fishData && fishData.charts && fishData.charts.dx">
-        <div class="score-grid">
-          <div v-for="(score, index) in fishData.charts.dx" :key="`dx-cell-${index}`" class="score-cell">
-            <ScoreCard :data="score" />
-          </div>
-        </div>
-      </div>
+      <ScoreSection title="新版本成绩" :scores="fishData?.charts?.dx || []" />
     </div>
   </div>
 </template>
