@@ -16,7 +16,7 @@ const props = defineProps<{
             <div class="result-header">
                 <div class="header-pill">
                     <div class="pill-section charttype">{{ props.data.type }}</div>
-                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.level_index]}` }">{{ props.data.ds }}</div>
+                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.level_index]}` }">{{ props.data.ds.toFixed(1) }}</div>
                     <div class="pill-section points">{{ props.data.ra }}</div>
                 </div>
             </div>
