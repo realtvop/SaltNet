@@ -1,17 +1,53 @@
 <script setup lang="ts">
-import { getDivingFishData } from "./divingfish";
-import { ref, computed } from 'vue';
-
+import { ref, computed, onMounted } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import ScoreCard from "./components/ScoreCard.vue";
 
-const fishData = ref<any>(null);
-const player = "realtvop" // "蓝原柚子";
-// const player = "蓝原柚子";
-// const player = "Kaosas";
-// const player = decodeURI(window.location.pathname.split("/").pop() || "realtvop"); // Get the player name from the URL
+// Create shared state for player data
+const playerInfo = useState('playerInfo', () => {
+  // Try to get data from multiple sources to ensure it's available
+  const event = useRequestEvent();
+  
+  // Default value
+  return { name: 'realtvop', data: null };
+});
 
-getDivingFishData(player).then(data => fishData.value = data);
+// Server-side initialization
+if (process.server) {
+  const event = useRequestEvent();
+  if (event?.context?.player) {
+    playerInfo.value = event.context.player;
+  }
+}
+
+// Initialize data using shared state
+const fishData = ref(playerInfo.value?.data || null);
+const player = ref(playerInfo.value?.name || 'realtvop');
+
+// If we're on client-side and don't have data, try to fetch it
+onMounted(async () => {
+  if (!fishData.value) {
+    try {
+      // Get current player name from URL
+      const path = window.location.pathname;
+      const pathParts = path.split('/').filter(Boolean);
+      const playerFromPath = pathParts.length > 0 ? pathParts[pathParts.length - 1] : '';
+      const targetPlayer = playerFromPath || 'realtvop';
+      
+      // Fetch player data from API
+      const response = await fetch(`/api/player/${encodeURIComponent(targetPlayer)}`);
+      const data = await response.json();
+      
+      if (data && data.data) {
+        fishData.value = data.data;
+        player.value = data.name;
+        playerInfo.value = { name: data.name, data: data.data };
+      }
+    } catch (error) {
+      console.error('Failed to fetch player data:', error);
+    }
+  }
+});
 
 // Calculate statistics for the SD scores based on ra values
 const sdStats = computed(() => {
