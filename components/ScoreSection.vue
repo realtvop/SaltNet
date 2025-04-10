@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import ScoreCard from "./ScoreCard.vue";
 
 // Define props for the component
-defineProps({
+const props = defineProps({
   title: {
     type: String,
     required: true
@@ -40,8 +40,6 @@ const stats = computed(() => {
     levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
   };
 });
-
-const props = defineProps(['title', 'scores']);
 </script>
 
 <template>
