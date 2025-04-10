@@ -245,13 +245,13 @@ html, body {
   align-items: baseline;
   flex-wrap: wrap;
   gap: 15px;
-  /* color: #333; */
+  color: var(--text-primary-color, inherit);
 }
 
 .stats-info {
   font-size: 0.9rem;
   font-weight: normal;
-  color: #aaa;
+  color: var(--text-secondary-color, #888);
   display: inline-flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -295,6 +295,10 @@ html, body {
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
+  
+  /* Add CSS variables for text colors */
+  --text-primary-color: rgba(255, 255, 255, 0.87);
+  --text-secondary-color: #aaa;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -358,6 +362,9 @@ button:focus-visible {
   :root {
     color: #213547;
     background-color: #ffffff;
+    /* Update CSS variables for light mode */
+    --text-primary-color: #213547;
+    --text-secondary-color: #666;
   }
   a:hover {
     color: #747bff;

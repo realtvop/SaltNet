@@ -51,19 +51,19 @@ const props = defineProps<{
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    background: #333;
-    border: 1.5px solid #555;
+    background: var(--card-bg-color, #333);
+    border: 1.5px solid var(--card-border-color, #555);
     aspect-ratio: 2.5 / 1;
     width: 100%;
     height: auto;
     min-height: 90px;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.2s ease; /* 添加过渡效果让颜色变化更平滑 */
+    transition: border-color 0.2s ease;
 }
 
 .maimai-result-card:hover {
-    border-color: white;
+    border-color: var(--card-hover-color, white);
 }
 
 .song-jacket-section {
@@ -82,7 +82,7 @@ const props = defineProps<{
 .result-details-section {
     flex: 0 0 60%;
     padding: 6px;
-    color: white;
+    color: var(--card-text-color, white);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -185,7 +185,7 @@ const props = defineProps<{
 }
 
 .fc-achievement, .sync-achievement {
-    background: #666;
+    background: var(--badge-bg-color, #666);
     border-radius: 50%;
     position: relative;
     overflow: hidden;
@@ -203,5 +203,26 @@ const props = defineProps<{
     top: unset;
     left: unset;
     transform: none;
+}
+</style>
+
+<style>
+:root {
+    /* Card variables */
+    --card-bg-color: #333;
+    --card-border-color: #555;
+    --card-text-color: white;
+    --card-hover-color: white;
+    --badge-bg-color: #666;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --card-bg-color: #f0f0f0;
+        --card-border-color: #ccc;
+        --card-text-color: #333;
+        --card-hover-color: #666;
+        --badge-bg-color: #ddd;
+    }
 }
 </style>
