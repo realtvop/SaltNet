@@ -1,70 +1,45 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
-import ScoreSection from "./components/ScoreSection.vue";
 
-// Create shared state for player data
-const playerInfo = useState('playerInfo', () => {
-  // Try to get data from multiple sources to ensure it's available
-  const event = useRequestEvent();
-  
-  // Default value
-  return { name: 'realtvop', data: null };
-});
-
-// Server-side initialization
-if (process.server) {
-  const event = useRequestEvent();
-  if (event?.context?.player) {
-    playerInfo.value = event.context.player;
-  }
-}
-
-// Initialize data using shared state
-const fishData = ref(playerInfo.value?.data || null);
-const player = ref(playerInfo.value?.name || 'realtvop');
-
-// Determine if we're on the homepage (no specific player requested)
-const isHomepage = ref(true);
-
-// If we're on client-side and don't have data, try to fetch it
-onMounted(async () => {
-  // Get current player name from URL
-  const path = window.location.pathname;
-  const pathParts = path.split('/').filter(Boolean);
-  
-  // Check if we're on a player page
-  if (pathParts.length > 0 && pathParts[0] === 'player') {
-    isHomepage.value = false;
-    const playerFromPath = pathParts.length > 1 ? pathParts[1] : '';
-    const targetPlayer = playerFromPath || 'realtvop';
-    
-    if (!fishData.value) {
-      try {
-        // Fetch player data from API
-        const response = await fetch(`/api/player/${encodeURIComponent(targetPlayer)}`);
-        const data = await response.json();
-        
-        if (data && data.data) {
-          fishData.value = data.data;
-          player.value = data.name;
-          playerInfo.value = { name: data.name, data: data.data };
-        }
-      } catch (error) {
-        console.error('Failed to fetch player data:', error);
-      }
-    }
-  }
-});
-
-// Add new ref for search input
+// Search input ref
 const searchInput = ref('');
+
+// Shared state for player info that can be updated from [username].vue
+const playerInfo = useState('playerInfo', () => ({
+  name: '',
+  data: null
+}));
+
+// Compute if player info should be displayed
+const showPlayerInfo = computed(() => {
+  return !shouldShowHomepage.value && playerInfo.value.name && playerInfo.value.data;
+});
+
+// Compute current path to determine which page to display
+const currentPath = computed(() => {
+  if (typeof window !== 'undefined') {
+    return window.location.pathname;
+  }
+  return '/';
+});
+
+// Check if we should show the homepage
+const shouldShowHomepage = computed(() => {
+  const path = currentPath.value;
+  return path === '/' || path === '';
+});
 
 // Navigate to another player's page
 const navigateToPlayer = () => {
   if (searchInput.value.trim()) {
-    window.location.href = `/player/${encodeURIComponent(searchInput.value.trim())}`;
+    window.location.href = `/${encodeURIComponent(searchInput.value.trim())}`;
   }
+};
+
+// Navigate to homepage
+const goToHomepage = () => {
+  window.location.href = '/';
 };
 
 // Handle enter key press in search input
@@ -80,14 +55,21 @@ const handleKeyPress = (event: KeyboardEvent) => {
     <!-- Fixed App Bar -->
     <div class="app-bar">
       <div class="app-bar-content">
-        <div class="user-info" v-if="!isHomepage">
-          <h2 class="app-bar-player-name">{{ fishData ? fishData.nickname : player }}</h2>
-          <RatingPlate :ra="fishData ? fishData.rating : 0" :small="true" />
+        <div v-if="!shouldShowHomepage" class="app-bar-left">
+          <button @click="goToHomepage" class="home-button">
+            <span class="home-icon">←</span> 首页
+          </button>
+          
+          <div v-if="showPlayerInfo" class="player-info">
+            <h2 class="app-title">{{ playerInfo.data.nickname }}</h2>
+            <RatingPlate :ra="playerInfo.data.rating" :small="true" />
+          </div>
         </div>
-        <div class="logo" v-else>
-          <h2 class="app-title">maimai成绩查询</h2>
+        <div v-else class="logo">
+          <h2 class="app-title">SaltWeb</h2>
         </div>
-        <div class="search-container">
+        
+        <div class="search-container" v-if="!shouldShowHomepage">
           <input 
             v-model="searchInput" 
             @keyup="handleKeyPress"
@@ -99,32 +81,10 @@ const handleKeyPress = (event: KeyboardEvent) => {
       </div>
     </div>
     
-    <!-- Homepage view when no player is selected -->
-    <div class="app-container" v-if="isHomepage">
+    <div class="app-container">
       <div class="content-padding"></div>
-      <div class="homepage-container">
-        <h1 class="homepage-title">maimai成绩查询系统</h1>
-        <div class="homepage-search-container">
-          <input 
-            v-model="searchInput" 
-            @keyup="handleKeyPress"
-            placeholder="输入用户名查询" 
-            class="homepage-search-input"
-          />
-          <button @click="navigateToPlayer" class="homepage-search-button">搜索</button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Player profile view when a player is selected -->
-    <div class="app-container" v-else>
-      <div class="content-padding"></div>
-      
-      <!-- SD Scores Section -->
-      <ScoreSection title="旧版本成绩" :scores="fishData?.charts?.sd || []" />
-      
-      <!-- DX Scores Section -->
-      <ScoreSection title="新版本成绩" :scores="fishData?.charts?.dx || []" />
+      <!-- NuxtPage will automatically render the matching page component -->
+      <NuxtPage />
     </div>
   </div>
 </template>
@@ -161,17 +121,32 @@ const handleKeyPress = (event: KeyboardEvent) => {
   align-items: center;
 }
 
-.user-info {
+.app-bar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
-.app-bar-player-name {
-  margin: 0;
-  font-size: 1.3rem;
-  white-space: nowrap;
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  /* border-left: 1px solid var(--border-color); */
+}
+
+.player-name {
+  font-weight: 600;
   color: var(--text-primary-color);
+}
+
+.player-rating {
+  font-weight: 500;
+  color: #646cff;
+  background-color: rgba(100, 108, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
 }
 
 .search-container {
@@ -231,116 +206,6 @@ const handleKeyPress = (event: KeyboardEvent) => {
   }
 }
 
-.score-grid-wrapper {
-  width: 100%;
-  overflow: visible; /* Ensure content doesn't get clipped */
-}
-
-.score-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Restored minmax for better sizing */
-  gap: 15px;
-  margin-top: 20px;
-  width: 100%;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-@media (min-width: 1254px) {
-  .score-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1253px) and (min-width: 1000px) {
-  .score-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 999px) and (min-width: 768px) {
-  .score-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 767px) and (min-width: 500px) {
-  .score-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  
-  .app-container {
-    padding: 0 10px;
-  }
-  
-  .app-bar-content {
-    padding: 10px 15px;
-  }
-}
-
-@media (max-width: 499px) {
-  .score-grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  
-  .app-container {
-    padding: 0 5px;
-  }
-  
-  .app-bar-content {
-    padding: 8px 10px;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .content-padding {
-    height: 90px; /* Taller for mobile layout */
-  }
-}
-
-.score-cell {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0;
-  height: auto;
-}
-
-.section-title {
-  width: 100%;
-  margin-top: 30px;
-  margin-bottom: 10px;
-  text-align: left;
-  font-size: 1.8rem;
-  font-weight: bold;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 15px;
-  color: var(--text-primary-color, inherit);
-}
-
-.stats-info {
-  font-size: 0.9rem;
-  font-weight: normal;
-  color: var(--text-secondary-color, #888);
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.stat-item {
-  white-space: nowrap;
-}
-
-/* Removed player-name class for the original h1 since it's now in the app bar */
-
-/* Add this to ensure the first title has proper spacing */
-.section-title:first-of-type {
-  margin-top: 20px;
-}
-
 .app-title {
   margin: 0;
   font-size: 1.5rem;
@@ -353,65 +218,38 @@ const handleKeyPress = (event: KeyboardEvent) => {
   align-items: center;
 }
 
-/* Homepage styles */
-.homepage-container {
+.home-button {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 80vh;
-  width: 100%;
-  padding: 0 20px;
-}
-
-.homepage-title {
-  font-size: 2.5rem;
-  margin-bottom: 30px;
-  color: var(--text-primary-color);
-}
-
-.homepage-search-container {
-  display: flex;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.homepage-search-input {
-  flex: 1;
-  padding: 15px;
-  font-size: 1.1rem;
-  border-radius: 4px 0 0 4px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  background-color: transparent;
   border: 1px solid var(--border-color);
-  background-color: var(--input-bg-color);
   color: var(--text-primary-color);
-  outline: none;
-}
-
-.homepage-search-button {
-  padding: 15px 25px;
-  font-size: 1.1rem;
-  border-radius: 0 4px 4px 0;
-  background-color: #535bf2;
-  color: white;
-  border: none;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.homepage-search-button:hover {
-  background-color: #646cff;
+.home-button:hover {
+  background-color: rgba(100, 108, 255, 0.1);
+  border-color: #646cff;
 }
 
-@media (max-width: 768px) {
-  .section-title {
+.home-icon {
+  font-size: 1.1rem;
+  margin-right: 4px;
+}
+
+@media (max-width: 499px) {
+  .app-bar-content {
+    padding: 8px 10px;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+    gap: 8px;
   }
   
-  .stats-info {
-    margin-left: 5px;
-    font-size: 0.8rem;
+  .content-padding {
+    height: 90px; /* Taller for mobile layout */
   }
 }
 </style>
