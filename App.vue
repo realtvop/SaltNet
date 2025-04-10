@@ -30,6 +30,17 @@ const shouldShowHomepage = computed(() => {
   return path === '/' || path === '';
 });
 
+// Determine if we're on a settings page
+const isSettingsPage = computed(() => {
+  const path = currentPath.value;
+  return path === '/settings';
+});
+
+// Determine if we should show the search box (on homepage or user detail pages)
+const shouldShowSearchBox = computed(() => {
+  return !isSettingsPage.value; // Show search on all pages except settings
+});
+
 // Compute page title based on current page and player data
 const pageTitle = computed(() => {
   if (shouldShowHomepage.value) {
@@ -67,6 +78,11 @@ const goToHomepage = () => {
   window.location.href = '/';
 };
 
+// Navigate to settings page
+const goToSettings = () => {
+  window.location.href = '/settings';
+};
+
 // Handle enter key press in search input
 const handleKeyPress = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
@@ -98,7 +114,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
           <h2 v-if="shouldShowHomepage" class="app-title">SaltWeb</h2>
         </div>
         
-        <div class="search-container" v-if="!shouldShowHomepage">
+        <div class="search-container" v-if="shouldShowSearchBox">
           <input 
             v-model="searchInput" 
             @keyup="handleKeyPress"
@@ -220,6 +236,19 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .search-button:hover {
+  background-color: #646cff;
+}
+
+.settings-button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #535bf2;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.settings-button:hover {
   background-color: #646cff;
 }
 
