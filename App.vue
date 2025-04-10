@@ -43,9 +43,16 @@ const pageTitle = computed(() => {
   }
 });
 
-// Set page title
+// Set page title and favicon
 useHead({
   title: pageTitle,
+  link: [
+    {
+      rel: 'icon',
+      type: 'image/ico',
+      href: '/favicon.ico'
+    },
+  ]
 });
 
 // Navigate to another player's page
@@ -73,8 +80,13 @@ const handleKeyPress = (event: KeyboardEvent) => {
     <!-- Fixed App Bar -->
     <div class="app-bar">
       <div class="app-bar-content">
-        <div v-if="!shouldShowHomepage" class="app-bar-left">
-          <button @click="goToHomepage" class="home-button">
+        <div class="app-bar-left">
+          <!-- App icon using existing favicon -->
+          <div class="app-icon" @click="goToHomepage">
+            <img src="/favicon.ico" class="favicon-icon" />
+          </div>
+          
+          <button v-if="!shouldShowHomepage" @click="goToHomepage" class="home-button">
             <span class="home-icon">←</span> 首页
           </button>
           
@@ -82,9 +94,8 @@ const handleKeyPress = (event: KeyboardEvent) => {
             <h2 class="app-title">{{ playerInfo.data.nickname }}</h2>
             <RatingPlate :ra="playerInfo.data.rating" :small="true" />
           </div>
-        </div>
-        <div v-else class="logo">
-          <h2 class="app-title">SaltWeb</h2>
+          
+          <h2 v-if="shouldShowHomepage" class="app-title">SaltWeb</h2>
         </div>
         
         <div class="search-container" v-if="!shouldShowHomepage">
@@ -143,6 +154,23 @@ const handleKeyPress = (event: KeyboardEvent) => {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.app-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.app-icon:hover {
+  transform: scale(1.1);
+}
+
+.favicon-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .player-info {
