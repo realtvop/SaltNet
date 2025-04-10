@@ -304,35 +304,35 @@ html, body {
 
 .score-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Restored minmax for better sizing */
   gap: 15px;
   margin-top: 20px;
   width: 100%;
   justify-content: center;
-  box-sizing: border-box; /* Ensure proper width calculation */
+  box-sizing: border-box;
 }
 
 @media (min-width: 1254px) {
   .score-grid {
-    grid-template-columns: repeat(5, 1fr); /* Using 1fr instead of minmax for even distribution */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1253px) and (min-width: 1000px) {
   .score-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 999px) and (min-width: 768px) {
   .score-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 767px) and (min-width: 500px) {
   .score-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   
   .app-container {
@@ -346,8 +346,7 @@ html, body {
 
 @media (max-width: 499px) {
   .score-grid {
-    grid-template-columns: repeat(1, 1fr);
-    gap: 12px; /* Smaller gap for mobile */
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
   
   .app-container {
@@ -371,6 +370,7 @@ html, body {
   width: 100%;
   box-sizing: border-box;
   padding: 0;
+  height: auto;
 }
 
 .section-title {
@@ -498,6 +498,7 @@ button:focus-visible {
   padding: 0;
   text-align: center;
   box-sizing: border-box;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 @media (prefers-color-scheme: light) {
