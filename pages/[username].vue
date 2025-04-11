@@ -1,40 +1,51 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import RatingPlate from "../components/RatingPlate.vue";
+import { ref, watch, computed } from "vue";
 import ScoreSection from "../components/ScoreSection.vue";
 
 const route = useRoute();
-const username = route.params.username as string;
+const username = ref(route.params.username as string);
 
-// Use useAsyncData for server-side rendering
-const { data: playerData } = await useAsyncData(
-  `player-${username}`,
-  () => $fetch(`/api/player/${encodeURIComponent(username)}`),
+// Shared state for player info (to be accessible in app.vue)
+const playerInfo = useState("playerInfo");
+
+// Create a function to fetch the player data
+const fetchPlayerData = async () => {
+  try {
+    const data = await $fetch(`/api/player/${encodeURIComponent(username.value)}`);
+    playerInfo.value = {
+      name: data.name || username.value,
+      data: data.data,
+    };
+    return data;
+  } catch (error) {
+    console.error("Error fetching player data:", error);
+    return {
+      name: username.value,
+      data: null
+    };
+  }
+};
+
+// Watch for route changes to handle navigation between different usernames
+watch(() => route.params.username, async (newUsername) => {
+  if (newUsername && newUsername !== username.value) {
+    username.value = newUsername as string;
+    await fetchPlayerData();
+  }
+}, { immediate: false });
+
+// Initial data fetch
+const { data: initialData } = await useAsyncData(
+  `player-${username.value}`,
+  () => fetchPlayerData(),
   {
-    server: true,
+    server: false, // Changed to false for client-side rendering
     cache: true,
   }
 );
 
-// Shared state for player data - update this to be accessible in app.vue
-const playerInfo = useState("playerInfo", () => {
-  return {
-    name: playerData.value?.name || username || "realtvop",
-    data: playerData.value?.data || null,
-  };
-});
-
-// Update the shared state when data changes
-if (playerData.value) {
-  playerInfo.value = {
-    name: playerData.value.name || username,
-    data: playerData.value.data,
-  };
-}
-
-// Data refs from the server-rendered data
-const fishData = ref(playerInfo.value.data);
-const player = ref(playerInfo.value.name);
+// Data refs from the fetched data
+const fishData = computed(() => playerInfo.value?.data || null);
 </script>
 
 <template>

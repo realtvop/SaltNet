@@ -2,22 +2,24 @@
 import { ref, onMounted } from "vue";
 import { getSetting, SETTINGS } from "../utils/userSettings";
 import RatingPlate from "../components/RatingPlate.vue";
+import { useRouter } from "vue-router";
 
 const username = ref("");
 const isLoggedIn = ref(false);
 const playerData = ref<any>(null);
 const isLoading = ref(false);
+const router = useRouter();
 
 // Navigate to current user's b50
 const viewMyB50 = () => {
   if (username.value) {
-    window.location.href = `/${encodeURIComponent(username.value)}`;
+    router.push(`/${encodeURIComponent(username.value)}`);
   }
 };
 
 // Add navigation function for settings
 const goToSettings = () => {
-  window.location.href = "/settings";
+  router.push("/settings");
 };
 
 // Fetch player data to get the rating
@@ -106,20 +108,21 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+  min-height: 100vh;
   width: 100%;
-  padding: 0 20px;
+  padding: 0 20px 0;
+  margin-top: -60px; /* Shift content upward */
+  position: relative;
 }
 
-/* User welcome section styles - removed background */
 .user-welcome-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 20px 0;
   padding: 30px;
   width: 100%;
   max-width: 600px;
+  margin-top: 0; /* Removed the top margin */
 }
 
 .welcome-text {
@@ -195,10 +198,21 @@ onMounted(async () => {
 /* GitHub footer styles */
 .github-footer {
   position: fixed;
-  bottom: 10px;
+  bottom: 20px;
+  left: 0;
   width: 100%;
   text-align: center;
   padding: 10px;
+  z-index: 10;
+}
+
+@media (max-height: 600px) {
+  .github-footer {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin-top: 30px;
+  }
 }
 
 .github-pill {
