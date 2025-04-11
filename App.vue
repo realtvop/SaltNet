@@ -295,7 +295,7 @@ const toggleFavorite = () => {
 }
 
 .app-icon:hover {
-  transform: scale(1.1);
+  /* transform: scale(1.1); */ /* Removed this line */
 }
 
 .favicon-icon {
