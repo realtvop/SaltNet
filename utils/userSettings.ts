@@ -4,7 +4,7 @@
  */
 
 // Storage key prefix to avoid conflicts with other data
-const STORAGE_PREFIX = 'saltweb_';
+const STORAGE_PREFIX = 'SaltNet_';
 
 // Define settings keys and their default values
 export const SETTINGS = {

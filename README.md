@@ -1,4 +1,4 @@
-# SaltWeb
+# SaltNet
 [salt.realtvop.top](https://salt.realtvop.top)
 
 开发中的 **舞萌DX** 查分网站

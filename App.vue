@@ -75,13 +75,13 @@ const shouldShowSearchBox = computed(() => {
 // Compute page title based on current page and player data
 const pageTitle = computed(() => {
   if (shouldShowHomepage.value) {
-    return 'SaltWeb';
+    return 'SaltNet';
   } else if (playerDataLoaded.value && playerInfo.value.data?.nickname) {
-    return `${playerInfo.value.data.nickname} - SaltWeb`;
+    return `${playerInfo.value.data.nickname} - SaltNet`;
   } else {
     // Extract username from path when player data isn't loaded yet
     const username = route.path.substring(1);
-    return username ? `${username} - SaltWeb` : 'SaltWeb';
+    return username ? `${username} - SaltNet` : 'SaltNet';
   }
 });
 
@@ -144,7 +144,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
             <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
           </div>
           
-          <h2 v-if="shouldShowHomepage" class="app-title">SaltWeb</h2>
+          <h2 v-if="shouldShowHomepage" class="app-title">SaltNet</h2>
         </div>
         
         <div class="search-container" v-if="shouldShowSearchBox">
