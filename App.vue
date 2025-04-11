@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import { useRouter, useRoute } from 'vue-router';
 
@@ -12,6 +12,9 @@ const playerInfo = useState('playerInfo', () => ({
   name: '',
   data: null
 }));
+
+// Previous route tracking for detecting navigation from settings to home
+const previousPath = ref('');
 
 // Current path ref (updated to use Nuxt's useRoute)
 const route = useRoute();
@@ -36,9 +39,13 @@ const playerDataLoaded = computed(() => {
 });
 
 // Watch route changes to reset playerInfo when navigating to a new user page
+// or refresh home page when coming from settings
 watch(
   () => route.path,
   (newPath, oldPath) => {
+    // Store previous path
+    previousPath.value = oldPath;
+    
     // If changing to a different user page or from a non-user page to a user page
     if (newPath !== oldPath && !shouldShowHomepage.value && !isSettingsPage.value) {
       // Reset player info to clear playerDataLoaded
@@ -46,6 +53,15 @@ watch(
         name: '',
         data: null
       };
+    }
+    
+    // If navigating from settings to home page, emit a refresh event
+    if (newPath === '/' && oldPath === '/settings') {
+      // Use nextTick to ensure the route change is complete
+      nextTick(() => {
+        // Emit a custom event to notify components to refresh data
+        window.dispatchEvent(new CustomEvent('settings-changed'));
+      });
     }
   }
 );

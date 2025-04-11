@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { getSetting, SETTINGS } from "../utils/userSettings";
 import RatingPlate from "../components/RatingPlate.vue";
 import { useRouter } from "vue-router";
@@ -37,6 +37,26 @@ const fetchPlayerData = async (player: string) => {
   }
 };
 
+// Handler for settings-changed event
+const handleSettingsChanged = () => {
+  // Get updated username from userSettings
+  const savedUsername = getSetting<string>(SETTINGS.USERNAME);
+  
+  // Check if username changed
+  if (savedUsername !== username.value) {
+    username.value = savedUsername || "";
+    isLoggedIn.value = !!savedUsername;
+    
+    if (savedUsername) {
+      // Re-fetch player data with new username
+      fetchPlayerData(savedUsername);
+    } else {
+      // Clear player data if username was removed
+      playerData.value = null;
+    }
+  }
+};
+
 // Check if user is logged in and get username from settings
 onMounted(async () => {
   // Get username from userSettings utility
@@ -47,6 +67,14 @@ onMounted(async () => {
     // Fetch player data to get the rating
     await fetchPlayerData(savedUsername);
   }
+  
+  // Add event listener for settings changes
+  window.addEventListener('settings-changed', handleSettingsChanged);
+});
+
+// Clean up event listener
+onUnmounted(() => {
+  window.removeEventListener('settings-changed', handleSettingsChanged);
 });
 </script>
 
