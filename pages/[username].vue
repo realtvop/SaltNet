@@ -1,73 +1,78 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, onMounted, onActivated } from "vue";
 import ScoreSection from "../components/ScoreSection.vue";
 
 const route = useRoute();
 const username = ref(route.params.username as string);
 
-// Shared state for player info (to be accessible in app.vue)
-const playerInfo = useState("playerInfo");
-
-// Add error state
+// Add error and loading state
 const error = ref<string | null>(null);
+const isLoading = ref(false);
+const playerData = ref(null);
 
 // Create a function to fetch the player data
 const fetchPlayerData = async () => {
-  error.value = null; // Reset error state
+  // Reset data before fetching
+  error.value = null;
+  isLoading.value = true;
+  playerData.value = null;
+  
+  // Get current username from route
+  username.value = route.params.username as string;
+  
   try {
-    const data = await $fetch(`/api/player/${encodeURIComponent(username.value)}`);
+    // Add cache-busting parameter to prevent API caching
+    const cacheBuster = Date.now();
+    const data = await $fetch(`/api/player/${encodeURIComponent(username.value)}?_=${cacheBuster}`);
+    
     // Check if the API returned an error message
     if (typeof data.data === 'string' && data.data === 'user not exists') {
       error.value = 'User does not exist';
-      playerInfo.value = {
-        name: username.value,
-        data: null,
-        error: 'User does not exist'
-      };
-      return { name: username.value, data: null, error: 'User does not exist' };
+      return;
     }
     
-    playerInfo.value = {
+    // Update local player data
+    playerData.value = data.data;
+    
+    // Update app level state
+    useState("playerInfo").value = {
       name: data.name || username.value,
       data: data.data,
     };
-    return data;
-  } catch (error) {
-    console.error("Error fetching player data:", error);
-    return {
-      name: username.value,
-      data: null,
-      error: 'Failed to fetch player data'
-    };
+  } catch (e) {
+    console.error("Error fetching player data:", e);
+    error.value = 'Failed to fetch player data';
+  } finally {
+    isLoading.value = false;
   }
 };
 
-// Watch for route changes to handle navigation between different usernames
+// Watch for route changes
 watch(() => route.params.username, async (newUsername) => {
   if (newUsername && newUsername !== username.value) {
     username.value = newUsername as string;
     await fetchPlayerData();
   }
-}, { immediate: false });
+}, { immediate: true });
 
-// Initial data fetch
-const { data: initialData } = await useAsyncData(
-  `player-${username.value}`,
-  () => fetchPlayerData(),
-  {
-    server: false, // Changed to false for client-side rendering
-    cache: true,
-  }
-);
+// Force-fetch data on component lifecycle events
+onMounted(fetchPlayerData);
+onActivated(fetchPlayerData);
 
-// Data refs from the fetched data
-const fishData = computed(() => playerInfo.value?.data || null);
+// Use local data ref instead of global state
+const fishData = computed(() => playerData.value);
 </script>
 
 <template>
   <div class="player-profile">
+    <!-- Loading Indicator -->
+    <div v-if="isLoading" class="loading-message">
+      <div class="loading-spinner"></div>
+      <p>加载中，请稍候...</p>
+    </div>
+    
     <!-- Error Message Display -->
-    <div v-if="error" class="error-message">
+    <div v-else-if="error" class="error-message">
       <h2>{{ error }}</h2>
       <p>请检查用户名是否正确</p>
     </div>
@@ -126,6 +131,29 @@ const fishData = computed(() => playerInfo.value?.data || null);
 .error-message p {
   font-size: 1.2rem;
   color: var(--text-secondary-color, #888);
+}
+
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(100, 108, 255, 0.2);
+  border-top-color: #646cff;
+  border-radius: 50%;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

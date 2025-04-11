@@ -46,8 +46,13 @@ watch(
     // Store previous path
     previousPath.value = oldPath;
     
-    // If changing to a different user page or from a non-user page to a user page
-    if (newPath !== oldPath && !shouldShowHomepage.value && !isSettingsPage.value) {
+    // Only reset player info when navigating between different user pages
+    // (not when going from home to a user page or from a user page to home)
+    if (newPath !== oldPath && 
+        !shouldShowHomepage.value && 
+        !isSettingsPage.value && 
+        oldPath !== '/' && 
+        !oldPath.startsWith('/settings')) {
       // Reset player info to clear playerDataLoaded
       playerInfo.value = {
         name: '',

@@ -1,0 +1,28 @@
+{
+  "name": "SaltNet",
+  "short_name": "SaltNet",
+  "description": "SaltNet - Maimai player information platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#242424",
+  "theme_color": "#535bf2",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "600x600",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "600x600",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "600x600",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
