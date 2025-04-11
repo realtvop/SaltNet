@@ -20,7 +20,7 @@ const viewMyB50 = () => {
 
 // Add navigation function for settings
 const goToSettings = () => {
-  router.push("/settings");
+  router.push("/SaltNet/settings");
 };
 
 // Fetch player data to get the rating
@@ -130,7 +130,7 @@ onUnmounted(() => {
         
         <!-- Add new favorites button -->
         <button
-          @click="router.push('/favorites')"
+          @click="router.push('/SaltNet/favorites')"
           class="action-button favorites-button"
         >
           <span class="button-icon">★</span> 收藏用户

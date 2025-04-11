@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { getSetting, setSetting, SETTINGS } from '../utils/userSettings';
+import { getSetting, setSetting, SETTINGS } from '../../utils/userSettings';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();

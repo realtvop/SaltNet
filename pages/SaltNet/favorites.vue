@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getFavorites } from '../utils/userSettings';
-import RatingPlate from "../components/RatingPlate.vue";
+import { getFavorites } from '../../utils/userSettings';
+import RatingPlate from "../../components/RatingPlate.vue";
 
 const router = useRouter();
 const favorites = ref<string[]>([]);

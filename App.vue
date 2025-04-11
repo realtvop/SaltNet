@@ -2,7 +2,8 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import { useRouter, useRoute } from 'vue-router';
-import { isFavorite, addFavorite, removeFavorite } from './utils/userSettings';
+// Import getSetting and SETTINGS
+import { isFavorite, addFavorite, removeFavorite, getSetting, SETTINGS } from './utils/userSettings';
 
 // Search input ref
 const searchInput = ref('');
@@ -22,8 +23,13 @@ const route = useRoute();
 
 // Compute if player info should be displayed
 const showPlayerInfo = computed(() => {
-  // Only show on username routes (not homepage or settings)
-  return !shouldShowHomepage.value && !isSettingsPage.value;
+  // Only show on username routes (not homepage, settings, or /SaltNet/*)
+  const path = currentPath.value;
+  const isHomepage = path === '/' || path === '';
+  const isSettings = path === '/settings';
+  const isSaltNetPath = path.startsWith('/SaltNet/'); // Exclude /SaltNet/* paths
+
+  return !isHomepage && !isSettings && !isSaltNetPath;
 });
 
 // Get username from URL path for initial display
@@ -33,6 +39,9 @@ const usernameFromURL = computed(() => {
   }
   return '';
 });
+
+// Get logged-in username from settings
+const loggedInUsername = computed(() => getSetting<string>(SETTINGS.USERNAME));
 
 // Check if player data has fully loaded
 const playerDataLoaded = computed(() => {
@@ -160,8 +169,9 @@ watch(
 // Toggle favorite status
 const toggleFavorite = () => {
   const username = usernameFromURL.value;
-  if (!username) return;
-  
+  // Prevent adding self to favorites (double check)
+  if (!username || username === loggedInUsername.value) return;
+
   // Prevent adding favorites for users that don't exist
   if (!favorited.value && !playerDataLoaded.value) {
     // User doesn't exist or data isn't loaded yet
@@ -201,9 +211,9 @@ const toggleFavorite = () => {
             </h2>
             <div class="player-stats">
               <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
-              <!-- Add favorite button -->
+              <!-- Add favorite button - hide if it's the logged-in user's profile -->
               <button 
-                v-if="usernameFromURL"
+                v-if="usernameFromURL && usernameFromURL !== loggedInUsername"
                 @click="toggleFavorite" 
                 class="favorite-button" 
                 :class="{ 'favorited': favorited, 'disabled': !playerDataLoaded && !favorited }"
