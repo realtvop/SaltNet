@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { getSetting, setSetting, SETTINGS } from '../utils/userSettings';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // Username input ref
 const username = ref('');
@@ -16,6 +19,11 @@ watch(username, (newValue) => {
     setSetting(SETTINGS.USERNAME, newValue.trim());
   }
 });
+
+// Navigate back to homepage
+const goToHomepage = () => {
+  router.push('/');
+};
 </script>
 
 <template>
@@ -35,6 +43,12 @@ watch(username, (newValue) => {
           class="input-field"
         />
         <p class="hint-text">请填写您的水鱼用户名</p>
+      </div>
+      
+      <div class="form-actions">
+        <button @click="goToHomepage" class="back-button">
+          返回首页
+        </button>
       </div>
     </div>
   </div>
@@ -111,6 +125,28 @@ label {
 .error-message {
   color: #ff6b6b;
   margin-bottom: 15px;
+}
+
+.form-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.back-button {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(100, 108, 255, 0.1);
+  border-color: #646cff;
 }
 
 @media (max-width: 600px) {

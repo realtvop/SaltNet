@@ -2,22 +2,24 @@
 import { ref, onMounted } from "vue";
 import { getSetting, SETTINGS } from "../utils/userSettings";
 import RatingPlate from "../components/RatingPlate.vue";
+import { useRouter } from "vue-router";
 
 const username = ref("");
 const isLoggedIn = ref(false);
 const playerData = ref<any>(null);
 const isLoading = ref(false);
+const router = useRouter();
 
 // Navigate to current user's b50
 const viewMyB50 = () => {
   if (username.value) {
-    window.location.href = `/${encodeURIComponent(username.value)}`;
+    router.push(`/${encodeURIComponent(username.value)}`);
   }
 };
 
 // Add navigation function for settings
 const goToSettings = () => {
-  window.location.href = "/settings";
+  router.push("/settings");
 };
 
 // Fetch player data to get the rating

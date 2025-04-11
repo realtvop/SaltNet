@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
+import { useRouter, useRoute } from 'vue-router';
 
 // Search input ref
 const searchInput = ref('');
+const router = useRouter();
 
 // Shared state for player info that can be updated from [username].vue
 const playerInfo = useState('playerInfo', () => ({
   name: '',
   data: null
 }));
+
+// Current path ref (updated to use Nuxt's useRoute)
+const route = useRoute();
 
 // Compute if player info should be displayed
 const showPlayerInfo = computed(() => {
@@ -18,10 +23,7 @@ const showPlayerInfo = computed(() => {
 
 // Compute current path to determine which page to display
 const currentPath = computed(() => {
-  if (typeof window !== 'undefined') {
-    return window.location.pathname;
-  }
-  return '/';
+  return route.path;
 });
 
 // Check if we should show the homepage
@@ -49,7 +51,7 @@ const pageTitle = computed(() => {
     return `${playerInfo.value.data.nickname} - SaltWeb`;
   } else {
     // Extract username from path when player data isn't loaded yet
-    const username = currentPath.value.substring(1);
+    const username = route.path.substring(1);
     return username ? `${username} - SaltWeb` : 'SaltWeb';
   }
 });
@@ -66,21 +68,21 @@ useHead({
   ]
 });
 
-// Navigate to another player's page
+// Navigate to another player's page - updated to use router
 const navigateToPlayer = () => {
   if (searchInput.value.trim()) {
-    window.location.href = `/${encodeURIComponent(searchInput.value.trim())}`;
+    router.push(`/${encodeURIComponent(searchInput.value.trim())}`);
   }
 };
 
-// Navigate to homepage
+// Navigate to homepage - updated to use router
 const goToHomepage = () => {
-  window.location.href = '/';
+  router.push('/');
 };
 
-// Navigate to settings page
+// Navigate to settings page - updated to use router
 const goToSettings = () => {
-  window.location.href = '/settings';
+  router.push('/settings');
 };
 
 // Handle enter key press in search input
