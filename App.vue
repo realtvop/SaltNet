@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import { useRouter, useRoute } from 'vue-router';
 
@@ -18,8 +18,37 @@ const route = useRoute();
 
 // Compute if player info should be displayed
 const showPlayerInfo = computed(() => {
-  return !shouldShowHomepage.value && playerInfo.value.name && playerInfo.value.data;
+  // Only show on username routes (not homepage or settings)
+  return !shouldShowHomepage.value && !isSettingsPage.value;
 });
+
+// Get username from URL path for initial display
+const usernameFromURL = computed(() => {
+  if (!shouldShowHomepage.value && !isSettingsPage.value) {
+    return route.path.substring(1); // Remove leading slash
+  }
+  return '';
+});
+
+// Check if player data has fully loaded
+const playerDataLoaded = computed(() => {
+  return playerInfo.value.name && playerInfo.value.data;
+});
+
+// Watch route changes to reset playerInfo when navigating to a new user page
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    // If changing to a different user page or from a non-user page to a user page
+    if (newPath !== oldPath && !shouldShowHomepage.value && !isSettingsPage.value) {
+      // Reset player info to clear playerDataLoaded
+      playerInfo.value = {
+        name: '',
+        data: null
+      };
+    }
+  }
+);
 
 // Compute current path to determine which page to display
 const currentPath = computed(() => {
@@ -47,7 +76,7 @@ const shouldShowSearchBox = computed(() => {
 const pageTitle = computed(() => {
   if (shouldShowHomepage.value) {
     return 'SaltWeb';
-  } else if (showPlayerInfo.value && playerInfo.value.data?.nickname) {
+  } else if (playerDataLoaded.value && playerInfo.value.data?.nickname) {
     return `${playerInfo.value.data.nickname} - SaltWeb`;
   } else {
     // Extract username from path when player data isn't loaded yet
@@ -109,8 +138,10 @@ const handleKeyPress = (event: KeyboardEvent) => {
           </button>
           
           <div v-if="showPlayerInfo" class="player-info">
-            <h2 class="app-title">{{ playerInfo.data.nickname }}</h2>
-            <RatingPlate :ra="playerInfo.data.rating" :small="true" />
+            <h2 class="app-title">
+              {{ playerDataLoaded ? playerInfo.data.nickname : usernameFromURL }}
+            </h2>
+            <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
           </div>
           
           <h2 v-if="shouldShowHomepage" class="app-title">SaltWeb</h2>
