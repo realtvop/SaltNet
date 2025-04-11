@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onActivated } from "vue";
+import { ref, watch, onMounted, onActivated, computed } from "vue";
 import ScoreSection from "../components/ScoreSection.vue";
+import { isFavorite, addFavorite, removeFavorite } from "../utils/userSettings";
 
 const route = useRoute();
 const username = ref(route.params.username as string);
@@ -9,6 +10,24 @@ const username = ref(route.params.username as string);
 const error = ref<string | null>(null);
 const isLoading = ref(false);
 const playerData = ref(null);
+const favorited = ref(false);
+
+// Check if user is favorited
+const checkFavoriteStatus = () => {
+  favorited.value = isFavorite(username.value);
+};
+
+// Toggle favorite status
+const toggleFavorite = () => {
+  if (favorited.value) {
+    removeFavorite(username.value);
+  } else {
+    addFavorite(username.value);
+  }
+  favorited.value = !favorited.value;
+  // Emit event for favorites page to update
+  window.dispatchEvent(new CustomEvent('favorites-changed'));
+};
 
 // Create a function to fetch the player data
 const fetchPlayerData = async () => {
@@ -19,6 +38,9 @@ const fetchPlayerData = async () => {
   
   // Get current username from route
   username.value = route.params.username as string;
+  
+  // Check if user is in favorites
+  checkFavoriteStatus();
   
   try {
     // Add cache-busting parameter to prevent API caching
@@ -107,10 +129,35 @@ const fishData = computed(() => playerData.value);
   gap: 10px;
 }
 
+.user-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .user-name h1 {
   margin: 0;
   font-size: 2rem;
   color: var(--text-primary-color);
+}
+
+.favorite-button {
+  background: transparent;
+  border: none;
+  font-size: 1.8rem;
+  padding: 0 5px;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  color: var(--text-secondary-color);
+  line-height: 1;
+}
+
+.favorite-button:hover {
+  transform: scale(1.1);
+}
+
+.favorite-button.favorited {
+  color: #ffd700; /* Gold color for favorited */
 }
 
 .error-message {

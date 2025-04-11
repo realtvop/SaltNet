@@ -127,6 +127,15 @@ onUnmounted(() => {
         >
           <span class="button-icon">📊</span> 我的 B50
         </button>
+        
+        <!-- Add new favorites button -->
+        <button
+          @click="router.push('/favorites')"
+          class="action-button favorites-button"
+        >
+          <span class="button-icon">★</span> 收藏用户
+        </button>
+        
         <button @click="goToSettings" class="action-button settings-button">
           <span class="button-icon">⚙️</span> 设置
         </button>
@@ -240,6 +249,15 @@ onUnmounted(() => {
   background-color: rgba(100, 108, 255, 0.1);
   border-color: #646cff;
   transform: translateY(-2px);
+}
+
+.favorites-button {
+  background-color: #ffd700;
+  color: #000;
+}
+
+.favorites-button:hover {
+  background-color: #ffeb3b;
 }
 
 .button-icon {
