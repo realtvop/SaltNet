@@ -8,10 +8,25 @@ const username = ref(route.params.username as string);
 // Shared state for player info (to be accessible in app.vue)
 const playerInfo = useState("playerInfo");
 
+// Add error state
+const error = ref<string | null>(null);
+
 // Create a function to fetch the player data
 const fetchPlayerData = async () => {
+  error.value = null; // Reset error state
   try {
     const data = await $fetch(`/api/player/${encodeURIComponent(username.value)}`);
+    // Check if the API returned an error message
+    if (typeof data.data === 'string' && data.data === 'user not exists') {
+      error.value = 'User does not exist';
+      playerInfo.value = {
+        name: username.value,
+        data: null,
+        error: 'User does not exist'
+      };
+      return { name: username.value, data: null, error: 'User does not exist' };
+    }
+    
     playerInfo.value = {
       name: data.name || username.value,
       data: data.data,
@@ -21,7 +36,8 @@ const fetchPlayerData = async () => {
     console.error("Error fetching player data:", error);
     return {
       name: username.value,
-      data: null
+      data: null,
+      error: 'Failed to fetch player data'
     };
   }
 };
@@ -50,11 +66,19 @@ const fishData = computed(() => playerInfo.value?.data || null);
 
 <template>
   <div class="player-profile">
-    <!-- SD Scores Section -->
-    <ScoreSection title="旧版本成绩" :scores="fishData?.charts?.sd || []" />
+    <!-- Error Message Display -->
+    <div v-if="error" class="error-message">
+      <h2>{{ error }}</h2>
+      <p>请检查用户名是否正确</p>
+    </div>
 
-    <!-- DX Scores Section -->
-    <ScoreSection title="新版本成绩" :scores="fishData?.charts?.dx || []" />
+    <div v-else>
+      <!-- SD Scores Section -->
+      <ScoreSection v-if="fishData?.charts?.sd" title="旧版本成绩" :scores="fishData.charts.sd || []" />
+
+      <!-- DX Scores Section -->
+      <ScoreSection v-if="fishData?.charts?.dx" title="新版本成绩" :scores="fishData.charts.dx || []" />
+    </div>
   </div>
 </template>
 
@@ -84,9 +108,37 @@ const fishData = computed(() => playerInfo.value?.data || null);
   color: var(--text-primary-color);
 }
 
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--text-error-color, #ff6b6b);
+}
+
+.error-message h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.error-message p {
+  font-size: 1.2rem;
+  color: var(--text-secondary-color, #888);
+}
+
 @media (max-width: 768px) {
   .user-name h1 {
     font-size: 1.8rem;
+  }
+  
+  .error-message h2 {
+    font-size: 1.5rem;
+  }
+  
+  .error-message p {
+    font-size: 1rem;
   }
 }
 </style>

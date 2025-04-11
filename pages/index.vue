@@ -8,6 +8,7 @@ const username = ref("");
 const isLoggedIn = ref(false);
 const playerData = ref<any>(null);
 const isLoading = ref(false);
+const error = ref<string | null>(null); // Add error state
 const router = useRouter();
 
 // Navigate to current user's b50
@@ -25,13 +26,26 @@ const goToSettings = () => {
 // Fetch player data to get the rating
 const fetchPlayerData = async (player: string) => {
   isLoading.value = true;
+  error.value = null; // Reset error state
   try {
     const response = await fetch(`/api/player/${encodeURIComponent(player)}`);
     if (response.ok) {
-      playerData.value = await response.json();
+      const data = await response.json();
+      
+      // Check if the API returned an error message
+      if (data.error || (typeof data.data === 'string' && data.data === 'user not exists')) {
+        error.value = '用户不存在';
+        playerData.value = null;
+        return;
+      }
+      
+      playerData.value = data;
+    } else {
+      error.value = '数据获取失败';
     }
   } catch (error) {
     console.error("Error fetching player data:", error);
+    error.value = '数据获取失败';
   } finally {
     isLoading.value = false;
   }
@@ -97,6 +111,9 @@ onUnmounted(() => {
       </div>
       <div v-else-if="isLoggedIn && isLoading" class="loading-text">
         加载中...
+      </div>
+      <div v-else-if="isLoggedIn && error" class="error-text">
+        {{ error }}
       </div>
       <div v-else class="loading-text">
         <span>请在设置中设置水鱼账号名</span>
@@ -172,6 +189,12 @@ onUnmounted(() => {
 
 .loading-text {
   color: var(--text-secondary-color);
+  margin-bottom: 25px;
+  font-size: 1.1rem;
+}
+
+.error-text {
+  color: red;
   margin-bottom: 25px;
   font-size: 1.1rem;
 }
