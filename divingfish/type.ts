@@ -15,6 +15,38 @@ export interface DivingFishFullRecord {
   type: 'DX' | 'SD';
 }
 
+// Basic song info from /music_data
+export interface BasicInfo {
+  title: string;
+  artist: string;
+  genre: string;
+  bpm: number;
+  release_date: string;
+  from: string;
+  is_new: boolean; // Key field for B50 calculation
+}
+
+// Chart specific info from /music_data
+export interface ChartInfo {
+  notes: number[];
+  charter: string;
+}
+
+// Structure for a single song from /music_data
+export interface MusicInfo {
+  id: string; // Song ID as string
+  title: string;
+  type: 'DX' | 'SD';
+  ds: number[]; // Array of difficulties (Basic to Re:Master)
+  level: string[]; // Array of level strings
+  cids: number[];
+  charts: ChartInfo[];
+  basic_info: BasicInfo;
+}
+
+// Response from /music_data endpoint
+export type MusicDataResponse = MusicInfo[];
+
 // Successful response from DivingFish API (/dev/player/records)
 export interface DivingFishResponse {
   // User info from /dev/player/records
@@ -27,10 +59,10 @@ export interface DivingFishResponse {
   // Full records list
   records: DivingFishFullRecord[];
 
-  // Calculated Best 50 charts
-  b50: {
-    dx: DivingFishFullRecord[]; // Best 15 DX
-    sd: DivingFishFullRecord[]; // Best 35 SD
+  // Calculated Best 50 charts - Now optional as calculation moves to API endpoint
+  b50?: {
+    dx: DivingFishFullRecord[]; // Best 15 New Version (based on is_new)
+    sd: DivingFishFullRecord[]; // Best 35 Old Version (based on is_new)
   };
 
   // Potentially other fields like user_id, user_data if needed, but not standard in /dev/player/records

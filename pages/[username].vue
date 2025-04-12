@@ -3,24 +3,32 @@ import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData, useState } from '#app';
 import ScoreSection from '~/components/ScoreSection.vue';
-import RatingPlate from '~/components/RatingPlate.vue'; // Assuming you have this component
 import type { DivingFishResponse } from '~/divingfish/type';
+
+// Define the expected structure from the API endpoint
+interface PlayerApiResponse {
+  name: string;
+  data: DivingFishResponse | null;
+  error?: string;
+}
 
 const route = useRoute();
 const username = ref(route.params.username as string);
-const isLoading = ref(true);
-const error = ref<string | null>(null);
+const error = ref<string | null>(null); // Keep error state
 
 // Use useState for server-side rendering and client-side hydration
-const playerData = useState<{ name: string; data: DivingFishResponse | null; error?: string } | null>(`player-${username.value}`, () => null);
+const playerData = useState<PlayerApiResponse | null>(`player-${username.value}`, () => null);
 
 // Fetch data using useAsyncData for SSR and client-side fetching/hydration
-const { data: fetchedData, pending, error: fetchError, refresh } = useAsyncData(
+// 'pending' ref now controls the loading state
+const { data: fetchedData, pending, error: fetchError, refresh } = useAsyncData<PlayerApiResponse>(
   `player-data-${username.value}`,
   () => $fetch(`/api/player/${encodeURIComponent(username.value)}`),
   {
     watch: [username], // Re-run fetch when username changes
     immediate: true,   // Fetch immediately on component load/activation
+    // Default value helps prevent accessing null before first fetch completes
+    default: () => ({ name: username.value, data: null, error: undefined })
   }
 );
 
@@ -28,36 +36,35 @@ const { data: fetchedData, pending, error: fetchError, refresh } = useAsyncData(
 watch(fetchedData, (newData) => {
   if (newData) {
     playerData.value = newData;
+    // Set error based on API response error, clear local error if API call succeeded but returned an error message
     error.value = newData.error || null;
-    // Update global state if needed (ensure this doesn't cause infinite loops)
+    // Update global state if needed
     const globalPlayerInfo = useState<{ name: string; data: DivingFishResponse | null }>('playerInfo');
-    if (globalPlayerInfo.value?.name !== newData.name || globalPlayerInfo.value?.data !== newData.data) {
-       globalPlayerInfo.value = { name: newData.name, data: newData.data };
+    if (newData.data && (globalPlayerInfo.value?.name !== newData.name || globalPlayerInfo.value?.data !== newData.data)) {
+      globalPlayerInfo.value = { name: newData.name, data: newData.data };
+    } else if (!newData.data && newData.error) {
+      globalPlayerInfo.value = { name: newData.name, data: null };
     }
   } else {
-    playerData.value = null;
-    error.value = 'Failed to load player data.';
+    // If newData is null after fetch (shouldn't happen with default), reset state
+    playerData.value = { name: username.value, data: null, error: undefined };
+    error.value = null; // Clear potential previous error
+    const globalPlayerInfo = useState<{ name: string; data: DivingFishResponse | null }>('playerInfo');
+    globalPlayerInfo.value = { name: username.value, data: null };
   }
-  isLoading.value = false; // Update loading state when data arrives or fetch fails
 }, { immediate: true });
 
-// Update loading state based on pending status
-watch(pending, (newPending) => {
-  isLoading.value = newPending;
-});
-
-// Update error state based on fetchError
+// Update error state based on actual fetchError (network issues, 500 errors not caught by API)
 watch(fetchError, (newError) => {
-  if (newError) {
-    // Try to extract a meaningful message
-    const message = newError.data?.error || newError.message || 'An unknown error occurred';
+  if (newError && !error.value) { // Only set if not already set by API response error
+    // Try to extract a meaningful message from the fetch error itself
+    const message = newError.data?.error || newError.message || 'Failed to connect to server.';
     error.value = message;
-    playerData.value = { name: username.value, data: null, error: message }; // Clear data on error
-  } else {
-    // Clear error if fetch succeeds on retry or subsequent fetch
-    // error.value = null; // Only clear if playerData is successfully populated
+    // Ensure playerData reflects the error state if fetch itself failed
+    if (!playerData.value || !playerData.value.error) {
+      playerData.value = { name: username.value, data: null, error: message };
+    }
   }
-  isLoading.value = false; // Ensure loading is false after error
 });
 
 // Watch for route parameter changes to update username and trigger refresh
@@ -66,7 +73,6 @@ watch(() => route.params.username, (newUsername) => {
   if (newName && newName !== username.value) {
     username.value = newName;
     // Reset state before fetching new user
-    isLoading.value = true;
     error.value = null;
     playerData.value = null; // Clear old data
     // useAsyncData will automatically refresh due to the watch on username ref
@@ -74,63 +80,51 @@ watch(() => route.params.username, (newUsername) => {
 });
 
 // Computed property for easier access in the template
-const fishData = computed(() => playerData.value?.data);
+const fishData = computed(() => {
+  // Ensure we return null if playerData itself is null
+  return playerData.value?.data ?? null;
+});
 
 // Computed property for specific error message handling
 const errorMessage = computed(() => {
-  if (error.value === 'user not exists') {
-    return `玩家 "${username.value}" 不存在`;
-  }
-  return error.value || '加载数据时出错';
+  const msg = error.value === 'user not exists'
+    ? `玩家 "${username.value}" 不存在`
+    : error.value || '加载数据时出错'; // Default message if error is set but not 'user not exists'
+  return msg;
 });
 
 </script>
 
 <template>
   <div class="player-profile">
-    <!-- Loading Indicator -->
-    <div v-if="isLoading" class="loading-message">
+    <!-- Loading Indicator: Use 'pending' directly -->
+    <div v-if="pending" class="loading-message">
       <div class="loading-spinner"></div>
       <p>加载中，请稍候...</p>
     </div>
 
-    <!-- Error Message Display -->
+    <!-- Error Message Display: Show if not pending and error is set -->
     <div v-else-if="error" class="error-message">
       <h2>{{ errorMessage }}</h2>
       <p v-if="error !== 'user not exists'">请检查网络连接或稍后再试。</p>
       <p v-else>请检查用户名是否正确。</p>
     </div>
-    <!-- Player Data Display -->
-    <div v-else-if="fishData">
-      <!-- User Header -->
-      <div class="user-header">
-        <div class="user-name">
-          <h1>{{ fishData.nickname || username }}</h1>
-          <RatingPlate
-            v-if="fishData.rating !== undefined && fishData.additional_rating !== undefined"
-            :plate="fishData.plate || ''"
-            :ra="fishData.rating"
-            :additionalRa="fishData.additional_rating"
-            :small="false"
-            class="large-rating-plate"
-          />
-           <p v-else>Rating: N/A</p> <!-- Fallback if rating is missing -->
-        </div>
-      </div>
 
+    <!-- Player Data Display: Show if not pending, no error, and fishData is truthy -->
+    <div v-else-if="fishData" class="player-b50">
       <!-- B50 Scores Section -->
       <ScoreSection v-if="fishData.b50?.sd?.length" title="旧版本成绩" :scores="fishData.b50.sd" />
       <ScoreSection v-if="fishData.b50?.dx?.length" title="新版本成绩" :scores="fishData.b50.dx" />
-
-      <!-- Optional: Display All Scores -->
-      <!-- <ScoreSection v-if="fishData.records?.filter(s => s.type === 'SD').length" title="全部旧版本成绩" :scores="fishData.records.filter(s => s.type === 'SD')" /> -->
-      <!-- <ScoreSection v-if="fishData.records?.filter(s => s.type === 'DX').length" title="全部新版本成绩" :scores="fishData.records.filter(s => s.type === 'DX')" /> -->
-
+      <!-- Message if b50 arrays are empty -->
+      <p v-if="!(fishData.b50?.sd?.length || fishData.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
+        玩家数据已加载，但 B50 成绩为空。
+      </p>
     </div>
-     <!-- Fallback if data is somehow null without error -->
+
+    <!-- Fallback: Show if not pending, no error, and no fishData (API returned null data without error) -->
     <div v-else class="error-message">
       <h2>无法加载玩家数据</h2>
-      <p>请稍后再试。</p>
+      <p>未能获取到有效的玩家信息，请稍后再试或检查用户名。</p>
     </div>
   </div>
 </template>
@@ -139,7 +133,6 @@ const errorMessage = computed(() => {
 .player-profile {
   width: 100%;
   padding-top: 20px;
-  padding-bottom: 40px; /* Add padding at the bottom */
 }
 
 .loading-message,
@@ -164,17 +157,6 @@ const errorMessage = computed(() => {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-.user-name-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.user-name h1 {
-  margin: 0;
-  font-size: 2rem;
-  color: var(--text-primary-color);
-}
 
 .player-b50 {
   padding-bottom: 5vh;
@@ -194,32 +176,4 @@ const errorMessage = computed(() => {
   color: var(--error-color, #ff6b6b);
   margin-bottom: 10px;
 }
-
-.user-header {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.user-name {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px; /* Space between nickname and rating plate */
-}
-
-.user-name h1 {
-  margin: 0;
-  font-size: 2.5rem;
-  color: var(--text-primary-color);
-}
-
-.large-rating-plate {
-  /* Adjust styles for the rating plate in the header if needed */
-  transform: scale(1.1); /* Example: make it slightly larger */
-}
-
-/* Add styles for ScoreSection if needed, or rely on its internal styles */
 </style>
