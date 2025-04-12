@@ -99,7 +99,7 @@ const fishData = computed(() => playerData.value);
       <p>请检查用户名是否正确</p>
     </div>
 
-    <div v-else>
+    <div class="player-b50" v-else>
       <!-- SD Scores Section -->
       <ScoreSection v-if="fishData?.charts?.sd" title="旧版本成绩" :scores="fishData.charts.sd || []" />
 
@@ -141,23 +141,8 @@ const fishData = computed(() => playerData.value);
   color: var(--text-primary-color);
 }
 
-.favorite-button {
-  background: transparent;
-  border: none;
-  font-size: 1.8rem;
-  padding: 0 5px;
-  cursor: pointer;
-  transition: transform 0.2s, color 0.2s;
-  color: var(--text-secondary-color);
-  line-height: 1;
-}
-
-.favorite-button:hover {
-  transform: scale(1.1);
-}
-
-.favorite-button.favorited {
-  color: #ffd700; /* Gold color for favorited */
+.player-b50 {
+  padding-bottom: 5vh;
 }
 
 .error-message {
