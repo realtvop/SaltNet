@@ -1,52 +1,62 @@
-import { FCStatus, FSStatus } from './maiTypes'
-
-// API error responses
-export interface DivingFishApiError {
-  message: string // For 400 Bad Request
-  status?: string // For 403 Forbidden
-  msg?: string // For 403 Forbidden
+// Structure for a single record from the /dev/player/records endpoint
+export interface DivingFishFullRecord {
+  achievements: number;
+  ds: number;
+  dxScore: number;
+  fc: string; // '', 'fc', 'fcp', 'ap', 'app'
+  fs: string; // '', 'fs', 'fsd', 'fsdp'
+  level: string;
+  level_index: number; // 0-4 (Basic to Re:Master)
+  level_label: string; // Basic, Advanced, Expert, Master, Re:Master
+  ra: number; // Single song rating
+  rate: string; // 'd', 'c', 'b', 'bb', 'bbb', 'a', 'aa', 'aaa', 's', 'sp', 'ss', 'ssp', 'sss', 'sssp'
+  song_id: number;
+  title: string;
+  type: 'DX' | 'SD';
 }
 
-// Music chart data from DivingFish API
-export interface DivingFishMusicChart {
-  // Score and rating info
-  achievements: number // Achievement percentage (0-100.5)
-  ra: number // Rating value calculated from difficulty and achievement
-  dxScore: number // DX score points
-  rate: string // Letter grade (e.g. SSS+, SS, S)
-
-  // Chart details
-  ds: number // Chart difficulty stars
-  level: string // Difficulty level (e.g. "13+")
-  level_index: number // Internal difficulty value
-  level_label: string // Difficulty label
-
-  // Song info
-  song_id: number
-  title: string
-  type: string // Standard or DX chart
-
-  // Clear status
-  fc: FCStatus // Full combo status
-  fs: FSStatus // Full sync status
-}
-
-// Successful response from DivingFish API
+// Successful response from DivingFish API (/dev/player/records)
 export interface DivingFishResponse {
-  // User info
-  username: string // maimai DX NET username
-  nickname: string // In-game display name
-  user_id: unknown | null // Player ID
-  user_data: unknown | null // Additional user data
+  // User info from /dev/player/records
+  username: string;
+  nickname: string;
+  plate: string | null; // Plate might be null
+  additional_rating: number; // 段位
+  rating: number; // Overall rating
 
-  // Rating info
-  rating: number // Current rating
-  additional_rating: number // Additional rating points
-  plate: string // Current name plate
+  // Full records list
+  records: DivingFishFullRecord[];
 
-  // Best 50 charts
-  charts: {
-    dx: Array<DivingFishMusicChart> // DX chart scores
-    sd: Array<DivingFishMusicChart> // Standard chart scores
-  }
+  // Calculated Best 50 charts
+  b50: {
+    dx: DivingFishFullRecord[]; // Best 15 DX
+    sd: DivingFishFullRecord[]; // Best 35 SD
+  };
+
+  // Potentially other fields like user_id, user_data if needed, but not standard in /dev/player/records
+  user_id?: unknown | null;
+  user_data?: unknown | null;
+}
+
+// Structure for a single chart score (used by /query/player, kept for potential compatibility or future use)
+export interface DivingFishMusicChart {
+  achievements: number;
+  ds: number;
+  dxScore: number;
+  fc: string;
+  fs: string;
+  level: string;
+  level_index: number;
+  level_label: string;
+  ra: number;
+  rate: string;
+  song_id: number;
+  title: string;
+  type: 'DX' | 'SD';
+}
+
+// Error response structure (example)
+export interface DivingFishErrorResponse {
+  message: string;
+  status?: string; // Optional status field
 }
