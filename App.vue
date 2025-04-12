@@ -2,6 +2,8 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import RatingPlate from "./components/RatingPlate.vue";
 import { useRouter, useRoute } from 'vue-router';
+// Import getSetting and SETTINGS
+import { isFavorite, addFavorite, removeFavorite, getSetting, SETTINGS } from './utils/userSettings';
 
 // Search input ref
 const searchInput = ref('');
@@ -21,8 +23,13 @@ const route = useRoute();
 
 // Compute if player info should be displayed
 const showPlayerInfo = computed(() => {
-  // Only show on username routes (not homepage or settings)
-  return !shouldShowHomepage.value && !isSettingsPage.value;
+  // Only show on username routes (not homepage, settings, or /SaltNet/*)
+  const path = currentPath.value;
+  const isHomepage = path === '/' || path === '';
+  const isSettings = path === '/settings';
+  const isSaltNetPath = path.startsWith('/SaltNet/'); // Exclude /SaltNet/* paths
+
+  return !isHomepage && !isSettings && !isSaltNetPath;
 });
 
 // Get username from URL path for initial display
@@ -32,6 +39,9 @@ const usernameFromURL = computed(() => {
   }
   return '';
 });
+
+// Get logged-in username from settings
+const loggedInUsername = computed(() => getSetting<string>(SETTINGS.USERNAME));
 
 // Check if player data has fully loaded
 const playerDataLoaded = computed(() => {
@@ -141,6 +151,43 @@ const handleKeyPress = (event: KeyboardEvent) => {
     navigateToPlayer();
   }
 };
+
+// Add favorite functionality
+const favorited = ref(false);
+
+// Check favorite status when route or player info changes
+watch(
+  [() => route.path, () => playerInfo.value.name],
+  () => {
+    if (showPlayerInfo.value && usernameFromURL.value) {
+      favorited.value = isFavorite(usernameFromURL.value);
+    }
+  },
+  { immediate: true }
+);
+
+// Toggle favorite status
+const toggleFavorite = () => {
+  const username = usernameFromURL.value;
+  // Prevent adding self to favorites (double check)
+  if (!username || username === loggedInUsername.value) return;
+
+  // Prevent adding favorites for users that don't exist
+  if (!favorited.value && !playerDataLoaded.value) {
+    // User doesn't exist or data isn't loaded yet
+    return;
+  }
+  
+  if (favorited.value) {
+    removeFavorite(username);
+  } else {
+    addFavorite(username);
+  }
+  favorited.value = !favorited.value;
+  
+  // Notify favorites page to update if it exists
+  window.dispatchEvent(new CustomEvent('favorites-changed'));
+};
 </script>
 
 <template>
@@ -162,7 +209,20 @@ const handleKeyPress = (event: KeyboardEvent) => {
             <h2 class="app-title">
               {{ playerDataLoaded ? playerInfo.data.nickname : usernameFromURL }}
             </h2>
-            <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
+            <div class="player-stats">
+              <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
+              <!-- Add favorite button - hide if it's the logged-in user's profile -->
+              <button 
+                v-if="usernameFromURL && usernameFromURL !== loggedInUsername"
+                @click="toggleFavorite" 
+                class="favorite-button" 
+                :class="{ 'favorited': favorited, 'disabled': !playerDataLoaded && !favorited }"
+                :title="favorited ? '取消收藏' : (playerDataLoaded ? '添加收藏' : '无法收藏不存在的用户')"
+                :disabled="!playerDataLoaded && !favorited"
+              >
+                {{ favorited ? '★' : '☆' }}
+              </button>
+            </div>
           </div>
           
           <h2 v-if="shouldShowHomepage" class="app-title">SaltNet</h2>
@@ -235,7 +295,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .app-icon:hover {
-  transform: scale(1.1);
+  /* transform: scale(1.1); */ /* Removed this line */
 }
 
 .favicon-icon {
@@ -249,6 +309,45 @@ const handleKeyPress = (event: KeyboardEvent) => {
   gap: 10px;
   padding-left: 10px;
   /* border-left: 1px solid var(--border-color); */
+}
+
+.player-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.favorite-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0 5px;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  color: var(--text-secondary-color);
+  outline: none !important; /* Remove outline */
+}
+
+.favorite-button:hover {
+  transform: scale(1.1);
+  border-color: transparent;
+  outline: none !important; /* Ensure no outline on hover */
+}
+
+.favorite-button:focus {
+  outline: none !important; /* Remove outline when focused */
+  box-shadow: none !important; /* Remove any focus shadow */
+}
+
+.favorite-button.favorited {
+  color: #ffd700; /* Gold color for favorited */
+}
+
+.favorite-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .player-name {

@@ -12,6 +12,7 @@ export const SETTINGS = {
     THEME: 'theme',
     LANGUAGE: 'language',
     NOTIFICATIONS: 'notifications',
+    FAVORITES: 'favorites', // Add new setting for favorites
 };
 
 // Define default values for settings
@@ -20,6 +21,7 @@ const DEFAULT_VALUES = {
     [SETTINGS.THEME]: 'auto', // 'light', 'dark', or 'auto'
     [SETTINGS.LANGUAGE]: 'zh_CN',
     [SETTINGS.NOTIFICATIONS]: true,
+    [SETTINGS.FAVORITES]: [], // Default value for favorites
 };
 
 /**
@@ -110,4 +112,52 @@ export function getAllSettings(): Record<string, any> {
         console.error('Error getting all settings:', error);
         return { ...DEFAULT_VALUES };
     }
+}
+
+/**
+ * Get favorites list
+ * @returns An array of favorite usernames
+ */
+export function getFavorites(): string[] {
+    const favorites = getSetting<string[]>(SETTINGS.FAVORITES);
+    return favorites || [];
+}
+
+/**
+ * Add a favorite
+ * @param username - The username to add to favorites
+ * @returns The updated favorites list
+ */
+export function addFavorite(username: string): string[] {
+    const favorites = getFavorites();
+    if (!favorites.includes(username)) {
+        favorites.push(username);
+        setSetting(SETTINGS.FAVORITES, favorites);
+    }
+    return favorites;
+}
+
+/**
+ * Remove a favorite
+ * @param username - The username to remove from favorites
+ * @returns The updated favorites list
+ */
+export function removeFavorite(username: string): string[] {
+    const favorites = getFavorites();
+    const index = favorites.indexOf(username);
+    if (index !== -1) {
+        favorites.splice(index, 1);
+        setSetting(SETTINGS.FAVORITES, favorites);
+    }
+    return favorites;
+}
+
+/**
+ * Check if a user is favorited
+ * @param username - The username to check
+ * @returns True if the user is favorited, false otherwise
+ */
+export function isFavorite(username: string): boolean {
+    const favorites = getFavorites();
+    return favorites.includes(username);
 }

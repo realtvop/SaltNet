@@ -100,7 +100,6 @@ const errorMessage = computed(() => {
       <p v-if="error !== 'user not exists'">请检查网络连接或稍后再试。</p>
       <p v-else>请检查用户名是否正确。</p>
     </div>
-
     <!-- Player Data Display -->
     <div v-else-if="fishData">
       <!-- User Header -->
@@ -164,6 +163,31 @@ const errorMessage = computed(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+.user-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-name h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: var(--text-primary-color);
+}
+
+.player-b50 {
+  padding-bottom: 5vh;
+}
+
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--text-error-color, #ff6b6b);
 }
 
 .error-message h2 {

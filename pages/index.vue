@@ -20,7 +20,7 @@ const viewMyB50 = () => {
 
 // Add navigation function for settings
 const goToSettings = () => {
-  router.push("/settings");
+  router.push("/SaltNet/settings");
 };
 
 // Fetch player data to get the rating
@@ -127,6 +127,15 @@ onUnmounted(() => {
         >
           <span class="button-icon">📊</span> 我的 B50
         </button>
+        
+        <!-- Add new favorites button -->
+        <button
+          @click="router.push('/SaltNet/favorites')"
+          class="action-button favorites-button"
+        >
+          <span class="button-icon">★</span> 收藏用户
+        </button>
+        
         <button @click="goToSettings" class="action-button settings-button">
           <span class="button-icon">⚙️</span> 设置
         </button>
@@ -227,7 +236,7 @@ onUnmounted(() => {
 
 .b50-button:hover {
   background-color: #646cff;
-  transform: translateY(-2px);
+  /* transform: translateY(-2px); */
 }
 
 .settings-button {
@@ -239,7 +248,16 @@ onUnmounted(() => {
 .settings-button:hover {
   background-color: rgba(100, 108, 255, 0.1);
   border-color: #646cff;
-  transform: translateY(-2px);
+  /* transform: translateY(-2px); */
+}
+
+.favorites-button {
+  background-color: #ffd700;
+  color: #000;
+}
+
+.favorites-button:hover {
+  background-color: #ffeb3b;
 }
 
 .button-icon {
