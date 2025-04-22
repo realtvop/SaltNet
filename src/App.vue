@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, provide } from 'vue';
-import { useRoute } from 'vue-router';
-import * as TopAppBar from './components/TopAppBar.vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const playerInfo = ref({
   name: '',
@@ -10,20 +9,21 @@ const playerInfo = ref({
 
 provide('playerInfo', playerInfo);
 const route = useRoute();
+const router = useRouter();
 </script>
 
 <template>
   <mdui-layout>
     <!-- <component :is="TopAppBar.default" :playerInfo="playerInfo"/> -->
     <mdui-navigation-bar :value="route.path">
-      <mdui-navigation-bar-item icon="home" value="/" href="/">首页</mdui-navigation-bar-item>
-      <mdui-navigation-bar-item icon="people" value="/users" href="/users">用户</mdui-navigation-bar-item>
-      <mdui-navigation-bar-item icon="info" value="/about" href="/about">关于</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">用户</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="info" value="/about" @click="router.push('/about')">关于</mdui-navigation-bar-item>
     </mdui-navigation-bar>
     <mdui-navigation-rail :value="route.path">
-      <mdui-navigation-rail-item icon="home" value="/" href="/">首页</mdui-navigation-rail-item>
-      <mdui-navigation-rail-item icon="people" value="/users" href="/users">用户</mdui-navigation-rail-item>
-      <mdui-navigation-rail-item icon="info" value="/about" href="/about">关于</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">用户</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="info" value="/about" @click="router.push('/about')">关于</mdui-navigation-rail-item>
     </mdui-navigation-rail>
 
     <mdui-layout-main class="app-container">
