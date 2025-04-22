@@ -101,32 +101,6 @@ onUnmounted(() => {
       </div>
     </mdui-card>
 
-    <div class="user-action-buttons">
-      <mdui-button
-        variant="filled"
-        icon="insights"
-        @click="viewMyB50"
-        :disabled="!isLoggedIn || error"
-      >
-        我的 B50
-      </mdui-button>
-
-      <mdui-button
-        variant="tonal"
-        icon="star_outline"
-        @click="goToFavorites"
-      >
-        收藏用户
-      </mdui-button>
-
-      <mdui-button
-        icon="settings"
-        @click="goToSettings"
-      >
-        设置
-      </mdui-button>
-    </div>
-
     <div class="github-footer">
        <mdui-chip
           variant="outlined"
@@ -196,15 +170,6 @@ onUnmounted(() => {
 }
 .loading-text a:hover {
   color: var(--mdui-color-primary-hover);
-}
-
-.user-action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 20px; /* Restore gap */
-  width: 100%;
-  max-width: 600px;
-  flex-wrap: wrap;
 }
 
 .github-footer {
