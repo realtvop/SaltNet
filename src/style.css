@@ -4,8 +4,9 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Let mdui handle colors */
+  /* color: rgba(255, 255, 255, 0.87); */
+  /* background-color: #242424; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,21 +14,36 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
+/* Remove conflicting body styles */
+/* body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+} */
+
+/* Keep body margin reset if needed, mdui might handle this too */
+body {
+  margin: 0;
+}
+
+/* Remove conflicting #app styles */
+/* #app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+} */
+
+/* Remove other potentially conflicting styles */
+/* a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {
@@ -56,16 +72,10 @@ button:focus-visible {
 
 .card {
   padding: 2em;
-}
+} */
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-@media (prefers-color-scheme: light) {
+/* Keep light theme adjustments if needed, but mdui handles themes */
+/* @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
     background-color: #ffffff;
@@ -76,4 +86,4 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */
