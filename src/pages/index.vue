@@ -107,7 +107,7 @@ onUnmounted(() => {
         variant="filled"
         icon="insights"
         @click="viewMyB50"
-        :disabled="!isLoggedIn || isLoading || error || !playerData"
+        :disabled="!isLoggedIn || error"
       >
         我的 B50
       </mdui-button>

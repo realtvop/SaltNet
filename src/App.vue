@@ -14,7 +14,7 @@ const route = useRoute();
 
 <template>
   <mdui-layout>
-    <component :is="TopAppBar.default" :playerInfo="playerInfo" style = "position: fixed !important;"/>
+    <component :is="TopAppBar.default" :playerInfo="playerInfo"/>
     <mdui-layout-main class="app-container">
       <!-- Router View -->
       <router-view v-slot="{ Component }">
