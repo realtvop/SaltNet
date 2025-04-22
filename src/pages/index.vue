@@ -1,92 +1,83 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import { getSetting, SETTINGS } from "../utils/userSettings";
-import RatingPlate from "../components/RatingPlate.vue";
+import { getSetting, SETTINGS } from "@/utils/userSettings"; // Use @ alias
+import RatingPlate from "@/components/RatingPlate.vue"; // Use @ alias
 import { useRouter } from "vue-router";
+import { fetchPlayerData as fetchDivingFishData } from "@/divingfish/index"; // Import the correct fetch function
+import type { DivingFishResponse } from "@/divingfish/type"; // Import type
 
 const username = ref("");
 const isLoggedIn = ref(false);
-const playerData = ref<any>(null);
+// Update playerData type to match DivingFishResponse
+const playerData = ref<DivingFishResponse | null>(null);
 const isLoading = ref(false);
-const error = ref<string | null>(null); // Add error state
+const error = ref<string | null>(null);
 const router = useRouter();
 
-// Navigate to current user's b50
+// Navigate to current user's b50 page
 const viewMyB50 = () => {
   if (username.value) {
-    router.push(`/${encodeURIComponent(username.value)}`);
+    // Use the correct route path defined in router/index.ts
+    router.push(`/user/${encodeURIComponent(username.value)}`);
   }
 };
 
-// Add navigation function for settings
+// Navigate to settings page
 const goToSettings = () => {
-  router.push("/SaltNet/settings");
+  // Use the correct route path defined in router/index.ts
+  router.push("/settings");
 };
 
-// Fetch player data to get the rating
+// Fetch player data using the imported function
 const fetchPlayerData = async (player: string) => {
   isLoading.value = true;
-  error.value = null; // Reset error state
+  error.value = null;
+  playerData.value = null; // Clear previous data
   try {
-    const response = await fetch(`/api/player/${encodeURIComponent(player)}`);
-    if (response.ok) {
-      const data = await response.json();
-      
-      // Check if the API returned an error message
-      if (data.error || (typeof data.data === 'string' && data.data === 'user not exists')) {
-        error.value = '用户不存在';
-        playerData.value = null;
-        return;
-      }
-      
-      playerData.value = data;
+    // Use the imported fetch function from divingfish/index.ts
+    const data = await fetchDivingFishData(player);
+    playerData.value = data;
+  } catch (err: any) {
+    console.error("Error fetching player data:", err);
+    // Handle specific errors like 'user not exists'
+    if (err.message === 'user not exists') {
+      error.value = '用户不存在';
     } else {
       error.value = '数据获取失败';
     }
-  } catch (error) {
-    console.error("Error fetching player data:", error);
-    error.value = '数据获取失败';
+    playerData.value = null; // Ensure data is null on error
   } finally {
     isLoading.value = false;
   }
 };
 
-// Handler for settings-changed event
+// Handler for settings-changed event (keep using window event for now)
 const handleSettingsChanged = () => {
-  // Get updated username from userSettings
   const savedUsername = getSetting<string>(SETTINGS.USERNAME);
-  
-  // Check if username changed
   if (savedUsername !== username.value) {
     username.value = savedUsername || "";
     isLoggedIn.value = !!savedUsername;
-    
     if (savedUsername) {
-      // Re-fetch player data with new username
       fetchPlayerData(savedUsername);
     } else {
-      // Clear player data if username was removed
       playerData.value = null;
+      error.value = null; // Clear error if logged out
     }
   }
 };
 
-// Check if user is logged in and get username from settings
+// onMounted: Get username and fetch data
 onMounted(async () => {
-  // Get username from userSettings utility
   const savedUsername = getSetting<string>(SETTINGS.USERNAME);
   if (savedUsername) {
     username.value = savedUsername;
     isLoggedIn.value = true;
-    // Fetch player data to get the rating
     await fetchPlayerData(savedUsername);
   }
-  
-  // Add event listener for settings changes
   window.addEventListener('settings-changed', handleSettingsChanged);
 });
 
-// Clean up event listener
+// onUnmounted: Clean up event listener
 onUnmounted(() => {
   window.removeEventListener('settings-changed', handleSettingsChanged);
 });
@@ -94,17 +85,15 @@ onUnmounted(() => {
 
 <template>
   <div class="homepage-container">
-    <!-- Welcome section without background -->
     <div class="user-welcome-section">
       <h2 class="welcome-text">欢迎，{{ isLoggedIn ? username : "wmc" }}</h2>
 
-      <!-- Display larger DX Rating when user is logged in and data is available -->
       <div
-        v-if="isLoggedIn && playerData && playerData.data"
+        v-if="isLoggedIn && playerData"
         class="rating-container"
       >
         <RatingPlate
-          :ra="playerData.data.rating"
+          :ra="playerData.rating"
           :small="false"
           class="large-rating"
         />
@@ -124,25 +113,24 @@ onUnmounted(() => {
           v-if="isLoggedIn"
           @click="viewMyB50"
           class="action-button b50-button"
+          :disabled="isLoading || error || !playerData"
         >
           <span class="button-icon">📊</span> 我的 B50
         </button>
-        
-        <!-- Add new favorites button -->
+
         <button
-          @click="router.push('/SaltNet/favorites')"
+          @click="router.push('/favorites')"
           class="action-button favorites-button"
         >
           <span class="button-icon">★</span> 收藏用户
         </button>
-        
+
         <button @click="goToSettings" class="action-button settings-button">
           <span class="button-icon">⚙️</span> 设置
         </button>
       </div>
     </div>
-    
-    <!-- GitHub link footer -->
+
     <div class="github-footer">
       <a href="https://github.com/realtvop/SaltNet" target="_blank" rel="noopener noreferrer" class="github-pill">
         <span class="github-icon">
@@ -262,6 +250,19 @@ onUnmounted(() => {
 
 .button-icon {
   font-size: 1.3rem;
+}
+
+.loading-text a {
+  color: #646cff;
+  text-decoration: underline;
+}
+.loading-text a:hover {
+  color: #535bf2;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* GitHub footer styles */
