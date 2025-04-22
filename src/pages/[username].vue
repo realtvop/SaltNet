@@ -24,7 +24,24 @@ const loadPlayerData = async (name: string) => {
 
   try {
     const response = await fetchPlayerData(name);
-    playerData.value = response; // Assuming fetchPlayerData returns DivingFishResponse directly
+    // 兼容API返回 charts 字段为 b50
+    if ((response as any).charts) {
+      (response as any).b50 = (response as any).charts;
+    }
+    playerData.value = response;
+    // 检查b50为空但API返回了message字段，提示隐私或未同意协议
+    if (
+      (!response.b50 ||
+        ((!response.b50.sd || response.b50.sd.length === 0) && (!response.b50.dx || response.b50.dx.length === 0))
+      ) && (response as any).message
+    ) {
+      error.value = (response as any).message;
+      playerData.value = null;
+      if (globalPlayerInfo) {
+        globalPlayerInfo.value = { name: name, data: null };
+      }
+      return;
+    }
     if (globalPlayerInfo) {
       globalPlayerInfo.value = { name: name, data: response }; // Update global state
     }
@@ -100,7 +117,11 @@ const errorMessage = computed(() => {
 <style scoped>
 .player-profile {
   width: 100%;
-  padding-top: 20px;
+  /* padding-top: 80px; */ /* 移除此行，由 App.vue 的 content-padding 处理 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .loading-message,
@@ -126,6 +147,9 @@ const errorMessage = computed(() => {
 }
 
 .player-b50 {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
   padding-bottom: 5vh;
 }
 
