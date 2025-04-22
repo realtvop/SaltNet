@@ -6,10 +6,10 @@ import { useRouter } from "vue-router";
 import { fetchPlayerData as fetchDivingFishData } from "@/divingfish/index";
 import type { DivingFishResponse } from "@/divingfish/type";
 // Import MDUI icons
-import '@mdui/icons/insights--outlined.js';
-import '@mdui/icons/star-outline--outlined.js';
-import '@mdui/icons/settings--outlined.js';
-import '@mdui/icons/link--outlined.js'; // For GitHub link
+import '@mdui/icons/insights.js';
+import '@mdui/icons/star-outline.js';
+import '@mdui/icons/settings.js';
+import '@mdui/icons/link.js'; // For GitHub link
 
 const username = ref("");
 const isLoggedIn = ref(false);
@@ -105,7 +105,7 @@ onUnmounted(() => {
     <div class="user-action-buttons">
       <mdui-button
         variant="filled"
-        icon="insights--outlined"
+        icon="insights"
         @click="viewMyB50"
         :disabled="!isLoggedIn || isLoading || error || !playerData"
       >
@@ -114,14 +114,14 @@ onUnmounted(() => {
 
       <mdui-button
         variant="tonal"
-        icon="star_outline--outlined"
+        icon="star_outline"
         @click="goToFavorites"
       >
         收藏用户
       </mdui-button>
 
       <mdui-button
-        icon="settings--outlined"
+        icon="settings"
         @click="goToSettings"
       >
         设置
@@ -131,7 +131,7 @@ onUnmounted(() => {
     <div class="github-footer">
        <mdui-chip
           variant="outlined"
-          icon="link--outlined"
+          icon="link"
           href="https://github.com/realtvop/SaltNet"
           target="_blank"
         >
