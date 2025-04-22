@@ -14,7 +14,18 @@ const route = useRoute();
 
 <template>
   <mdui-layout>
-    <component :is="TopAppBar.default" :playerInfo="playerInfo"/>
+    <!-- <component :is="TopAppBar.default" :playerInfo="playerInfo"/> -->
+    <mdui-navigation-bar :value="route.path">
+      <mdui-navigation-bar-item icon="home" value="/" href="/">首页</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="people" value="/users" href="/users">用户</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="info" value="/about" href="/about">关于</mdui-navigation-bar-item>
+    </mdui-navigation-bar>
+    <mdui-navigation-rail :value="route.path">
+      <mdui-navigation-rail-item icon="home" value="/" href="/">首页</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="people" value="/users" href="/users">用户</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="info" value="/about" href="/about">关于</mdui-navigation-rail-item>
+    </mdui-navigation-rail>
+
     <mdui-layout-main class="app-container">
       <!-- Router View -->
       <router-view v-slot="{ Component }">
@@ -28,7 +39,25 @@ const route = useRoute();
 .app-container {
   padding: 16px;
   box-sizing: border-box;
-  /* Removed fixed height and overflow-y */
+  height: 100%; /* Take remaining height */
+  overflow-y: auto; /* Enable scrolling within this container */
+}
+
+mdui-navigation-bar,
+mdui-navigation-rail {
+  position: fixed !important;
+}
+
+@media (min-aspect-ratio: 1.001/1) {
+  mdui-navigation-bar {
+    display: none;
+  }
+}
+
+@media (max-aspect-ratio: 0.999/1) or (aspect-ratio: 1/1) {
+  mdui-navigation-rail {
+    display: none;
+  }
 }
 
 .player-info-bar {
@@ -63,7 +92,6 @@ const route = useRoute();
   .player-info-bar {
      gap: 4px;
   }
-  /* Removed height adjustment for .app-container */
 }
 </style>
 
@@ -76,6 +104,7 @@ body {
   width: 100%;
   min-height: 100vh;
   display: block;
+  overflow: hidden; /* Prevent body scroll */
 }
 
 button {
