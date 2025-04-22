@@ -5,11 +5,6 @@ import RatingPlate from "@/components/RatingPlate.vue";
 import { useRouter } from "vue-router";
 import { fetchPlayerData as fetchDivingFishData } from "@/divingfish/index";
 import type { DivingFishResponse } from "@/divingfish/type";
-// Import MDUI icons
-import '@mdui/icons/insights.js';
-import '@mdui/icons/star-outline.js';
-import '@mdui/icons/settings.js';
-import '@mdui/icons/link.js'; // For GitHub link
 
 const username = ref("");
 const isLoggedIn = ref(false);
@@ -83,6 +78,10 @@ onUnmounted(() => {
 
 <template>
   <div class="page-content">
+    <div class="header-content">
+      <img src="/favicon.png" alt="Favicon" class="favicon-image" />
+      <h1 variant="display-large" class="project-title">SaltNet</h1>
+    </div>
     <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px;">
       <div style="padding: 20px; text-align: center;">
         <mdui-typography variant="headline-medium" class="welcome-text">
@@ -143,6 +142,24 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.favicon-image {
+  width: 120px; /* Increased size further */
+  height: 120px; /* Increased size further */
+  margin-bottom: 15px; /* Adjusted spacing */
+}
+
+.project-title {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .page-content {
   display: flex;
   flex-direction: column;
