@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  mdui:
+    specifier: ^2.1.3
+    version: registry.npmjs.org/mdui@2.1.3
   vue:
     specifier: ^3.5.13
     version: registry.npmjs.org/vue@3.5.13(typescript@5.7.3)
@@ -336,10 +339,65 @@ packages:
     dev: true
     optional: true
 
+  registry.npmjs.org/@floating-ui/utils@0.2.9:
+    resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.9.tgz}
+    name: '@floating-ui/utils'
+    version: 0.2.9
+    dev: false
+
   registry.npmjs.org/@jridgewell/sourcemap-codec@1.5.0:
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.0.tgz}
     name: '@jridgewell/sourcemap-codec'
     version: 1.5.0
+
+  registry.npmjs.org/@lit-labs/ssr-dom-shim@1.3.0:
+    resolution: {integrity: sha512-nQIWonJ6eFAvUUrSlwyHDm/aE8PBDu5kRpL0vHMg6K8fK3Diq1xdPjTnsJSwxABhaZ+5eBi1btQB5ShUTKo4nQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@lit-labs/ssr-dom-shim/-/ssr-dom-shim-1.3.0.tgz}
+    name: '@lit-labs/ssr-dom-shim'
+    version: 1.3.0
+    dev: false
+
+  registry.npmjs.org/@lit/localize@0.12.2:
+    resolution: {integrity: sha512-Qv9kvgJKDq/JVSwXOxuWvQnnOBysHA99ti9im9a4fImCmx+fto+XXcUYQbjZHqiueEEc4V20PcRDPO+1g/6seQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@lit/localize/-/localize-0.12.2.tgz}
+    name: '@lit/localize'
+    version: 0.12.2
+    dependencies:
+      lit: registry.npmjs.org/lit@3.3.0
+    dev: false
+
+  registry.npmjs.org/@lit/reactive-element@2.1.0:
+    resolution: {integrity: sha512-L2qyoZSQClcBmq0qajBVbhYEcG6iK0XfLn66ifLe/RfC0/ihpc+pl0Wdn8bJ8o+hj38cG0fGXRgSS20MuXn7qA==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@lit/reactive-element/-/reactive-element-2.1.0.tgz}
+    name: '@lit/reactive-element'
+    version: 2.1.0
+    dependencies:
+      '@lit-labs/ssr-dom-shim': registry.npmjs.org/@lit-labs/ssr-dom-shim@1.3.0
+    dev: false
+
+  registry.npmjs.org/@material/material-color-utilities@0.3.0:
+    resolution: {integrity: sha512-ztmtTd6xwnuh2/xu+Vb01btgV8SQWYCaK56CkRK8gEkWe5TuDyBcYJ0wgkMRn+2VcE9KUmhvkz+N9GHrqw/C0g==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@material/material-color-utilities/-/material-color-utilities-0.3.0.tgz}
+    name: '@material/material-color-utilities'
+    version: 0.3.0
+    dev: false
+
+  registry.npmjs.org/@mdui/jq@3.0.2:
+    resolution: {integrity: sha512-Er6cvAgW4RrjWrMBJDnajIiPD99EPYmAWyIgQURhUtO2V1NQQ80oLDo9ILllMoj1idsi1G4EQEqOEdinlH85DQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@mdui/jq/-/jq-3.0.2.tgz}
+    name: '@mdui/jq'
+    version: 3.0.2
+    dependencies:
+      ssr-window: registry.npmjs.org/ssr-window@4.0.2
+      tslib: registry.npmjs.org/tslib@2.8.1
+    dev: false
+
+  registry.npmjs.org/@mdui/shared@1.0.7:
+    resolution: {integrity: sha512-rs12tndL8Y4cy8eiGnkWvKMTHOTbwtHpfpFrPvnUm6ajLnAAaHjX7CJkOMjs5sh7cd+ez2Zm77MEgovKAWeeRQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@mdui/shared/-/shared-1.0.7.tgz}
+    name: '@mdui/shared'
+    version: 1.0.7
+    dependencies:
+      '@lit/reactive-element': registry.npmjs.org/@lit/reactive-element@2.1.0
+      '@mdui/jq': registry.npmjs.org/@mdui/jq@3.0.2
+      lit: registry.npmjs.org/lit@3.3.0
+      ssr-window: registry.npmjs.org/ssr-window@4.0.2
+      tslib: registry.npmjs.org/tslib@2.8.1
+    dev: false
 
   registry.npmjs.org/@rollup/rollup-android-arm-eabi@4.40.0:
     resolution: {integrity: sha512-+Fbls/diZ0RDerhE8kyC6hjADCXA1K4yVNlH0EYfd2XjyH0UGgzaQ8MlT0pCXAThfxv3QUAczHaL+qSv1E4/Cg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.40.0.tgz}
@@ -547,6 +605,12 @@ packages:
     version: 1.0.7
     dev: true
 
+  registry.npmjs.org/@types/trusted-types@2.0.7:
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz}
+    name: '@types/trusted-types'
+    version: 2.0.7
+    dev: false
+
   registry.npmjs.org/@vitejs/plugin-vue@5.2.3(vite@6.3.2)(vue@3.5.13):
     resolution: {integrity: sha512-IYSLEQj4LgZZuoVpdSUCw3dIynTWQgPlaRP6iAvMle4My0HdYwr5g5wQAfwOeHQBmYwEkqF70nRpSilr6PoUDg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@vitejs/plugin-vue/-/plugin-vue-5.2.3.tgz}
     id: registry.npmjs.org/@vitejs/plugin-vue/5.2.3
@@ -744,6 +808,12 @@ packages:
       balanced-match: registry.npmjs.org/balanced-match@1.0.2
     dev: true
 
+  registry.npmjs.org/classcat@5.0.5:
+    resolution: {integrity: sha512-JhZUT7JFcQy/EzW605k/ktHtncoo9vnyW/2GspNYwFlN1C/WmjuV/xtS04e9SOkL2sTdw0VAZ2UGCcQ9lR6p6w==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/classcat/-/classcat-5.0.5.tgz}
+    name: classcat
+    version: 5.0.5
+    dev: false
+
   registry.npmjs.org/csstype@3.1.3:
     resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/csstype/-/csstype-3.1.3.tgz}
     name: csstype
@@ -832,12 +902,64 @@ packages:
     hasBin: true
     dev: true
 
+  registry.npmjs.org/is-promise@4.0.0:
+    resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/is-promise/-/is-promise-4.0.0.tgz}
+    name: is-promise
+    version: 4.0.0
+    dev: false
+
+  registry.npmjs.org/lit-element@4.2.0:
+    resolution: {integrity: sha512-MGrXJVAI5x+Bfth/pU9Kst1iWID6GHDLEzFEnyULB/sFiRLgkd8NPK/PeeXxktA3T6EIIaq8U3KcbTU5XFcP2Q==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/lit-element/-/lit-element-4.2.0.tgz}
+    name: lit-element
+    version: 4.2.0
+    dependencies:
+      '@lit-labs/ssr-dom-shim': registry.npmjs.org/@lit-labs/ssr-dom-shim@1.3.0
+      '@lit/reactive-element': registry.npmjs.org/@lit/reactive-element@2.1.0
+      lit-html: registry.npmjs.org/lit-html@3.3.0
+    dev: false
+
+  registry.npmjs.org/lit-html@3.3.0:
+    resolution: {integrity: sha512-RHoswrFAxY2d8Cf2mm4OZ1DgzCoBKUKSPvA1fhtSELxUERq2aQQ2h05pO9j81gS1o7RIRJ+CePLogfyahwmynw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/lit-html/-/lit-html-3.3.0.tgz}
+    name: lit-html
+    version: 3.3.0
+    dependencies:
+      '@types/trusted-types': registry.npmjs.org/@types/trusted-types@2.0.7
+    dev: false
+
+  registry.npmjs.org/lit@3.3.0:
+    resolution: {integrity: sha512-DGVsqsOIHBww2DqnuZzW7QsuCdahp50ojuDaBPC7jUDRpYoH0z7kHBBYZewRzer75FwtrkmkKk7iOAwSaWdBmw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/lit/-/lit-3.3.0.tgz}
+    name: lit
+    version: 3.3.0
+    dependencies:
+      '@lit/reactive-element': registry.npmjs.org/@lit/reactive-element@2.1.0
+      lit-element: registry.npmjs.org/lit-element@4.2.0
+      lit-html: registry.npmjs.org/lit-html@3.3.0
+    dev: false
+
   registry.npmjs.org/magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/magic-string/-/magic-string-0.30.17.tgz}
     name: magic-string
     version: 0.30.17
     dependencies:
       '@jridgewell/sourcemap-codec': registry.npmjs.org/@jridgewell/sourcemap-codec@1.5.0
+
+  registry.npmjs.org/mdui@2.1.3:
+    resolution: {integrity: sha512-rBaFJYPloaWcHSem9PCD3AT3nyjO072M9HCOGifGxmhVE0QYABtzdiActf9BvgbTMOrIPdlCyPKF+JVW/b6G4Q==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/mdui/-/mdui-2.1.3.tgz}
+    name: mdui
+    version: 2.1.3
+    dependencies:
+      '@floating-ui/utils': registry.npmjs.org/@floating-ui/utils@0.2.9
+      '@lit/localize': registry.npmjs.org/@lit/localize@0.12.2
+      '@lit/reactive-element': registry.npmjs.org/@lit/reactive-element@2.1.0
+      '@material/material-color-utilities': registry.npmjs.org/@material/material-color-utilities@0.3.0
+      '@mdui/jq': registry.npmjs.org/@mdui/jq@3.0.2
+      '@mdui/shared': registry.npmjs.org/@mdui/shared@1.0.7
+      classcat: registry.npmjs.org/classcat@5.0.5
+      is-promise: registry.npmjs.org/is-promise@4.0.0
+      lit: registry.npmjs.org/lit@3.3.0
+      ssr-window: registry.npmjs.org/ssr-window@4.0.2
+      tslib: registry.npmjs.org/tslib@2.8.1
+    dev: false
 
   registry.npmjs.org/minimatch@9.0.5:
     resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/minimatch/-/minimatch-9.0.5.tgz}
@@ -927,6 +1049,12 @@ packages:
     version: 1.2.1
     engines: {node: '>=0.10.0'}
 
+  registry.npmjs.org/ssr-window@4.0.2:
+    resolution: {integrity: sha512-ISv/Ch+ig7SOtw7G2+qkwfVASzazUnvlDTwypdLoPoySv+6MqlOV10VwPSE6EWkGjhW50lUmghPmpYZXMu/+AQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/ssr-window/-/ssr-window-4.0.2.tgz}
+    name: ssr-window
+    version: 4.0.2
+    dev: false
+
   registry.npmjs.org/tinyglobby@0.2.13:
     resolution: {integrity: sha512-mEwzpUgrLySlveBwEVDMKk5B57bhLPYovRfPAXD5gA/98Opn0rCDj3GtLwFvCvH5RK9uPCExUROW5NjDwvqkxw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.13.tgz}
     name: tinyglobby
@@ -936,6 +1064,12 @@ packages:
       fdir: registry.npmjs.org/fdir@6.4.4(picomatch@4.0.2)
       picomatch: registry.npmjs.org/picomatch@4.0.2
     dev: true
+
+  registry.npmjs.org/tslib@2.8.1:
+    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz}
+    name: tslib
+    version: 2.8.1
+    dev: false
 
   registry.npmjs.org/typescript@5.7.3:
     resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/typescript/-/typescript-5.7.3.tgz}
