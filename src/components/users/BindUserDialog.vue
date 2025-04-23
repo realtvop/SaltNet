@@ -6,29 +6,21 @@
       <mdui-button variant="text" @click="handleSave">保存</mdui-button>
     </mdui-top-app-bar>
 
-    <!-- Description moved here -->
-    <!-- <div style="margin-bottom: 16px;">修改用户的 Diving Fish 用户名和游戏内信息。</div> -->
-
-    <!-- Data binding using v-model -->
+    <!-- Bind directly to localUser properties -->
     <mdui-text-field
       v-if="localUser.divingFish"
       label="Diving Fish 用户名"
-      :value="localUser.divingFish.name"
-      @input="editedUser.divingFishName = $event.target.value"
+      :value="localUser.divingFish.name ?? ''"
+      @input="localUser.divingFish.name = $event.target.value || null"
       helper="留空表示未绑定"
     ></mdui-text-field>
-    <!-- <mdui-text-field
-      v-if="localUser.inGame"
-      label="游戏内昵称"
-      v-model="localUser.inGame.name"
-      helper="如果绑定了ID，昵称会自动获取"
-    ></mdui-text-field> -->
+
     <mdui-text-field
       v-if="localUser.inGame"
       label="舞萌 UserID (神秘8位数字)"
       type="number"
-      :value="localUser.inGame.id"
-      @input="editedUser.inGameId = $event.target.value"
+      :value="localUser.inGame.id ?? ''"
+      @input="localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null"
       helper="留空表示未绑定"
     ></mdui-text-field>
   </mdui-dialog>
@@ -36,25 +28,44 @@
 
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits, nextTick } from "vue";
-import type { User } from "../../types/user"; // Corrected path
+import type { User } from "@/types/user";
 
 const props = defineProps<{
   modelValue: boolean; // Controls dialog visibility
   user: User | null; // User data to edit
 }>();
 
-const editedUser = {
-  divingFishName: null,
-  inGameId: null,
-};
-
 const emit = defineEmits(["update:modelValue", "save"]);
 
 const dialogRef = ref<any>(null); // Ref for the mdui-dialog element
-// Initialize with default structure matching User type
-const localUser = ref<Partial<User>>({
-  divingFish: { name: null },
-  inGame: { name: null, id: null },
+
+// Initialize localUser with a structure that reflects the prop, handling null
+const localUser = ref<Partial<User>>({});
+
+// Watch for changes in the user prop to update localUser
+watch(() => props.user, (newUser) => {
+  if (newUser) {
+    // Deep copy the user prop to localUser when it changes
+    localUser.value = JSON.parse(JSON.stringify(newUser));
+    // Ensure nested objects exist if they might be null/undefined in the prop
+    if (!localUser.value.divingFish) {
+        localUser.value.divingFish = { name: null };
+    }
+    if (!localUser.value.inGame) {
+        localUser.value.inGame = { name: null, id: null };
+    }
+  } else {
+    // Reset if the user prop becomes null
+    localUser.value = { divingFish: { name: null }, inGame: { name: null, id: null } };
+  }
+}, { immediate: true, deep: true }); // immediate: run on load, deep: watch nested changes
+
+// Watch for changes in modelValue to open/close the dialog
+watch(() => props.modelValue, async (newValue) => {
+  await nextTick(); // Wait for the DOM to update
+  if (dialogRef.value) {
+    dialogRef.value.open = newValue;
+  }
 });
 
 const handleClose = () => {
@@ -62,11 +73,12 @@ const handleClose = () => {
 };
 
 const handleSave = () => {
-  localUser.value.divingFish.name = editedUser.divingFishName;
-  localUser.value.inGame.id = editedUser.inGameId;
-
-  emit("save", localUser.value);
-  handleClose();
+  // Emit only the necessary fields for update
+  emit("save", {
+      divingFish: { name: localUser.value.divingFish?.name ?? null },
+      inGame: { id: localUser.value.inGame?.id ?? null }
+  });
+  handleClose(); // Close the dialog after saving
 };
 </script>
 

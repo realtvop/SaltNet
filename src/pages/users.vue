@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'; // Import useRouter
-// Revert to default imports for SFCs with <script setup>
-import RatingPlate from '../components/RatingPlate.vue';
-import BindUserDialog from '../components/users/BindUserDialog.vue';
+// Use default imports for Vue components
+import RatingPlate from '@/components/RatingPlate.vue';
+import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
-import type { User } from '../types/user';
+import type { User } from '@/types/user';
 
 const users = ref<User[]>([
     {
@@ -53,7 +53,8 @@ const router = useRouter(); // Get router instance
 
 // Update openEditDialog to accept and store the index
 const openEditDialog = (user: User, index: number) => {
-    currentUserToEdit.value = user; // Keep deep copy for editing
+    // Perform a deep copy instead of assigning by reference
+    currentUserToEdit.value = JSON.parse(JSON.stringify(user));
     editingUserIndex.value = index; // Store the index
     isDialogVisible.value = true;
 };
