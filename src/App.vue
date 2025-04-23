@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, provide } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import TopAppBar from './components/TopAppBar.vue';
 
 const playerInfo = ref({
   name: '',
@@ -14,7 +15,7 @@ const router = useRouter();
 
 <template>
   <mdui-layout>
-    <!-- <component :is="TopAppBar.default" :playerInfo="playerInfo"/> -->
+    <component :is="TopAppBar" :playerInfo="playerInfo"/>
     <mdui-navigation-bar :value="route.path">
       <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="data_thresholding" value="/b50" @click="router.push('/b50')">成绩</mdui-navigation-bar-item>
