@@ -61,14 +61,14 @@ watch(() => props.user, (newUser) => {
     localUser.value = JSON.parse(JSON.stringify(newUser));
     // Ensure nested objects exist if they might be null/undefined in the prop
     if (!localUser.value.divingFish) {
-        localUser.value.divingFish = { name: null };
+        localUser.value.divingFish = { name: null, importToken: null };
     }
     if (!localUser.value.inGame) {
         localUser.value.inGame = { name: null, id: null };
     }
   } else {
     // Reset if the user prop becomes null
-    localUser.value = { divingFish: { name: null }, inGame: { name: null, id: null } };
+    localUser.value = { divingFish: { name: null, importToken: null }, inGame: { name: null, id: null } };
   }
 }, { immediate: true, deep: true }); // immediate: run on load, deep: watch nested changes
 
@@ -87,7 +87,7 @@ const handleClose = () => {
 const handleSave = () => {
   // Emit only the necessary fields for update
   emit("save", {
-      divingFish: { name: localUser.value.divingFish?.name ?? null },
+      divingFish: { name: localUser.value.divingFish?.name ?? null, importToken: localUser.value.divingFish?.importToken ?? null },
       inGame: { id: localUser.value.inGame?.id ?? null }
   });
   handleClose(); // Close the dialog after saving

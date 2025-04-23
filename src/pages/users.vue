@@ -71,7 +71,7 @@ interface UpdatedUserData {
 const handleUserSave = (updatedUserData: UpdatedUserData) => {
     if (editingUserIndex.value === null) {
         users.value.push({
-            divingFish: { name: updatedUserData.divingFish.name },
+            divingFish: { name: updatedUserData.divingFish.name, importToken: updatedUserData.divingFish.importToken },
             inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
             data: null
         });
@@ -90,6 +90,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
             divingFish: {
                 ...originalUser.divingFish,
                 name: updatedUserData.divingFish.name,
+                importToken: updatedUserData.divingFish.importToken,
             },
             inGame: {
                 ...originalUser.inGame,
