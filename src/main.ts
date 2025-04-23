@@ -11,4 +11,4 @@ app.use(router) // Use the router
 
 app.mount('#app')
 
-setColorScheme("#8E92E1");
+setColorScheme("#8E92E1"); // #5EEAC7

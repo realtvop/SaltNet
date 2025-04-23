@@ -117,8 +117,8 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
     />
 
     <div class="fab-container">
-        <mdui-fab icon="update" extended>全部更新</mdui-fab>
-        <mdui-fab icon="add">添加用户</mdui-fab>
+        <mdui-fab icon="update" extended v-if="users.length">全部更新</mdui-fab>
+        <mdui-fab icon="add" :extended="!users.length">添加用户</mdui-fab>
     </div>
 </template>
 
