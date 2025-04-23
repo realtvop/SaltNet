@@ -13,26 +13,26 @@
       :value="localUser.divingFish.name ?? ''"
       @input="localUser.divingFish.name = $event.target.value || null"
       placeholder="留空表示未绑定"
+      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
     ></mdui-text-field>
     <mdui-text-field
       v-if="localUser.divingFish"
       label="水鱼成绩导入 Token"
-      type="password"
-      toggle-password
       :value="localUser.divingFish.importToken ?? ''"
       @input="localUser.divingFish.importToken = $event.target.value || null"
       helper="用于上传数据，若不绑定游戏则可以不填"
+      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
       clearable
     ></mdui-text-field>
 
     <mdui-text-field
       v-if="localUser.inGame"
       label="舞萌 UserID (神秘8位数字)"
-      type="password"
-      toggle-password
+      type="number"
       :value="localUser.inGame.id ?? ''"
       @input="localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null"
       placeholder="留空表示未绑定"
+      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
     ></mdui-text-field>
   </mdui-dialog>
 </template>

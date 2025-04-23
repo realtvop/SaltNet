@@ -1,49 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router'; // Import useRouter
 // Use default imports for Vue components
 import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
 import type { User } from '@/types/user';
+import localForage from "localforage";
 
-const users = ref<User[]>([
-    {
-        divingFish: {
-            name: "realtvop",
-            importToken: "sth",
-        },
-        inGame: {
-            name: "realtvop",
-            id: 10000000,
-        },
-        data: {
-            rating: 11451,
-        },
-    },
-    {
-        divingFish: {
-            name: null,
-            importToken: null,
-        },
-        inGame: {
-            name: "OnlyInGame",
-            id: 10000000,
-        },
-        data: null,
-    },
-    {
-        divingFish: {
-            name: "OnlyDivingFish",
-            importToken: null,
-        },
-        inGame: {
-            name: null,
-            id: null,
-        },
-        data: null,
-    },
-]);
+const users = ref<User[]>([]);
+
+localForage.getItem<User[]>("users").then(v => {
+    if (Array.isArray(v)) users.value = v;
+});
+
+watch(users, v => {
+    localForage.setItem("users", v);
+}, { deep: true });
 
 const isDialogVisible = ref(false);
 const currentUserToEdit = ref<User | null>(null);
@@ -56,6 +29,16 @@ const openEditDialog = (user: User, index: number) => {
     // Perform a deep copy instead of assigning by reference
     currentUserToEdit.value = JSON.parse(JSON.stringify(user));
     editingUserIndex.value = index; // Store the index
+    isDialogVisible.value = true;
+};
+
+const openAddDialog = () => {
+    currentUserToEdit.value = {
+        divingFish: { name: null },
+        inGame: { name: null, id: null },
+        data: null
+    };
+    editingUserIndex.value = null;
     isDialogVisible.value = true;
 };
 
@@ -78,8 +61,13 @@ interface UpdatedUserData {
 // Update handleUserSave to use the stored index
 const handleUserSave = (updatedUserData: UpdatedUserData) => {
     if (editingUserIndex.value === null) {
-        console.warn("No user index found for saving.");
-        isDialogVisible.value = false; // Close dialog anyway
+        users.value.push({
+            divingFish: { name: updatedUserData.divingFish.name },
+            inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
+            data: null
+        });
+        currentUserToEdit.value = null;
+        isDialogVisible.value = false;
         return;
     }
 
@@ -121,8 +109,8 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>
                 <div class="user-badges">
-                    <mdui-chip icon="water_drop" elevated :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? "未绑定水鱼" }}</mdui-chip>
-                    <mdui-chip icon="videogame_asset" elevated :disabled="!user.inGame?.id && !user.inGame?.name">{{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}</mdui-chip>
+                    <mdui-chip icon="videogame_asset" elevated :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? "未绑定水鱼" }}</mdui-chip>
+                    <mdui-chip icon="local_laundry_service" elevated :disabled="!user.inGame?.id && !user.inGame?.name">{{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}</mdui-chip>
                 </div>
             </div>
             <div class="user-actions">
@@ -142,7 +130,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="users.length">全部更新</mdui-fab>
-        <mdui-fab icon="add" :extended="!users.length">添加用户</mdui-fab>
+        <mdui-fab icon="add" :extended="!users.length" @click="openAddDialog">添加用户</mdui-fab>
     </div>
 </template>
 
