@@ -202,7 +202,7 @@ mdui-chip {
     right: 16px;
     display: flex;
     flex-direction: row-reverse;
-    gap: 10px;
+    gap: 15px;
 
     @media (min-aspect-ratio: 1.001/1) {
         bottom: 16px;
