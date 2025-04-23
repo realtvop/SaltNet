@@ -122,6 +122,12 @@ const setAsDefault = (index: number) => {
         users.value.unshift(user);
     }
 };
+
+function updateAll() {
+    users.value.forEach(user => {
+        updateUser(user);
+    });
+}
 </script>
 
 <template>
@@ -184,7 +190,7 @@ const setAsDefault = (index: number) => {
     />
 
     <div class="fab-container">
-        <mdui-fab icon="update" extended v-if="users.length">全部更新</mdui-fab>
+        <mdui-fab icon="update" extended v-if="users.length" @click="updateAll">全部更新</mdui-fab>
         <mdui-fab icon="add" :extended="!users.length" @click="openAddDialog">添加用户</mdui-fab>
     </div>
 </template>
