@@ -128,7 +128,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
             <div class="user-actions">
                 <!-- Pass index here -->
                 <mdui-button-icon variant="standard" icon="settings" @click="openEditDialog(user, index)"></mdui-button-icon>
-                <mdui-button-icon variant="standard" icon="update"></mdui-button-icon>
+                <mdui-button-icon variant="standard" icon="update" style="margin-right: 10px;"></mdui-button-icon>
                 <mdui-button end-icon="arrow_forward" @click="goToUserDetails(user)">详情</mdui-button>
             </div>
         </mdui-card>
@@ -192,7 +192,9 @@ mdui-chip {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 10px;
+    gap: 2.5px;
+
+    padding-right: 20px;
 }
 
 .fab-container {
