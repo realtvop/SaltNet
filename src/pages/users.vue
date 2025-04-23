@@ -115,6 +115,11 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
         :user="currentUserToEdit"
         @save="handleUserSave"
     />
+
+    <div class="fab-container">
+        <mdui-fab icon="update" extended>全部更新</mdui-fab>
+        <mdui-fab icon="add">添加用户</mdui-fab>
+    </div>
 </template>
 
 <style scoped>
@@ -164,5 +169,20 @@ mdui-chip {
     align-items: center;
     justify-content: center;
     margin-right: 10px;
+}
+
+.fab-container {
+    position: fixed;
+    right: 16px;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 10px;
+
+    @media (min-aspect-ratio: 1.001/1) {
+        bottom: 16px;
+    }
+    @media (max-aspect-ratio: 0.999/1) or (aspect-ratio: 1/1) {
+        bottom: 96px;
+    }
 }
 </style>
