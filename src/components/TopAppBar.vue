@@ -2,7 +2,6 @@
 import { useRouter } from 'vue-router';
 import { ref, computed, watchEffect } from 'vue';
 import RatingPlate from './RatingPlate.vue';
-import { addFavorite, removeFavorite, isFavorite, getSetting, SETTINGS } from '../utils/userSettings';
 
 const props = defineProps({
   playerInfo: {
@@ -29,7 +28,7 @@ const usernameFromURL = computed(() => {
 });
 
 // 登录用户名
-const loggedInUsername = computed(() => getSetting(SETTINGS.USERNAME) || '');
+const loggedInUsername = computed(() => ''); // TODO
 
 // 玩家数据加载状态
 const playerDataLoaded = computed(() => props.playerInfo && props.playerInfo.data);

@@ -15,7 +15,7 @@ localForage.getItem<User[]>("users").then(v => {
 });
 
 watch(users, v => {
-    localForage.setItem("users", v);
+    localForage.setItem("users", JSON.parse(JSON.stringify(v)));
 }, { deep: true });
 
 const isDialogVisible = ref(false);
@@ -43,6 +43,7 @@ const openAddDialog = () => {
 };
 
 const goToUserDetails = (user: User) => {
+    alert(123)
     return;
     const username = user.divingFish?.name ?? user.inGame?.name;
     if (username) {
@@ -96,27 +97,59 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
     editingUserIndex.value = null; // Reset the index
     isDialogVisible.value = false;
 };
+
+const handleUserDelete = () => {
+    if (editingUserIndex.value !== null && editingUserIndex.value >= 0 && editingUserIndex.value < users.value.length) {
+        users.value.splice(editingUserIndex.value, 1);
+    }
+    currentUserToEdit.value = null;
+    editingUserIndex.value = null;
+    isDialogVisible.value = false;
+};
 </script>
 
 <template>
     <div style="height: 10px;"></div>
     <div class="user-cards-container">
         <!-- Pass index to openEditDialog -->
-        <mdui-card variant="filled" v-for="(user, index) in users" :key="user.divingFish?.name || user.inGame?.id || index">
+        <mdui-card
+            :variant="index ? 'elevated' : 'filled'"
+            v-for="(user, index) in users"
+            :key="user.divingFish?.name || user.inGame?.id || index"
+        >
             <div class="user-name">
                 <div class="user-badges">
                     <h2 class="primary-name">{{ user.divingFish?.name ?? user.inGame?.name ?? "未知" }}</h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>
                 <div class="user-badges">
-                    <mdui-chip icon="videogame_asset" elevated :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? "未绑定水鱼" }}</mdui-chip>
-                    <mdui-chip icon="local_laundry_service" elevated :disabled="!user.inGame?.id && !user.inGame?.name">{{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}</mdui-chip>
+                    <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? "未绑定水鱼" }}</mdui-chip>
+                    <mdui-chip icon="local_laundry_service" :disabled="!user.inGame?.id && !user.inGame?.name">{{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}</mdui-chip>
                 </div>
             </div>
             <div class="user-actions">
                 <!-- Pass index here -->
-                <mdui-button-icon variant="standard" icon="settings" @click="openEditDialog(user, index)"></mdui-button-icon>
-                <mdui-button-icon variant="standard" icon="update" style="margin-right: 10px;"></mdui-button-icon>
+                <mdui-button-icon variant="standard" icon="update"></mdui-button-icon>
+                <mdui-dropdown>
+                    <mdui-button-icon slot="trigger" icon="more_vert" style="margin-right: 10px;"></mdui-button-icon>
+                    <mdui-menu>
+                        <mdui-menu-item @click="openEditDialog(user, index)">
+                            修改
+                            <mdui-icon slot="icon" name="edit"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item @click="openEditDialog(user, index)" v-if="index">
+                            设为默认
+                            <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-divider />
+
+                        <mdui-menu-item>
+                            删除
+                            <mdui-icon slot="icon" name="delete"></mdui-icon>
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
                 <mdui-button end-icon="arrow_forward" @click="goToUserDetails(user)">详情</mdui-button>
             </div>
         </mdui-card>
@@ -126,6 +159,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
         v-model="isDialogVisible"
         :user="currentUserToEdit"
         @save="handleUserSave"
+        @delete="handleUserDelete"
     />
 
     <div class="fab-container">

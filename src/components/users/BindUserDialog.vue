@@ -15,15 +15,6 @@
       placeholder="留空表示未绑定"
       autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
     ></mdui-text-field>
-    <mdui-text-field
-      v-if="localUser.divingFish"
-      label="水鱼成绩导入 Token"
-      :value="localUser.divingFish.importToken ?? ''"
-      @input="localUser.divingFish.importToken = $event.target.value || null"
-      helper="用于上传数据，若不绑定游戏则可以不填"
-      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
-      clearable
-    ></mdui-text-field>
 
     <mdui-text-field
       v-if="localUser.inGame"
@@ -33,6 +24,16 @@
       @input="localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null"
       placeholder="留空表示未绑定"
       autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
+    ></mdui-text-field>
+
+    <mdui-text-field
+      v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
+      label="水鱼成绩导入 Token"
+      :value="localUser.divingFish.importToken ?? ''"
+      @input="localUser.divingFish.importToken = $event.target.value || null"
+      helper="用于上传数据，若不绑定游戏则可以不填"
+      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
+      clearable
     ></mdui-text-field>
   </mdui-dialog>
 </template>
@@ -46,7 +47,7 @@ const props = defineProps<{
   user: User | null; // User data to edit
 }>();
 
-const emit = defineEmits(["update:modelValue", "save"]);
+const emit = defineEmits(["update:modelValue", "save", "delete"]);
 
 const dialogRef = ref<any>(null); // Ref for the mdui-dialog element
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import { getSetting, SETTINGS } from "@/utils/userSettings";
 import RatingPlate from "@/components/RatingPlate.vue";
 import { useRouter } from "vue-router";
 import { fetchPlayerData as fetchDivingFishData } from "@/divingfish/index";
@@ -46,34 +45,6 @@ const fetchPlayerData = async (player: string) => {
     isLoading.value = false;
   }
 };
-
-const handleSettingsChanged = () => {
-  const savedUsername = getSetting<string>(SETTINGS.USERNAME);
-  if (savedUsername !== username.value) {
-    username.value = savedUsername || "";
-    isLoggedIn.value = !!savedUsername;
-    if (savedUsername) {
-      fetchPlayerData(savedUsername);
-    } else {
-      playerData.value = null;
-      error.value = null;
-    }
-  }
-};
-
-onMounted(async () => {
-  const savedUsername = getSetting<string>(SETTINGS.USERNAME);
-  if (savedUsername) {
-    username.value = savedUsername;
-    isLoggedIn.value = true;
-    await fetchPlayerData(savedUsername);
-  }
-  window.addEventListener('settings-changed', handleSettingsChanged);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('settings-changed', handleSettingsChanged);
-});
 </script>
 
 <template>
