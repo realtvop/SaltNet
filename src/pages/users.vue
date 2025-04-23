@@ -114,6 +114,15 @@ const handleUserDelete = () => {
     isDialogVisible.value = false;
     isDeleteDialogVisible.value = false; // Close delete dialog
 };
+
+// 设为默认：将该用户移到列表最前面
+const setAsDefault = (index: number) => {
+    if (index > 0 && index < users.value.length) {
+        const user = users.value.splice(index, 1)[0];
+        users.value.unshift(user);
+    }
+    // 菜单自动关闭，无需手动处理
+};
 </script>
 
 <template>
@@ -145,7 +154,7 @@ const handleUserDelete = () => {
                             修改
                             <mdui-icon slot="icon" name="edit"></mdui-icon>
                         </mdui-menu-item>
-                        <mdui-menu-item @click="openEditDialog(user, index)" v-if="index">
+                        <mdui-menu-item @click="setAsDefault(index)" v-if="index">
                             设为默认
                             <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
                         </mdui-menu-item>
