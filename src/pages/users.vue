@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router'; // Import useRouter
 // Revert to default imports for SFCs with <script setup>
 import RatingPlate from '../components/RatingPlate.vue';
 import BindUserDialog from '../components/users/BindUserDialog.vue';
@@ -46,10 +47,26 @@ const users = ref<User[]>([
 
 const isDialogVisible = ref(false);
 const currentUserToEdit = ref<User | null>(null);
+const editingUserIndex = ref<number | null>(null); // Add ref for index
 
-const openEditDialog = (user: User) => {
-    currentUserToEdit.value = JSON.parse(JSON.stringify(user));
+const router = useRouter(); // Get router instance
+
+// Update openEditDialog to accept and store the index
+const openEditDialog = (user: User, index: number) => {
+    currentUserToEdit.value = user; // Keep deep copy for editing
+    editingUserIndex.value = index; // Store the index
     isDialogVisible.value = true;
+};
+
+const goToUserDetails = (user: User) => {
+    return;
+    const username = user.divingFish?.name ?? user.inGame?.name;
+    if (username) {
+        router.push(`/user/${encodeURIComponent(username)}`); // Corrected path
+    } else {
+        console.warn("Cannot navigate, user has no identifiable name.");
+        // Optionally show a notification to the user
+    }
 };
 
 interface UpdatedUserData {
@@ -57,17 +74,19 @@ interface UpdatedUserData {
     inGame: { name: string | null; id: number | null };
 }
 
+// Update handleUserSave to use the stored index
 const handleUserSave = (updatedUserData: UpdatedUserData) => {
-    if (!currentUserToEdit.value) return;
+    if (editingUserIndex.value === null) {
+        console.warn("No user index found for saving.");
+        isDialogVisible.value = false; // Close dialog anyway
+        return;
+    }
 
-    const index = users.value.findIndex((u: User) =>
-        (currentUserToEdit.value?.divingFish?.name && u.divingFish?.name === currentUserToEdit.value.divingFish.name) ||
-        (currentUserToEdit.value?.inGame?.id && u.inGame?.id === currentUserToEdit.value.inGame.id) ||
-        (u === currentUserToEdit.value)
-    );
+    const index = editingUserIndex.value;
 
-    if (index !== -1) {
+    if (index >= 0 && index < users.value.length) {
         const originalUser = users.value[index];
+        // Update the user in the array directly using the index
         users.value[index] = {
             ...originalUser,
             divingFish: {
@@ -76,14 +95,16 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
             },
             inGame: {
                 ...originalUser.inGame,
-                name: updatedUserData.inGame.name,
-                id: updatedUserData.inGame.id,
+                id: updatedUserData.inGame.id, // Only update ID from dialog
             }
         };
     } else {
-        console.warn("Could not find user to update:", currentUserToEdit.value);
+        console.warn("Invalid user index for update:", index);
     }
+
+    // Reset state and close dialog
     currentUserToEdit.value = null;
+    editingUserIndex.value = null; // Reset the index
     isDialogVisible.value = false;
 };
 </script>
@@ -91,6 +112,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
 <template>
     <div style="height: 10px;"></div>
     <div class="user-cards-container">
+        <!-- Pass index to openEditDialog -->
         <mdui-card variant="filled" v-for="(user, index) in users" :key="user.divingFish?.name || user.inGame?.id || index">
             <div class="user-name">
                 <div class="user-badges">
@@ -103,9 +125,10 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
                 </div>
             </div>
             <div class="user-actions">
-                <mdui-button-icon variant="standard" icon="settings" @click="openEditDialog(user)"></mdui-button-icon>
+                <!-- Pass index here -->
+                <mdui-button-icon variant="standard" icon="settings" @click="openEditDialog(user, index)"></mdui-button-icon>
                 <mdui-button-icon variant="standard" icon="update"></mdui-button-icon>
-                <mdui-button end-icon="arrow_forward">详情</mdui-button>
+                <mdui-button end-icon="arrow_forward" @click="goToUserDetails(user)">详情</mdui-button>
             </div>
         </mdui-card>
     </div>

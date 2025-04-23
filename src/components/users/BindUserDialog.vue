@@ -1,5 +1,5 @@
 <template>
-  <mdui-dialog ref="dialogRef" headline="" description="" @close="handleClose">
+  <mdui-dialog ref="dialogRef" headline="" description="" @close="handleClose" close-on-esc>
     <mdui-top-app-bar slot="header">
       <mdui-button-icon icon="close" @click="handleClose"></mdui-button-icon>
       <mdui-top-app-bar-title>编辑用户绑定</mdui-top-app-bar-title>
@@ -13,7 +13,8 @@
     <mdui-text-field
       v-if="localUser.divingFish"
       label="Diving Fish 用户名"
-      v-model="localUser.divingFish.name"
+      :value="localUser.divingFish.name"
+      @input="editedUser.divingFishName = $event.target.value"
       helper="留空表示未绑定"
     ></mdui-text-field>
     <!-- <mdui-text-field
@@ -26,7 +27,8 @@
       v-if="localUser.inGame"
       label="舞萌 UserID (神秘8位数字)"
       type="number"
-      v-model="localUser.inGame.id"
+      :value="localUser.inGame.id"
+      @input="editedUser.inGameId = $event.target.value"
       helper="留空表示未绑定"
     ></mdui-text-field>
   </mdui-dialog>
@@ -41,6 +43,11 @@ const props = defineProps<{
   user: User | null; // User data to edit
 }>();
 
+const editedUser = {
+  divingFishName: null,
+  inGameId: null,
+};
+
 const emit = defineEmits(["update:modelValue", "save"]);
 
 const dialogRef = ref<any>(null); // Ref for the mdui-dialog element
@@ -50,76 +57,15 @@ const localUser = ref<Partial<User>>({
   inGame: { name: null, id: null },
 });
 
-// Watch for changes in the user prop to update the local copy
-watch(
-  () => props.user,
-  (newUser) => {
-    if (newUser) {
-      // Deep copy to avoid modifying the original object
-      localUser.value = JSON.parse(JSON.stringify(newUser));
-      // Ensure nested objects exist
-      if (!localUser.value.divingFish) {
-        localUser.value.divingFish = { name: null };
-      }
-      if (!localUser.value.inGame) {
-        localUser.value.inGame = { name: null, id: null };
-      }
-    } else {
-      // Reset when no user is provided
-      localUser.value = {
-        divingFish: { name: null },
-        inGame: { name: null, id: null },
-      };
-    }
-  },
-  { immediate: true, deep: true }
-);
-
-// Watch for modelValue changes to control the dialog's open state
-watch(
-  () => props.modelValue,
-  async (newValue) => {
-    await nextTick(); // Wait for the DOM to update
-    if (dialogRef.value) {
-      dialogRef.value.open = newValue;
-    }
-  }
-);
-
 const handleClose = () => {
   emit("update:modelValue", false);
 };
 
 const handleSave = () => {
-  const nameDF = localUser.value.divingFish?.name || null;
-  const nameIG = localUser.value.inGame?.name || null;
+  localUser.value.divingFish.name = editedUser.divingFishName;
+  localUser.value.inGame.id = editedUser.inGameId;
 
-  // Simplified ID check and assignment
-  let idIG: number | null = null;
-  const idValue = localUser.value.inGame?.id;
-  if (
-    idValue !== null &&
-    idValue !== undefined &&
-    String(idValue).trim() !== ""
-  ) {
-    idIG = Number(idValue);
-  }
-
-  // Define the structure for the emitted data
-  const userToSave: {
-    divingFish: { name: string | null };
-    inGame: { name: string | null; id: number | null };
-  } = {
-    divingFish: {
-      name: nameDF,
-    },
-    inGame: {
-      name: nameIG,
-      id: idIG,
-    },
-  };
-
-  emit("save", userToSave);
+  emit("save", localUser.value);
   handleClose();
 };
 </script>
