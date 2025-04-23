@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'; // Import useRouter
 // Use default imports for Vue components
 import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
+import ConfirmDeleteDialog from '@/components/users/ConfirmDeleteDialog.vue'; // Import ConfirmDeleteDialog
 // Correct the import path for the User type
 import type { User } from '@/types/user';
 import localForage from "localforage";
@@ -19,6 +20,7 @@ watch(users, v => {
 }, { deep: true });
 
 const isDialogVisible = ref(false);
+const isDeleteDialogVisible = ref(false); // Add ref for delete dialog visibility
 const currentUserToEdit = ref<User | null>(null);
 const editingUserIndex = ref<number | null>(null); // Add ref for index
 
@@ -40,6 +42,11 @@ const openAddDialog = () => {
     };
     editingUserIndex.value = null;
     isDialogVisible.value = true;
+};
+
+const openDeleteDialog = (index: number) => {
+    editingUserIndex.value = index;
+    isDeleteDialogVisible.value = true;
 };
 
 const goToUserDetails = (user: User) => {
@@ -105,6 +112,7 @@ const handleUserDelete = () => {
     currentUserToEdit.value = null;
     editingUserIndex.value = null;
     isDialogVisible.value = false;
+    isDeleteDialogVisible.value = false; // Close delete dialog
 };
 </script>
 
@@ -144,7 +152,7 @@ const handleUserDelete = () => {
 
                         <mdui-divider />
 
-                        <mdui-menu-item>
+                        <mdui-menu-item @click="openDeleteDialog(index)">
                             删除
                             <mdui-icon slot="icon" name="delete"></mdui-icon>
                         </mdui-menu-item>
@@ -160,6 +168,11 @@ const handleUserDelete = () => {
         :user="currentUserToEdit"
         @save="handleUserSave"
         @delete="handleUserDelete"
+    />
+
+    <ConfirmDeleteDialog
+        v-model="isDeleteDialogVisible"
+        @confirm="handleUserDelete"
     />
 
     <div class="fab-container">
