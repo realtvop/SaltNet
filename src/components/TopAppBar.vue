@@ -90,8 +90,8 @@ defineExpose({
             <img src="/favicon.ico" alt="icon" class="favicon-icon" />
         </mdui-button>
     </mdui-tooltip>
-    <mdui-top-app-bar-title v-if="shouldShowHomepage">SaltNet</mdui-top-app-bar-title>
-    <template v-else>
+    <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
+    <template v-if="!shouldShowHomepage">
       <mdui-top-app-bar-title class="player-title">
         {{ playerDataLoaded ? playerInfo.data.nickname : usernameFromURL }}
       </mdui-top-app-bar-title>
@@ -116,7 +116,7 @@ defineExpose({
         @click="toggleFavorite"
         ></mdui-button-icon>
     </template>
-    <div v-if="true" class="search-box search-box-right">
+    <div v-if="false" class="search-box search-box-right">
       <mdui-text-field
         v-model="searchInput"
         @keyup="handleKeyPress"
@@ -188,5 +188,9 @@ mdui-top-app-bar {
   height: 40px;
   min-width: 48px;
   font-size: 1rem;
+}
+
+mdui-top-app-bar-title {
+  font-weight: 750;
 }
 </style>
