@@ -1,4 +1,6 @@
 <script setup>
+import RatingPlate from '../components/RatingPlate.vue';
+
 const users = [
     {
         divingFish: {
@@ -8,6 +10,9 @@ const users = [
         inGame: {
             name: "realtvop",
             id: 10000000,
+        },
+        data: {
+            rating: 11451,
         },
     },
     {
@@ -38,7 +43,10 @@ const users = [
     <div class="user-cards-container">
         <mdui-card variant="filled" v-for="user in users">
             <div class="user-name">
-                <h2 class="primary-name">{{ (user.divingFish && user.divingFish.name) ?? (user.inGame && user.inGame.name) ?? "未知" }}</h2>
+                <div class="user-badges">
+                    <h2 class="primary-name">{{ (user.divingFish && user.divingFish.name) ?? (user.inGame && user.inGame.name) ?? "未知" }}</h2>
+                    <RatingPlate v-if="user.data && user.data.rating" :ra="user.data.rating"></RatingPlate>
+                </div>
                 <div class="user-badges">
                     <mdui-chip icon="videogame_asset" elevated :disabled="!user.divingFish || !user.divingFish.name">{{ user.divingFish.name ?? "未绑定水鱼" }}</mdui-chip>
                     <mdui-chip icon="local_laundry_service" elevated :disabled="!user.inGame || !user.inGame.id">{{ user.inGame.name ?? user.inGame.id ?? "未绑定游戏" }}</mdui-chip>
