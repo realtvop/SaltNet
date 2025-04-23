@@ -1,15 +1,17 @@
 // src/types/user.ts
+import type { DivingFishB50 } from "@/divingfish/type";
+
 export interface User {
     divingFish: {
         name: string | null;
-        importToken?: string | null; // Optional
+        importToken?: string | null;
     };
     inGame: {
-        name: string | null;
+        name?: string | null;
         id: number | null;
     };
-    data?: { // Optional data section
+    data: {
         rating?: number | null;
-        // other potential data fields
-    } | null;
+        b50?: DivingFishB50;
+    };
 }

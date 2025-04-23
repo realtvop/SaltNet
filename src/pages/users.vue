@@ -7,6 +7,7 @@ import BindUserDialog from '@/components/users/BindUserDialog.vue';
 import ConfirmDeleteDialog from '@/components/users/ConfirmDeleteDialog.vue'; // Import ConfirmDeleteDialog
 // Correct the import path for the User type
 import type { User } from '@/types/user';
+import { updateUser } from '@/utils/updateUser';
 import localForage from "localforage";
 
 const users = ref<User[]>([]);
@@ -115,13 +116,11 @@ const handleUserDelete = () => {
     isDeleteDialogVisible.value = false; // Close delete dialog
 };
 
-// 设为默认：将该用户移到列表最前面
 const setAsDefault = (index: number) => {
     if (index > 0 && index < users.value.length) {
         const user = users.value.splice(index, 1)[0];
         users.value.unshift(user);
     }
-    // 菜单自动关闭，无需手动处理
 };
 </script>
 
@@ -146,7 +145,7 @@ const setAsDefault = (index: number) => {
             </div>
             <div class="user-actions">
                 <!-- Pass index here -->
-                <mdui-button-icon variant="standard" icon="update"></mdui-button-icon>
+                <mdui-button-icon variant="standard" icon="update" @click="updateUser(user)"></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon slot="trigger" icon="more_vert" style="margin-right: 10px;"></mdui-button-icon>
                     <mdui-menu>
