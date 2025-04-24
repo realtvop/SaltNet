@@ -37,9 +37,9 @@ const openEditDialog = (user: User, index: number) => {
 
 const openAddDialog = () => {
     currentUserToEdit.value = {
-        divingFish: { name: null },
+        divingFish: { name: null, importToken: null },
         inGame: { name: null, id: null },
-        data: null
+        data: {},
     };
     editingUserIndex.value = null;
     isDialogVisible.value = true;
@@ -55,7 +55,7 @@ const goToUserDetails = (index: number) => {
 };
 
 interface UpdatedUserData {
-    divingFish: { name: string | null };
+    divingFish: { name: string | null, importToken: string | null };
     inGame: { name: string | null; id: number | null };
 }
 
@@ -65,7 +65,7 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
         users.value.push({
             divingFish: { name: updatedUserData.divingFish.name, importToken: updatedUserData.divingFish.importToken },
             inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
-            data: null
+            data: {},
         });
         currentUserToEdit.value = null;
         isDialogVisible.value = false;

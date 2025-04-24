@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { ref, computed, watchEffect } from 'vue';
+import { ref, computed } from 'vue';
 import RatingPlate from './RatingPlate.vue';
 
 const props = defineProps({
@@ -36,23 +36,6 @@ const playerDataLoaded = computed(() => props.playerInfo && props.playerInfo.dat
 // 收藏状态
 const favorited = ref(false);
 
-watchEffect(() => {
-  favorited.value = !!(usernameFromURL.value && isFavorite(usernameFromURL.value));
-});
-
-const toggleFavorite = () => {
-  if (!usernameFromURL.value) return;
-  if (favorited.value) {
-    removeFavorite(usernameFromURL.value);
-  } else if (playerDataLoaded.value) {
-    addFavorite(usernameFromURL.value);
-  }
-  // 通知收藏变更
-  window.dispatchEvent(new Event('favorites-changed'));
-  // 强制刷新收藏状态
-  favorited.value = !!(usernameFromURL.value && isFavorite(usernameFromURL.value));
-};
-
 const handleKeyPress = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     navigateToPlayer();
@@ -75,7 +58,6 @@ defineExpose({
   usernameFromURL,
   loggedInUsername,
   favorited,
-  toggleFavorite,
   searchInput,
   handleKeyPress,
   navigateToPlayer
@@ -95,25 +77,6 @@ defineExpose({
         {{ playerDataLoaded ? playerInfo.data.nickname : usernameFromURL }}
       </mdui-top-app-bar-title>
       <RatingPlate v-if="playerDataLoaded" :ra="playerInfo.data.rating" :small="true" />
-
-      <!-- <mdui-button
-        v-if="usernameFromURL && usernameFromURL !== loggedInUsername"
-        variant="text"
-        class="icon-btn"
-        :disabled="!playerDataLoaded && !favorited"
-        @click="toggleFavorite"
-        :title="favorited ? '取消收藏' : (playerDataLoaded ? '添加收藏' : '无法收藏不存在的用户')"
-      >
-        <mdui-icon :name="favorited ? 'star' : 'star_outline'" style="color: gold;" />
-      </mdui-button> -->
-      <mdui-button-icon
-        v-if="usernameFromURL && usernameFromURL !== loggedInUsername && playerDataLoaded"
-        selectable
-        icon="star_outline" selected-icon="star"
-        style="margin-left: 10px;"
-        :selected="favorited"
-        @click="toggleFavorite"
-        ></mdui-button-icon>
     </template>
     <div v-if="false" class="search-box search-box-right">
       <mdui-text-field

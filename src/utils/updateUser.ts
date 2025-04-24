@@ -5,7 +5,7 @@ import type { User } from "@/types/user";
 
 import { Snackbar, snackbar } from "mdui";
 
-let songs = null;
+// let songs = null;
 
 export function updateUser(user: User) {
     if (!user.data) user.data = {};

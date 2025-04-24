@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import RatingPlate from "@/components/RatingPlate.vue";
 import { useRouter } from "vue-router";
-import { fetchPlayerData as fetchDivingFishData } from "@/divingfish/index";
 import type { DivingFishResponse } from "@/divingfish/type";
 
 const username = ref("");
@@ -12,38 +11,8 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 const router = useRouter();
 
-const viewMyB50 = () => {
-  if (username.value) {
-    router.push(`/user/${encodeURIComponent(username.value)}`);
-  }
-};
-
 const goToSettings = () => {
   router.push("/settings");
-};
-
-const goToFavorites = () => {
-  router.push("/favorites"); // Assuming /favorites is the route
-};
-
-const fetchPlayerData = async (player: string) => {
-  isLoading.value = true;
-  error.value = null;
-  playerData.value = null;
-  try {
-    const data = await fetchDivingFishData(player);
-    playerData.value = data;
-  } catch (err: any) {
-    console.error("Error fetching player data:", err);
-    if (err.message === 'user not exists') {
-      error.value = '用户不存在';
-    } else {
-      error.value = '数据获取失败';
-    }
-    playerData.value = null;
-  } finally {
-    isLoading.value = false;
-  }
 };
 </script>
 

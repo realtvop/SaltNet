@@ -2,12 +2,6 @@ import type { DivingFishResponse } from './type';
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
-// Define the structure for the API request body
-interface PlayerDataRequestBody {
-  username: string;
-  b50?: string; // Optional: Assuming the API might accept this
-}
-
 // Function to fetch player data (b50, simplified info) using /query/player (no auth required)
 export const fetchPlayerData = async (username: string): Promise<DivingFishResponse> => {
   // /query/player expects b50 as a non-empty value to return b50 instead of b40
