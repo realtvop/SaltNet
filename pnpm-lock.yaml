@@ -22,6 +22,9 @@ dependencies:
     version: registry.npmjs.org/vue-router@4.5.0(vue@3.5.13)
 
 devDependencies:
+  '@types/node':
+    specifier: ^22.14.1
+    version: registry.npmjs.org/@types/node@22.14.1
   '@vitejs/plugin-vue':
     specifier: ^5.2.2
     version: registry.npmjs.org/@vitejs/plugin-vue@5.2.3(vite@6.3.2)(vue@3.5.13)
@@ -33,7 +36,7 @@ devDependencies:
     version: registry.npmjs.org/typescript@5.7.3
   vite:
     specifier: ^6.3.1
-    version: registry.npmjs.org/vite@6.3.2
+    version: registry.npmjs.org/vite@6.3.2(@types/node@22.14.1)
   vue-tsc:
     specifier: ^2.2.8
     version: registry.npmjs.org/vue-tsc@2.2.8(typescript@5.7.3)
@@ -611,6 +614,14 @@ packages:
     version: 1.0.7
     dev: true
 
+  registry.npmjs.org/@types/node@22.14.1:
+    resolution: {integrity: sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@types/node/-/node-22.14.1.tgz}
+    name: '@types/node'
+    version: 22.14.1
+    dependencies:
+      undici-types: registry.npmjs.org/undici-types@6.21.0
+    dev: true
+
   registry.npmjs.org/@types/trusted-types@2.0.7:
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz}
     name: '@types/trusted-types'
@@ -627,7 +638,7 @@ packages:
       vite: ^5.0.0 || ^6.0.0
       vue: ^3.2.25
     dependencies:
-      vite: registry.npmjs.org/vite@6.3.2
+      vite: registry.npmjs.org/vite@6.3.2(@types/node@22.14.1)
       vue: registry.npmjs.org/vue@3.5.13(typescript@5.7.3)
     dev: true
 
@@ -1128,6 +1139,12 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  registry.npmjs.org/undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz}
+    name: undici-types
+    version: 6.21.0
+    dev: true
+
   registry.npmjs.org/util@0.10.4:
     resolution: {integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/util/-/util-0.10.4.tgz}
     name: util
@@ -1136,8 +1153,9 @@ packages:
       inherits: registry.npmjs.org/inherits@2.0.3
     dev: false
 
-  registry.npmjs.org/vite@6.3.2:
+  registry.npmjs.org/vite@6.3.2(@types/node@22.14.1):
     resolution: {integrity: sha512-ZSvGOXKGceizRQIZSz7TGJ0pS3QLlVY/9hwxVh17W3re67je1RKYzFHivZ/t0tubU78Vkyb9WnHPENSBCzbckg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/vite/-/vite-6.3.2.tgz}
+    id: registry.npmjs.org/vite/6.3.2
     name: vite
     version: 6.3.2
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
@@ -1178,6 +1196,7 @@ packages:
       yaml:
         optional: true
     dependencies:
+      '@types/node': registry.npmjs.org/@types/node@22.14.1
       esbuild: registry.npmjs.org/esbuild@0.25.2
       fdir: registry.npmjs.org/fdir@6.4.4(picomatch@4.0.2)
       picomatch: registry.npmjs.org/picomatch@4.0.2
