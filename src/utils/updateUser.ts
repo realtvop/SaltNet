@@ -5,6 +5,8 @@ import type { User } from "@/types/user";
 
 import { Snackbar, snackbar } from "mdui";
 
+let songs = null;
+
 export function updateUser(user: User) {
     if (!user.data) user.data = {};
 
@@ -44,7 +46,7 @@ function fromInGame(user: User) {
             if (data) {
                 user.data.rating = data.rating;
                 user.inGame.name = data.userName;
-                // user.data.b50 = data.divingFishData.charts;
+                user.data.b50 = data.b50;
                 info(`从 InGame 获取用户信息成功：${user.divingFish.name}`);
             } else {
                 info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
@@ -67,11 +69,26 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
             return null;
         });
 }
+// async function convertInGameData() {
+
+// }
+
+// function fetchSongData() {
+//     info("正在获取曲目数据");
+//     return fetch("https://www.diving-fish.com/api/maimaidxprober/music_data")
+//         .then(r => r.json())
+//         .then(data => {
+//             songs = data;
+//         })
+//         .catch(e => {
+//             info(`获取曲目数据失败：${e.toString()}`, e.toString());
+//         });
+// }
 
 function info(message: string, errorMsg?: string): Snackbar {
     return snackbar({
         message,
-        placement: "top",
+        placement: "bottom",
         autoCloseDelay: errorMsg ? 2000 : 1000,
         action: errorMsg ? "复制错误" : undefined,
         onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,

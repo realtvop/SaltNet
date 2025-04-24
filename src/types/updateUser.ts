@@ -1,3 +1,4 @@
+import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
 import type { UserMusic } from "./inGame";
 
 export interface UpdateUserResponse {
@@ -5,5 +6,6 @@ export interface UpdateUserResponse {
     iconId: number,
     rating: number,
     userMusicList: UserMusic[],
-    divingFishData: any, // 懒
+    divingFishData: DivingFishFullRecord[],
+    b50: DivingFishB50,
 }
