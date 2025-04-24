@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import RatingPlate from "@/components/RatingPlate.vue";
 import { useRouter } from "vue-router";
-import type { DivingFishResponse } from "@/divingfish/type";
+import localForage from "localforage";
+import type { User } from "@/types/user";
 
-const username = ref("");
-const isLoggedIn = ref(false);
-const playerData = ref<DivingFishResponse | null>(null);
-const isLoading = ref(false);
-const error = ref<string | null>(null);
+const playerData = ref<User | null>(null);
 const router = useRouter();
 
-const goToSettings = () => {
-  router.push("/settings");
-};
+onMounted(() => {
+  localForage.getItem<User[]>("users").then((v) => {
+    if (v && v[0]) {
+      playerData.value = v[0];
+    }
+  });
+});
 </script>
 
 <template>
@@ -22,36 +23,48 @@ const goToSettings = () => {
       <img src="/favicon.png" alt="Favicon" class="favicon-image" />
       <h1 variant="display-large" class="project-title">SaltNet</h1>
     </div>
-    <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px;">
-      <div style="padding: 20px; text-align: center;">
+    <mdui-card
+      variant="filled"
+      style="width: 100%; max-width: 600px; margin-bottom: 24px"
+    >
+      <div style="padding: 20px; text-align: center">
         <mdui-typography variant="headline-medium" class="welcome-text">
-          欢迎，{{ isLoggedIn ? username : "wmc" }}
+          欢迎，{{
+            playerData
+              ? playerData.divingFish.name || playerData.inGame.name || "wmc"
+              : "wmc"
+          }}
         </mdui-typography>
 
-        <div v-if="isLoggedIn">
-          <mdui-linear-progress v-if="isLoading"></mdui-linear-progress>
-          <div v-else-if="playerData" class="rating-container">
-            <RatingPlate :ra="playerData.rating" :small="false" class="large-rating" />
-          </div>
-          <mdui-chip v-else-if="error" variant="assist" color="error">{{ error }}</mdui-chip>
+        <div v-if="playerData" class="rating-container">
+          <RatingPlate
+            :ra="playerData.data.rating as number"
+            :small="false"
+            class="large-rating"
+          />
         </div>
         <div v-else class="loading-text">
-           <mdui-chip variant="assist">请在 <a href="javascript:void(0)" @click="goToSettings">设置</a> 中设置水鱼账号名</mdui-chip>
+          <mdui-chip variant="assist"
+            >请在
+            <a href="javascript:void(0)" @click="router.push('/settings')"
+              >设置</a
+            >
+            中设置水鱼账号名</mdui-chip
+          >
         </div>
       </div>
     </mdui-card>
 
     <div class="github-footer">
-       <mdui-chip
-          variant="outlined"
-          icon="link"
-          href="https://github.com/realtvop/SaltNet"
-          target="_blank"
-        >
-          realtvop/SaltNet
-        </mdui-chip>
+      <mdui-chip
+        variant="outlined"
+        icon="link"
+        href="https://github.com/realtvop/SaltNet"
+        target="_blank"
+      >
+        realtvop/SaltNet
+      </mdui-chip>
     </div>
-
   </div>
 </template>
 
@@ -79,7 +92,9 @@ const goToSettings = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center; /* Center content vertically */
-  min-height: calc(100vh - 64px - 40px); /* Adjust based on app bar and potential footer/padding */
+  min-height: calc(
+    100vh - 64px - 40px
+  ); /* Adjust based on app bar and potential footer/padding */
   width: 100%;
   padding: 20px;
   box-sizing: border-box;

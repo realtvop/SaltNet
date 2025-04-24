@@ -28,7 +28,7 @@ const props = defineProps<{
 
 <style scoped>
 svg {
-  margin-left: 20px;
+  margin-left: 5px;
   transform: scale(1.25);
   transform-origin: left left;
 }
