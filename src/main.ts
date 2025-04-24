@@ -1,13 +1,14 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import router from './router' // Import the router
-import 'mdui/mdui.css'; // Import mdui base styles
-import { setColorScheme } from 'mdui'; // Import all mdui components
+import router from './router'
+import 'mdui/mdui.css';
+import { setColorScheme } from 'mdui';
+import './utils/checkForUpdate';
 
 const app = createApp(App)
 
-app.use(router) // Use the router
+app.use(router)
 
 app.mount('#app')
 

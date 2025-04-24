@@ -5,10 +5,23 @@
     <link rel="icon" type="image/icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="/MaterialIcons/regular.css">
+    <link rel="manifest" href="/manifest.json">
     <title>SaltNet</title>
+    <script>
+      window.spec = {
+        currentVersionBuildTime: "%buildTime%",
+      };
+    </script>
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
+    <script>
+      if ([80, 443, 1443, "1443", "", "1145"].includes(location.port))
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(
+            err => console.log("SW_Reg_Failed: ", err)
+          );
+    </script>
   </body>
 </html>
