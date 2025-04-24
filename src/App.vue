@@ -47,6 +47,16 @@ const router = useRouter();
   overflow-y: auto; /* Enable scrolling within this container */
 }
 
+@supports (-webkit-touch-callout: none) {
+  mdui-navigation-bar {
+    @media all and (display-mode: standalone) {
+      height: 6rem;
+      padding-bottom: 1rem;
+    }
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 mdui-navigation-bar,
 mdui-navigation-rail {
   position: fixed !important;
