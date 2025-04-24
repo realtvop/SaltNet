@@ -54,17 +54,6 @@ onMounted(() => {
         </div>
       </div>
     </mdui-card>
-
-    <div class="github-footer">
-      <mdui-chip
-        variant="outlined"
-        icon="link"
-        href="https://github.com/realtvop/SaltNet"
-        target="_blank"
-      >
-        realtvop/SaltNet
-      </mdui-chip>
-    </div>
   </div>
 </template>
 
@@ -77,9 +66,9 @@ onMounted(() => {
 }
 
 .favicon-image {
-  width: 120px; /* Increased size further */
-  height: 120px; /* Increased size further */
-  margin-bottom: 15px; /* Adjusted spacing */
+  width: 120px;
+  height: 120px;
+  margin-bottom: 15px;
 }
 
 .project-title {
@@ -91,10 +80,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Center content vertically */
+  justify-content: center;
   min-height: calc(
     100vh - 64px - 40px
-  ); /* Adjust based on app bar and potential footer/padding */
+  );
   width: 100%;
   padding: 20px;
   box-sizing: border-box;
@@ -115,7 +104,7 @@ onMounted(() => {
 }
 
 .loading-text {
-  margin: 25px 0; /* Restore margin */
+  margin: 25px 0;
   font-size: 1.1rem;
 }
 
@@ -127,19 +116,8 @@ onMounted(() => {
   color: var(--mdui-color-primary-hover);
 }
 
-.github-footer {
-  margin-top: 40px;
-  text-align: center;
-  width: 100%;
-  /* Optional: Re-add fixed positioning if desired */
-  /* position: fixed; */
-  /* bottom: 20px; */
-  /* left: 0; */
-}
-
-/* Ensure MDUI components fit well */
 mdui-button {
-  margin: 0; /* Remove default browser margins if any */
+  margin: 0;
 }
 mdui-card {
   text-align: center;
