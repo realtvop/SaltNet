@@ -231,6 +231,10 @@ mdui-chip {
     height: 28px;
 }
 
+svg {
+    padding-left: 15px;
+}
+
 .user-actions {
     display: flex;
     align-items: center;

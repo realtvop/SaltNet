@@ -4,8 +4,6 @@
   "description": "SaltNet - Maimai player information platform",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#242424",
-  "theme_color": "#535bf2",
   "icons": [
     {
       "src": "/favicon.ico",
