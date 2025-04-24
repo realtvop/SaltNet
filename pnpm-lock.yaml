@@ -11,6 +11,9 @@ dependencies:
   mdui:
     specifier: ^2.1.3
     version: registry.npmjs.org/mdui@2.1.3
+  path:
+    specifier: ^0.12.7
+    version: registry.npmjs.org/path@0.12.7
   vue:
     specifier: ^3.5.13
     version: registry.npmjs.org/vue@3.5.13(typescript@5.7.3)
@@ -911,6 +914,12 @@ packages:
     version: 3.0.6
     dev: false
 
+  registry.npmjs.org/inherits@2.0.3:
+    resolution: {integrity: sha512-x00IRNXNy63jwGkJmzPigoySHbaqpNuzKbBOmzK+g2OdZpQ9w+sxCN+VSB3ja7IAge2OP2qpfxTjeNcyjmW1uw==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/inherits/-/inherits-2.0.3.tgz}
+    name: inherits
+    version: 2.0.3
+    dev: false
+
   registry.npmjs.org/is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/is-promise/-/is-promise-4.0.0.tgz}
     name: is-promise
@@ -1014,6 +1023,15 @@ packages:
     version: 1.0.1
     dev: true
 
+  registry.npmjs.org/path@0.12.7:
+    resolution: {integrity: sha512-aXXC6s+1w7otVF9UletFkFcDsJeO7lSZBPUQhtb5O0xJe8LtYhj/GxldoL09bBj9+ZmE2hNoHqQSFMN5fikh4Q==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/path/-/path-0.12.7.tgz}
+    name: path
+    version: 0.12.7
+    dependencies:
+      process: registry.npmjs.org/process@0.11.10
+      util: registry.npmjs.org/util@0.10.4
+    dev: false
+
   registry.npmjs.org/picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz}
     name: picocolors
@@ -1035,6 +1053,13 @@ packages:
       nanoid: registry.npmjs.org/nanoid@3.3.11
       picocolors: registry.npmjs.org/picocolors@1.1.1
       source-map-js: registry.npmjs.org/source-map-js@1.2.1
+
+  registry.npmjs.org/process@0.11.10:
+    resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/process/-/process-0.11.10.tgz}
+    name: process
+    version: 0.11.10
+    engines: {node: '>= 0.6.0'}
+    dev: false
 
   registry.npmjs.org/rollup@4.40.0:
     resolution: {integrity: sha512-Noe455xmA96nnqH5piFtLobsGbCij7Tu+tb3c1vYjNbTkfzGqXqQXG3wJaYXkRZuQ0vEYN4bhwg7QnIrqB5B+w==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/rollup/-/rollup-4.40.0.tgz}
@@ -1102,6 +1127,14 @@ packages:
     version: 5.7.3
     engines: {node: '>=14.17'}
     hasBin: true
+
+  registry.npmjs.org/util@0.10.4:
+    resolution: {integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/util/-/util-0.10.4.tgz}
+    name: util
+    version: 0.10.4
+    dependencies:
+      inherits: registry.npmjs.org/inherits@2.0.3
+    dev: false
 
   registry.npmjs.org/vite@6.3.2:
     resolution: {integrity: sha512-ZSvGOXKGceizRQIZSz7TGJ0pS3QLlVY/9hwxVh17W3re67je1RKYzFHivZ/t0tubU78Vkyb9WnHPENSBCzbckg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/vite/-/vite-6.3.2.tgz}
