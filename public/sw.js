@@ -7,7 +7,7 @@ const CORE = [
     "/index.html",
     "/favicon.ico",
     "/favicon.png",
-    "/mainfest.json",
+    "/manifest.json",
 ];
 
 function parseURL(url) {
