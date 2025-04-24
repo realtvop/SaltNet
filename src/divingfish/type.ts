@@ -57,17 +57,19 @@ export interface DivingFishResponse {
   rating: number; // Overall rating
 
   // Full records list
-  records: DivingFishFullRecord[];
+  records?: DivingFishFullRecord[];
 
   // Calculated Best 50 charts - Now optional as calculation moves to API endpoint
-  b50?: {
-    dx: DivingFishFullRecord[]; // Best 15 New Version (based on is_new)
-    sd: DivingFishFullRecord[]; // Best 35 Old Version (based on is_new)
-  };
+  charts: DivingFishB50;
 
   // Potentially other fields like user_id, user_data if needed, but not standard in /dev/player/records
   user_id?: unknown | null;
   user_data?: unknown | null;
+}
+
+export interface DivingFishB50 {
+  dx: DivingFishFullRecord[]; // Best 15 New Version (based on is_new)
+  sd: DivingFishFullRecord[]; // Best 35 Old Version (based on is_new)
 }
 
 // Structure for a single chart score (used by /query/player, kept for potential compatibility or future use)
