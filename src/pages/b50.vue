@@ -1,85 +1,48 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, inject } from 'vue';
 import { useRoute } from 'vue-router';
-import ScoreSection from '@/components/ScoreSection.vue'; // Use @ alias
-import type { DivingFishResponse } from '@/divingfish/type'; // Use @ alias
-import { fetchPlayerData } from '@/divingfish/index'; // Assuming fetch logic is here
+import ScoreSection from '@/components/ScoreSection.vue';
+import type { User } from '@/types/user';
+import localForage from "localforage";
 
 const route = useRoute();
-const username = ref(route.params.username as string);
+const userId = ref(route.params.id as string);
 const error = ref<string | null>(null);
 const pending = ref(false);
-const playerData = ref<DivingFishResponse | null>(null);
+const playerData = ref<User | null>(null);
 
-// Inject the shared playerInfo state from App.vue
-const globalPlayerInfo = inject<{ name: string; data: DivingFishResponse | null }>('playerInfo');
 
-const loadPlayerData = async (name: string) => {
+const loadPlayerData = async (id: number) => {
   pending.value = true;
   error.value = null;
   playerData.value = null;
-  if (globalPlayerInfo) {
-    globalPlayerInfo.value = { name: name, data: null }; // Clear global state
-  }
 
-  try {
-    const response = await fetchPlayerData(name);
-    // 兼容API返回 charts 字段为 b50
-    if ((response as any).charts) {
-      (response as any).b50 = (response as any).charts;
-    }
-    playerData.value = response;
-    // 检查b50为空但API返回了message字段，提示隐私或未同意协议
-    if (
-      (!response.b50 ||
-        ((!response.b50.sd || response.b50.sd.length === 0) && (!response.b50.dx || response.b50.dx.length === 0))
-      ) && (response as any).message
-    ) {
-      error.value = (response as any).message;
-      playerData.value = null;
-      if (globalPlayerInfo) {
-        globalPlayerInfo.value = { name: name, data: null };
-      }
-      return;
-    }
-    if (globalPlayerInfo) {
-      globalPlayerInfo.value = { name: name, data: response }; // Update global state
-    }
-  } catch (err: any) {
-    console.error("Failed to fetch player data:", err);
-    if (err.message === 'Request failed with status code 404' || err.message?.includes('user not found') || err.message?.includes('不存在')) {
-      error.value = 'user not exists';
-    } else {
-      error.value = err.message || 'Failed to load data.';
-    }
-    if (globalPlayerInfo) {
-      globalPlayerInfo.value = { name: name, data: null }; // Clear global state on error
-    }
-  } finally {
+  localForage.getItem<User[]>("users").then(v => {
+    if (v) playerData.value = v[id];
     pending.value = false;
-  }
+  });
 };
 
 onMounted(() => {
-  loadPlayerData(username.value);
+  loadPlayerData(Number(userId.value ?? "0"));
 });
 
-watch(() => route.params.username, (newUsername) => {
-  const newName = newUsername as string;
-  if (newName && newName !== username.value) {
-    username.value = newName;
-    loadPlayerData(newName);
-  }
-});
+// watch(() => route.params.username, (newUsername) => {
+//   const newName = newUsername as string;
+//   if (newName && newName !== username.value) {
+//     username.value = newName;
+//     loadPlayerData(newName);
+//   }
+// });
 
-const fishData = computed(() => {
+const player = computed(() => {
   return playerData.value ?? null;
 });
 
 const errorMessage = computed(() => {
   if (!error.value) return '';
   const msg = error.value === 'user not exists'
-    ? `玩家 "${username.value}" 不存在`
+    ? `玩家 "${userId.value}" 不存在`
     : error.value || '加载数据时出错';
   return msg;
 });
@@ -99,10 +62,10 @@ const errorMessage = computed(() => {
       <p v-else>请检查用户名是否正确。</p>
     </div>
 
-    <div v-else-if="fishData" class="player-b50">
-      <ScoreSection v-if="fishData.b50?.sd?.length" title="旧版本成绩" :scores="fishData.b50.sd" />
-      <ScoreSection v-if="fishData.b50?.dx?.length" title="新版本成绩" :scores="fishData.b50.dx" />
-      <p v-if="!(fishData.b50?.sd?.length || fishData.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
+    <div v-else-if="player && player.data" class="player-b50">
+      <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" />
+      <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" />
+      <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
         玩家数据已加载，但 B50 成绩为空。
       </p>
     </div>

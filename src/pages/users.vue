@@ -50,16 +50,8 @@ const openDeleteDialog = (index: number) => {
     isDeleteDialogVisible.value = true;
 };
 
-const goToUserDetails = (user: User) => {
-    alert(123)
-    return;
-    const username = user.divingFish?.name ?? user.inGame?.name;
-    if (username) {
-        router.push(`/user/${encodeURIComponent(username)}`); // Corrected path
-    } else {
-        console.warn("Cannot navigate, user has no identifiable name.");
-        // Optionally show a notification to the user
-    }
+const goToUserDetails = (index: number) => {
+    router.push(`/b50/${index}`);
 };
 
 interface UpdatedUserData {
@@ -173,7 +165,7 @@ function updateAll() {
                         </mdui-menu-item>
                     </mdui-menu>
                 </mdui-dropdown>
-                <mdui-button end-icon="arrow_forward" @click="goToUserDetails(user)">详情</mdui-button>
+                <mdui-button end-icon="arrow_forward" @click="goToUserDetails(index)">详情</mdui-button>
             </div>
         </mdui-card>
     </div>
