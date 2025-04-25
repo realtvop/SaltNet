@@ -79,7 +79,7 @@ const stats = computed(() => {
   margin-top: 30px;
   margin-bottom: 10px;
   text-align: left;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: bold;
   display: flex;
   align-items: baseline;

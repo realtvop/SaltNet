@@ -108,8 +108,8 @@ self.addEventListener("fetch", async function (e) {
     const currentUrlParsed = parseURL(self.location.href);
     if (urlOri.startsWith("http")) {
         if (urlParsed.path.endsWith("sw.v2.js") ||
-          (urlParsed.path.endsWith(".json") && !urlParsed.path.endsWith("manifest.json")) ||
-          urlOri.includes("diving-fish.com/api") || urlParsed.host == "api.salt.realtvop.top" || urlParsed.host == "salt_api_backup.realtvop.top"
+            (urlParsed.path.endsWith(".json") && !urlParsed.path.endsWith("manifest.json")) ||
+            urlOri.includes("diving-fish.com/api") || urlParsed.host == "api.salt.realtvop.top" || urlParsed.host == "salt_api_backup.realtvop.top"
         ) {
             return;
         } else if (urlOri.includes("diving-fish.com/covers")) {

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ScoreSection from '@/components/ScoreSection.vue';
+import RatingPlate from '@/components/RatingPlate.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
 
@@ -63,6 +64,12 @@ const errorMessage = computed(() => {
     </div>
 
     <div v-else-if="player && player.data" class="player-b50">
+      <div class="player-header">
+        <span class="player-name">
+          {{ player.inGame?.name ?? player.divingFish?.name ?? 'wmc' }}
+        </span>
+        <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
+      </div>
       <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" />
       <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" />
       <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
@@ -114,6 +121,21 @@ const errorMessage = computed(() => {
   max-width: 1200px;
   box-sizing: border-box;
   padding-bottom: 5vh;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+  width: 100%;
+  padding: 0 20px;
+}
+
+.player-name {
+  font-size: 2em;
+  font-weight: bold;
 }
 
 .error-message {
