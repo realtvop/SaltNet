@@ -1,5 +1,13 @@
 import { snackbar } from "mdui";
 
+declare global {
+    interface Window {
+        spec: {
+            currentVersionBuildTime: string;
+        };
+    }
+}
+
 export function checkForUpdate() {
     fetch("/latest.json")
         .then(r => r.text())
@@ -12,10 +20,10 @@ export function checkForUpdate() {
                 } else showSnackBar("更新失败")
             }
         })
-        // .catch(e => showSnackBar("更新检查失败"));
+    // .catch(e => showSnackBar("更新检查失败"));
 }
 
-function showSnackBar(message) {
+function showSnackBar(message: string) {
     return snackbar({
         message,
         placement: "bottom",
