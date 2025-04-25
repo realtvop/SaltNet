@@ -132,8 +132,9 @@ function updateAll() {
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in users"
             :key="user.divingFish?.name || user.inGame?.id || index"
+            clickable
         >
-            <div class="user-name">
+            <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">{{ user.divingFish?.name ?? user.inGame?.name ?? "未知" }}</h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
@@ -166,7 +167,7 @@ function updateAll() {
                         </mdui-menu-item>
                     </mdui-menu>
                 </mdui-dropdown>
-                <mdui-button end-icon="arrow_forward" @click="goToUserDetails(index)">详情</mdui-button>
+                <!-- <mdui-button end-icon="arrow_forward" @click="goToUserDetails(index)">详情</mdui-button> -->
             </div>
         </mdui-card>
     </div>
@@ -200,7 +201,6 @@ function updateAll() {
 mdui-card {
     width: 97.5%;
     margin-left: 1.25%;
-    padding-left: 15px;
     align-items: center;
 
     display: flex;
@@ -213,12 +213,8 @@ mdui-card {
     height: 100%;
     justify-content: space-evenly;
     align-items: flex-start;
-    padding: 10px 0;
-}
-.primary-name {
-    font-weight: 500;
-    margin-top: 0;
-    margin-bottom: 5px;
+    padding: 10px 10px 13px 15px;
+    width: 100%;
 }
 .user-badges {
     display: flex;
@@ -226,6 +222,12 @@ mdui-card {
     align-items: center;
     justify-content: flex-start;
     gap: 5px;
+    height: 2rem;
+}
+.primary-name {
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 5px;
 }
 mdui-chip {
     height: 28px;
@@ -241,7 +243,7 @@ svg {
     justify-content: center;
     gap: 2.5px;
 
-    padding-right: 20px;
+    padding-right: 10px;
 }
 
 .fab-container {
