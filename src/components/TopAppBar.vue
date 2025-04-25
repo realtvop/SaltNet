@@ -66,11 +66,11 @@ defineExpose({
 
 <template>
   <mdui-top-app-bar class="custom-app-bar" scroll-behavior="elevate">
-    <mdui-tooltip content="首页">
-        <mdui-button variant="text" class="icon-btn" @click="goToHomepage" style="aspect-ratio: 1;">
-            <img src="/favicon.ico" alt="icon" class="favicon-icon" />
-        </mdui-button>
-    </mdui-tooltip>
+    <mdui-button-icon icon="arrow_back" variant="text" v-if="route.path.startsWith('/b50/')" class="icon-btn" @click="router.back" style="aspect-ratio: 1;">
+    </mdui-button-icon>
+    <mdui-button variant="text" class="icon-btn" @click="goToHomepage" style="aspect-ratio: 1;">
+        <img src="/favicon.ico" alt="icon" class="favicon-icon" />
+    </mdui-button>
     <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
     <template v-if="!shouldShowHomepage">
       <mdui-top-app-bar-title class="player-title">
