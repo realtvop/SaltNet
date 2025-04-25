@@ -58,7 +58,7 @@ function fromInGame(user: User) {
         });
 }
 function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {
-    return fetch("https://api.salt.realtvop.top/updateUser", {
+    return fetch("https://salt_api_backup.realtvop.top/updateUser", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ userId, importToken }),
