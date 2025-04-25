@@ -73,13 +73,13 @@ const errorMessage = computed(() => {
       <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" />
       <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" />
       <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
-        玩家数据已加载，但 B50 成绩为空。
+        未更新成绩或成绩更新失败，请到“用户”更新成绩
       </p>
     </div>
 
     <div v-else class="error-message">
       <h2>无法加载玩家数据</h2>
-      <p>未能获取到有效的玩家信息，请稍后再试或检查用户名。</p>
+      <p>未能获取到有效的玩家信息，是不是还没有添加用户？</p>
     </div>
   </div>
 </template>
