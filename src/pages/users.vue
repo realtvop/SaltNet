@@ -4,10 +4,10 @@ import { useRouter } from 'vue-router'; // Import useRouter
 // Use default imports for Vue components
 import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
-import ConfirmDeleteDialog from '@/components/users/ConfirmDeleteDialog.vue'; // Import ConfirmDeleteDialog
 // Correct the import path for the User type
 import type { User } from '@/types/user';
 import { updateUser } from '@/utils/updateUser';
+import { confirm } from 'mdui';
 import localForage from "localforage";
 
 const users = ref<User[]>([]);
@@ -21,7 +21,6 @@ watch(users, v => {
 }, { deep: true });
 
 const isDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false); // Add ref for delete dialog visibility
 const currentUserToEdit = ref<User | null>(null);
 const editingUserIndex = ref<number | null>(null); // Add ref for index
 
@@ -46,8 +45,19 @@ const openAddDialog = () => {
 };
 
 const openDeleteDialog = (index: number) => {
-    editingUserIndex.value = index;
-    isDeleteDialogVisible.value = true;
+    confirm({
+        headline: "删除绑定的用户？",
+        description: "用户删除后无法恢复",
+        confirmText: "删除",
+        cancelText: "取消",
+        closeOnEsc: true,
+        closeOnOverlayClick: true,
+        onConfirm: () => {
+            if (index !== null && index >= 0 && index < users.value.length)
+                users.value.splice(index, 1);
+            return true;
+        },
+    });
 };
 
 const goToUserDetails = (index: number) => {
@@ -98,16 +108,6 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
     currentUserToEdit.value = null;
     editingUserIndex.value = null; // Reset the index
     isDialogVisible.value = false;
-};
-
-const handleUserDelete = () => {
-    if (editingUserIndex.value !== null && editingUserIndex.value >= 0 && editingUserIndex.value < users.value.length) {
-        users.value.splice(editingUserIndex.value, 1);
-    }
-    currentUserToEdit.value = null;
-    editingUserIndex.value = null;
-    isDialogVisible.value = false;
-    isDeleteDialogVisible.value = false; // Close delete dialog
 };
 
 const setAsDefault = (index: number) => {
@@ -177,11 +177,6 @@ function updateAll() {
         :user="currentUserToEdit"
         @save="handleUserSave"
         @delete="handleUserDelete"
-    />
-
-    <ConfirmDeleteDialog
-        v-model="isDeleteDialogVisible"
-        @confirm="handleUserDelete"
     />
 
     <div class="fab-container">

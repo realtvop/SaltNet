@@ -43,8 +43,8 @@ const router = useRouter();
 .app-container {
   padding: 16px;
   box-sizing: border-box;
-  height: 100%; /* Take remaining height */
-  overflow-y: auto; /* Enable scrolling within this container */
+  height: 100%;
+  overflow-y: auto;
 }
 
 @supports (-webkit-touch-callout: none) {
@@ -109,7 +109,7 @@ mdui-navigation-rail-item {
     min-width: 120px;
   }
   .player-info-bar {
-     gap: 4px;
+    gap: 4px;
   }
 }
 </style>
@@ -123,7 +123,7 @@ body {
   width: 100%;
   min-height: 100vh;
   display: block;
-  overflow: hidden; /* Prevent body scroll */
+  overflow: hidden;
 }
 
 button {
