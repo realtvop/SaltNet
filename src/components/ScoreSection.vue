@@ -40,7 +40,7 @@ const stats = computed(() => {
   };
 });
 
-function openDialog(chart) {
+function openDialog(chart: DivingFishMusicChart) {
   props.chartInfoDialog.open = !props.chartInfoDialog.open;
   props.chartInfoDialog.chart = chart;
 }

@@ -6,7 +6,6 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import { DivingFishMusicChart } from '@/divingfish/type';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
