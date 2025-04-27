@@ -14,7 +14,7 @@ const buildTime = window.spec?.currentVersionBuildTime;
           舞萌 DX 查分器
           <br>
           <div class="build-time-text">
-            当前版本构建时间: {{ buildTime === "%buildTime%" ? "开发版本" : new Date(buildTime).toLocaleString() }}
+            当前版本构建时间: {{ buildTime === "%buildTime%" ? "开发版本" : new Date(Number(buildTime)).toLocaleString() }}
           </div>
           <br>
           Made with ❤️ by realtvop
