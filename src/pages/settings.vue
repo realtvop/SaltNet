@@ -8,6 +8,13 @@
                 <mdui-button variant="tonal" @click="userData.export">导出</mdui-button>
             </div>
         </mdui-card>
+        <mdui-card variant="filled" class="settings-item">
+            <h2>缓存</h2>
+            <br>
+            <div class="btns-container">
+                <mdui-button variant="tonal" @click="deleteCache('Covers')">清除缓存的曲绘</mdui-button>
+            </div>
+        </mdui-card>
     </div>
 </template>
 
@@ -62,6 +69,23 @@ const userData = {
             };
         },
     ],
+}
+
+function deleteCache(key: string) {
+    const displayName = {
+        Covers: "曲绘",
+    };
+    caches.delete(`SaltNetv0-${key}`).then(() => {
+        snackbar({
+            message: `已清除缓存的${displayName[key]}`,
+            autoCloseDelay: 500,
+        });
+    }).catch(() => {
+        snackbar({
+            message: `清除缓存的${displayName[key]}失败`,
+            autoCloseDelay: 500,
+        });
+    });
 }
 </script>
 
