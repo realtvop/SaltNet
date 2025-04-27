@@ -108,7 +108,7 @@ const stats = computed(() => {
 
 .score-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 200px);
+  grid-template-columns: repeat(auto-fill, 210px);
   gap: 15px;
   margin-top: 20px;
   width: 100%;
@@ -119,7 +119,7 @@ const stats = computed(() => {
 .score-cell {
   display: flex;
   justify-content: center;
-  width: 200px;
+  width: 210px;
   box-sizing: border-box;
   padding: 0;
   height: auto;
@@ -127,40 +127,57 @@ const stats = computed(() => {
 
 @media (min-width: 1254px) {
   .score-grid {
-    grid-template-columns: repeat(5, 200px);
+    grid-template-columns: repeat(5, 210px);
     justify-content: center;
   }
 }
 
 @media (max-width: 1253px) and (min-width: 1000px) {
   .score-grid {
-    grid-template-columns: repeat(4, 200px);
+    grid-template-columns: repeat(4, 210px);
     justify-content: center;
   }
 }
 
 @media (max-width: 999px) and (min-width: 768px) {
   .score-grid {
-    grid-template-columns: repeat(3, 200px);
+    grid-template-columns: repeat(3, 210px);
     justify-content: center;
   }
 }
 
 @media (max-width: 767px) and (min-width: 500px) {
   .score-grid {
-    grid-template-columns: repeat(2, 200px);
+    grid-template-columns: repeat(2, 210px);
     justify-content: center;
   }
 }
 
 @media (max-width: 499px) {
+  .score-grid-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: auto;
+    overflow: visible;
+  }
   .score-grid {
-    grid-template-columns: repeat(1, 200px);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    transform: none;
+    width: 100%;
+    margin: 0;
     justify-content: center;
   }
-  
+  .score-cell {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0;
+  }
   .score-section {
-    padding: 0 10px;
+    padding: 0 20px;
+    overflow: visible;
   }
 }
 
@@ -174,6 +191,19 @@ const stats = computed(() => {
   .stats-info {
     margin-left: 5px;
     font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 349px) {
+  .score-grid {
+    grid-template-columns: 210px;
+    justify-content: center;
+  }
+  .score-cell {
+    width: 210px;
+  }
+  .score-section {
+    padding: 0 20px;
   }
 }
 </style>
