@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const buildTime = window.spec?.currentVersionBuildTime;
 </script>
 
 <template>
@@ -12,6 +13,9 @@
         <mdui-typography variant="headline-medium" class="welcome-text">
           舞萌 DX 查分器
           <br>
+          <div class="build-time-text">
+            当前版本构建时间: {{ buildTime === "%buildTime%" ? "开发版本" : new Date(buildTime).toLocaleString() }}
+          </div>
           <br>
           Made with ❤️ by realtvop
         </mdui-typography>
@@ -20,7 +24,7 @@
     </mdui-card>
 
     <div class="github-footer">
-       <mdui-chip
+        <mdui-chip
           variant="outlined"
           icon="link"
           href="https://github.com/realtvop/SaltNet"
