@@ -60,7 +60,7 @@ function cacheFirst(request, key) {
             return (
                 response ||
                 fetch(request).then((response) => {
-                    if (response.ok || response.type === "opaque") cache.put(request, response.clone());
+                    if (response.ok || response.type === "opaque" || response.status !== 404) cache.put(request, response.clone());
                     return response;
                 })
             );
@@ -146,6 +146,7 @@ self.addEventListener("activate", function (e) {
     );
 });
 
+const broadcast = new BroadcastChannel('updateFinish');
 self.addEventListener('message', event => {
     const evtAct = event.data.action;
     if (!evtAct) return;
@@ -156,6 +157,8 @@ self.addEventListener('message', event => {
         caches.delete(cacheStorageKey + "Main");
         caches.open(cacheStorageKey + "Main").then(function (cache) {
             return cache.addAll(assets);
+        }).then(() => {
+            broadcast.postMessage({ type: 'UPDATED', });
         });
     }
 });

@@ -23,10 +23,23 @@ export function checkForUpdate() {
     // .catch(e => showSnackBar("更新检查失败"));
 }
 
+const broadcast = new BroadcastChannel('updateFinish');
+broadcast.onmessage = () => {
+    snackbar({
+        message: "更新成功，刷新生效",
+        placement: "bottom",
+        autoCloseDelay: 2000,
+        action: "立即刷新",
+        onActionClick: () => {
+            window.location.reload();
+        },
+    });
+};
+
 function showSnackBar(message: string) {
     return snackbar({
         message,
         placement: "bottom",
         autoCloseDelay: 1000,
-    })
+    });
 }
