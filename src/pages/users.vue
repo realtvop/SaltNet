@@ -140,7 +140,7 @@ function updateAll() {
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>
                 <div class="user-badges">
-                    <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? (user.divingFish?.importToken ? "仅绑定更新Token" : "未绑定水鱼") }}</mdui-chip>
+                    <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">{{ user.divingFish?.name ?? ((user.divingFish?.importToken && user.inGame?.id) ? "仅上传" : "未绑定水鱼") }}</mdui-chip>
                     <mdui-chip icon="local_laundry_service" :disabled="!user.inGame?.id && !user.inGame?.name">{{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}</mdui-chip>
                 </div>
             </div>

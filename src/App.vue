@@ -62,6 +62,11 @@ mdui-navigation-rail {
   position: fixed !important;
 }
 
+mdui-navigation-bar-item,
+mdui-navigation-rail-item {
+  overflow: hidden;
+}
+
 @media (min-aspect-ratio: 1.001/1) {
   mdui-navigation-bar {
     display: none;
