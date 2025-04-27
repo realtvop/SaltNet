@@ -6,7 +6,6 @@
       <mdui-button variant="text" @click="handleSave">保存</mdui-button>
     </mdui-top-app-bar>
 
-    <!-- Bind directly to localUser properties -->
     <mdui-text-field
       v-if="localUser.divingFish"
       label="水鱼用户名"
@@ -43,23 +42,19 @@ import { ref, watch, defineProps, defineEmits, nextTick } from "vue";
 import type { User } from "@/types/user";
 
 const props = defineProps<{
-  modelValue: boolean; // Controls dialog visibility
-  user: User | null; // User data to edit
+  modelValue: boolean;
+  user: User | null;
 }>();
 
 const emit = defineEmits(["update:modelValue", "save", "delete"]);
 
-const dialogRef = ref<any>(null); // Ref for the mdui-dialog element
+const dialogRef = ref<any>(null);
 
-// Initialize localUser with a structure that reflects the prop, handling null
 const localUser = ref<Partial<User>>({});
 
-// Watch for changes in the user prop to update localUser
 watch(() => props.user, (newUser) => {
   if (newUser) {
-    // Deep copy the user prop to localUser when it changes
     localUser.value = JSON.parse(JSON.stringify(newUser));
-    // Ensure nested objects exist if they might be null/undefined in the prop
     if (!localUser.value.divingFish) {
         localUser.value.divingFish = { name: null, importToken: null };
     }
@@ -67,14 +62,12 @@ watch(() => props.user, (newUser) => {
         localUser.value.inGame = { name: null, id: null };
     }
   } else {
-    // Reset if the user prop becomes null
     localUser.value = { divingFish: { name: null, importToken: null }, inGame: { name: null, id: null } };
   }
-}, { immediate: true, deep: true }); // immediate: run on load, deep: watch nested changes
+}, { immediate: true, deep: true });
 
-// Watch for changes in modelValue to open/close the dialog
 watch(() => props.modelValue, async (newValue) => {
-  await nextTick(); // Wait for the DOM to update
+  await nextTick();
   if (dialogRef.value) {
     dialogRef.value.open = newValue;
   }
@@ -85,12 +78,11 @@ const handleClose = () => {
 };
 
 const handleSave = () => {
-  // Emit only the necessary fields for update
   emit("save", {
       divingFish: { name: localUser.value.divingFish?.name ?? null, importToken: localUser.value.divingFish?.importToken ?? null },
       inGame: { id: localUser.value.inGame?.id ?? null }
   });
-  handleClose(); // Close the dialog after saving
+  handleClose();
 };
 </script>
 

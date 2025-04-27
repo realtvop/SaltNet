@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import localforage from 'localforage';
-import { snackbar } from 'mdui';
+import { snackbar, confirm } from 'mdui';
 
 const userData = {
     import: () => {
@@ -62,7 +62,7 @@ const userData = {
         });
     },
     dataDecoder: [
-      (data: { users: string; }) => {
+        (data: { users: string; }) => {
             const users = JSON.parse(unescape(atob(data.users)));
             return {
                 users,
@@ -75,16 +75,23 @@ const displayName = {
     "Covers": "曲绘",
 };
 function deleteCache(key: keyof typeof displayName) {
-    caches.delete(`SaltNetv0-${key}`).then(() => {
-        snackbar({
-            message: `已清除缓存的${displayName[key]}`,
-            autoCloseDelay: 500,
-        });
-    }).catch(() => {
-        snackbar({
-            message: `清除缓存的${displayName[key]}失败`,
-            autoCloseDelay: 500,
-        });
+    confirm({
+        headline: `清除缓存的${displayName[key]}？`,
+        description: "数据删除后将无法恢复",
+        closeOnEsc: true,
+        closeOnOverlayClick: true,
+        onConfirm: () => 
+            caches.delete(`SaltNetv0-${key}`).then(() => {
+                snackbar({
+                    message: `已清除缓存的${displayName[key]}`,
+                    autoCloseDelay: 500,
+                });
+            }).catch(() => {
+                snackbar({
+                    message: `清除缓存的${displayName[key]}失败`,
+                    autoCloseDelay: 500,
+                });
+            }),
     });
 }
 </script>

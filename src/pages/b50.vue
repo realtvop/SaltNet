@@ -3,8 +3,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ScoreSection from '@/components/ScoreSection.vue';
 import RatingPlate from '@/components/RatingPlate.vue';
+import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
+import { DivingFishMusicChart } from '@/divingfish/type';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
@@ -48,6 +50,10 @@ const errorMessage = computed(() => {
   return msg;
 });
 
+const chartInfoDialog = ref({
+  open: false,
+  chart: null,
+});
 </script>
 
 <template>
@@ -70,8 +76,8 @@ const errorMessage = computed(() => {
         </span>
         <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
       </div>
-      <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" />
-      <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" />
+      <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" :chartInfoDialog="chartInfoDialog" />
+      <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" :chartInfoDialog="chartInfoDialog" />
       <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
         未更新成绩或成绩更新失败，请到“用户”更新成绩
       </p>
@@ -82,6 +88,11 @@ const errorMessage = computed(() => {
       <p>未能获取到有效的玩家信息，是不是还没有添加用户？</p>
     </div>
   </div>
+
+  <ChartInfoDialog
+    :open="chartInfoDialog.open"
+    :chart="chartInfoDialog.chart"
+  ></ChartInfoDialog>
 </template>
 
 <style scoped>
@@ -126,7 +137,8 @@ const errorMessage = computed(() => {
 .player-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
   margin-bottom: 24px;
   gap: 16px;
   width: 100%;

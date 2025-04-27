@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ScoreCard from "./ScoreCard.vue";
+import type { DivingFishMusicChart } from '@/divingfish/type';
 
 // Define props for the component
-const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  },
-  scores: {
-    type: Array,
-    required: true
-  }
-});
+const props = defineProps<{
+  title: string;
+  scores: DivingFishMusicChart[];
+  chartInfoDialog: {
+    open: boolean;
+    chart: DivingFishMusicChart | any;
+  };
+}>();
 
 // Calculate statistics for the scores based on ra values
 const stats = computed(() => {
@@ -40,6 +39,11 @@ const stats = computed(() => {
     levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`
   };
 });
+
+function openDialog(chart) {
+  props.chartInfoDialog.open = !props.chartInfoDialog.open;
+  props.chartInfoDialog.chart = chart;
+}
 </script>
 
 <template>
@@ -56,7 +60,7 @@ const stats = computed(() => {
     <div class="score-grid-wrapper">
       <div class="score-grid">
         <div v-for="(score, index) in scores" :key="`score-cell-${index}`" class="score-cell">
-          <ScoreCard :data="score" />
+          <ScoreCard @click="openDialog(score)" :data="score" />
         </div>
       </div>
     </div>
