@@ -46,7 +46,7 @@ const openAddDialog = () => {
 
 const openDeleteDialog = (index: number) => {
     confirm({
-        headline: "删除绑定的用户？",
+        headline: `删除绑定的用户：${users.value[index].divingFish.name ?? users.value[index].inGame.name ?? users.value[index].inGame.id}？`,
         description: "用户删除后无法恢复",
         confirmText: "删除",
         cancelText: "取消",
