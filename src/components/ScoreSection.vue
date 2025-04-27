@@ -66,12 +66,12 @@ const stats = computed(() => {
 <style scoped>
 .score-section {
   width: 100%;
-  max-width: 1300px; /* 限制最大宽度 */
-  margin: 0 auto; /* 居中显示 */
-  padding: 0 20px; /* 两侧添加内边距 */
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 20px;
   box-sizing: border-box;
-  border-left: 1px solid transparent; /* 左侧边框，颜色可调整 */
-  border-right: 1px solid transparent; /* 右侧边框，颜色可调整 */
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
 }
 
 .section-title {
@@ -108,7 +108,7 @@ const stats = computed(() => {
 
 .score-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 220px); /* 固定卡片宽度 */
+  grid-template-columns: repeat(auto-fill, 200px);
   gap: 15px;
   margin-top: 20px;
   width: 100%;
@@ -119,7 +119,7 @@ const stats = computed(() => {
 .score-cell {
   display: flex;
   justify-content: center;
-  width: 220px; /* 固定宽度 */
+  width: 200px;
   box-sizing: border-box;
   padding: 0;
   height: auto;
@@ -127,40 +127,40 @@ const stats = computed(() => {
 
 @media (min-width: 1254px) {
   .score-grid {
-    grid-template-columns: repeat(5, 220px);
+    grid-template-columns: repeat(5, 200px);
     justify-content: center;
   }
 }
 
 @media (max-width: 1253px) and (min-width: 1000px) {
   .score-grid {
-    grid-template-columns: repeat(4, 220px);
+    grid-template-columns: repeat(4, 200px);
     justify-content: center;
   }
 }
 
 @media (max-width: 999px) and (min-width: 768px) {
   .score-grid {
-    grid-template-columns: repeat(3, 220px);
+    grid-template-columns: repeat(3, 200px);
     justify-content: center;
   }
 }
 
 @media (max-width: 767px) and (min-width: 500px) {
   .score-grid {
-    grid-template-columns: repeat(2, 220px);
+    grid-template-columns: repeat(2, 200px);
     justify-content: center;
   }
 }
 
 @media (max-width: 499px) {
   .score-grid {
-    grid-template-columns: repeat(1, 220px);
+    grid-template-columns: repeat(1, 200px);
     justify-content: center;
   }
   
   .score-section {
-    padding: 0 10px; /* 小屏幕减少内边距 */
+    padding: 0 10px;
   }
 }
 

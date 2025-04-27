@@ -8,7 +8,7 @@ const props = defineProps<{
 
 <template>
 <div class="maimai-card-wrapper">
-    <div class="maimai-result-card">
+    <mdui-card variant="filled" class="maimai-result-card" clickable>
         <div class="song-jacket-section">
             <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - props.data.song_id.toString().length)}${props.data.song_id}.png')`}"></div>
         </div>
@@ -34,7 +34,7 @@ const props = defineProps<{
                 </div>
             </div>
         </div>
-    </div>
+    </mdui-card>
 </div>
 </template>
 
@@ -48,22 +48,12 @@ const props = defineProps<{
 
 .maimai-result-card {
     display: flex;
-    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    background: var(--card-bg-color, #333);
-    border: 1.5px solid var(--card-border-color, #555);
     aspect-ratio: 2.5 / 1;
     width: 100%;
     height: auto;
-    min-height: 90px;
+    min-height: 85px;
     text-align: left;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-}
-
-.maimai-result-card:hover {
-    border-color: var(--card-hover-color, white);
 }
 
 .song-jacket-section {
@@ -91,7 +81,6 @@ const props = defineProps<{
 }
 
 .result-header {
-    margin-bottom: 1.5px;
     height: 15px;
     flex-shrink: 0;
 }
@@ -102,7 +91,7 @@ const props = defineProps<{
     border-radius: 7.5px;
     overflow: hidden;
     margin-left: 1.5%;
-    width: 90%;
+    width: 97.5%;
 }
 
 .pill-section {
@@ -162,11 +151,7 @@ const props = defineProps<{
     display: flex;
     justify-content: space-around;
     align-items: center;
-    gap: 4.5px;
     flex-shrink: 0;
-    margin-left: -5%;
-    width: 100%;
-    margin-top: 1.5px;
 }
 
 .rank-achievement, .fc-achievement, .sync-achievement {
