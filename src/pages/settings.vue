@@ -62,7 +62,7 @@ const userData = {
         });
     },
     dataDecoder: [
-        data => {
+      (data: { users: string; }) => {
             const users = JSON.parse(unescape(atob(data.users)));
             return {
                 users,
@@ -71,10 +71,10 @@ const userData = {
     ],
 }
 
-function deleteCache(key: string) {
-    const displayName = {
-        Covers: "曲绘",
-    };
+const displayName = {
+    "Covers": "曲绘",
+};
+function deleteCache(key: keyof typeof displayName) {
     caches.delete(`SaltNetv0-${key}`).then(() => {
         snackbar({
             message: `已清除缓存的${displayName[key]}`,

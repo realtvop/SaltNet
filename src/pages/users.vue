@@ -176,7 +176,6 @@ function updateAll() {
         v-model="isDialogVisible"
         :user="currentUserToEdit"
         @save="handleUserSave"
-        @delete="handleUserDelete"
     />
 
     <div class="fab-container">
