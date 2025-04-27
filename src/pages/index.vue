@@ -46,10 +46,10 @@ onMounted(() => {
         <div v-else class="loading-text">
           <mdui-chip variant="assist"
             >请在
-            <a href="javascript:void(0)" @click="router.push('/settings')"
-              >设置</a
+            <a href="javascript:void(0)" @click="router.push('/users')"
+              >用户</a
             >
-            中设置水鱼账号名</mdui-chip
+            中绑定并更新用户</mdui-chip
           >
         </div>
       </div>
