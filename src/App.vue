@@ -62,8 +62,10 @@ mdui-navigation-rail {
   position: fixed !important;
 }
 
-mdui-navigation-bar-item,
 mdui-navigation-rail-item {
+  overflow: hidden scroll;
+}
+mdui-navigation-bar-item {
   overflow: hidden;
 }
 

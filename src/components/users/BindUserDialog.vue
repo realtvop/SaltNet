@@ -15,15 +15,19 @@
       autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
     ></mdui-text-field>
 
-    <mdui-text-field
-      v-if="localUser.inGame"
-      label="舞萌 UserID (神秘8位数字)"
-      type="number"
-      :value="localUser.inGame.id ?? ''"
-      @input="localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null"
-      placeholder="留空表示未绑定"
-      autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
-    ></mdui-text-field>
+    <div class="userid-textfield">
+      <mdui-text-field
+        v-if="localUser.inGame"
+        label="舞萌 UserID (神秘8位数字)"
+        placeholder="未绑定"
+        type="password"
+        :value="localUser.inGame.id ?? ''"
+        @input="localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null"
+        autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"
+        disabled
+      ></mdui-text-field>
+      <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
+    </div>
 
     <mdui-text-field
       v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
@@ -40,6 +44,7 @@
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits, nextTick } from "vue";
 import type { User } from "@/types/user";
+import { prompt, snackbar } from "mdui";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -84,11 +89,79 @@ const handleSave = () => {
   });
   handleClose();
 };
+
+function bindInGame() {
+  prompt({
+    headline: "绑定用户",
+    description: "输入 UserID、二维码扫描结果或复制的二维码页面链接",
+    confirmText: "绑定",
+    cancelText: "取消",
+    closeOnEsc: true,
+    closeOnOverlayClick: true,
+    onConfirm: async (value: string, dialog: any) => {
+      if (value) {
+        const id = parseInt(value);
+        if (!isNaN(id)) {
+          if (!localUser.value.inGame) localUser.value.inGame = { name: null, id: null };
+          localUser.value.inGame.id = id;
+          dialog.close();
+        } else {
+          if (value.startsWith("SGWCMAID") && value.length === 84) return await getUserIdFromQRCode(value);
+          if (value.startsWith("http")) {
+            const matches = value.match(/MAID.{0,76}/g);
+            if (matches && matches[0]) return await getUserIdFromQRCode(`SGWC${matches[0]}`);
+            else snackbar({
+              message: "二维码/链接解析失败，请检查是否正确",
+              autoCloseDelay: 1000,
+            });
+          }
+          snackbar({
+            message: "二维码/链接解析失败，请检查是否正确",
+            autoCloseDelay: 1000,
+          });
+        }
+      }
+    },
+  });
+}
+
+function getUserIdFromQRCode(qrCode: string) {
+  return fetch('https://salt_api_backup.realtvop.top/getQRInfo', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ qrCode })
+  }).then(r => r.json())
+  .then(data => {
+    if (data.errorID === 0) {
+      if (!localUser.value.inGame) localUser.value.inGame = { name: null, id: null };
+      localUser.value.inGame.id = data.userID;
+    } else {
+      snackbar({
+        message: "二维码/链接解析失败，请检查二维码是否正确",
+        autoCloseDelay: 1000,
+      });
+    }
+  });
+}
 </script>
 
 <style scoped>
 mdui-text-field {
   display: block;
   margin-bottom: 16px;
+}
+
+.userid-textfield {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.userid-textfield mdui-text-field {
+  width: calc(100% - 3rem);
+  margin-bottom: 0px;
+  margin-right: 0.5rem;
 }
 </style>
