@@ -13,6 +13,9 @@
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
+                    <span v-if="i.ra > chart?.ra">
+                        +{{ i.ra - chart?.ra }}
+                    </span>
                     {{ i.ra }}
                 </div>
             </mdui-list-item>
@@ -69,7 +72,7 @@ const raTable = computed(() => {
         result.push({
             rate: i[0],
             rank: i[2],
-            ra: (i[1] * props.chart.ds * Math.min(100.5, props.chart.achievements) / 100).toFixed(0),
+            ra: Math.floor(i[1] * props.chart.ds * Math.min(100.5, props.chart.achievements) / 100),
         });
         if (i[0] <= props.chart.achievements) break;
     }
