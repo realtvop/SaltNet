@@ -1,34 +1,34 @@
-// Structure for a single record from the /dev/player/records endpoint
+import type { ChartType, ComboStatus, MusicGenre, MusicOrigin, RankRate, SyncStatus } from "../types/maiTypes";
+
 export interface DivingFishFullRecord {
   achievements: number;
   ds: number;
   dxScore: number;
-  fc: string; // '', 'fc', 'fcp', 'ap', 'app'
-  fs: string; // '', 'fs', 'fsd', 'fsdp'
+  fc: ComboStatus;
+  fs: SyncStatus;
   level: string;
-  level_index: number; // 0-4 (Basic to Re:Master)
+  level_index: number;
   level_label: string; // Basic, Advanced, Expert, Master, Re:Master
-  ra: number; // Single song rating
-  rate: string; // 'd', 'c', 'b', 'bb', 'bbb', 'a', 'aa', 'aaa', 's', 'sp', 'ss', 'ssp', 'sss', 'sssp'
+  ra: number;
+  rate: RankRate;
   song_id: number;
   title: string;
   type: 'DX' | 'SD';
 }
 
-// Basic song info from /music_data
 export interface BasicInfo {
   title: string;
   artist: string;
-  genre: string;
+  genre: MusicGenre;
   bpm: number;
   release_date: string;
-  from: string;
+  from: MusicOrigin;
   is_new: boolean; // Key field for B50 calculation
 }
 
 // Chart specific info from /music_data
 export interface ChartInfo {
-  notes: number[];
+  notes: [number, number, number, number];
   charter: string;
 }
 
@@ -36,7 +36,7 @@ export interface ChartInfo {
 export interface MusicInfo {
   id: string; // Song ID as string
   title: string;
-  type: 'DX' | 'SD';
+  type: ChartType;
   ds: number[]; // Array of difficulties (Basic to Re:Master)
   level: string[]; // Array of level strings
   cids: number[];

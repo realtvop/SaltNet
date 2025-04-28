@@ -1,10 +1,9 @@
+import { convertDFMusicList, type SavedMusicList } from '@/types/music';
 import type { DivingFishResponse } from './type';
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
-// Function to fetch player data (b50, simplified info) using /query/player (no auth required)
-export const fetchPlayerData = async (username: string): Promise<DivingFishResponse> => {
-  // /query/player expects b50 as a non-empty value to return b50 instead of b40
+export async function fetchPlayerData(username: string): Promise<DivingFishResponse> {
   const requestBody = {
     username: username,
     b50: "1"
@@ -36,28 +35,16 @@ export const fetchPlayerData = async (username: string): Promise<DivingFishRespo
   }
 };
 
-// Function to fetch full player data using Developer-Token (for advanced features)
-export const fetchPlayerFullData = async (username: string, developerToken: string): Promise<DivingFishResponse> => {
-  const url = `${API_BASE_URL}/dev/player/records?username=${encodeURIComponent(username)}`;
+export async function fetchMusicData(): Promise<SavedMusicList | null> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Developer-Token': developerToken,
-      },
-    });
+    const response = await fetch(`${API_BASE_URL}/music_data`);
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('user not exists');
-      }
-      const err = await response.json().catch(() => ({}));
-      if (err && err.message) throw new Error(err.message);
       throw new Error(`Request failed with status code ${response.status}`);
     }
-    const data: DivingFishResponse = await response.json();
-    return data;
+    const data = await response.json();
+    return convertDFMusicList(data);
   } catch (error) {
-    console.error("Error fetching full player data:", error);
+    console.error("Error fetching song data:", error);
     throw error;
   }
 }
