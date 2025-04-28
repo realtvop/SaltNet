@@ -13,8 +13,8 @@
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="i.ra > chart?.ra">
-                        +{{ i.ra - chart?.ra }}
+                    <span v-if="i.ra > (chart?.ra as number)">
+                        +{{ i.ra - (chart?.ra as number) }}
                     </span>
                     {{ i.ra }}
                 </div>
