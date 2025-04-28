@@ -109,7 +109,7 @@ function bindInGame() {
           if (value.startsWith("SGWCMAID") && value.length === 84) return await getUserIdFromQRCode(value);
           if (value.startsWith("http")) {
             const matches = value.match(/MAID.{0,76}/g);
-            if (matches && matches[0]) return await getUserIdFromQRCode(`SGWC${matches[0]}`);
+            if (matches && matches[0]) return await getUserIdFromQRCode(matches[0]);
             else snackbar({
               message: "二维码/链接解析失败，请检查是否正确",
               autoCloseDelay: 1000,
@@ -126,6 +126,7 @@ function bindInGame() {
 }
 
 function getUserIdFromQRCode(qrCode: string) {
+  qrCode = qrCode.slice(-64);
   return fetch('https://salt_api_backup.realtvop.top/getQRInfo', {
     method: 'POST',
     headers: {
