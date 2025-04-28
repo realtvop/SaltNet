@@ -246,6 +246,7 @@ svg {
     display: flex;
     flex-direction: row-reverse;
     gap: 15px;
+    bottom: 96px;
 
     @media (min-aspect-ratio: 1.001/1) {
         bottom: 16px;

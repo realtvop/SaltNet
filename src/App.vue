@@ -69,15 +69,15 @@ mdui-navigation-bar-item {
   overflow: hidden;
 }
 
+mdui-navigation-rail {
+  display: none;
+}
 @media (min-aspect-ratio: 1.001/1) {
   mdui-navigation-bar {
     display: none;
   }
-}
-
-@media (max-aspect-ratio: 0.999/1) or (aspect-ratio: 1/1) {
   mdui-navigation-rail {
-    display: none;
+    display: block !important;
   }
 }
 
