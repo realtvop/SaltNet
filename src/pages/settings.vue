@@ -24,10 +24,29 @@ import { snackbar, confirm } from 'mdui';
 
 const userData = {
     import: () => {
-        snackbar({
-            message: "还在写哦",
-            autoCloseDelay: 500,
-        });
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = async (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                const decoded = userData.dataDecoder[0](data);
+                await localforage.setItem('users', decoded.users);
+                snackbar({
+                    message: "导入成功",
+                    autoCloseDelay: 500,
+                });
+            } catch (err) {
+                snackbar({
+                    message: "导入失败，文件格式错误或数据损坏",
+                    autoCloseDelay: 1000,
+                });
+            }
+        };
+        input.click();
     },
     export: () => {
         snackbar({
@@ -63,7 +82,7 @@ const userData = {
     },
     dataDecoder: [
         (data: { users: string; }) => {
-            const users = JSON.parse(unescape(atob(data.users)));
+            const users = JSON.parse(decodeURIComponent(escape(atob(data.users))));
             return {
                 users,
             };
