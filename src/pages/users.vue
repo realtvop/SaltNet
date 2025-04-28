@@ -160,7 +160,7 @@ function updateMusicData() {
             </div>
             <div class="user-actions">
                 <!-- Pass index here -->
-                <mdui-button-icon variant="standard" icon="update" @click="updateUser(user) && updateMusicData"></mdui-button-icon>
+                <mdui-button-icon variant="standard" icon="update" @click="updateUser(user) && updateMusicData()"></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon slot="trigger" icon="more_vert" style="margin-right: 10px;"></mdui-button-icon>
                     <mdui-menu>
