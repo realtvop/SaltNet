@@ -57,18 +57,20 @@ onMounted(() => {
 });
 
 function genScoreCardData(chart: ChartExtended): any {
+    const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
+    
     const data = {
         title: chart.music.title,
         ds: chart.ds,
         song_id: chart.music.id,
         type: chart.music.type,
-        rate: "sssp",
+        rate: chartData ? chartData.rate : null,
         artist: chart.music.artist,
-        level_index: parseInt(chart.level) - 1,
-        achievements: 0,
+        level_index: chart.grade,
+        achievements: chartData ? chartData.achievements : "-",
         ra: chart.index,
-        fc: null,
-        fs: null,
+        fc: chartData ? chartData.fc : null,
+        fs: chartData ? chartData.fs : null,
     };
     return data;
 }

@@ -21,10 +21,10 @@ const props = defineProps<{
                 </div>
             </div>
             <div class="song-name">{{ props.data.title }}</div>
-            <div class="achievement">{{ props.data.achievements.toFixed(4) }}<span class="percentage-mark">%</span></div>
+            <div class="achievement">{{ typeof props.data.achievements === 'number' ? props.data.achievements.toFixed(4) : props.data.achievements }}<span class="percentage-mark" v-if="typeof props.data.achievements === 'number'">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" :src="`/icons/${props.data.rate.replace('p', 'plus')}.png`">
+                    <img class="achievement-icon" :src="`/icons/${props.data.rate.replace('p', 'plus')}.png`" v-if="props.data.rate">
                 </div>
                 <div class="fc-achievement">
                     <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fc}.png`" v-if="props.data.fc">
