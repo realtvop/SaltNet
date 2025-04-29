@@ -1,58 +1,211 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import type { Chart, SavedMusicList } from '@/types/music';
+import type { Chart, Music, SavedMusicList } from '@/types/music';
 import MusicSort from '@/assets/MusicSort';
+import ScoreCard from '@/components/ScoreCard.vue';
 
 const users = ref<User[]>([]);
 const chartList = ref<Record<string, Chart[]> | null>(null);
 const selectedDifficulty = ref<string>("1");
 const difficulties = [ "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
+const playerData = ref<User | null>(null);
 
 localForage.getItem<User[]>("users").then(v => {
     if (Array.isArray(v)) users.value = v;
 });
 localForage.getItem<SavedMusicList>("musicInfo").then(v => {
     if (!v) return;
-    const sorted: Record<string, Chart[]> = {};
-    // musicList.value = v;
+    const sorted: Record<string, ChartExtended[]> = {};
     for (const i in v.chartList) {
         const chart = v.chartList[i] as Chart;
-        // chart.test = chart.music.id;
-        // chart.test1 = v.musicList.indexOf(chart.music);
         sorted[chart.level] = sorted[chart.level] || [];
         sorted[chart.level].push(chart);
     }
     for (const i in sorted) {
         sorted[i].sort((a, b) =>  MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
+        for (const j in sorted[i]) {
+            sorted[i][j].index = `${ sorted[i].length - (j as unknown as number) }/${ sorted[i].length + 1 }`;
+        }
     }
     chartList.value = sorted;
-    console.log(sorted)
 });
+interface ChartExtended extends Chart {
+    index?: string;
+
+    music: Music;
+
+    id: number;
+
+    notes: [number, number, number, number];
+    charter: string;
+    level: string;
+    grade: number;
+    ds: number;
+}
+
+const loadPlayerData = async () => {
+    playerData.value = null;
+
+    localForage.getItem<User[]>("users").then(v => {
+        if (v) playerData.value = v[0];
+    });
+};
+onMounted(() => {
+    loadPlayerData();
+});
+
+function genScoreCardData(chart: ChartExtended): any {
+    const data = {
+        title: chart.music.title,
+        ds: chart.ds,
+        song_id: chart.music.id,
+        type: chart.music.type,
+        rate: "sssp",
+        artist: chart.music.artist,
+        level_index: parseInt(chart.level) - 1,
+        achievements: 0,
+        ra: chart.index,
+        fc: null,
+        fs: null,
+    };
+    return data;
+}
 </script>
 
 <template>
 <mdui-tabs :value="selectedDifficulty">
     <mdui-tab v-for="difficulty in difficulties" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
 </mdui-tabs>
-<mdui-card variant="filled" v-for="chart in chartList[selectedDifficulty]">
-    {{ chart.music.title }}
-    {{ chart.ds }}
-    {{ chart.chartId }}
-    {{ chart.grade }}
-    {{ chart.music.id }}
-    {{ chart.music.type }}
-    {{ chart.music.artist }}
-</mdui-card>
+<div class="card-container" v-if="chartList">
+    <div class="score-grid-wrapper">
+        <div class="score-grid">
+            <div v-for="(chart, index) in chartList[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
+                <ScoreCard :data="genScoreCardData(chart)" />
+            </div>
+        </div>
+    </div>
+</div>
 </template>
 
 <style scoped>
 mdui-tabs {
     width: 100%;
 }
-mdui-card {
+
+.card-container {
+    padding: 5px 20px;
+}
+/* mdui-card {
     width: 100%;
     height: 100px;
+} */
+
+
+.score-grid-wrapper {
+  width: 100%;
+  overflow: visible;
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 210px);
+  gap: 15px;
+  margin-top: 20px;
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.score-cell {
+  display: flex;
+  justify-content: center;
+  width: 210px;
+  box-sizing: border-box;
+  padding: 0;
+  height: auto;
+}
+
+@media (min-width: 1254px) {
+  .score-grid {
+    grid-template-columns: repeat(5, 210px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1253px) and (min-width: 1000px) {
+  .score-grid {
+    grid-template-columns: repeat(4, 210px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 999px) and (min-width: 768px) {
+  .score-grid {
+    grid-template-columns: repeat(3, 210px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 500px) {
+  .score-grid {
+    grid-template-columns: repeat(2, 210px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 499px) {
+  .score-grid-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: auto;
+    overflow: visible;
+  }
+  .score-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    transform: none;
+    width: 100%;
+    margin: 0;
+    justify-content: center;
+  }
+  .score-cell {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0;
+  }
+  .score-section {
+    padding: 0 20px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .stats-info {
+    margin-left: 5px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 349px) {
+  .score-grid {
+    grid-template-columns: 210px;
+    justify-content: center;
+  }
+  .score-cell {
+    width: 210px;
+  }
+  .score-section {
+    padding: 0 20px;
+  }
 }
 </style>
