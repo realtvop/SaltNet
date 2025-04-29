@@ -10,7 +10,6 @@ import { updateUser } from '@/utils/updateUser';
 import { fetchMusicData } from '@/divingfish';
 import { confirm, snackbar } from 'mdui';
 import localForage from "localforage";
-import localforage from 'localforage';
 import type { SavedMusicList } from '@/types/music';
 
 const users = ref<User[]>([]);
@@ -131,7 +130,7 @@ function updateMusicData() {
     fetchMusicData()
         .then((data: SavedMusicList | null) => {
             if (data)
-                localforage.setItem("musicInfo", data)
+                localForage.setItem("musicInfo", data)
                     .then(() => snackbar({ message: "曲目数据更新成功", autoCloseDelay: 500 }));
         })
         .catch(() => snackbar({ message: "曲目数据更新失败", autoCloseDelay: 500 }));
