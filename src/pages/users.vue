@@ -202,7 +202,7 @@ function updateMusicData() {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-bottom: 20px;
+    padding-bottom: calc(3.5rem + 32px);
 }
 
 mdui-card {
