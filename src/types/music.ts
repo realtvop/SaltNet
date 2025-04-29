@@ -10,6 +10,7 @@ export interface Music {
     isNew: boolean;
 
     type: ChartType;
+    id: number;
 
     charts: Chart[];
 }
@@ -17,9 +18,12 @@ export interface Music {
 export interface Chart {
     music: Music;
 
+    id: number;
+
     notes: [number, number, number, number];
     charter: string;
     level: string;
+    grade: number;
     ds: number;
 }
 
@@ -36,6 +40,7 @@ export function convertDFMusicList(data: MusicDataResponse): SavedMusicList {
     const chartList: ChartList = {};
 
     for (const item of data) {
+        const id = Number(item.id);
         const music: Music = {
             title: item.basic_info.title,
             artist: item.basic_info.artist,
@@ -45,6 +50,7 @@ export function convertDFMusicList(data: MusicDataResponse): SavedMusicList {
             isNew: item.basic_info.is_new,
 
             type: item.type,
+            id,
 
             charts: [],
         };
@@ -55,6 +61,9 @@ export function convertDFMusicList(data: MusicDataResponse): SavedMusicList {
 
             const chart: Chart = {
                 music: music,
+
+                id: chartId,
+                grade: item.charts.indexOf(dfChart),
 
                 notes: dfChart.notes,
                 charter: dfChart.charter,
