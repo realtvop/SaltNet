@@ -17,13 +17,13 @@ export interface User {
     };
 }
 
-type DetailedData = Record<number, DivingFishFullRecord>;
+type DetailedData = Record<string, DivingFishFullRecord>;
 
 export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     const result: DetailedData = {};
 
     for (const item of data) 
-        result[Number(item.song_id)] = item;
+        result[`${item.song_id}-${item.level_index}`] = item;
 
     return result;
 }
