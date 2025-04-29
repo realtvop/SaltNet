@@ -23,11 +23,10 @@ localForage.getItem<SavedMusicList>("musicInfo").then(v => {
         sorted[chart.level] = sorted[chart.level] || [];
         sorted[chart.level].push(chart);
     }
-    for (const i in sorted) {
+    for (const i in sorted)
         sorted[i].sort((a, b) => MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
-        sortChartsByScore();
-    }
     chartList.value = sorted;
+    sortChartsByScore();
 });
 function sortChartsByScore() {
     for (const i in chartList.value) {
