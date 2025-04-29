@@ -19,6 +19,7 @@ const router = useRouter();
     <mdui-navigation-bar :value="route.path" v-if="!route.path.startsWith('/b50/')">
       <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="data_thresholding" value="/b50" @click="router.push('/b50')">成绩</mdui-navigation-bar-item>
+      <mdui-navigation-bar-item icon="library_music" value="/songs" @click="router.push('/songs')">谱面</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">用户</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="settings" value="/settings" @click="router.push('/settings')">设置</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="info" value="/about" @click="router.push('/about')">关于</mdui-navigation-bar-item>
@@ -26,6 +27,7 @@ const router = useRouter();
     <mdui-navigation-rail :value="route.path" v-if="!route.path.startsWith('/b50/')">
       <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-rail-item>
       <mdui-navigation-rail-item icon="data_thresholding" value="/b50" @click="router.push('/b50')">成绩</mdui-navigation-rail-item>
+      <mdui-navigation-rail-item icon="library_music" value="/songs" @click="router.push('/songs')">谱面</mdui-navigation-rail-item>
       <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">用户</mdui-navigation-rail-item>
       <mdui-navigation-rail-item icon="settings" value="/settings" @click="router.push('/settings')">设置</mdui-navigation-rail-item>
       <mdui-navigation-rail-item icon="info" value="/about" @click="router.push('/about')">关于</mdui-navigation-rail-item>

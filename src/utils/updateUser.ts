@@ -1,7 +1,7 @@
 import { fetchPlayerData } from "@/divingfish";
 import type { DivingFishResponse } from "@/divingfish/type";
 import type { UpdateUserResponse } from "@/types/updateUser";
-import type { User } from "@/types/user";
+import { convertDetailed, type User } from "@/types/user";
 
 import { Snackbar, snackbar } from "mdui";
 
@@ -47,6 +47,7 @@ function fromInGame(user: User) {
                 user.data.rating = data.rating;
                 user.inGame.name = data.userName;
                 user.data.b50 = data.b50;
+                user.data.detailed = convertDetailed(data.divingFishData);
                 info(`从 InGame 获取用户信息成功：${user.divingFish.name}`);
             } else {
                 info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
