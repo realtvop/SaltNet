@@ -102,6 +102,7 @@ const chartInfoDialog = ref({
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .loading-message,

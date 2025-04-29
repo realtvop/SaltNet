@@ -193,21 +193,20 @@ const props = defineProps<{
 
 <style>
 :root {
-    /* Card variables */
-    --card-bg-color: #333;
-    --card-border-color: #555;
-    --card-text-color: white;
-    --card-hover-color: white;
-    --badge-bg-color: #666;
+    --card-bg-color: #f0f0f0;
+    --card-border-color: #ccc;
+    --card-text-color: #333;
+    --card-hover-color: #666;
+    --badge-bg-color: #ddd;
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
     :root {
-        --card-bg-color: #f0f0f0;
-        --card-border-color: #ccc;
-        --card-text-color: #333;
-        --card-hover-color: #666;
-        --badge-bg-color: #ddd;
+        --card-bg-color: #333;
+        --card-border-color: #555;
+        --card-text-color: white;
+        --card-hover-color: white;
+        --badge-bg-color: #666;
     }
 }
 </style>
