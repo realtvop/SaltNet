@@ -7,7 +7,7 @@ import MusicSort from '@/assets/MusicSort';
 import ScoreCard from '@/components/ScoreCard.vue';
 
 const users = ref<User[]>([]);
-const chartList = ref<Record<string, Chart[]> | null>(null);
+const chartList = ref<Record<string, ChartExtended[]> | null>(null);
 const selectedDifficulty = ref<string>("1");
 const difficulties = [ "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
 const playerData = ref<User | null>(null);
@@ -25,7 +25,13 @@ localForage.getItem<SavedMusicList>("musicInfo").then(v => {
     }
     for (const i in sorted) {
         sorted[i].sort((a, b) => MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
-        sorted[i].sort((a, b) => {
+        sortChartsByScore();
+    }
+    chartList.value = sorted;
+});
+function sortChartsByScore() {
+    for (const i in chartList.value) {
+        chartList.value[i].sort((a, b) => {
             const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
             const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
             if (chartDataA?.achievements && chartDataB?.achievements) return chartDataB.achievements - chartDataA.achievements;
@@ -33,10 +39,9 @@ localForage.getItem<SavedMusicList>("musicInfo").then(v => {
             if (chartDataB?.achievements) return 1;
             return 0;
         });
-        for (const j in sorted[i]) sorted[i][j].index = `${ sorted[i].length - (j as unknown as number) }/${ sorted[i].length + 1 }`;
+        for (const j in chartList.value[i]) chartList.value[i][j].index = `${ chartList.value[i].length - (j as unknown as number) }/${ chartList.value[i].length + 1 }`;
     }
-    chartList.value = sorted;
-});
+}
 interface ChartExtended extends Chart {
     index?: string;
 
@@ -55,7 +60,9 @@ const loadPlayerData = async () => {
     playerData.value = null;
 
     localForage.getItem<User[]>("users").then(v => {
-        if (v) playerData.value = v[0];
+        if (!v) return;
+        playerData.value = v[0];
+        sortChartsByScore();
     });
 };
 onMounted(() => {
