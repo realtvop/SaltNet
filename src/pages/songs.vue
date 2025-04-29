@@ -24,13 +24,14 @@ localForage.getItem<SavedMusicList>("musicInfo").then(v => {
         sorted[chart.level].push(chart);
     }
     for (const i in sorted) {
+        sorted[i].sort((a, b) => MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
         sorted[i].sort((a, b) => {
             const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
             const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
             if (chartDataA?.achievements && chartDataB?.achievements) return chartDataB.achievements - chartDataA.achievements;
             if (chartDataA?.achievements) return -1;
             if (chartDataB?.achievements) return 1;
-            return MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000;
+            return 0;
         });
         for (const j in sorted[i]) sorted[i][j].index = `${ sorted[i].length - (j as unknown as number) }/${ sorted[i].length + 1 }`;
     }
