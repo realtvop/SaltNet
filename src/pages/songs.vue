@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
 import type { Chart, Music, SavedMusicList } from '@/types/music';
@@ -11,6 +11,7 @@ const chartList = ref<Record<string, ChartExtended[]> | null>(null);
 const selectedDifficulty = ref<string>("1");
 const difficulties = [ "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
 const playerData = ref<User | null>(null);
+const query = ref<string>('');
 
 localForage.getItem<User[]>("users").then(v => {
     if (Array.isArray(v)) users.value = v;
@@ -41,6 +42,17 @@ function sortChartsByScore() {
         for (const j in chartList.value[i]) chartList.value[i][j].index = `${ chartList.value[i].length - (j as unknown as number) }/${ chartList.value[i].length + 1 }`;
     }
 }
+const chartListFiltered = computed(() => {
+    if (!chartList.value) return null;
+    const filtered: Record<string, ChartExtended[]> = {};
+    for (const i in chartList.value) {
+        filtered[i] = chartList.value[i].filter((chart: ChartExtended) => {
+            const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
+            return chart.music.title.toLowerCase().includes(query.value.toLowerCase()) || (chartData && chartData.achievements.toString().includes(query.value));
+        });
+    }
+    return filtered;
+});
 interface ChartExtended extends Chart {
     index?: string;
 
@@ -92,14 +104,15 @@ function genScoreCardData(chart: ChartExtended): any {
 <mdui-tabs :value="selectedDifficulty">
     <mdui-tab v-for="difficulty in difficulties" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
 </mdui-tabs>
-<div class="card-container" v-if="chartList">
-    <div class="score-grid-wrapper">
-        <div class="score-grid">
-            <div v-for="(chart, index) in chartList[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
-                <ScoreCard :data="genScoreCardData(chart)" />
-            </div>
-        </div>
+<div class="card-container" v-if="chartListFiltered">
+  <mdui-text-field clearable icon="search" label="搜索" @input="query = $event.target.value"></mdui-text-field>
+  <div class="score-grid-wrapper">
+    <div class="score-grid">
+      <div v-for="(chart, index) in chartListFiltered[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
+          <ScoreCard :data="genScoreCardData(chart)"/>
+      </div>
     </div>
+  </div>
 </div>
 </template>
 
