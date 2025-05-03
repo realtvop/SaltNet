@@ -3,7 +3,7 @@ import type { DivingFishResponse } from "@/divingfish/type";
 import type { UpdateUserResponse } from "@/types/updateUser";
 import { convertDetailed, type User } from "@/types/user";
 
-import { Snackbar, snackbar } from "mdui";
+import { Snackbar, snackbar, alert } from "mdui";
 
 // let songs = null;
 
@@ -20,11 +20,33 @@ export function updateUser(user: User) {
     } else
         return fromDivingFish(user);
 }
+export function checkLogin(user: User) {
+    info(`正在从 InGame 获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
+    return fetch("https://salt_api_backup.realtvop.top/checkLogin", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({ userId: user.inGame.id }),
+    })
+        .then(r => r.json())
+        .then((data: { isLogin: string } | null) => {
+            if (data) {
+                alert({
+                    headline: (user.inGame.name ?? user.divingFish.name) as string,
+                    description: data.isLogin ? "上机了哟！" : "还没有上机",
+                });
+            } else {
+                info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
+            }
+        })
+        .catch(e => {
+            info(`获取 ${user.inGame.name ?? user.divingFish.name} InGame 数据失败：${e.toString()}`, e.toString());
+        });
+}
 
 // 水鱼
 function fromDivingFish(user: User) {
     if (user.divingFish.name) {
-        info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
+        info(`正在从水鱼获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
         return fetchPlayerData(user.divingFish.name as string)
             .then((data: DivingFishResponse) => {
                 user.data.rating = data.rating;
@@ -55,7 +77,7 @@ function fromInGame(user: User) {
             }
         })
         .catch(e => {
-            info(`获取 ${user.divingFish.name} InGame 数据失败：${e.toString()}`, e.toString());
+            info(`获取 ${user.inGame.name ?? user.divingFish.name} InGame 数据失败：${e.toString()}`, e.toString());
         });
 }
 function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {

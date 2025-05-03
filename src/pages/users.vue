@@ -6,7 +6,7 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
 import type { User } from '@/types/user';
-import { updateUser } from '@/utils/updateUser';
+import { checkLogin, updateUser } from '@/utils/updateUser';
 import { fetchMusicData } from '@/divingfish';
 import { confirm, snackbar } from 'mdui';
 import localForage from "localforage";
@@ -170,6 +170,13 @@ function updateMusicData() {
                         <mdui-menu-item @click="setAsDefault(index)" v-if="index">
                             设为默认
                             <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-divider />
+
+                        <mdui-menu-item @click="checkLogin(user)">
+                            视奸（查询登录状态）
+                            <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />
