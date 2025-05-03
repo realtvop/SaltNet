@@ -37,7 +37,7 @@ export function checkLogin(user: User) {
                     closeOnOverlayClick: true,
                 });
             } else {
-                info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
+                info(`从 InGame 获取 ${user.inGame.name ?? user.divingFish.name} 信息失败`);
             }
         })
         .catch(e => {
@@ -48,7 +48,7 @@ export function checkLogin(user: User) {
 // 水鱼
 function fromDivingFish(user: User) {
     if (user.divingFish.name) {
-        info(`正在从水鱼获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
+        info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
         return fetchPlayerData(user.divingFish.name as string)
             .then((data: DivingFishResponse) => {
                 user.data.rating = data.rating;
@@ -64,7 +64,7 @@ function fromDivingFish(user: User) {
 
 // InGame 数据
 function fromInGame(user: User) {
-    info(`正在从 InGame 获取用户信息：${user.divingFish.name}`);
+    info(`正在从 InGame 获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
     return fetchInGameData(user.inGame.id as number, user.divingFish.importToken as string)
         .then((data: UpdateUserResponse | null) => {
             if (data) {
@@ -72,9 +72,9 @@ function fromInGame(user: User) {
                 user.inGame.name = data.userName;
                 user.data.b50 = data.b50;
                 user.data.detailed = convertDetailed(data.divingFishData);
-                info(`从 InGame 获取用户信息成功：${user.divingFish.name}`);
+                info(`从 InGame 获取用户信息成功：${user.inGame.name ?? user.divingFish.name}`);
             } else {
-                info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
+                info(`从 InGame 获取 ${user.inGame.name ?? user.divingFish.name} 信息失败`);
                 return fromDivingFish(user);
             }
         })
