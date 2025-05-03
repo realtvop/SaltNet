@@ -275,4 +275,14 @@ svg {
         bottom: 96px;
     }
 }
+@supports (-webkit-touch-callout: none) {
+    @media all and (display-mode: standalone) {
+        .fab-container {
+            bottom: 112px;
+        }
+        .user-cards-container {
+            padding-bottom: calc(4.5rem + 32px);
+        }
+    }
+}
 </style>
