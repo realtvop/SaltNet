@@ -33,6 +33,8 @@ export function checkLogin(user: User) {
                 alert({
                     headline: (user.inGame.name ?? user.divingFish.name) as string,
                     description: data.isLogin ? "上机了哟！" : "还没有上机",
+                    closeOnEsc: true,
+                    closeOnOverlayClick: true,
                 });
             } else {
                 info(`从 InGame 获取 ${user.divingFish.name} 信息失败`);
