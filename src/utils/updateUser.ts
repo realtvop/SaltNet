@@ -69,7 +69,7 @@ function fromInGame(user: User) {
         .then((data: UpdateUserResponse | null) => {
             if (data) {
                 user.data.rating = data.rating;
-                user.inGame.name = data.userName;
+                user.inGame.name = toHalfWidth(data.userName);
                 user.data.b50 = data.b50;
                 user.data.detailed = convertDetailed(data.divingFishData);
                 info(`从 InGame 获取用户信息成功：${user.inGame.name ?? user.divingFish.name}`);
@@ -118,4 +118,10 @@ function info(message: string, errorMsg?: string): Snackbar {
         action: errorMsg ? "复制错误" : undefined,
         onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,
     })
+}
+
+function toHalfWidth(str: string): string {
+    return str.replace(/[\uFF01-\uFF5E]/g, (char) => {
+        return String.fromCharCode(char.charCodeAt(0) - 65248);
+    }).replace(/\u3000/g, " ");
 }
