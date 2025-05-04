@@ -8,4 +8,5 @@ export interface UpdateUserResponse {
     userMusicList: UserMusic[],
     divingFishData: DivingFishFullRecord[],
     b50: DivingFishB50,
+    isLogin: boolean,
 }

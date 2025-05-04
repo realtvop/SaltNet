@@ -94,3 +94,19 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+mdui-snackbar {
+  margin-bottom: 5rem;
+}
+@media (min-aspect-ratio: 1.001/1) {
+  mdui-snackbar {
+    margin-bottom: 0;
+  }
+}
+@supports (-webkit-touch-callout: none) {
+  mdui-snackbar {
+    @media all and (display-mode: standalone) {
+      margin-bottom: 6rem;
+    }
+  }
+}

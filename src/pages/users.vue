@@ -6,7 +6,7 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
 import type { User } from '@/types/user';
-import { updateUser } from '@/utils/updateUser';
+import { checkLogin, updateUser } from '@/utils/updateUser';
 import { fetchMusicData } from '@/divingfish';
 import { confirm, snackbar } from 'mdui';
 import localForage from "localforage";
@@ -174,6 +174,13 @@ function updateMusicData() {
 
                         <mdui-divider />
 
+                        <mdui-menu-item @click="checkLogin(user)">
+                            视奸（查询登录状态）
+                            <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-divider />
+
                         <mdui-menu-item @click="openDeleteDialog(index)">
                             删除
                             <mdui-icon slot="icon" name="delete"></mdui-icon>
@@ -202,7 +209,7 @@ function updateMusicData() {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-bottom: 20px;
+    padding-bottom: calc(3.5rem + 32px);
 }
 
 mdui-card {
@@ -266,6 +273,16 @@ svg {
     }
     @media (max-aspect-ratio: 0.999/1) or (aspect-ratio: 1/1) {
         bottom: 96px;
+    }
+}
+@supports (-webkit-touch-callout: none) {
+    @media all and (display-mode: standalone) {
+        .fab-container {
+            bottom: 112px;
+        }
+        .user-cards-container {
+            padding-bottom: calc(4.5rem + 32px);
+        }
     }
 }
 </style>
