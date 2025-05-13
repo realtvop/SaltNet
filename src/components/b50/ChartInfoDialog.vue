@@ -1,11 +1,20 @@
 <template>
-    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open">
+    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
             <mdui-top-app-bar-title>{{ chart?.title }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        Rating 阶梯：
+        <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.song_id.toString().length)}${chart.song_id}.png`" />
+
+        <div class="chip-container">
+            <mdui-chip icon="music_note">{{ chart.composer || '未知' }}</mdui-chip>
+            <mdui-chip icon="access_time_filled">{{ chart.composer || '未知' }}</mdui-chip>
+            <mdui-chip icon="star">{{ chart.type || '未知' }}</mdui-chip>
+            <mdui-chip icon="edit">{{ chart.charter || '未知' }}</mdui-chip>
+        </div>
+
+        <h3>Rating 阶段</h3>
         <mdui-list>
             <mdui-list-item v-for="i of raTable" nonclickable>
                 <div slot="custom" class="list-container">
@@ -13,8 +22,8 @@
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="i.ra > (chart?.ra as number)">
-                        +{{ i.ra - (chart?.ra as number) }}
+                    <span v-if="i.ra > chart.ra">
+                        +{{ i.ra - chart.ra }}
                     </span>
                     {{ i.ra }}
                 </div>
@@ -81,7 +90,27 @@ const raTable = computed(() => {
 </script>
 
 <style scoped>
+.song-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    display: block;
 
+    background: image('https://www.diving-fish.com/covers/00000.png');
+}
+
+.chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 0;
+    justify-content: center;
+}
+
+h3 {
+    margin-bottom: 0;
+}
 .list-container {
     display: flex;
     justify-content: space-between;
