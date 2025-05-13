@@ -98,13 +98,13 @@ function bindInGame() {
     cancelText: "取消",
     closeOnEsc: true,
     closeOnOverlayClick: true,
-    onConfirm: async (value: string, dialog: any) => {
+    onConfirm: async (value: string) => {
       if (value) {
         const id = parseInt(value);
         if (!isNaN(id)) {
           if (!localUser.value.inGame) localUser.value.inGame = { name: null, id: null };
           localUser.value.inGame.id = id;
-          dialog.close();
+          return;
         } else {
           if (value.startsWith("SGWCMAID") && value.length === 84) return await getUserIdFromQRCode(value);
           if (value.startsWith("http")) {
