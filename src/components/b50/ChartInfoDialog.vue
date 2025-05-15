@@ -2,16 +2,16 @@
     <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
-            <mdui-top-app-bar-title>{{ chart.music.title }}</mdui-top-app-bar-title>
+            <mdui-top-app-bar-title @click="copyToClipboard(chart.music.title)" style="cursor:pointer">{{ chart.music.title }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
         <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png`" />
 
         <div class="chip-container">
-            <mdui-chip icon="music_note">{{ chart.music.artist || '未知' }}</mdui-chip>
-            <mdui-chip icon="access_time_filled">{{ chart.music.genre || '未知' }}</mdui-chip>
-            <mdui-chip icon="star">{{ chart.music.type || '未知' }}</mdui-chip>
-            <mdui-chip icon="edit">{{ chart.charter || '未知' }}</mdui-chip>
+            <mdui-chip icon="music_note" @click="copyToClipboard(chart.music.artist || '未知')" style="cursor:pointer">{{ chart.music.artist || '未知' }}</mdui-chip>
+            <mdui-chip icon="access_time_filled" style="cursor:pointer">{{ chart.music.genre || '未知' }}</mdui-chip>
+            <mdui-chip icon="star" style="cursor:pointer">{{ chart.music.type || '未知' }}</mdui-chip>
+            <mdui-chip icon="edit" @click="copyToClipboard(chart.charter || '未知')" style="cursor:pointer">{{ chart.charter || '未知' }}</mdui-chip>
         </div>
 
         <h3>Rating 阶段</h3>
@@ -51,6 +51,7 @@ import type { ChartExtended } from '@/types/music';
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 import localForage from "localforage";
 import type { User } from '../../types/user';
+import { snackbar } from "mdui";
 
 const props = defineProps<{
     open: boolean;
@@ -145,6 +146,11 @@ function getRanks(scores: {achievements?: number, played: boolean}[]) {
             return `#${playedCount}`;
         }
     });
+}
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text);
+  snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
 }
 
 const SCORE_COEFFICIENT_TABLE: [number, number, string][] = [
