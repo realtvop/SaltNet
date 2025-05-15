@@ -100,13 +100,8 @@ function genScoreCardData(chart: ChartExtended): any {
 }
 
 function openChartInfoDialog(chart: any) {
-    // 先关闭再打开，确保可以重复打开
-    chartInfoDialog.value.open = false;
-    chartInfoDialog.value.chart = null;
-    setTimeout(() => {
-        chartInfoDialog.value.chart = chart;
-        chartInfoDialog.value.open = true;
-    }, 0);
+  chartInfoDialog.value.chart = chart;
+  chartInfoDialog.value.open = !chartInfoDialog.value.open;
 }
 </script>
 
