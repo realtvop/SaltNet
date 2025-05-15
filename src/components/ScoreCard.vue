@@ -117,7 +117,7 @@ const emit = defineEmits(['click']);
     /* color: #ff6600; */
 }
 .pill-section.charttype[type="DX"] > span {
-    background: linear-gradient(to right, #eb5639, #efb03e);
+    background: linear-gradient(-20deg, #eb5639 55%, #efb03e 45%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
