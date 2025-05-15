@@ -11,6 +11,8 @@ const props = defineProps<{
         fs?: string;
         title?: string;
         song_id?: number;
+        type?: string;
+        level_index?: number;
     };
 }>();
 
@@ -21,27 +23,27 @@ const emit = defineEmits(['click']);
 <div class="maimai-card-wrapper">
     <mdui-card variant="filled" class="maimai-result-card" clickable @click="emit('click')">
         <div class="song-jacket-section">
-            <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - props.data.song_id.toString().length)}${props.data.song_id}.png')`}"></div>
+            <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${props.data.song_id ? '0'.repeat(5 - props.data.song_id.toString().length) + props.data.song_id : '00000'}.png')` }"></div>
         </div>
         <div class="result-details-section">
             <div class="result-header">
                 <div class="header-pill">
-                    <div class="pill-section charttype" :type="props.data.music ? props.data.music.type : props.data.type"><span>{{ props.data.music ? props.data.music.type : props.data.type }}</span></div>
-                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.grade ?? props.data.level_index]}` }">{{ props.data.ds.toFixed(1) }}</div>
-                    <div class="pill-section points">{{ props.data.ra }}</div>
+                    <div class="pill-section charttype" :type="props.data.music ? props.data.music.type : (props.data.type ?? '')"><span>{{ props.data.music ? props.data.music.type : (props.data.type ?? '') }}</span></div>
+                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][(props.data.grade ?? props.data.level_index ?? 0)]}` }">{{ props.data.ds?.toFixed ? props.data.ds.toFixed(1) : props.data.ds }}</div>
+                    <div class="pill-section points">{{ props.data.ra ?? '' }}</div>
                 </div>
             </div>
-            <div class="song-name">{{ props.data.title }}</div>
-            <div class="achievement">{{ typeof props.data.achievements === 'number' ? props.data.achievements.toFixed(4) : props.data.achievements }}<span class="percentage-mark" v-if="typeof props.data.achievements === 'number'">%</span></div>
+            <div class="song-name">{{ props.data.title ?? '' }}</div>
+            <div class="achievement">{{ typeof props.data.achievements === 'number' ? props.data.achievements.toFixed(4) : (props.data.achievements ?? '') }}<span class="percentage-mark" v-if="typeof props.data.achievements === 'number'">%</span></div>
             <div class="achievement-badges">
                 <div class="rank-achievement">
-                    <img class="achievement-icon" :src="`/icons/${props.data.rate.replace('p', 'plus')}.png`" v-if="props.data.rate">
+                    <img class="achievement-icon" :src="`/icons/${props.data.rate ? props.data.rate.replace('p', 'plus') : ''}.png`" v-if="props.data.rate">
                 </div>
                 <div class="fc-achievement">
-                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fc}.png`" v-if="props.data.fc">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fc ?? ''}.png`" v-if="props.data.fc">
                 </div>
                 <div class="sync-achievement">
-                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fs.replace('sd', 'dx')}.png`" v-if="props.data.fs">
+                    <img class="achievement-icon" :src="`/icons/music_icon_${props.data.fs ? props.data.fs.replace('sd', 'dx') : ''}.png`" v-if="props.data.fs">
                 </div>
             </div>
         </div>
