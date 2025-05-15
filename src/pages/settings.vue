@@ -57,6 +57,7 @@ const userData = {
             if (v) {
                 const data = {
                     version: 0,
+                    tip: "为简单保护用户id，以下内容使用base64编码",
                     users: btoa(unescape(encodeURIComponent(JSON.stringify(v)))),
                 };
 
