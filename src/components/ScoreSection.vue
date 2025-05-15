@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ScoreCard from "./ScoreCard.vue";
-import type { DivingFishMusicChart } from '@/divingfish/type';
 
 // Define props for the component
 const props = defineProps<{
   title: string;
-  scores: DivingFishMusicChart[];
+  scores: any[]; // 允许更通用的卡片数据结构
   chartInfoDialog: {
     open: boolean;
-    chart: DivingFishMusicChart | any;
+    chart: any;
   };
 }>();
 
@@ -40,7 +39,7 @@ const stats = computed(() => {
   };
 });
 
-function openDialog(chart: DivingFishMusicChart) {
+function openDialog(chart: any) {
   props.chartInfoDialog.open = !props.chartInfoDialog.open;
   props.chartInfoDialog.chart = chart;
 }

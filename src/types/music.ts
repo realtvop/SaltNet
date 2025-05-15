@@ -27,6 +27,20 @@ export interface Chart {
     ds: number;
 }
 
+export interface ChartExtended extends Chart {
+    index?: string;
+
+    music: Music;
+
+    id: number;
+
+    notes: [number, number, number, number];
+    charter: string;
+    level: string;
+    grade: number;
+    ds: number;
+}
+
 export type MusicList = Record<number, Music>;
 export type ChartList = Record<number, Chart>;
 

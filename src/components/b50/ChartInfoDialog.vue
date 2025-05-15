@@ -1,11 +1,20 @@
 <template>
-    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open">
+    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
-            <mdui-top-app-bar-title>{{ chart?.title }}</mdui-top-app-bar-title>
+            <mdui-top-app-bar-title>{{ chart.music.title }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        Rating 阶梯：
+        <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png`" />
+
+        <div class="chip-container">
+            <mdui-chip icon="music_note">{{ chart.music.artist || '未知' }}</mdui-chip>
+            <mdui-chip icon="access_time_filled">{{ chart.music.genre || '未知' }}</mdui-chip>
+            <mdui-chip icon="star">{{ chart.music.type || '未知' }}</mdui-chip>
+            <mdui-chip icon="edit">{{ chart.charter || '未知' }}</mdui-chip>
+        </div>
+
+        <h3>Rating 阶段</h3>
         <mdui-list>
             <mdui-list-item v-for="i of raTable" nonclickable>
                 <div slot="custom" class="list-container">
@@ -13,8 +22,8 @@
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="i.ra > (chart?.ra as number)">
-                        +{{ i.ra - (chart?.ra as number) }}
+                    <span v-if="i.ra > (chart.ra ?? 0)">
+                        +{{ i.ra - (chart.ra ?? 0) }}
                     </span>
                     {{ i.ra }}
                 </div>
@@ -24,12 +33,20 @@
 </template>
 
 <script setup lang="ts">
-import type { DivingFishMusicChart } from "@/divingfish/type";
+import type { ChartExtended } from '@/types/music';
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 
 const props = defineProps<{
     open: boolean;
-    chart: DivingFishMusicChart | null;
+    chart: (ChartExtended & {
+        achievements?: number;
+        ra?: number;
+        rate?: string;
+        fc?: string;
+        fs?: string;
+        title?: string;
+        song_id?: number;
+    }) | null;
 }>();
 const dialogRef = ref<any>(null);
 
@@ -67,21 +84,43 @@ const SCORE_COEFFICIENT_TABLE: [number, number, string][] = [
 ]
 const raTable = computed(() => {
     if (!props.chart) return [];
+    const achievements = typeof props.chart.achievements === 'number' ? props.chart.achievements : 0;
+    const ds = props.chart.ds;
     const result = [];
     for (const i of SCORE_COEFFICIENT_TABLE) {
         result.push({
             rate: i[0],
             rank: i[2],
-            ra: Math.floor(i[1] * props.chart.ds * Math.min(100.5, props.chart.achievements) / 100),
+            ra: Math.floor(i[1] * ds * Math.min(100.5, achievements) / 100),
         });
-        if (i[0] <= props.chart.achievements) break;
+        if (i[0] <= achievements) break;
     }
     return result;
 })
 </script>
 
 <style scoped>
+.song-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    display: block;
 
+    background: image('https://www.diving-fish.com/covers/00000.png');
+}
+
+.chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 0;
+    justify-content: center;
+}
+
+h3 {
+    margin-bottom: 0;
+}
 .list-container {
     display: flex;
     justify-content: space-between;

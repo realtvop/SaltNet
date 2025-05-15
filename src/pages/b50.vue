@@ -1,18 +1,40 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import ScoreSection from '@/components/ScoreSection.vue';
 import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
+import type { ChartExtended, SavedMusicList } from '@/types/music';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
 const error = ref<string | null>(null);
 const pending = ref(false);
 const playerData = ref<User | null>(null);
+const musicInfo = ref<SavedMusicList | null>(null);
+const musicChartMap = ref<Map<string, ChartExtended>>(new Map());
 
+localForage.getItem<SavedMusicList>("musicInfo").then(v => {
+  musicInfo.value = v || null;
+});
+
+// 构建高效查找表
+function buildMusicChartMap() {
+  if (!musicInfo.value) return;
+  const map = new Map();
+  for (const chart of Object.values(musicInfo.value.chartList) as ChartExtended[]) {
+    // key: `${song_id}-${level_index}`
+    map.set(`${chart.music.id}-${chart.grade}`, chart);
+  }
+  musicChartMap.value = map;
+}
+
+// 监听musicInfo加载完成后构建Map
+watch(musicInfo, (v) => {
+  if (v) buildMusicChartMap();
+});
 
 const loadPlayerData = async (id: number) => {
   pending.value = true;
@@ -29,14 +51,6 @@ onMounted(() => {
   loadPlayerData(Number(userId.value ?? "0"));
 });
 
-// watch(() => route.params.username, (newUsername) => {
-//   const newName = newUsername as string;
-//   if (newName && newName !== username.value) {
-//     username.value = newName;
-//     loadPlayerData(newName);
-//   }
-// });
-
 const player = computed(() => {
   return playerData.value ?? null;
 });
@@ -47,6 +61,40 @@ const errorMessage = computed(() => {
     ? `玩家 "${userId.value}" 不存在`
     : error.value || '加载数据时出错';
   return msg;
+});
+
+function genScoreCardDataFromB50(record: any): ChartExtended & {
+  achievements?: number;
+  ra?: number;
+  rate?: string;
+  fc?: string;
+  fs?: string;
+  title?: string;
+  song_id?: number;
+} {
+  if (!musicInfo.value) return record;
+  // 用Map高效查找
+  const chart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
+  if (!chart) return record;
+  return {
+    ...chart,
+    song_id: chart.music.id,
+    achievements: typeof record.achievements === 'number' ? record.achievements : null,
+    ra: typeof record.ra === 'number' ? record.ra : '',
+    rate: record.rate || '',
+    fc: record.fc || '',
+    fs: record.fs || '',
+    title: chart.music.title,
+  };
+}
+
+const b50SdCharts = computed(() => {
+  if (!player.value?.data?.b50?.sd) return [];
+  return player.value.data.b50.sd.map(genScoreCardDataFromB50);
+});
+const b50DxCharts = computed(() => {
+  if (!player.value?.data?.b50?.dx) return [];
+  return player.value.data.b50.dx.map(genScoreCardDataFromB50);
 });
 
 const chartInfoDialog = ref({
@@ -75,9 +123,9 @@ const chartInfoDialog = ref({
         </span>
         <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
       </div>
-      <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" :chartInfoDialog="chartInfoDialog" />
-      <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" :chartInfoDialog="chartInfoDialog" />
-      <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
+      <ScoreSection v-if="b50SdCharts.length" title="旧版本成绩" :scores="b50SdCharts" :chartInfoDialog="chartInfoDialog" />
+      <ScoreSection v-if="b50DxCharts.length" title="新版本成绩" :scores="b50DxCharts" :chartInfoDialog="chartInfoDialog" />
+      <p v-if="!(b50SdCharts.length || b50DxCharts.length)" style="text-align: center; color: orange; margin-top: 20px;">
         未更新成绩或成绩更新失败，请到“用户”更新成绩
       </p>
     </div>
