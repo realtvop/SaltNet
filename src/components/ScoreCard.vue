@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { defineProps } from 'vue';
+import { defineProps, defineEmits } from 'vue';
 
 const props = defineProps<{
     data: any,
 }>();
+
+const emit = defineEmits(['click']);
 </script>
 
 <template>
 <div class="maimai-card-wrapper">
-    <mdui-card variant="filled" class="maimai-result-card" clickable>
+    <mdui-card variant="filled" class="maimai-result-card" clickable @click="emit('click')">
         <div class="song-jacket-section">
             <div class="song-jacket-image" :style="{ 'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - props.data.song_id.toString().length)}${props.data.song_id}.png')`}"></div>
         </div>
         <div class="result-details-section">
             <div class="result-header">
                 <div class="header-pill">
-                    <div class="pill-section charttype">{{ props.data.type }}</div>
-                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.level_index]}` }">{{ props.data.ds.toFixed(1) }}</div>
+                    <div class="pill-section charttype">{{ props.data.music ? props.data.music.type : props.data.type }}</div>
+                    <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.grade ?? props.data.level_index]}` }">{{ props.data.ds.toFixed(1) }}</div>
                     <div class="pill-section points">{{ props.data.ra }}</div>
                 </div>
             </div>

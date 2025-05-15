@@ -2,15 +2,15 @@
     <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
-            <mdui-top-app-bar-title>{{ chart?.title }}</mdui-top-app-bar-title>
+            <mdui-top-app-bar-title>{{ chart.music.title }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.song_id.toString().length)}${chart.song_id}.png`" />
+        <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png`" />
 
         <div class="chip-container">
-            <mdui-chip icon="music_note">{{ chart.composer || '未知' }}</mdui-chip>
-            <mdui-chip icon="access_time_filled">{{ chart.composer || '未知' }}</mdui-chip>
-            <mdui-chip icon="star">{{ chart.type || '未知' }}</mdui-chip>
+            <mdui-chip icon="music_note">{{ chart.music.artist || '未知' }}</mdui-chip>
+            <mdui-chip icon="access_time_filled">{{ chart.music.genre || '未知' }}</mdui-chip>
+            <mdui-chip icon="star">{{ chart.music.type || '未知' }}</mdui-chip>
             <mdui-chip icon="edit">{{ chart.charter || '未知' }}</mdui-chip>
         </div>
 
@@ -22,8 +22,8 @@
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="i.ra > chart.ra">
-                        +{{ i.ra - chart.ra }}
+                    <span v-if="i.ra > (chart.ra ?? 0)">
+                        +{{ i.ra - (chart.ra ?? 0) }}
                     </span>
                     {{ i.ra }}
                 </div>
@@ -33,12 +33,12 @@
 </template>
 
 <script setup lang="ts">
-import type { DivingFishMusicChart } from "@/divingfish/type";
+import type { Chart } from "@/types/music";
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 
 const props = defineProps<{
     open: boolean;
-    chart: DivingFishMusicChart | null;
+    chart: (Chart & { achievements?: number; ra?: number }) | null;
 }>();
 const dialogRef = ref<any>(null);
 
@@ -76,14 +76,16 @@ const SCORE_COEFFICIENT_TABLE: [number, number, string][] = [
 ]
 const raTable = computed(() => {
     if (!props.chart) return [];
+    const achievements = typeof props.chart.achievements === 'number' ? props.chart.achievements : 0;
+    const ds = props.chart.ds;
     const result = [];
     for (const i of SCORE_COEFFICIENT_TABLE) {
         result.push({
             rate: i[0],
             rank: i[2],
-            ra: Math.floor(i[1] * props.chart.ds * Math.min(100.5, props.chart.achievements) / 100),
+            ra: Math.floor(i[1] * ds * Math.min(100.5, achievements) / 100),
         });
-        if (i[0] <= props.chart.achievements) break;
+        if (i[0] <= achievements) break;
     }
     return result;
 })

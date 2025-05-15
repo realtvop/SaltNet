@@ -5,6 +5,7 @@ import localForage from "localforage";
 import type { Chart, Music, SavedMusicList } from '@/types/music';
 import MusicSort from '@/assets/MusicSort';
 import ScoreCard from '@/components/ScoreCard.vue';
+import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 
 const users = ref<User[]>([]);
 const chartList = ref<Record<string, ChartExtended[]> | null>(null);
@@ -12,6 +13,10 @@ const selectedDifficulty = ref<string>("1");
 const difficulties = [ "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
 const playerData = ref<User | null>(null);
 const query = ref<string>('');
+const chartInfoDialog = ref({
+    open: false,
+    chart: null,
+});
 
 localForage.getItem<User[]>("users").then(v => {
     if (Array.isArray(v)) users.value = v;
@@ -82,21 +87,26 @@ onMounted(() => {
 
 function genScoreCardData(chart: ChartExtended): any {
     const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
-    
-    const data = {
-        title: chart.music.title,
-        ds: chart.ds,
+    return {
+        ...chart,
         song_id: chart.music.id,
-        type: chart.music.type,
-        rate: chartData ? chartData.rate : null,
-        artist: chart.music.artist,
-        level_index: chart.grade,
-        achievements: chartData ? chartData.achievements : "-",
-        ra: chart.index,
-        fc: chartData ? chartData.fc : null,
-        fs: chartData ? chartData.fs : null,
+        achievements: chartData && typeof chartData.achievements === 'number' ? chartData.achievements : null,
+        ra: chart.index ?? '',
+        rate: chartData && chartData.rate ? chartData.rate : '',
+        fc: chartData && chartData.fc ? chartData.fc : '',
+        fs: chartData && chartData.fs ? chartData.fs : '',
+        title: chart.music.title,
     };
-    return data;
+}
+
+function openChartInfoDialog(chart: any) {
+    // 先关闭再打开，确保可以重复打开
+    chartInfoDialog.value.open = false;
+    chartInfoDialog.value.chart = null;
+    setTimeout(() => {
+        chartInfoDialog.value.chart = chart;
+        chartInfoDialog.value.open = true;
+    }, 0);
 }
 </script>
 
@@ -109,11 +119,12 @@ function genScoreCardData(chart: ChartExtended): any {
   <div class="score-grid-wrapper">
     <div class="score-grid">
       <div v-for="(chart, index) in chartListFiltered[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
-          <ScoreCard :data="genScoreCardData(chart)"/>
+          <ScoreCard :data="genScoreCardData(chart)" @click="openChartInfoDialog(genScoreCardData(chart))"/>
       </div>
     </div>
   </div>
 </div>
+<ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
 </template>
 
 <style scoped>

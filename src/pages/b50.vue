@@ -6,13 +6,18 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
+import type { Chart, Music, SavedMusicList } from '@/types/music';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
 const error = ref<string | null>(null);
 const pending = ref(false);
 const playerData = ref<User | null>(null);
+const musicInfo = ref<SavedMusicList | null>(null);
 
+localForage.getItem<SavedMusicList>("musicInfo").then(v => {
+  musicInfo.value = v || null;
+});
 
 const loadPlayerData = async (id: number) => {
   pending.value = true;
@@ -49,6 +54,34 @@ const errorMessage = computed(() => {
   return msg;
 });
 
+function genScoreCardDataFromB50(record: any): any {
+  if (!musicInfo.value) return record;
+  // 查找对应的 chart
+  const chart = Object.values(musicInfo.value.chartList).find(
+    c => c.music.id === record.song_id && c.grade === record.level_index
+  );
+  if (!chart) return record;
+  return {
+    ...record,
+    music: chart.music,
+    id: chart.id,
+    notes: chart.notes,
+    charter: chart.charter,
+    level: chart.level,
+    grade: chart.grade,
+    ds: chart.ds,
+  };
+}
+
+const b50SdCharts = computed(() => {
+  if (!player.value?.data?.b50?.sd) return [];
+  return player.value.data.b50.sd.map(genScoreCardDataFromB50);
+});
+const b50DxCharts = computed(() => {
+  if (!player.value?.data?.b50?.dx) return [];
+  return player.value.data.b50.dx.map(genScoreCardDataFromB50);
+});
+
 const chartInfoDialog = ref({
   open: false,
   chart: null,
@@ -75,9 +108,9 @@ const chartInfoDialog = ref({
         </span>
         <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
       </div>
-      <ScoreSection v-if="player.data.b50?.sd?.length" title="旧版本成绩" :scores="player.data.b50.sd" :chartInfoDialog="chartInfoDialog" />
-      <ScoreSection v-if="player.data.b50?.dx?.length" title="新版本成绩" :scores="player.data.b50.dx" :chartInfoDialog="chartInfoDialog" />
-      <p v-if="!(player.data.b50?.sd?.length || player.data.b50?.dx?.length)" style="text-align: center; color: orange; margin-top: 20px;">
+      <ScoreSection v-if="b50SdCharts.length" title="旧版本成绩" :scores="b50SdCharts" :chartInfoDialog="chartInfoDialog" />
+      <ScoreSection v-if="b50DxCharts.length" title="新版本成绩" :scores="b50DxCharts" :chartInfoDialog="chartInfoDialog" />
+      <p v-if="!(b50SdCharts.length || b50DxCharts.length)" style="text-align: center; color: orange; margin-top: 20px;">
         未更新成绩或成绩更新失败，请到“用户”更新成绩
       </p>
     </div>
