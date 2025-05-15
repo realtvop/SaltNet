@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import ScoreSection from '@/components/ScoreSection.vue';
 import RatingPlate from '@/components/RatingPlate.vue';
@@ -14,9 +14,26 @@ const error = ref<string | null>(null);
 const pending = ref(false);
 const playerData = ref<User | null>(null);
 const musicInfo = ref<SavedMusicList | null>(null);
+const musicChartMap = ref<Map<string, ChartExtended>>(new Map());
 
 localForage.getItem<SavedMusicList>("musicInfo").then(v => {
   musicInfo.value = v || null;
+});
+
+// 构建高效查找表
+function buildMusicChartMap() {
+  if (!musicInfo.value) return;
+  const map = new Map();
+  for (const chart of Object.values(musicInfo.value.chartList) as ChartExtended[]) {
+    // key: `${song_id}-${level_index}`
+    map.set(`${chart.music.id}-${chart.grade}`, chart);
+  }
+  musicChartMap.value = map;
+}
+
+// 监听musicInfo加载完成后构建Map
+watch(musicInfo, (v) => {
+  if (v) buildMusicChartMap();
 });
 
 const loadPlayerData = async (id: number) => {
@@ -56,10 +73,8 @@ function genScoreCardDataFromB50(record: any): ChartExtended & {
   song_id?: number;
 } {
   if (!musicInfo.value) return record;
-  // 查找对应的 chart
-  const chart = (Object.values(musicInfo.value.chartList) as ChartExtended[]).find(
-    (c: ChartExtended) => c.music.id === record.song_id && c.grade === record.level_index
-  );
+  // 用Map高效查找
+  const chart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
   if (!chart) return record;
   return {
     ...chart,
