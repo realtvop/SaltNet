@@ -33,12 +33,20 @@
 </template>
 
 <script setup lang="ts">
-import type { Chart } from "@/types/music";
+import type { ChartExtended } from '@/types/music';
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 
 const props = defineProps<{
     open: boolean;
-    chart: (Chart & { achievements?: number; ra?: number }) | null;
+    chart: (ChartExtended & {
+        achievements?: number;
+        ra?: number;
+        rate?: string;
+        fc?: string;
+        fs?: string;
+        title?: string;
+        song_id?: number;
+    }) | null;
 }>();
 const dialogRef = ref<any>(null);
 

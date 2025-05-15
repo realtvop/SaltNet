@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
+import type { ChartExtended } from '@/types/music';
 
 const props = defineProps<{
-    data: any,
+    data: ChartExtended & {
+        achievements?: number;
+        ra?: number;
+        rate?: string;
+        fc?: string;
+        fs?: string;
+        title?: string;
+        song_id?: number;
+    };
 }>();
 
 const emit = defineEmits(['click']);

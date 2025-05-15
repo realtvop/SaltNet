@@ -6,7 +6,7 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import type { Chart, Music, SavedMusicList } from '@/types/music';
+import type { ChartExtended, SavedMusicList } from '@/types/music';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
@@ -34,14 +34,6 @@ onMounted(() => {
   loadPlayerData(Number(userId.value ?? "0"));
 });
 
-// watch(() => route.params.username, (newUsername) => {
-//   const newName = newUsername as string;
-//   if (newName && newName !== username.value) {
-//     username.value = newName;
-//     loadPlayerData(newName);
-//   }
-// });
-
 const player = computed(() => {
   return playerData.value ?? null;
 });
@@ -54,22 +46,30 @@ const errorMessage = computed(() => {
   return msg;
 });
 
-function genScoreCardDataFromB50(record: any): any {
+function genScoreCardDataFromB50(record: any): ChartExtended & {
+  achievements?: number;
+  ra?: number;
+  rate?: string;
+  fc?: string;
+  fs?: string;
+  title?: string;
+  song_id?: number;
+} {
   if (!musicInfo.value) return record;
   // 查找对应的 chart
-  const chart = Object.values(musicInfo.value.chartList).find(
-    c => c.music.id === record.song_id && c.grade === record.level_index
+  const chart = (Object.values(musicInfo.value.chartList) as ChartExtended[]).find(
+    (c: ChartExtended) => c.music.id === record.song_id && c.grade === record.level_index
   );
   if (!chart) return record;
   return {
-    ...record,
-    music: chart.music,
-    id: chart.id,
-    notes: chart.notes,
-    charter: chart.charter,
-    level: chart.level,
-    grade: chart.grade,
-    ds: chart.ds,
+    ...chart,
+    song_id: chart.music.id,
+    achievements: typeof record.achievements === 'number' ? record.achievements : null,
+    ra: typeof record.ra === 'number' ? record.ra : '',
+    rate: record.rate || '',
+    fc: record.fc || '',
+    fs: record.fs || '',
+    title: chart.music.title,
   };
 }
 
