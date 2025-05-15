@@ -17,7 +17,7 @@ const emit = defineEmits(['click']);
         <div class="result-details-section">
             <div class="result-header">
                 <div class="header-pill">
-                    <div class="pill-section charttype">{{ props.data.music ? props.data.music.type : props.data.type }}</div>
+                    <div class="pill-section charttype" :type="props.data.music ? props.data.music.type : props.data.type"><span>{{ props.data.music ? props.data.music.type : props.data.type }}</span></div>
                     <div class="pill-section level" :style="{ background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.grade ?? props.data.level_index]}` }">{{ props.data.ds.toFixed(1) }}</div>
                     <div class="pill-section points">{{ props.data.ra }}</div>
                 </div>
@@ -108,9 +108,19 @@ const emit = defineEmits(['click']);
 }
 
 .pill-section.charttype {
-    background-color: white;
-    color: #ff6600;
+    background-color: #63acf8;
+    font-weight: 1000;
     flex-grow: 0.5;
+}
+.pill-section.charttype[type="DX"] {
+    background-color: white;
+    /* color: #ff6600; */
+}
+.pill-section.charttype[type="DX"] > span {
+    background: linear-gradient(to right, #eb5639, #efb03e);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .pill-section.level {
