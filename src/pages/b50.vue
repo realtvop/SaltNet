@@ -6,7 +6,7 @@ import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import type { ChartExtended, SavedMusicList } from '@/types/music';
+import type { ChartExtended, SavedMusicList, ChartCardData } from '@/types/music';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
@@ -63,28 +63,59 @@ const errorMessage = computed(() => {
   return msg;
 });
 
-function genScoreCardDataFromB50(record: any): ChartExtended & {
-  achievements?: number;
-  ra?: number;
-  rate?: string;
-  fc?: string;
-  fs?: string;
-  title?: string;
-  song_id?: number;
-} {
-  if (!musicInfo.value) return record;
-  // 用Map高效查找
+function genScoreCardDataFromB50(record: any): ChartCardData {
+  if (!musicInfo.value) {
+    // 仅用b50原始数据构造卡片，music等字段缺失时用undefined或空字符串
+    return {
+      song_id: record.song_id,
+      title: record.title || '',
+      ds: record.ds ?? 0,
+      grade: record.level_index ?? 0,
+      level_index: record.level_index ?? 0,
+      type: record.type || '',
+      achievements: typeof record.achievements === 'number' ? record.achievements : undefined,
+      ra: typeof record.ra === 'number' ? record.ra : undefined,
+      rate: record.rate || '',
+      fc: record.fc || '',
+      fs: record.fs || '',
+      charter: record.charter || '',
+      music: undefined,
+    };
+  }
   const chart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
-  if (!chart) return record;
+  if (!chart) {
+    // musicInfo已加载但找不到谱面，兜底同上
+    return {
+      song_id: record.song_id,
+      title: record.title || '',
+      ds: record.ds ?? 0,
+      grade: record.level_index ?? 0,
+      level_index: record.level_index ?? 0,
+      type: record.type || '',
+      achievements: typeof record.achievements === 'number' ? record.achievements : undefined,
+      ra: typeof record.ra === 'number' ? record.ra : undefined,
+      rate: record.rate || '',
+      fc: record.fc || '',
+      fs: record.fs || '',
+      charter: record.charter || '',
+      music: undefined,
+    };
+  }
   return {
     ...chart,
     song_id: chart.music.id,
-    achievements: typeof record.achievements === 'number' ? record.achievements : null,
-    ra: typeof record.ra === 'number' ? record.ra : '',
+    title: chart.music.title,
+    ds: chart.ds,
+    grade: chart.grade,
+    level_index: chart.grade,
+    type: chart.music.type,
+    achievements: typeof record.achievements === 'number' ? record.achievements : undefined,
+    ra: typeof record.ra === 'number' ? record.ra : undefined,
     rate: record.rate || '',
     fc: record.fc || '',
     fs: record.fs || '',
-    title: chart.music.title,
+    charter: chart.charter,
+    music: chart.music,
   };
 }
 

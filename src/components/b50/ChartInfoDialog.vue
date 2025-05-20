@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartExtended } from '@/types/music';
+import type { ChartCardData } from '@/types/music';
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 import localForage from "localforage";
 import type { User } from '../../types/user';
@@ -55,22 +55,14 @@ import { snackbar } from "mdui";
 
 const props = defineProps<{
     open: boolean;
-    chart: (ChartExtended & {
-        achievements?: number;
-        ra?: number;
-        rate?: string;
-        fc?: string;
-        fs?: string;
-        title?: string;
-        song_id?: number;
-    }) | null;
+    chart: ChartCardData | null;
 }>();
 const dialogRef = ref<any>(null);
 const friendsScores = ref<{ name: string, achievements?: number, ra?: number, rate?: string, fc?: string, fs?: string, played: boolean }[]>([]);
 const selfName = ref('');
 
 // 获取当前谱面key
-function getChartKey(chart: any) {
+function getChartKey(chart: ChartCardData) {
     return `${chart.song_id}-${typeof chart.level_index === 'number' ? chart.level_index : (chart.grade ?? 0)}`;
 }
 

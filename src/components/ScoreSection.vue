@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ScoreCard from "./ScoreCard.vue";
+import type { ChartCardData } from '@/types/music';
 
 // Define props for the component
 const props = defineProps<{
   title: string;
-  scores: any[]; // 允许更通用的卡片数据结构
+  scores: ChartCardData[];
   chartInfoDialog: {
     open: boolean;
-    chart: any;
+    chart: ChartCardData | null;
   };
 }>();
 
@@ -39,7 +40,7 @@ const stats = computed(() => {
   };
 });
 
-function openDialog(chart: any) {
+function openDialog(chart: ChartCardData) {
   props.chartInfoDialog.open = !props.chartInfoDialog.open;
   props.chartInfoDialog.chart = chart;
 }
