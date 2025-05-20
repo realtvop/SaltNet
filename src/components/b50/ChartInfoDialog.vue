@@ -1,13 +1,13 @@
 <template>
     <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
-        <mdui-top-app-bar slot="header">
+        <mdui-top-app-bar :header="true">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
-            <mdui-top-app-bar-title @click="copyToClipboard(chart.music.title)" style="cursor:pointer">{{ chart.music.title }}</mdui-top-app-bar-title>
+            <mdui-top-app-bar-title @click="copyToClipboard(chart?.music?.title || '')" style="cursor:pointer">{{ chart?.music?.title || '' }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img class="song-cover" :src="`https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png`" />
+        <img class="song-cover" :src="chart?.music ? `https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png` : ''" />
 
-        <div class="chip-container">
+        <div class="chip-container" v-if="chart?.music">
             <mdui-chip icon="music_note" @click="copyToClipboard(chart.music.artist || '未知')" style="cursor:pointer">{{ chart.music.artist || '未知' }}</mdui-chip>
             <mdui-chip icon="access_time_filled" style="cursor:pointer">{{ chart.music.genre || '未知' }}</mdui-chip>
             <mdui-chip icon="star" style="cursor:pointer">{{ chart.music.type || '未知' }}</mdui-chip>
@@ -16,14 +16,14 @@
 
         <h3>Rating 阶段</h3>
         <mdui-list>
-            <mdui-list-item v-for="i of raTable" nonclickable>
-                <div slot="custom" class="list-container">
+            <mdui-list-item v-for="i of raTable" :key="i.rank" nonclickable>
+                <div class="list-container">
                     <div class="list-title">
                         {{ i.rank }}
                         <span class="description">{{ i.rate.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="i.ra > (chart.ra ?? 0)">
-                        +{{ i.ra - (chart.ra ?? 0) }}
+                    <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
+                        +{{ typeof chart.ra === 'number' ? i.ra - chart.ra : i.ra }}
                     </span>
                     {{ i.ra }}
                 </div>
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartExtended } from '@/types/music';
+import type { ChartCardData } from '@/types/music';
 import { defineProps, watch, nextTick, ref, computed } from "vue";
 import localForage from "localforage";
 import type { User } from '../../types/user';
@@ -55,22 +55,14 @@ import { snackbar } from "mdui";
 
 const props = defineProps<{
     open: boolean;
-    chart: (ChartExtended & {
-        achievements?: number;
-        ra?: number;
-        rate?: string;
-        fc?: string;
-        fs?: string;
-        title?: string;
-        song_id?: number;
-    }) | null;
+    chart: ChartCardData | null;
 }>();
 const dialogRef = ref<any>(null);
 const friendsScores = ref<{ name: string, achievements?: number, ra?: number, rate?: string, fc?: string, fs?: string, played: boolean }[]>([]);
 const selfName = ref('');
 
 // 获取当前谱面key
-function getChartKey(chart: any) {
+function getChartKey(chart: ChartCardData) {
     return `${chart.song_id}-${typeof chart.level_index === 'number' ? chart.level_index : (chart.grade ?? 0)}`;
 }
 
