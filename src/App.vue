@@ -16,7 +16,7 @@ const router = useRouter();
 <template>
   <mdui-layout>
     <component :is="TopAppBar" :playerInfo="playerInfo"/>
-    <mdui-navigation-bar :value="route.path" v-if="!route.path.startsWith('/b50/')">
+    <mdui-navigation-bar :value="route.path" v-if="!route.path.startsWith('/b50/')" label-visibility="labeled">
       <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">首页</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="data_thresholding" value="/b50" @click="router.push('/b50')">成绩</mdui-navigation-bar-item>
       <mdui-navigation-bar-item icon="library_music" value="/songs" @click="router.push('/songs')">谱面</mdui-navigation-bar-item>
