@@ -2,6 +2,7 @@
 [salt.realtvop.top](https://salt.realtvop.top)
 
 开发中的 **舞萌DX** 查分网站
+
 International & Japanese ver. will be supported later.
 
 ## TODO
