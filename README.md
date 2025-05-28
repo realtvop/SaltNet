@@ -39,3 +39,4 @@ International & Japanese ver. will be supported later.
 ## 鸣谢
 - [luoling8192/dxrating](https://github.com/luoling8192/dxrating) - DX Rating 显示框
 - [水鱼查分器](https://www.diving-fish.com/maimaidx/prober/) - 曲目数据
+- [落雪查分器](https://maimai.lxns.net/) - 曲目别名
