@@ -63,7 +63,7 @@ mdui-navigation-rail {
 }
 
 mdui-navigation-rail-item {
-  overflow: hidden scroll;
+  overflow: hidden;
 }
 mdui-navigation-bar-item {
   overflow: hidden;

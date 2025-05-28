@@ -1,6 +1,6 @@
 <template>
     <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
-        <mdui-top-app-bar :header="true">
+        <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
             <mdui-top-app-bar-title @click="copyToClipboard(chart?.music?.title || '')" style="cursor:pointer">{{ chart?.music?.title || '' }}</mdui-top-app-bar-title>
         </mdui-top-app-bar>
