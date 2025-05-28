@@ -49,15 +49,17 @@ function sortChartsByScore() {
 }
 const chartListFiltered = computed(() => {
     if (!chartList.value) return null;
+    if (!query.value) return chartList.value;
     const filtered: Record<string, ChartExtended[]> = {};
     for (const i in chartList.value) {
         filtered[i] = chartList.value[i].filter((chart: ChartExtended) => {
             const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
             return (
-              // 曲名 曲师 谱师
+              // 曲名 曲师 谱师 别名
               chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
               chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.charter.toLowerCase().includes(query.value.toLowerCase())
+              chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+              (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
             ) || (chartData && (
               // 达成率 fc sync
               chartData.achievements.toString().includes(query.value) ||
@@ -107,7 +109,7 @@ function openChartInfoDialog(chart: any) {
     <mdui-tab v-for="difficulty in difficulties" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
 </mdui-tabs>
 <div class="card-container" v-if="chartListFiltered">
-  <mdui-text-field clearable icon="search" label="搜索" placeholder="曲名 曲师 谱师 达成率" @input="query = $event.target.value"></mdui-text-field>
+  <mdui-text-field clearable icon="search" label="搜索" placeholder="曲名 别名 曲师 谱师" @input="query = $event.target.value"></mdui-text-field>
   <div class="score-grid-wrapper">
     <div class="score-grid">
       <div v-for="(chart, index) in chartListFiltered[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
