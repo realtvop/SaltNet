@@ -10,7 +10,7 @@
 - [x] PWA
 - [x] 全谱面列表
 - [x] 谱面详情
-    - [x] 全部曲目
+    - [ ] 全部曲目
     - [x] 曲目详情
         - [x] rating 阶段
         - [x] 谱面信息
@@ -27,3 +27,7 @@
 - [ ] 水鱼曲绘信息不全，尝试自建
 - [x] 用户列表移动端显示不全
 - [ ] rating 阶段显示不全
+
+## 鸣谢
+- [luoling8192/dxrating](https://github.com/luoling8192/dxrating) - DX Rating 显示框
+- [水鱼查分器](https://www.diving-fish.com/maimaidx/prober/) - 曲目数据
