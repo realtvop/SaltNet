@@ -3,6 +3,7 @@ import type { MusicOrigin, ChartType, MusicGenre } from "./maiTypes";
 
 export interface Music {
     title: string;
+    aliases?: string[];
     artist: string;
     genre: MusicGenre;
     bpm: number;
@@ -75,6 +76,7 @@ export function convertDFMusicList(data: MusicDataResponse): SavedMusicList {
         const id = Number(item.id);
         const music: Music = {
             title: item.basic_info.title,
+            aliases: item.aliases,
             artist: item.basic_info.artist,
             genre: item.basic_info.genre,
             bpm: item.basic_info.bpm,

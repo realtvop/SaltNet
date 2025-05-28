@@ -37,7 +37,7 @@ export async function fetchPlayerData(username: string): Promise<DivingFishRespo
 
 export async function fetchMusicData(): Promise<SavedMusicList | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/music_data`);
+    const response = await fetch(`/data/charts.json`);
     if (!response.ok) {
       throw new Error(`Request failed with status code ${response.status}`);
     }
