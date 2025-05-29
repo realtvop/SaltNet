@@ -30,7 +30,7 @@
             </mdui-list-item>
         </mdui-list>
 
-        <div v-if="friendsScores.length" class="friends-section">
+        <div v-if="friendsScores.length > 1" class="friends-section">
             <h3>好友排名</h3>
             <mdui-list>
                 <mdui-list-item v-for="(f, idx) in friendsScores" :key="f.name" nonclickable :active="f.name === selfName" rounded>
