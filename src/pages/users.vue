@@ -7,7 +7,6 @@ import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
 import type { User } from '@/types/user';
 import { checkLogin, updateUser } from '@/utils/updateUser';
-import { fetchMusicData } from '@/divingfish';
 import { confirm, snackbar } from 'mdui';
 import localForage from "localforage";
 import type { SavedMusicList } from '@/types/music';
@@ -123,17 +122,6 @@ function updateAll() {
     users.value.forEach(user => {
         updateUser(user);
     });
-    updateMusicData();
-}
-
-function updateMusicData() {
-    fetchMusicData()
-        .then((data: SavedMusicList | null) => {
-            if (data)
-                localForage.setItem("musicInfo", data)
-                    .then(() => snackbar({ message: "曲目数据更新成功", autoCloseDelay: 500 }));
-        })
-        .catch(() => snackbar({ message: "曲目数据更新失败", autoCloseDelay: 500 }));
 }
 </script>
 
@@ -159,7 +147,7 @@ function updateMusicData() {
             </div>
             <div class="user-actions">
                 <!-- Pass index here -->
-                <mdui-button-icon variant="standard" icon="update" @click="updateUser(user) && updateMusicData()"></mdui-button-icon>
+                <mdui-button-icon variant="standard" icon="update" @click="updateUser(user)"></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon slot="trigger" icon="more_vert" style="margin-right: 10px;"></mdui-button-icon>
                     <mdui-menu>
