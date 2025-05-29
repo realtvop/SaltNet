@@ -16,17 +16,17 @@
 
         <h3>Rating 阶段</h3>
         <mdui-list>
-            <mdui-list-item v-for="i of raTable" :key="i.rank" nonclickable>
-                <div class="list-container">
-                    <div class="list-title">
-                        {{ i.rank }}
-                        <span class="description">{{ i.rate.toFixed(4) }}%</span>
-                    </div>
-                    <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
-                        +{{ typeof chart.ra === 'number' ? i.ra - chart.ra : i.ra }}
-                    </span>
-                    {{ i.ra }}
+            <mdui-list-item v-for="i of raTable.filter((_, idx) => raTable.length <= 3 || idx === 0 || idx >= raTable.length - 2)" :key="i.rank" nonclickable>
+            <div class="list-container">
+                <div class="list-title">
+                {{ i.rank }}
+                <span class="description">{{ i.rate.toFixed(4) }}%</span>
                 </div>
+                <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
+                +{{ typeof chart.ra === 'number' ? i.ra - chart.ra : i.ra }}
+                </span>
+                {{ i.ra }}
+            </div>
             </mdui-list-item>
         </mdui-list>
 
@@ -57,10 +57,6 @@ import { defineProps, watch, nextTick, ref, computed } from "vue";
 import localForage from "localforage";
 import type { User } from '../../types/user';
 import { snackbar } from "mdui";
-
-function consolelog(data: any) {
-    console.log(data);
-}
 
 const props = defineProps<{
     open: boolean;
