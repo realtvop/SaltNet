@@ -12,11 +12,16 @@
             <mdui-chip icon="access_time_filled" style="cursor:pointer">{{ chart.music.genre || '未知' }}</mdui-chip>
             <mdui-chip icon="star" style="cursor:pointer">{{ chart.music.type || '未知' }}</mdui-chip>
             <mdui-chip icon="edit" @click="copyToClipboard(chart.charter || '未知')" style="cursor:pointer">{{ chart.charter || '未知' }}</mdui-chip>
+        </div>        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+            <h3 style="margin-bottom: 0;">Rating 阶段</h3>
+            <mdui-button-icon 
+                v-if="raTable.length > 3"
+                :icon="isRatingExpanded ? 'expand_less' : 'expand_more'" 
+                @click="isRatingExpanded = !isRatingExpanded"
+            ></mdui-button-icon>
         </div>
-
-        <h3>Rating 阶段</h3>
         <mdui-list>
-            <mdui-list-item v-for="i of raTable.filter((_, idx) => raTable.length <= 3 || idx === 0 || idx >= raTable.length - 2)" :key="i.rank" nonclickable>
+            <mdui-list-item v-for="i of displayedRaTable" :key="i.rank" nonclickable>
             <div class="list-container">
                 <div class="list-title">
                 {{ i.rank }}
@@ -65,6 +70,7 @@ const props = defineProps<{
 const dialogRef = ref<any>(null);
 const friendsScores = ref<{ name: string, achievements?: number, ra?: number, rate?: string, fc?: string, fs?: string, played: boolean }[]>([]);
 const selfName = ref('');
+const isRatingExpanded = ref(false);
 
 // 获取当前谱面key
 function getChartKey(chart: ChartCardData) {
@@ -78,6 +84,7 @@ watch(() => props.open, async () => {
     }
     friendsScores.value = [];
     selfName.value = '';
+    isRatingExpanded.value = false;
     if (!props.chart) return;
     const key = getChartKey(props.chart);
     const users: User[] = (await localForage.getItem("users")) || [];
@@ -189,6 +196,17 @@ const raTable = computed(() => {
         if (i[0] <= achievements) break;
     }
     return result;
+})
+
+const displayedRaTable = computed(() => {
+    if (raTable.value.length <= 3 || isRatingExpanded.value) {
+        return raTable.value;
+    }
+    // 只显示第一个和最后两个
+    return [
+        raTable.value[0],
+        ...raTable.value.slice(-2)
+    ];
 })
 </script>
 
