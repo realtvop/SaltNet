@@ -19,6 +19,6 @@ fetch(DFMusicDataAPIURL)
                     if (aliasList) chart.aliases = aliasList.aliases;
                 }
 
-                fs.writeFileSync("data/charts.json", JSON.stringify(data), 'utf8');
+                fs.writeFileSync("public/data/charts.json", JSON.stringify(data), 'utf8');
             });
     });
