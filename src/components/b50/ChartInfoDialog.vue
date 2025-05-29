@@ -7,7 +7,7 @@
 
         <img class="song-cover" :src="chart?.music ? `https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png` : ''" />
 
-        <div class="chip-container" v-if="chart?.music">
+        <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip icon="music_note" @click="copyToClipboard(chart.music.artist || '未知')" style="cursor:pointer">{{ chart.music.artist || '未知' }}</mdui-chip>
             <mdui-chip icon="access_time_filled" style="cursor:pointer">{{ chart.music.genre || '未知' }}</mdui-chip>
             <mdui-chip icon="star" style="cursor:pointer">{{ chart.music.type || '未知' }}</mdui-chip>
@@ -43,6 +43,11 @@
                 </mdui-list-item>
             </mdui-list>
         </div>
+        
+        <h3 v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">别名</h3>
+        <div class="chip-container" v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">
+            <mdui-chip v-for="alias in chart.music.aliases" :key="alias" @click="copyToClipboard(alias)" style="cursor:pointer">{{ alias }}</mdui-chip>
+        </div>
     </mdui-dialog>
 </template>
 
@@ -52,6 +57,10 @@ import { defineProps, watch, nextTick, ref, computed } from "vue";
 import localForage from "localforage";
 import type { User } from '../../types/user';
 import { snackbar } from "mdui";
+
+function consolelog(data: any) {
+    console.log(data);
+}
 
 const props = defineProps<{
     open: boolean;
@@ -202,8 +211,11 @@ const raTable = computed(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 16px 0;
+    padding: 16px 1.5rem;
+}
+.chip-container[center] {
     justify-content: center;
+    padding: 16px 0 !important;
 }
 
 h3 {
