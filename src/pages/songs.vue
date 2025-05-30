@@ -10,8 +10,8 @@ import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 const users = ref<User[]>([]);
 const chartList = ref<Record<string, ChartExtended[]> | null>(null);
 const allMasterCharts = ref<ChartExtended[]>([]);
-const selectedDifficulty = ref<string>("全曲目");
-const difficulties = [ "全曲目", "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
+const selectedDifficulty = ref<string>("ALL");
+const difficulties = [ "ALL", "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
 const playerData = ref<User | null>(null);
 const query = ref<string>('');
 const chartInfoDialog = ref({
@@ -73,9 +73,9 @@ function sortChartsByScore() {
 const chartListFiltered = computed(() => {
     if (!chartList.value) return null;
     
-    // Handle "全曲目" tab - show all Master difficulty charts
-    if (selectedDifficulty.value === "全曲目") {
-        if (!query.value) return { "全曲目": allMasterCharts.value };
+    // Handle "ALL" tab - show all Master difficulty charts
+    if (selectedDifficulty.value === "ALL") {
+        if (!query.value) return { "ALL": allMasterCharts.value };
         
         const filtered = allMasterCharts.value.filter((chart: ChartExtended) => {
             const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
@@ -92,7 +92,7 @@ const chartListFiltered = computed(() => {
               chartData.fs.toString().includes(query.value)
             ));
         });
-        return { "全曲目": filtered };
+        return { "ALL": filtered };
     }
     
     // Handle regular difficulty tabs
