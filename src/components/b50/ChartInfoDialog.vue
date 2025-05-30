@@ -7,30 +7,35 @@
 
         <img class="song-cover" :src="chart?.music ? `https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png` : ''" />
 
-        <div class="chip-container" v-if="chart?.music">
+        <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip icon="music_note" @click="copyToClipboard(chart.music.artist || '未知')" style="cursor:pointer">{{ chart.music.artist || '未知' }}</mdui-chip>
             <mdui-chip icon="access_time_filled" style="cursor:pointer">{{ chart.music.genre || '未知' }}</mdui-chip>
             <mdui-chip icon="star" style="cursor:pointer">{{ chart.music.type || '未知' }}</mdui-chip>
             <mdui-chip icon="edit" @click="copyToClipboard(chart.charter || '未知')" style="cursor:pointer">{{ chart.charter || '未知' }}</mdui-chip>
+        </div>        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+            <h3 style="margin-bottom: 0;">Rating 阶段</h3>
+            <mdui-button-icon 
+                v-if="raTable.length > 3"
+                :icon="isRatingExpanded ? 'expand_less' : 'expand_more'" 
+                @click="isRatingExpanded = !isRatingExpanded"
+            ></mdui-button-icon>
         </div>
-
-        <h3>Rating 阶段</h3>
         <mdui-list>
-            <mdui-list-item v-for="i of raTable" :key="i.rank" nonclickable>
-                <div class="list-container">
-                    <div class="list-title">
-                        {{ i.rank }}
-                        <span class="description">{{ i.rate.toFixed(4) }}%</span>
-                    </div>
-                    <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
-                        +{{ typeof chart.ra === 'number' ? i.ra - chart.ra : i.ra }}
-                    </span>
-                    {{ i.ra }}
+            <mdui-list-item v-for="i of displayedRaTable" :key="i.rank" nonclickable>
+            <div class="list-container">
+                <div class="list-title">
+                {{ i.rank }}
+                <span class="description">{{ i.rate.toFixed(4) }}%</span>
                 </div>
+                <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
+                +{{ typeof chart.ra === 'number' ? i.ra - chart.ra : i.ra }}
+                </span>
+                {{ i.ra }}
+            </div>
             </mdui-list-item>
         </mdui-list>
 
-        <div v-if="friendsScores.length" class="friends-section">
+        <div v-if="friendsScores.length > 1" class="friends-section">
             <h3>好友排名</h3>
             <mdui-list>
                 <mdui-list-item v-for="(f, idx) in friendsScores" :key="f.name" nonclickable :active="f.name === selfName" rounded>
@@ -42,6 +47,11 @@
                     </div>
                 </mdui-list-item>
             </mdui-list>
+        </div>
+        
+        <h3 v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">别名</h3>
+        <div class="chip-container" v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">
+            <mdui-chip v-for="alias in chart.music.aliases" :key="alias" @click="copyToClipboard(alias)" style="cursor:pointer">{{ alias }}</mdui-chip>
         </div>
     </mdui-dialog>
 </template>
@@ -60,6 +70,7 @@ const props = defineProps<{
 const dialogRef = ref<any>(null);
 const friendsScores = ref<{ name: string, achievements?: number, ra?: number, rate?: string, fc?: string, fs?: string, played: boolean }[]>([]);
 const selfName = ref('');
+const isRatingExpanded = ref(false);
 
 // 获取当前谱面key
 function getChartKey(chart: ChartCardData) {
@@ -73,6 +84,7 @@ watch(() => props.open, async () => {
     }
     friendsScores.value = [];
     selfName.value = '';
+    isRatingExpanded.value = false;
     if (!props.chart) return;
     const key = getChartKey(props.chart);
     const users: User[] = (await localForage.getItem("users")) || [];
@@ -185,6 +197,17 @@ const raTable = computed(() => {
     }
     return result;
 })
+
+const displayedRaTable = computed(() => {
+    if (raTable.value.length <= 3 || isRatingExpanded.value) {
+        return raTable.value;
+    }
+    // 只显示第一个和最后两个
+    return [
+        raTable.value[0],
+        ...raTable.value.slice(-2)
+    ];
+})
 </script>
 
 <style scoped>
@@ -202,8 +225,11 @@ const raTable = computed(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 16px 0;
+    padding: 16px 1.5rem;
+}
+.chip-container[center] {
     justify-content: center;
+    padding: 16px 0 !important;
 }
 
 h3 {

@@ -42,6 +42,7 @@ export interface MusicInfo {
   cids: number[];
   charts: ChartInfo[];
   basic_info: BasicInfo;
+  aliases?: string[]; // Optional aliases for the song
 }
 
 // Response from /music_data endpoint

@@ -9,8 +9,9 @@ import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 
 const users = ref<User[]>([]);
 const chartList = ref<Record<string, ChartExtended[]> | null>(null);
-const selectedDifficulty = ref<string>("1");
-const difficulties = [ "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
+const allMasterCharts = ref<ChartExtended[]>([]);
+const selectedDifficulty = ref<string>("ALL");
+const difficulties = [ "ALL", "1", "2", "3", "4", "5", "6", "7", "7+", "8", "8+", "9", "9+", "10", "10+", "11", "11+", "12", "12+", "13", "13+", "14", "14+", "15" ];
 const playerData = ref<User | null>(null);
 const query = ref<string>('');
 const chartInfoDialog = ref({
@@ -24,14 +25,25 @@ localForage.getItem<User[]>("users").then(v => {
 localForage.getItem<SavedMusicList>("musicInfo").then(v => {
     if (!v) return;
     const sorted: Record<string, ChartExtended[]> = {};
+    const masterCharts: ChartExtended[] = [];
     for (const i in v.chartList) {
         const chart = v.chartList[i] as Chart;
         sorted[chart.level] = sorted[chart.level] || [];
         sorted[chart.level].push(chart);
+        
+        // Collect Master difficulty charts (grade = 3)
+        if (chart.grade === 3) {
+            masterCharts.push(chart);
+        }
     }
     for (const i in sorted)
         sorted[i].sort((a, b) => MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
+    
+    // Sort master charts by the same logic
+    masterCharts.sort((a, b) => MusicSort.indexOf(b.music.id) + b.grade * 100000 - MusicSort.indexOf(a.music.id) - a.grade * 100000);
+    
     chartList.value = sorted;
+    allMasterCharts.value = masterCharts;
     sortChartsByScore();
 });
 function sortChartsByScore() {
@@ -46,18 +58,55 @@ function sortChartsByScore() {
         });
         for (const j in chartList.value[i]) chartList.value[i][j].index = `${ chartList.value[i].length - (j as unknown as number) }/${ chartList.value[i].length + 1 }`;
     }
+    
+    // Sort master charts by score as well
+    allMasterCharts.value.sort((a, b) => {
+        const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
+        const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
+        if (chartDataA?.achievements && chartDataB?.achievements) return chartDataB.achievements - chartDataA.achievements;
+        if (chartDataA?.achievements) return -1;
+        if (chartDataB?.achievements) return 1;
+        return 0;
+    });
+    for (const j in allMasterCharts.value) allMasterCharts.value[j].index = `${ allMasterCharts.value.length - (j as unknown as number) }/${ allMasterCharts.value.length + 1 }`;
 }
 const chartListFiltered = computed(() => {
     if (!chartList.value) return null;
+    
+    // Handle "ALL" tab - show all Master difficulty charts
+    if (selectedDifficulty.value === "ALL") {
+        if (!query.value) return { "ALL": allMasterCharts.value };
+        
+        const filtered = allMasterCharts.value.filter((chart: ChartExtended) => {
+            const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
+            return (
+              // 曲名 曲师 谱师 别名
+              chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
+              chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
+              chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+              (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
+            ) || (chartData && (
+              // 达成率 fc sync
+              chartData.achievements.toString().includes(query.value) ||
+              chartData.fc.toString().includes(query.value) ||
+              chartData.fs.toString().includes(query.value)
+            ));
+        });
+        return { "ALL": filtered };
+    }
+    
+    // Handle regular difficulty tabs
+    if (!query.value) return chartList.value;
     const filtered: Record<string, ChartExtended[]> = {};
     for (const i in chartList.value) {
         filtered[i] = chartList.value[i].filter((chart: ChartExtended) => {
             const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
             return (
-              // 曲名 曲师 谱师
+              // 曲名 曲师 谱师 别名
               chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
               chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.charter.toLowerCase().includes(query.value.toLowerCase())
+              chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+              (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
             ) || (chartData && (
               // 达成率 fc sync
               chartData.achievements.toString().includes(query.value) ||
@@ -107,7 +156,7 @@ function openChartInfoDialog(chart: any) {
     <mdui-tab v-for="difficulty in difficulties" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
 </mdui-tabs>
 <div class="card-container" v-if="chartListFiltered">
-  <mdui-text-field clearable icon="search" label="搜索" placeholder="曲名 曲师 谱师 达成率" @input="query = $event.target.value"></mdui-text-field>
+  <mdui-text-field clearable icon="search" label="搜索" placeholder="曲名 别名 曲师 谱师" @input="query = $event.target.value"></mdui-text-field>
   <div class="score-grid-wrapper">
     <div class="score-grid">
       <div v-for="(chart, index) in chartListFiltered[selectedDifficulty]" :key="`score-cell-${index}`" class="score-cell">
