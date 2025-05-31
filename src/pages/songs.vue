@@ -75,47 +75,73 @@ const chartListFiltered = computed(() => {
     
     // Handle "ALL" tab - show all Master difficulty charts
     if (selectedDifficulty.value === "ALL") {
-        if (!query.value) return { "ALL": allMasterCharts.value };
+        let chartArray: ChartExtended[];
+        if (!query.value) {
+            chartArray = [...allMasterCharts.value];
+        } else {
+            chartArray = allMasterCharts.value.filter((chart: ChartExtended) => {
+                const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
+                return (
+                  // 曲名 曲师 谱师 别名
+                  chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
+                  chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
+                  chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+                  (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
+                ) || (chartData && (
+                  // 达成率 fc sync
+                  chartData.achievements.toString().includes(query.value) ||
+                  chartData.fc.toString().includes(query.value) ||
+                  chartData.fs.toString().includes(query.value)
+                ));
+            });
+        }
         
-        const filtered = allMasterCharts.value.filter((chart: ChartExtended) => {
-            const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
-            return (
-              // 曲名 曲师 谱师 别名
-              chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-              (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
-            ) || (chartData && (
-              // 达成率 fc sync
-              chartData.achievements.toString().includes(query.value) ||
-              chartData.fc.toString().includes(query.value) ||
-              chartData.fs.toString().includes(query.value)
-            ));
-        });
-        return { "ALL": filtered };
+        // Update index for current tab display
+        for (const j in chartArray) {
+            chartArray[j].index = `${chartArray.length - (j as unknown as number)}/${chartArray.length}`;
+        }
+        
+        return { "ALL": chartArray };
     }
     
     // Handle regular difficulty tabs
-    if (!query.value) return chartList.value;
-    const filtered: Record<string, ChartExtended[]> = {};
-    for (const i in chartList.value) {
-        filtered[i] = chartList.value[i].filter((chart: ChartExtended) => {
-            const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
-            return (
-              // 曲名 曲师 谱师 别名
-              chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-              chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-              (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
-            ) || (chartData && (
-              // 达成率 fc sync
-              chartData.achievements.toString().includes(query.value) ||
-              chartData.fc.toString().includes(query.value) ||
-              chartData.fs.toString().includes(query.value)
-            ));
-        });
+    let result: Record<string, ChartExtended[]>;
+    if (!query.value) {
+        // Deep copy to avoid modifying original data
+        result = {};
+        for (const i in chartList.value) {
+            result[i] = [...chartList.value[i]];
+        }
+    } else {
+        result = {};
+        for (const i in chartList.value) {
+            result[i] = chartList.value[i].filter((chart: ChartExtended) => {
+                const chartData = playerData.value?.data.detailed ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`] : null;
+                return (
+                  // 曲名 曲师 谱师 别名
+                  chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
+                  chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
+                  chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+                  (chart.music.aliases && chart.music.aliases.join().toLowerCase().includes(query.value.toLowerCase()))
+                ) || (chartData && (
+                  // 达成率 fc sync
+                  chartData.achievements.toString().includes(query.value) ||
+                  chartData.fc.toString().includes(query.value) ||
+                  chartData.fs.toString().includes(query.value)
+                ));
+            });
+        }
     }
-    return filtered;
+    
+    // Update index for selected difficulty level to show position in current tab
+    if (selectedDifficulty.value !== "ALL" && result[selectedDifficulty.value]) {
+        const currentDifficultyCharts = result[selectedDifficulty.value];
+        for (const j in currentDifficultyCharts) {
+            currentDifficultyCharts[j].index = `${currentDifficultyCharts.length - (j as unknown as number)}/${currentDifficultyCharts.length}`;
+        }
+    }
+    
+    return result;
 });
 
 const loadPlayerData = async () => {
@@ -153,7 +179,7 @@ function openChartInfoDialog(chart: any) {
 
 <template>
 <mdui-tabs :value="selectedDifficulty">
-    <mdui-tab v-for="difficulty in difficulties" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
+    <mdui-tab v-for="difficulty in difficulties" :key="difficulty" :value="difficulty" @click="selectedDifficulty = difficulty">{{ difficulty }}</mdui-tab>
 </mdui-tabs>
 <div class="card-container" v-if="chartListFiltered">
   <mdui-text-field clearable icon="search" label="搜索" placeholder="曲名 别名 曲师 谱师" @input="query = $event.target.value"></mdui-text-field>
