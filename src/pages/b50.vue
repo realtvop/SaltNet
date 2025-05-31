@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ScoreSection from '@/components/ScoreSection.vue';
 import RatingPlate from '@/components/RatingPlate.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import type { ChartExtended, SavedMusicList, ChartCardData } from '@/types/music';
+import type { ChartExtended, ChartCardData } from '@/types/music';
 import { musicInfo } from '@/assets/music';
 
 const route = useRoute();

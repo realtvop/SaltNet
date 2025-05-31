@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
-import type { Chart, ChartExtended, SavedMusicList } from '@/types/music';
+import type { Chart, ChartExtended } from '@/types/music';
 import MusicSort from '@/assets/MusicSort';
 import ScoreCard from '@/components/ScoreCard.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';

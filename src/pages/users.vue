@@ -7,10 +7,8 @@ import BindUserDialog from '@/components/users/BindUserDialog.vue';
 // Correct the import path for the User type
 import type { User } from '@/types/user';
 import { checkLogin, updateUser } from '@/utils/updateUser';
-import { fetchMusicData } from '@/divingfish';
-import { confirm, snackbar } from 'mdui';
+import { confirm } from 'mdui';
 import localForage from "localforage";
-import type { SavedMusicList } from '@/types/music';
 
 const users = ref<User[]>([]);
 
