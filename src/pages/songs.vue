@@ -6,6 +6,7 @@ import type { Chart, ChartExtended, SavedMusicList } from '@/types/music';
 import MusicSort from '@/assets/MusicSort';
 import ScoreCard from '@/components/ScoreCard.vue';
 import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
+import { getMusicInfoAsync } from '@/assets/music';
 
 const users = ref<User[]>([]);
 const chartList = ref<Record<string, ChartExtended[]> | null>(null);
@@ -22,7 +23,7 @@ const chartInfoDialog = ref({
 localForage.getItem<User[]>("users").then(v => {
     if (Array.isArray(v)) users.value = v;
 });
-localForage.getItem<SavedMusicList>("musicInfo").then(v => {
+getMusicInfoAsync().then(v => {
     if (!v) return;
     const sorted: Record<string, ChartExtended[]> = {};
     const masterCharts: ChartExtended[] = [];

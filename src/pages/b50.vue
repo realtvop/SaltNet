@@ -7,34 +7,26 @@ import ChartInfoDialog from '@/components/b50/ChartInfoDialog.vue';
 import type { User } from '@/types/user';
 import localForage from "localforage";
 import type { ChartExtended, SavedMusicList, ChartCardData } from '@/types/music';
+import { musicInfo } from '@/assets/music';
 
 const route = useRoute();
 const userId = ref(route.params.id as string);
 const error = ref<string | null>(null);
 const pending = ref(false);
 const playerData = ref<User | null>(null);
-const musicInfo = ref<SavedMusicList | null>(null);
 const musicChartMap = ref<Map<string, ChartExtended>>(new Map());
-
-localForage.getItem<SavedMusicList>("musicInfo").then(v => {
-  musicInfo.value = v || null;
-});
 
 // 构建高效查找表
 function buildMusicChartMap() {
-  if (!musicInfo.value) return;
+  if (!musicInfo) return;
   const map = new Map();
-  for (const chart of Object.values(musicInfo.value.chartList) as ChartExtended[]) {
+  for (const chart of Object.values(musicInfo.chartList) as ChartExtended[]) {
     // key: `${song_id}-${level_index}`
     map.set(`${chart.music.id}-${chart.grade}`, chart);
   }
   musicChartMap.value = map;
 }
-
-// 监听musicInfo加载完成后构建Map
-watch(musicInfo, (v) => {
-  if (v) buildMusicChartMap();
-});
+buildMusicChartMap();
 
 const loadPlayerData = async (id: number) => {
   pending.value = true;
@@ -64,7 +56,7 @@ const errorMessage = computed(() => {
 });
 
 function genScoreCardDataFromB50(record: any): ChartCardData {
-  if (!musicInfo.value) {
+  if (!musicInfo) {
     // 仅用b50原始数据构造卡片，music等字段缺失时用undefined或空字符串
     return {
       song_id: record.song_id,
