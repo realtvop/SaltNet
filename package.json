@@ -7,7 +7,9 @@
     "dev": "vite",
     "check": "vue-tsc -b",
     "build": "vue-tsc -b && vite build && node ./script/generateBuildInfo.cjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pret": "prettier --check .",
+    "pret:fix": "prettier --write ."
   },
   "dependencies": {
     "localforage": "^1.10.0",
@@ -20,6 +22,7 @@
     "@types/node": "^22.14.1",
     "@vitejs/plugin-vue": "^5.2.2",
     "@vue/tsconfig": "^0.7.0",
+    "prettier": "^3.5.3",
     "typescript": "~5.7.2",
     "vite": "^6.3.1",
     "vue-tsc": "^2.2.8"
