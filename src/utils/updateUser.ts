@@ -114,7 +114,7 @@ function info(message: string, errorMsg?: string): Snackbar {
     return snackbar({
         message,
         placement: "bottom",
-        autoCloseDelay: errorMsg ? 2000 : 1000,
+        autoCloseDelay: errorMsg ? 3000 : 1500,
         action: errorMsg ? "复制错误" : undefined,
         onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,
     })
