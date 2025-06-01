@@ -4,22 +4,22 @@
  */
 
 // Storage key prefix to avoid conflicts with other data
-const STORAGE_PREFIX = 'SaltNet_';
+const STORAGE_PREFIX = "SaltNet_";
 
 // Define settings keys and their default values
 export const SETTINGS = {
-    USERNAME: 'username',
-    THEME: 'theme',
-    LANGUAGE: 'language',
-    NOTIFICATIONS: 'notifications',
-    FAVORITES: 'favorites', // Add new setting for favorites
+    USERNAME: "username",
+    THEME: "theme",
+    LANGUAGE: "language",
+    NOTIFICATIONS: "notifications",
+    FAVORITES: "favorites", // Add new setting for favorites
 };
 
 // Define default values for settings
 const DEFAULT_VALUES = {
-    [SETTINGS.USERNAME]: '',
-    [SETTINGS.THEME]: 'auto', // 'light', 'dark', or 'auto'
-    [SETTINGS.LANGUAGE]: 'zh_CN',
+    [SETTINGS.USERNAME]: "",
+    [SETTINGS.THEME]: "auto", // 'light', 'dark', or 'auto'
+    [SETTINGS.LANGUAGE]: "zh_CN",
     [SETTINGS.NOTIFICATIONS]: true,
     [SETTINGS.FAVORITES]: [], // Default value for favorites
 };
@@ -30,7 +30,7 @@ const DEFAULT_VALUES = {
  * @returns The setting value or the default value if not found
  */
 export function getSetting<T>(key: string): T {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
         return DEFAULT_VALUES[key] as unknown as T;
     }
 
@@ -52,7 +52,7 @@ export function getSetting<T>(key: string): T {
  * @param value - The value to save
  */
 export function setSetting<T>(key: string, value: T): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
         localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
@@ -66,7 +66,7 @@ export function setSetting<T>(key: string, value: T): void {
  * @param key - The setting key to remove
  */
 export function removeSetting(key: string): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
         localStorage.removeItem(STORAGE_PREFIX + key);
@@ -79,14 +79,14 @@ export function removeSetting(key: string): void {
  * Clear all settings from localStorage
  */
 export function clearAllSettings(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
         Object.values(SETTINGS).forEach(key => {
             localStorage.removeItem(STORAGE_PREFIX + key);
         });
     } catch (error) {
-        console.error('Error clearing all settings:', error);
+        console.error("Error clearing all settings:", error);
     }
 }
 
@@ -95,7 +95,7 @@ export function clearAllSettings(): void {
  * @returns An object containing all settings
  */
 export function getAllSettings(): Record<string, any> {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
         return { ...DEFAULT_VALUES };
     }
 
@@ -109,7 +109,7 @@ export function getAllSettings(): Record<string, any> {
         });
         return settings;
     } catch (error) {
-        console.error('Error getting all settings:', error);
+        console.error("Error getting all settings:", error);
         return { ...DEFAULT_VALUES };
     }
 }

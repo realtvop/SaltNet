@@ -1,45 +1,36 @@
 <!doctype html>
 <html lang="en" class="mdui-theme-auto">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain">
-    <link rel="stylesheet" href="/MaterialIcons/regular.css">
-    <link rel="manifest" href="/manifest.json">
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: dark)"
-      content="#1b1b1f"
-    />
-    <meta
-      name="theme-color"
-      media="(prefers-color-scheme: light)"
-      content="#fefbff"
-    />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta
-        name="description"
-        content="SaltNet: 舞萌DX查分器"
-    />
-    <meta name="keyword" content="舞萌DX, 水鱼, b50" />
-    <meta name="author" content="realtvop" />
-    <title>SaltNet</title>
-    <script>
-      window.spec = {
-        currentVersionBuildTime: "%buildTime%",
-      };
-    </script>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-    <script>
-      if ([80, 443, 1443, "1443", "", "1145"].includes(location.port))
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
-          .then(
-            err => console.log("SW_Reg_Failed: ", err)
-          );
-    </script>
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/icon" href="/favicon.ico" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain"
+        />
+        <link rel="stylesheet" href="/MaterialIcons/regular.css" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1b1b1f" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fefbff" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="description" content="SaltNet: 舞萌DX查分器" />
+        <meta name="keyword" content="舞萌DX, 水鱼, b50" />
+        <meta name="author" content="realtvop" />
+        <title>SaltNet</title>
+        <script>
+            window.spec = {
+                currentVersionBuildTime: "%buildTime%",
+            };
+        </script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="module" src="/src/main.ts"></script>
+        <script>
+            if ([80, 443, 1443, "1443", "", "1145"].includes(location.port))
+                navigator.serviceWorker
+                    .register("/sw.js", { scope: "/" })
+                    .then(err => console.log("SW_Reg_Failed: ", err));
+        </script>
+    </body>
 </html>

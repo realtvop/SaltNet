@@ -1,19 +1,15 @@
 // Get plate ID based on rating thresholds
 export function getPlateId(rating: number): string {
-    const levels = [1000, 2000, 4000, 7000, 10000, 12000, 13000, 14000, 14500, 15000]
+    const levels = [1000, 2000, 4000, 7000, 10000, 12000, 13000, 14000, 14500, 15000];
 
-    if (rating < levels[0])
-        return '01'
-    if (rating >= levels[9])
-        return '11'
+    if (rating < levels[0]) return "01";
+    if (rating >= levels[9]) return "11";
 
-    const plateIndex = levels.findIndex((threshold, i) =>
-        rating >= threshold && rating < levels[i + 1],
-    )
+    const plateIndex = levels.findIndex(
+        (threshold, i) => rating >= threshold && rating < levels[i + 1]
+    );
 
-    return plateIndex >= 0
-        ? (plateIndex + 2).toString().padStart(2, '0')
-        : '00'
+    return plateIndex >= 0 ? (plateIndex + 2).toString().padStart(2, "0") : "00";
 }
 
 // Generate SVG image with rating and plate

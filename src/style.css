@@ -1,44 +1,44 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
 
-  color-scheme: light dark;
+    color-scheme: light dark;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
 }
 
 img {
-  -webkit-user-drag: none;
+    -webkit-user-drag: none;
 }
 
 html {
-  overscroll-behavior-y: none;
+    overscroll-behavior-y: none;
 }
 body {
-  margin: 0;
-  overscroll-behavior-y: contain;
-  overscroll-behavior-x: none;
+    margin: 0;
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
 }
 
 mdui-snackbar {
-  margin-bottom: 5rem;
+    margin-bottom: 5rem;
 }
 @media (min-aspect-ratio: 1.001/1) {
-  mdui-snackbar {
-    margin-bottom: 0;
-  }
+    mdui-snackbar {
+        margin-bottom: 0;
+    }
 }
 @supports (-webkit-touch-callout: none) {
-  mdui-snackbar {
-    @media all and (display-mode: standalone) {
-      margin-bottom: 6rem;
+    mdui-snackbar {
+        @media all and (display-mode: standalone) {
+            margin-bottom: 6rem;
+        }
     }
-  }
 }

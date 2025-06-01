@@ -5,37 +5,37 @@
 ## 目录
 
 - [diving-fish 查分器 API 文档](#diving-fish-查分器-api-文档)
-  - [目录](#目录)
-  - [1. API端点](#1-api端点)
-  - [2. 身份验证](#2-身份验证)
-    - [2.1 无需验证要求](#21-无需验证要求)
-    - [2.2 Import-Token验证要求](#22-import-token验证要求)
-    - [2.3 Developer-Token验证要求](#23-developer-token验证要求)
-    - [2.4 登录验证](#24-登录验证)
-  - [3. 端点交互](#3-端点交互)
-    - [3.1 maimaidxprober](#31-maimaidxprober)
-      - [3.1.1 获取 / 更新用户是否同意用户协议](#311-获取--更新用户是否同意用户协议)
-      - [3.1.2 获取 / 更新用户资料](#312-获取--更新用户资料)
-      - [3.1.3 生成一个新的 Import-Token ，并覆盖旧 Token](#313-生成一个新的-import-token-并覆盖旧-token)
-      - [3.1.4 获取 maimai 的歌曲数据](#314-获取-maimai-的歌曲数据)
-      - [3.1.5 获取用户的完整成绩信息](#315-获取用户的完整成绩信息)
-      - [3.1.6 获取用户的单曲成绩信息](#316-获取用户的单曲成绩信息)
-      - [3.1.7 获取用户的简略成绩信息](#317-获取用户的简略成绩信息)
-      - [3.1.8 按版本获取用户的成绩信息](#318-按版本获取用户的成绩信息)
-      - [3.1.9 按 ID 获取歌曲的封面图片](#319-按-id-获取歌曲的封面图片)
-      - [3.1.10 获取公开的 用户-rating 完整数据](#3110-获取公开的-用户-rating-完整数据)
-      - [3.1.11 更新用户的成绩信息](#3111-更新用户的成绩信息)
-      - [3.1.12 通过 html 格式的数据更新用户的成绩信息](#3112-通过-html-格式的数据更新用户的成绩信息)
-      - [3.1.13 更新用户的单曲成绩](#3113-更新用户的单曲成绩)
-      - [3.1.14 清除用户的所有 maimai 成绩信息](#3114-清除用户的所有-maimai-成绩信息)
-      - [3.1.15 返回谱面的拟合难度等数据](#3115-返回谱面的拟合难度等数据)
-    - [3.2 chunithmprober](#32-chunithmprober)
-    - [3.3 public](#33-public)
-      - [3.3.1 使用 diving-fish 账号登录](#331-使用-diving-fish-账号登录)
-      - [3.3.2 获取查分器主页的views次数](#332-获取查分器主页的views次数)
-      - [3.3.3 验证服务器状态](#333-验证服务器状态)
-      - [3.3.4 获取 / 提交查分器主页的今日留言](#334-获取--提交查分器主页的今日留言)
-      - [3.3.5 获取查分器主页的广告](#335-获取查分器主页的广告)
+    - [目录](#目录)
+    - [1. API端点](#1-api端点)
+    - [2. 身份验证](#2-身份验证)
+        - [2.1 无需验证要求](#21-无需验证要求)
+        - [2.2 Import-Token验证要求](#22-import-token验证要求)
+        - [2.3 Developer-Token验证要求](#23-developer-token验证要求)
+        - [2.4 登录验证](#24-登录验证)
+    - [3. 端点交互](#3-端点交互)
+        - [3.1 maimaidxprober](#31-maimaidxprober)
+            - [3.1.1 获取 / 更新用户是否同意用户协议](#311-获取--更新用户是否同意用户协议)
+            - [3.1.2 获取 / 更新用户资料](#312-获取--更新用户资料)
+            - [3.1.3 生成一个新的 Import-Token ，并覆盖旧 Token](#313-生成一个新的-import-token-并覆盖旧-token)
+            - [3.1.4 获取 maimai 的歌曲数据](#314-获取-maimai-的歌曲数据)
+            - [3.1.5 获取用户的完整成绩信息](#315-获取用户的完整成绩信息)
+            - [3.1.6 获取用户的单曲成绩信息](#316-获取用户的单曲成绩信息)
+            - [3.1.7 获取用户的简略成绩信息](#317-获取用户的简略成绩信息)
+            - [3.1.8 按版本获取用户的成绩信息](#318-按版本获取用户的成绩信息)
+            - [3.1.9 按 ID 获取歌曲的封面图片](#319-按-id-获取歌曲的封面图片)
+            - [3.1.10 获取公开的 用户-rating 完整数据](#3110-获取公开的-用户-rating-完整数据)
+            - [3.1.11 更新用户的成绩信息](#3111-更新用户的成绩信息)
+            - [3.1.12 通过 html 格式的数据更新用户的成绩信息](#3112-通过-html-格式的数据更新用户的成绩信息)
+            - [3.1.13 更新用户的单曲成绩](#3113-更新用户的单曲成绩)
+            - [3.1.14 清除用户的所有 maimai 成绩信息](#3114-清除用户的所有-maimai-成绩信息)
+            - [3.1.15 返回谱面的拟合难度等数据](#3115-返回谱面的拟合难度等数据)
+        - [3.2 chunithmprober](#32-chunithmprober)
+        - [3.3 public](#33-public)
+            - [3.3.1 使用 diving-fish 账号登录](#331-使用-diving-fish-账号登录)
+            - [3.3.2 获取查分器主页的views次数](#332-获取查分器主页的views次数)
+            - [3.3.3 验证服务器状态](#333-验证服务器状态)
+            - [3.3.4 获取 / 提交查分器主页的今日留言](#334-获取--提交查分器主页的今日留言)
+            - [3.3.5 获取查分器主页的广告](#335-获取查分器主页的广告)
 
 ---
 
@@ -60,31 +60,31 @@ https://www.diving-fish.com/api/maimaidxprober/player/profile
 
 以下是详细的可访问端点，您可以通过点击具体的端点路径快速定位到相关功能：
 
-| **游戏数据类别** | **端点路径** | **权限要求** | **功能** |
-|-----|-----|-----|-----|
-| `maimaidxprober` | [`/player/agreement`](#311-获取--更新用户是否同意用户协议) | 登录验证 | 获取 / 更新用户是否同意用户协议 |
-| `maimaidxprober` | [`/player/profile`](#312-获取--更新用户资料) | 登录验证 | 获取 / 更新用户资料 |
-| `maimaidxprober` | [`/player/import_token`](#313-生成一个新的-import-token-并覆盖旧-token) | 登录验证 | 生成一个新的 `Import-Token` ，并覆盖旧 Token |
-| `maimaidxprober` | [`/music_data`](#314-获取-maimai-的歌曲数据) | 无需验证 | 获取 maimai 的歌曲数据 |
-| `maimaidxprober` | [`/player/records`](#315-获取用户的完整成绩信息) | 登录验证 / Import-Token | 获取用户的完整成绩信息 |
-| `maimaidxprober` | [`/player/test_data`](#315-获取用户的完整成绩信息) | 无需验证 | 获取用于测试的完整成绩信息 |
-| `maimaidxprober` | [`/dev/player/records`](#315-获取用户的完整成绩信息) | Developer-Token | 获取用户的完整成绩信息 |
-| `maimaidxprober` | [`/dev/player/record`](#316-获取用户的单曲成绩信息) | Developer-Token | 获取用户的单曲成绩信息 |
-| `maimaidxprober` | [`/query/player`](#317-获取用户的简略成绩信息) | 无需验证 | 获取用户的简略成绩信息 |
-| `maimaidxprober` | [`/query_plate`](#318-按版本获取用户的成绩信息) | 无需验证 | 按版本获取用户的成绩信息 |
-| `maimaidxprober` | [`*/covers`](#319-按-id-获取歌曲的封面图片) | 无需验证 | 按 ID 获取歌曲的封面图片 |
-| `maimaidxprober` | [`/rating_ranking`](#3110-获取公开的-用户-rating-完整数据) | 无需验证 | 获取公开的 用户-rating 完整数据 |
-| `maimaidxprober` | [`/player/update_records`](#3111-更新用户的成绩信息) | 登录验证 / Import-Token | 更新用户的成绩信息 |
-| `maimaidxprober` | [`/player/update_records_html`](#3112-通过-html-格式的数据更新用户的成绩信息) | 登录验证 |  通过 html 格式的数据更新用户的成绩信息 |
-| `maimaidxprober` | [`/player/update_record`](#3113-更新用户的单曲成绩) | 登录验证 / Import-Token | 更新用户的单曲成绩 |
-| `maimaidxprober` | [`/player/delete_records`](#3114-清除用户的所有-maimai-成绩信息) | 登录验证 / Import-Token | 清除用户的所有 maimai 成绩信息 |
-| `maimaidxprober` | [`/chart_stats`](#3115-返回谱面的拟合难度等数据) | 无需验证 | 返回谱面的拟合难度等数据 |
-| `chunithmprober` | `（待贡献）` | ----- | ----- |
-| `public` | [`/login`](#24-登录验证) | 登录验证 | 使用 diving-fish 账号登录 |
-| `public` | [`/count_view`](#332-获取查分器主页的views次数) | 无需验证 | 获取查分器主页的views次数 |
-| `public` | [`/alive_check`](#333-验证服务器状态) | 无需验证 | 验证服务器状态 |
-| `public` | [`/message`](#334-获取--提交查分器主页的今日留言) | 无需验证 / 登录验证 | 获取 / 提交查分器主页的今日留言 |
-| `public` | [`/advertisements`](#335-获取查分器主页的广告) | 无需验证 | 获取查分器主页的广告 |
+| **游戏数据类别** | **端点路径**                                                                  | **权限要求**            | **功能**                                     |
+| ---------------- | ----------------------------------------------------------------------------- | ----------------------- | -------------------------------------------- |
+| `maimaidxprober` | [`/player/agreement`](#311-获取--更新用户是否同意用户协议)                    | 登录验证                | 获取 / 更新用户是否同意用户协议              |
+| `maimaidxprober` | [`/player/profile`](#312-获取--更新用户资料)                                  | 登录验证                | 获取 / 更新用户资料                          |
+| `maimaidxprober` | [`/player/import_token`](#313-生成一个新的-import-token-并覆盖旧-token)       | 登录验证                | 生成一个新的 `Import-Token` ，并覆盖旧 Token |
+| `maimaidxprober` | [`/music_data`](#314-获取-maimai-的歌曲数据)                                  | 无需验证                | 获取 maimai 的歌曲数据                       |
+| `maimaidxprober` | [`/player/records`](#315-获取用户的完整成绩信息)                              | 登录验证 / Import-Token | 获取用户的完整成绩信息                       |
+| `maimaidxprober` | [`/player/test_data`](#315-获取用户的完整成绩信息)                            | 无需验证                | 获取用于测试的完整成绩信息                   |
+| `maimaidxprober` | [`/dev/player/records`](#315-获取用户的完整成绩信息)                          | Developer-Token         | 获取用户的完整成绩信息                       |
+| `maimaidxprober` | [`/dev/player/record`](#316-获取用户的单曲成绩信息)                           | Developer-Token         | 获取用户的单曲成绩信息                       |
+| `maimaidxprober` | [`/query/player`](#317-获取用户的简略成绩信息)                                | 无需验证                | 获取用户的简略成绩信息                       |
+| `maimaidxprober` | [`/query_plate`](#318-按版本获取用户的成绩信息)                               | 无需验证                | 按版本获取用户的成绩信息                     |
+| `maimaidxprober` | [`*/covers`](#319-按-id-获取歌曲的封面图片)                                   | 无需验证                | 按 ID 获取歌曲的封面图片                     |
+| `maimaidxprober` | [`/rating_ranking`](#3110-获取公开的-用户-rating-完整数据)                    | 无需验证                | 获取公开的 用户-rating 完整数据              |
+| `maimaidxprober` | [`/player/update_records`](#3111-更新用户的成绩信息)                          | 登录验证 / Import-Token | 更新用户的成绩信息                           |
+| `maimaidxprober` | [`/player/update_records_html`](#3112-通过-html-格式的数据更新用户的成绩信息) | 登录验证                | 通过 html 格式的数据更新用户的成绩信息       |
+| `maimaidxprober` | [`/player/update_record`](#3113-更新用户的单曲成绩)                           | 登录验证 / Import-Token | 更新用户的单曲成绩                           |
+| `maimaidxprober` | [`/player/delete_records`](#3114-清除用户的所有-maimai-成绩信息)              | 登录验证 / Import-Token | 清除用户的所有 maimai 成绩信息               |
+| `maimaidxprober` | [`/chart_stats`](#3115-返回谱面的拟合难度等数据)                              | 无需验证                | 返回谱面的拟合难度等数据                     |
+| `chunithmprober` | `（待贡献）`                                                                  | -----                   | -----                                        |
+| `public`         | [`/login`](#24-登录验证)                                                      | 登录验证                | 使用 diving-fish 账号登录                    |
+| `public`         | [`/count_view`](#332-获取查分器主页的views次数)                               | 无需验证                | 获取查分器主页的views次数                    |
+| `public`         | [`/alive_check`](#333-验证服务器状态)                                         | 无需验证                | 验证服务器状态                               |
+| `public`         | [`/message`](#334-获取--提交查分器主页的今日留言)                             | 无需验证 / 登录验证     | 获取 / 提交查分器主页的今日留言              |
+| `public`         | [`/advertisements`](#335-获取查分器主页的广告)                                | 无需验证                | 获取查分器主页的广告                         |
 
 ```plaintext
 注：对于端点前包含 * 的方法，您需要通过其他基础 URL 进行访问
@@ -125,8 +125,8 @@ headers = {
 
 ```json
 {
-  "status": "error",
-  "message": "导入token有误"
+    "status": "error",
+    "message": "导入token有误"
 }
 ```
 
@@ -156,8 +156,8 @@ headers = {
 
 ```json
 {
-  "status": "error",
-  "message": "<错误信息>"
+    "status": "error",
+    "message": "<错误信息>"
 }
 ```
 
@@ -294,9 +294,9 @@ https://www.diving-fish.com/api/maimaidxprober/player/profile
 
 #### 3.1.1 获取 / 更新用户是否同意用户协议
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/agreement` | [登录验证](#24-登录验证) | GET / POST |
+| **端点路径**        | **权限要求**             | **请求方法** |
+| ------------------- | ------------------------ | ------------ |
+| `/player/agreement` | [登录验证](#24-登录验证) | GET / POST   |
 
 附加了登录验证信息并成功登录之后，您可以获取 / 更新用户是否同意用户协议。是否同意用户协议将会决定用户是否能使用查分器的相关功能，对于新注册的账号而言，相关提示框会在官网第一次登录成功后显示。注意"是否同意用户协议"与"是否允许其他人查询用户成绩"不同。
 
@@ -320,32 +320,44 @@ https://www.diving-fish.com/api/maimaidxprober/player/profile
 
 #### 3.1.2 获取 / 更新用户资料
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/profile` | [登录验证](#24-登录验证) | GET / POST |
+| **端点路径**      | **权限要求**             | **请求方法** |
+| ----------------- | ------------------------ | ------------ |
+| `/player/profile` | [登录验证](#24-登录验证) | GET / POST   |
 
 附加了登录验证信息并成功登录之后，您可以获取 / 更新用户资料。用户资料包含以下内容：
 
-| **参数** | **数据类型** | **含义** |
-|-----|-----|-----|
-| `accept_agreement` | `bool` | 用户是否同意用户协议 |
-| `additional_rating` | `int` | 用户段位信息，其中0-10对应初学者-十段，11-20对应真初段-真十段，21-22对应真皆传-里皆传 |
-| `bind_qq` | `str` | 用户绑定的 QQ 号 |
-| `import_token` | `str` | 用户的 Import-Token |
-| `mask` | `bool` | 用户是否对非网页查询的成绩使用掩码 |
-| `nickname` | `str` | 用户设置的昵称 |
-| `plate` | `str` | 用户的牌子信息 |
-| `privacy` | `bool` | 用户是否同意其他人查询自己成绩 |
-| `qq_channel_uid` | `str` | 用户绑定的频道 ID |
-| `user_general_data` |-----| 暂无实际作用 |
-| `username` | `str` | 用户账号的用户名 **（不可修改）** |
+| **参数**            | **数据类型** | **含义**                                                                              |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `accept_agreement`  | `bool`       | 用户是否同意用户协议                                                                  |
+| `additional_rating` | `int`        | 用户段位信息，其中0-10对应初学者-十段，11-20对应真初段-真十段，21-22对应真皆传-里皆传 |
+| `bind_qq`           | `str`        | 用户绑定的 QQ 号                                                                      |
+| `import_token`      | `str`        | 用户的 Import-Token                                                                   |
+| `mask`              | `bool`       | 用户是否对非网页查询的成绩使用掩码                                                    |
+| `nickname`          | `str`        | 用户设置的昵称                                                                        |
+| `plate`             | `str`        | 用户的牌子信息                                                                        |
+| `privacy`           | `bool`       | 用户是否同意其他人查询自己成绩                                                        |
+| `qq_channel_uid`    | `str`        | 用户绑定的频道 ID                                                                     |
+| `user_general_data` | -----        | 暂无实际作用                                                                          |
+| `username`          | `str`        | 用户账号的用户名 **（不可修改）**                                                     |
 
 完整的用户模型还包含一些其他不可获取的参数，具体可查看 <https://github.com/Diving-Fish/maimaidx-prober/blob/main/database/models/base.py>
 
 获取用户资料可以向端点发送 GET 请求，一旦请求成功，服务器会返回一个 `200` 的状态码，并在响应体中包含一个 JSON 格式的数据，包含以上用户资料信息，如：
 
 ```json
-{ "accept_agreement": true, "additional_rating": 22, "bind_qq": "111122223333", "import_token": "your_import_token_here", "mask": false, "nickname": "your_nickname", "plate": "舞神", "privacy": false, "qq_channel_uid": "", "user_general_data": null, "username": "your_username" }
+{
+    "accept_agreement": true,
+    "additional_rating": 22,
+    "bind_qq": "111122223333",
+    "import_token": "your_import_token_here",
+    "mask": false,
+    "nickname": "your_nickname",
+    "plate": "舞神",
+    "privacy": false,
+    "qq_channel_uid": "",
+    "user_general_data": null,
+    "username": "your_username"
+}
 ```
 
 更新用户资料只需要将需要更新的参数附加在以 JSON 格式附加在请求体中向端点发送 POST 请求即可，如：
@@ -369,9 +381,9 @@ https://www.diving-fish.com/api/maimaidxprober/player/profile
 
 #### 3.1.3 生成一个新的 Import-Token ，并覆盖旧 Token
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/import_token` | [登录验证](#24-登录验证) | PUT |
+| **端点路径**           | **权限要求**             | **请求方法** |
+| ---------------------- | ------------------------ | ------------ |
+| `/player/import_token` | [登录验证](#24-登录验证) | PUT          |
 
 附加了登录验证信息并成功登录之后，您可以获取 / 更新用户资料。此时向端点发送 PUT 请求即可。
 
@@ -401,108 +413,69 @@ class ProberAPIClient:
 
 #### 3.1.4 获取 maimai 的歌曲数据
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/music_data` | 无需验证 | GET |
+| **端点路径**  | **权限要求** | **请求方法** |
+| ------------- | ------------ | ------------ |
+| `/music_data` | 无需验证     | GET          |
 
 使用 GET 请求访问此端点，服务器会返回 diving-fish 数据库中完整的现行版本下所有 maimai 歌曲的完整信息，信息结构如下：
 
-| **字段** | **类型** | **说明** |
-|----------|----------|----------|
-| `id` | `string` | 歌曲的唯一标识符，其与现行的歌曲 ID 号一致 |
-| `title` | `string` | 歌曲的标题 |
-| `type` | `string` | 歌曲的类型，为 "DX" 或 "SD" |
-| `ds` | `array of float` | 歌曲的难度定数列表，由 Basic 至 Re:Master |
-| `level` | `array of string` | 歌曲的难度等级列表，与 `ds` 的区别在于仅精确到整数或 "+" 等级 |
-| `cids` | `array of int` | 歌曲特定难度谱面的唯一标识符 |
-| `charts` | `array of object` | 歌曲的谱面信息列表，每个对象包含以下字段： |
-| `charts[].notes` | `array of int` | 谱面的音符数量列表，依次为 Tap、Hold、Slide、（Touch，仅 DX 类型）、Break |
-| `charts[].charter` | `string` | 谱师信息 |
-| `basic_info` | `object` | 歌曲的基本信息，包含以下字段： |
-| `basic_info.title` | `string` | 歌曲的标题 |
-| `basic_info.artist` | `string` | 曲师信息 |
-| `basic_info.genre` | `string` | 歌曲的流派 |
-| `basic_info.bpm` | `int` | 歌曲的 BPM 信息 |
-| `basic_info.release_date` | `string` | 歌曲的发行日期（目前均为空） |
-| `basic_info.from` | `string` | 歌曲的稼动版本（以国服为准） |
-| `basic_info.is_new` | `boolean` | 歌曲是否为当前版本的新歌 |
+| **字段**                  | **类型**          | **说明**                                                                  |
+| ------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `id`                      | `string`          | 歌曲的唯一标识符，其与现行的歌曲 ID 号一致                                |
+| `title`                   | `string`          | 歌曲的标题                                                                |
+| `type`                    | `string`          | 歌曲的类型，为 "DX" 或 "SD"                                               |
+| `ds`                      | `array of float`  | 歌曲的难度定数列表，由 Basic 至 Re:Master                                 |
+| `level`                   | `array of string` | 歌曲的难度等级列表，与 `ds` 的区别在于仅精确到整数或 "+" 等级             |
+| `cids`                    | `array of int`    | 歌曲特定难度谱面的唯一标识符                                              |
+| `charts`                  | `array of object` | 歌曲的谱面信息列表，每个对象包含以下字段：                                |
+| `charts[].notes`          | `array of int`    | 谱面的音符数量列表，依次为 Tap、Hold、Slide、（Touch，仅 DX 类型）、Break |
+| `charts[].charter`        | `string`          | 谱师信息                                                                  |
+| `basic_info`              | `object`          | 歌曲的基本信息，包含以下字段：                                            |
+| `basic_info.title`        | `string`          | 歌曲的标题                                                                |
+| `basic_info.artist`       | `string`          | 曲师信息                                                                  |
+| `basic_info.genre`        | `string`          | 歌曲的流派                                                                |
+| `basic_info.bpm`          | `int`             | 歌曲的 BPM 信息                                                           |
+| `basic_info.release_date` | `string`          | 歌曲的发行日期（目前均为空）                                              |
+| `basic_info.from`         | `string`          | 歌曲的稼动版本（以国服为准）                                              |
+| `basic_info.is_new`       | `boolean`         | 歌曲是否为当前版本的新歌                                                  |
 
 以下是其中一首歌曲信息的具体示例，其中 JSON 已经美观输出：
 
 ```json
 {
-  "id": "11466",
-  "title": "群青シグナル",
-  "type": "DX",
-  "ds": [
-    5.0,
-    8.2,
-    11.7,
-    13.9
-  ],
-  "level": [
-    "5",
-    "8",
-    "11+",
-    "13+"
-  ],
-  "cids": [
-    7853,
-    7854,
-    7855,
-    7856
-  ],
-  "charts": [
-    {
-      "notes": [
-        188,
-        21,
-        9,
-        14,
-        4
-      ],
-      "charter": "-"
-    },
-    {
-      "notes": [
-        369,
-        18,
-        10,
-        26,
-        20
-      ],
-      "charter": "-"
-    },
-    {
-      "notes": [
-        491,
-        70,
-        48,
-        4,
-        39
-      ],
-      "charter": "翠楼屋"
-    },
-    {
-      "notes": [
-        719,
-        62,
-        114,
-        51,
-        32
-      ],
-      "charter": "ものくろっく"
-    }
-  ],
-  "basic_info": {
+    "id": "11466",
     "title": "群青シグナル",
-    "artist": "テヅカ feat. 獅子神レオナ",
-    "genre": "舞萌",
-    "bpm": 206,
-    "release_date": "",
-    "from": "maimai でらっくす FESTiVAL",
-    "is_new": false
-  }
+    "type": "DX",
+    "ds": [5.0, 8.2, 11.7, 13.9],
+    "level": ["5", "8", "11+", "13+"],
+    "cids": [7853, 7854, 7855, 7856],
+    "charts": [
+        {
+            "notes": [188, 21, 9, 14, 4],
+            "charter": "-"
+        },
+        {
+            "notes": [369, 18, 10, 26, 20],
+            "charter": "-"
+        },
+        {
+            "notes": [491, 70, 48, 4, 39],
+            "charter": "翠楼屋"
+        },
+        {
+            "notes": [719, 62, 114, 51, 32],
+            "charter": "ものくろっく"
+        }
+    ],
+    "basic_info": {
+        "title": "群青シグナル",
+        "artist": "テヅカ feat. 獅子神レオナ",
+        "genre": "舞萌",
+        "bpm": 206,
+        "release_date": "",
+        "from": "maimai でらっくす FESTiVAL",
+        "is_new": false
+    }
 }
 ```
 
@@ -512,16 +485,16 @@ class ProberAPIClient:
 
 ```json
 {
-  "Server": "nginx/1.23.2",
-  "Date": "Sat, 32 Jul 2028 10:10:10 GMT",
-  "Content-Type": "application/json; charset=utf-8",
-  "Content-Length": "690231",
-  "Connection": "keep-alive",
-  "etag": "\"75fbe560a230722e2035946003963076\"",
-  "cache-control": "private, max_age=86400",
-  "access-control-allow-origin": "*",
-  "access-control-allow-method": "*",
-  "access-control-allow-headers": "x-requested-with,content-type"
+    "Server": "nginx/1.23.2",
+    "Date": "Sat, 32 Jul 2028 10:10:10 GMT",
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Length": "690231",
+    "Connection": "keep-alive",
+    "etag": "\"75fbe560a230722e2035946003963076\"",
+    "cache-control": "private, max_age=86400",
+    "access-control-allow-origin": "*",
+    "access-control-allow-method": "*",
+    "access-control-allow-headers": "x-requested-with,content-type"
 }
 ```
 
@@ -544,10 +517,10 @@ class ProberAPIClient:
 
 #### 3.1.5 获取用户的完整成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/records` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | GET |
-| `/dev/player/records` | [Developer-Token](#23-developer-token验证要求) | GET |
+| **端点路径**          | **权限要求**                                                        | **请求方法** |
+| --------------------- | ------------------------------------------------------------------- | ------------ |
+| `/player/records`     | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | GET          |
+| `/dev/player/records` | [Developer-Token](#23-developer-token验证要求)                      | GET          |
 
 根据您采用的验证方式选择对应的端点。
 
@@ -558,7 +531,9 @@ class ProberAPIClient:
 对于 `/dev/player/records` 端点，您除了要附加您的 `Developer-Token` 验证信息外，还需要在 URL 查询参数中附加指定用户的 `username` 或 `qq` 参数，如：
 
 ```json
-{ "url": "https://www.diving-fish.com/api/maimaidxprober/dev/player/records?username=your_username" }
+{
+    "url": "https://www.diving-fish.com/api/maimaidxprober/dev/player/records?username=your_username"
+}
 ```
 
 或：
@@ -576,26 +551,26 @@ class ProberAPIClient:
 
 成功获取用户完整成绩信息后，您会得到如下结构的 JSON 数据：
 
-| **字段**                  | **类型**   | **说明**                                               |
-|---------------------------|------------|--------------------------------------------------------|
-| `additional_rating`       | `number`   | 用户的段位信息[（可参考此部分）](#312-获取--更新用户资料)     |
-| `nickname`                | `string`   | 用户的昵称                                             |
-| `plate`                   | `string`   | 用户的牌子信息                                         |
-| `rating`                  | `number`   | 用户rating                                            |
-| `records`                 | `array`    | 用户的成绩记录列表，以具体难度谱面为单位                    |
-| `records[].achievements`  | `number`   | 成绩百分比                                             |
-| `records[].ds`            | `number`   | 谱面定数                                               |
-| `records[].dxScore`       | `number`   | DX 分数                                                |
-| `records[].fc`            | `string`   | FC状态（fc、fcp、ap、app）                              |
-| `records[].fs`            | `string`   | FS状态（fs、fsd、fsdp）                                 |
-| `records[].level`         | `string`   | 谱面等级，与 `ds` 的区别在于仅精确到整数或 "+" 等级         |
-| `records[].level_index`   | `number`   | 谱面难度在歌曲里的索引，由0到4对应 Basic 到 Re:Master      |
-| `records[].level_label`   | `string`   | 等级标签（如 `Master`）                                 |
-| `records[].ra`            | `number`   | 单曲rating                                             |
-| `records[].rate`          | `string`   | 评级（如 `aa`、`sssp`）                                 |
-| `records[].song_id`       | `number`   | 歌曲的唯一标识符                                       |
-| `records[].title`         | `string`   | 歌曲标题                                               |
-| `records[].type`          | `string`   | 歌曲类型（ `DX` 或 `SD`）                              |
+| **字段**                 | **类型** | **说明**                                                  |
+| ------------------------ | -------- | --------------------------------------------------------- |
+| `additional_rating`      | `number` | 用户的段位信息[（可参考此部分）](#312-获取--更新用户资料) |
+| `nickname`               | `string` | 用户的昵称                                                |
+| `plate`                  | `string` | 用户的牌子信息                                            |
+| `rating`                 | `number` | 用户rating                                                |
+| `records`                | `array`  | 用户的成绩记录列表，以具体难度谱面为单位                  |
+| `records[].achievements` | `number` | 成绩百分比                                                |
+| `records[].ds`           | `number` | 谱面定数                                                  |
+| `records[].dxScore`      | `number` | DX 分数                                                   |
+| `records[].fc`           | `string` | FC状态（fc、fcp、ap、app）                                |
+| `records[].fs`           | `string` | FS状态（fs、fsd、fsdp）                                   |
+| `records[].level`        | `string` | 谱面等级，与 `ds` 的区别在于仅精确到整数或 "+" 等级       |
+| `records[].level_index`  | `number` | 谱面难度在歌曲里的索引，由0到4对应 Basic 到 Re:Master     |
+| `records[].level_label`  | `string` | 等级标签（如 `Master`）                                   |
+| `records[].ra`           | `number` | 单曲rating                                                |
+| `records[].rate`         | `string` | 评级（如 `aa`、`sssp`）                                   |
+| `records[].song_id`      | `number` | 歌曲的唯一标识符                                          |
+| `records[].title`        | `string` | 歌曲标题                                                  |
+| `records[].type`         | `string` | 歌曲类型（ `DX` 或 `SD`）                                 |
 
 一份参考返回数据的部分内容如下，其中 JSON 已经美观输出：
 
@@ -646,9 +621,9 @@ class ProberAPIClient:
 
 #### 3.1.6 获取用户的单曲成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/dev/player/record` | [Developer-Token](#23-developer-token验证要求) | POST |
+| **端点路径**         | **权限要求**                                   | **请求方法** |
+| -------------------- | ---------------------------------------------- | ------------ |
+| `/dev/player/record` | [Developer-Token](#23-developer-token验证要求) | POST         |
 
 附加了 `Developer-Token` 并成功验证之后，您可以获取用户的单曲成绩信息，需要向端点发送 POST 请求，且还需要在请求体中以 JSON 格式附带以下参数：
 
@@ -666,9 +641,9 @@ class ProberAPIClient:
 
 #### 3.1.7 获取用户的简略成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/query/player` | 无需验证 | POST |
+| **端点路径**    | **权限要求** | **请求方法** |
+| --------------- | ------------ | ------------ |
+| `/query/player` | 无需验证     | POST         |
 
 作为**获取用户b50等数据的首选**，此方法不设验证要求，访问成功与否取决于用户是否同意用户协议或设置隐私。
 
@@ -676,8 +651,8 @@ class ProberAPIClient:
 
 ```json
 {
-  "username": "your_username",
-  "b50": "1"
+    "username": "your_username",
+    "b50": "1"
 }
 ```
 
@@ -699,9 +674,9 @@ class ProberAPIClient:
 
 #### 3.1.8 按版本获取用户的成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/query_plate` | 无需验证 | POST |
+| **端点路径**   | **权限要求** | **请求方法** |
+| -------------- | ------------ | ------------ |
+| `/query_plate` | 无需验证     | POST         |
 
 此方法不设验证要求，访问成功与否取决于用户是否同意用户协议或设置隐私。
 
@@ -726,29 +701,29 @@ class ProberAPIClient:
 
 `version` 列表中的元素必须按照以下表格对应游戏版本（以国服为准）：
 
-| 版本名称                       | 版本代号 |
-|-------------------------------|----------|
-| maimai PLUS                   | 真       |
-| maimai GreeN                  | 超       |
-| maimai GreeN PLUS             | 檄       |
-| maimai ORANGE                 | 橙       |
-| maimai ORANGE PLUS            | 暁       |
-| maimai PiNK                   | 桃       |
-| maimai PiNK PLUS              | 櫻       |
-| maimai MURASAKi               | 紫       |
-| maimai MURASAKi PLUS          | 菫       |
-| maimai MiLK                   | 白       |
-| MiLK PLUS                     | 雪       |
-| maimai FiNALE                 | 輝       |
-| ALL FiNALE                    | 舞       |
-| maimai でらっくす              | 熊       |
-| maimai でらっくす PLUS         | 華       |
-| maimai でらっくす Splash       | 爽       |
-| maimai でらっくす Splash PLUS  | 煌       |
-| maimai でらっくす UNiVERSE     | 宙       |
-| maimai でらっくす UNiVERSE PLUS| 星       |
-| maimai でらっくす FESTiVAL     | 祭       |
-| maimai でらっくす FESTiVAL PLUS| 祝       |
+| 版本名称                        | 版本代号 |
+| ------------------------------- | -------- |
+| maimai PLUS                     | 真       |
+| maimai GreeN                    | 超       |
+| maimai GreeN PLUS               | 檄       |
+| maimai ORANGE                   | 橙       |
+| maimai ORANGE PLUS              | 暁       |
+| maimai PiNK                     | 桃       |
+| maimai PiNK PLUS                | 櫻       |
+| maimai MURASAKi                 | 紫       |
+| maimai MURASAKi PLUS            | 菫       |
+| maimai MiLK                     | 白       |
+| MiLK PLUS                       | 雪       |
+| maimai FiNALE                   | 輝       |
+| ALL FiNALE                      | 舞       |
+| maimai でらっくす               | 熊       |
+| maimai でらっくす PLUS          | 華       |
+| maimai でらっくす Splash        | 爽       |
+| maimai でらっくす Splash PLUS   | 煌       |
+| maimai でらっくす UNiVERSE      | 宙       |
+| maimai でらっくす UNiVERSE PLUS | 星       |
+| maimai でらっくす FESTiVAL      | 祭       |
+| maimai でらっくす FESTiVAL PLUS | 祝       |
 
 **您在附加 `version` 参数中的元素时，必须严格按照 `版本名称` 发送请求。**
 
@@ -756,9 +731,9 @@ class ProberAPIClient:
 
 #### 3.1.9 按 ID 获取歌曲的封面图片
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `*/covers` | 无需验证 | GET |
+| **端点路径** | **权限要求** | **请求方法** |
+| ------------ | ------------ | ------------ |
+| `*/covers`   | 无需验证     | GET          |
 
 **该方法不属于通常 API 端点，因此与其余方法访问 URL 不同，要按 ID 获取歌曲的封面图片，需要访问以下 URL：**
 
@@ -784,9 +759,9 @@ def get_cover_len5_id(self, mid) -> str:
 
 #### 3.1.10 获取公开的 用户-rating 完整数据
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/rating_ranking` | 无需验证 | GET |
+| **端点路径**      | **权限要求** | **请求方法** |
+| ----------------- | ------------ | ------------ |
+| `/rating_ranking` | 无需验证     | GET          |
 
 此方法不设验证要求，您可以直接访问以下完整 URL 查看公开的 用户-rating 完整数据：
 
@@ -814,9 +789,9 @@ https://www.diving-fish.com/api/maimaidxprober/rating_ranking
 
 #### 3.1.11 更新用户的成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/update_records` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | POST |
+| **端点路径**             | **权限要求**                                                        | **请求方法** |
+| ------------------------ | ------------------------------------------------------------------- | ------------ |
+| `/player/update_records` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | POST         |
 
 附加了验证信息并成功验证之后，您可以更新用户的成绩信息。
 
@@ -826,46 +801,46 @@ https://www.diving-fish.com/api/maimaidxprober/rating_ranking
 
 ```json
 [
-  {
-    "achievements": 101.0000,
-    "dxScore": 2711,
-    "fc": "fc",
-    "fs": "",
-    "level_index": 3,
-    "title": "Alea jacta est!",
-    "type": "SD"
-  },
-  {
-    "achievements": 100.777,
-    "dxScore": 2458,
-    "fc": "fc",
-    "fs": "",
-    "level_index": 4,
-    "title": "Revive The Rave",
-    "type": "SD"
-  }
+    {
+        "achievements": 101.0,
+        "dxScore": 2711,
+        "fc": "fc",
+        "fs": "",
+        "level_index": 3,
+        "title": "Alea jacta est!",
+        "type": "SD"
+    },
+    {
+        "achievements": 100.777,
+        "dxScore": 2458,
+        "fc": "fc",
+        "fs": "",
+        "level_index": 4,
+        "title": "Revive The Rave",
+        "type": "SD"
+    }
 ]
 ```
 
 不难发现，要上传的实际歌曲成绩信息比在获取歌曲成绩信息时的条目少得多。必须包含，或者说实际生效的参数已经完全包含在上例中。以下是对于其中每个参数的硬性要求：
 
-| **参数**         | **要求**                |
-|------------------|-------------------------|
-| `achievements`   | 超过101.0000的数据会被设为101.0000。当上传的数据不为数字时，POST请求总是失败          |
-| `dxScore`        | 不设任何可能性验证，会被保留至整数部分（甚至允许负数）。当上传的数据不为数字时，该数据会被设置为0  |
-| `fc`             | 不设任何可能性验证。当上传的数据不为（fc、fcp、ap、app）时，该数据会被设置为空            |
-| `fs`             | 不设任何可能性验证。当上传的数据不为（fs、fsd、fsdp）时，该数据会被设置为空            |
-| `level_index`    | 必须对应该歌曲实际存在的谱面难度。当上传的数据不为整数或不为数字时，POST请求总是失败。当上传的数据为负数或不在实际存在的难度中时，该上传会被跳过 |
-| `title`          | 作为确定歌曲的唯一凭证，而非 `song_id` ，必须严格遵循完整歌曲数据中的名称，否则该上传会被跳过            |
-| `type`           | 必须对应该歌曲实际存在的 SD 或 DX 谱面，否则该上传会被跳过            |
+| **参数**       | **要求**                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `achievements` | 超过101.0000的数据会被设为101.0000。当上传的数据不为数字时，POST请求总是失败                                                                     |
+| `dxScore`      | 不设任何可能性验证，会被保留至整数部分（甚至允许负数）。当上传的数据不为数字时，该数据会被设置为0                                                |
+| `fc`           | 不设任何可能性验证。当上传的数据不为（fc、fcp、ap、app）时，该数据会被设置为空                                                                   |
+| `fs`           | 不设任何可能性验证。当上传的数据不为（fs、fsd、fsdp）时，该数据会被设置为空                                                                      |
+| `level_index`  | 必须对应该歌曲实际存在的谱面难度。当上传的数据不为整数或不为数字时，POST请求总是失败。当上传的数据为负数或不在实际存在的难度中时，该上传会被跳过 |
+| `title`        | 作为确定歌曲的唯一凭证，而非 `song_id` ，必须严格遵循完整歌曲数据中的名称，否则该上传会被跳过                                                    |
+| `type`         | 必须对应该歌曲实际存在的 SD 或 DX 谱面，否则该上传会被跳过                                                                                       |
 
 请注意，上表中的硬性要求仅仅是对于边界条件的验证。为了提供高效而有价值的服务，在实际操作中，您总是应当上传规范而准确的歌曲成绩数据。
 
 #### 3.1.12 通过 html 格式的数据更新用户的成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/update_records_html` | [登录验证](#24-登录验证) | POST |
+| **端点路径**                  | **权限要求**             | **请求方法** |
+| ----------------------------- | ------------------------ | ------------ |
+| `/player/update_records_html` | [登录验证](#24-登录验证) | POST         |
 
 附加了登录验证信息并成功登录之后，您可以通过 html 格式的数据更新用户的成绩信息。
 
@@ -873,9 +848,9 @@ https://www.diving-fish.com/api/maimaidxprober/rating_ranking
 
 #### 3.1.13 更新用户的单曲成绩
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/update_record` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | POST |
+| **端点路径**            | **权限要求**                                                        | **请求方法** |
+| ----------------------- | ------------------------------------------------------------------- | ------------ |
+| `/player/update_record` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | POST         |
 
 附加了验证信息并成功验证之后，您可以更新用户的单曲成绩。
 
@@ -885,9 +860,9 @@ https://www.diving-fish.com/api/maimaidxprober/rating_ranking
 
 #### 3.1.14 清除用户的所有 maimai 成绩信息
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/player/delete_records` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | DELETE |
+| **端点路径**             | **权限要求**                                                        | **请求方法** |
+| ------------------------ | ------------------------------------------------------------------- | ------------ |
+| `/player/delete_records` | [登录验证](#24-登录验证) / [Import-Token](#22-import-token验证要求) | DELETE       |
 
 附加了验证信息并成功验证之后，您可以清除用户的所有 maimai 成绩信息。此时需要向端点发送 DELETE 请求。
 
@@ -901,9 +876,9 @@ https://www.diving-fish.com/api/maimaidxprober/rating_ranking
 
 #### 3.1.15 返回谱面的拟合难度等数据
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/chart_stats` | 无需验证 | GET |
+| **端点路径**   | **权限要求** | **请求方法** |
+| -------------- | ------------ | ------------ |
+| `/chart_stats` | 无需验证     | GET          |
 
 此方法不设验证要求，您可以直接访问以下完整 URL 查看谱面的拟合难度等数据：
 
@@ -963,16 +938,16 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 以下是上例中每一个参数的含义（例中 `song_id` 为 8 ）：
 
-| **参数** | **含义** |
-|----------|----------|
-| `cnt`    | 样本数量 |
-| `diff`   | 谱面的官标难度等级（精确到整数或 "+" 等级） |
-| `fit_diff` | 谱面的拟合难度 |
-| `avg`    | 谱面平均达成率 |
-| `avg_dx` | 谱面平均 DX Scores |
-| `std_dev` | 谱面达成率的标准差 |
-| `dist`   | 评级分布（依次对应 d, c, b, bb, bbb, a, aa, aaa, s, sp, ss, ssp, sss, sssp） |
-| `fc_dist` | Full Combo 分布（依次对应 非、fc、fcp、ap、app） |
+| **参数**   | **含义**                                                                     |
+| ---------- | ---------------------------------------------------------------------------- |
+| `cnt`      | 样本数量                                                                     |
+| `diff`     | 谱面的官标难度等级（精确到整数或 "+" 等级）                                  |
+| `fit_diff` | 谱面的拟合难度                                                               |
+| `avg`      | 谱面平均达成率                                                               |
+| `avg_dx`   | 谱面平均 DX Scores                                                           |
+| `std_dev`  | 谱面达成率的标准差                                                           |
+| `dist`     | 评级分布（依次对应 d, c, b, bb, bbb, a, aa, aaa, s, sp, ss, ssp, sss, sssp） |
+| `fc_dist`  | Full Combo 分布（依次对应 非、fc、fcp、ap、app）                             |
 
 拟合难度通过大量的成绩数据样本，对不同玩家的达成率、评级分布和 Full Combo 分布等因素进行综合分析后计算得出，提供了官标定数以外的参考难度，同时该方法提供的成绩分布等信息也具备价值。然而，由于个人差与其他各类因素的作用，拟合难度无法对每个用户都提供完全准确的难度判定，因此面向大量用户时，拟合难度仅作参考使用。
 
@@ -990,11 +965,11 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 以下是上例中每一个参数的含义（例中难度等级为 10 ）：
 
-| **参数** | **含义** |
-|----------|----------|
-| `achievements`    | 难度平均达成率 |
-| `dist`   | 难度的评级分布（依次对应 d, c, b, bb, bbb, a, aa, aaa, s, sp, ss, ssp, sss, sssp） |
-| `fc_dist` | 难度的 Full Combo 分布（依次对应 非、fc、fcp、ap、app） |
+| **参数**       | **含义**                                                                           |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `achievements` | 难度平均达成率                                                                     |
+| `dist`         | 难度的评级分布（依次对应 d, c, b, bb, bbb, a, aa, aaa, s, sp, ss, ssp, sss, sssp） |
+| `fc_dist`      | 难度的 Full Combo 分布（依次对应 非、fc、fcp、ap、app）                            |
 
 字典中同样包含了宴谱的难度等级统计数据，如 `13+?` 、 `14?` 等。
 
@@ -1012,17 +987,17 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 #### 3.3.1 使用 diving-fish 账号登录
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/login` | [（登录验证）](#24-登录验证) | POST |
+| **端点路径** | **权限要求**                 | **请求方法** |
+| ------------ | ---------------------------- | ------------ |
+| `/login`     | [（登录验证）](#24-登录验证) | POST         |
 
 关于如何使用 diving-fish 账号登录，请参考 [2.4 登录验证](#24-登录验证) 。
 
 #### 3.3.2 获取查分器主页的views次数
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/count_view` | 无需验证 | GET |
+| **端点路径**  | **权限要求** | **请求方法** |
+| ------------- | ------------ | ------------ |
+| `/count_view` | 无需验证     | GET          |
 
 此方法不设验证要求。您可以通过向此端点发送 GET 请求获取查分器主页左上角的 Views 次数。服务器会以 JSON 格式返回如下的响应体：
 
@@ -1034,9 +1009,9 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 #### 3.3.3 验证服务器状态
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/alive_check` | 无需验证 | GET |
+| **端点路径**   | **权限要求** | **请求方法** |
+| -------------- | ------------ | ------------ |
+| `/alive_check` | 无需验证     | GET          |
 
 此方法不设验证要求。您可以通过向此端点发送 GET 请求验证服务器状态。如果运行正常，服务器会以 JSON 格式返回如下的响应体：
 
@@ -1046,9 +1021,9 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 #### 3.3.4 获取 / 提交查分器主页的今日留言
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/message` | 无需验证 / [登录验证](#24-登录验证) | GET / POST |
+| **端点路径** | **权限要求**                        | **请求方法** |
+| ------------ | ----------------------------------- | ------------ |
+| `/message`   | 无需验证 / [登录验证](#24-登录验证) | GET / POST   |
 
 获取查分器主页的今日留言不设验证要求，您可以直接通过 <https://www.diving-fish.com/api/maimaidxprober/message> 进行访问。附加了登录验证信息并成功登录之后，您可以提交查分器主页的今日留言。
 
@@ -1068,16 +1043,16 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 ```json
 [
-  { "text": "周末了", "username": "document", "ts": 1722622060, "nickname": "可以用马甲欸" },
-  { "text": "早", "username": "document", "ts": 1722622726, "nickname": "" }
+    { "text": "周末了", "username": "document", "ts": 1722622060, "nickname": "可以用马甲欸" },
+    { "text": "早", "username": "document", "ts": 1722622726, "nickname": "" }
 ]
 ```
 
 #### 3.3.5 获取查分器主页的广告
 
-| **端点路径** | **权限要求** |  **请求方法** |
-|-----|-----|-----|
-| `/advertisements` | 无需验证 | GET |
+| **端点路径**      | **权限要求** | **请求方法** |
+| ----------------- | ------------ | ------------ |
+| `/advertisements` | 无需验证     | GET          |
 
 此方法不设验证要求，您可以直接通过 <https://www.diving-fish.com/api/maimaidxprober/advertisements> 进行访问。
 
@@ -1085,14 +1060,14 @@ https://www.diving-fish.com/api/maimaidxprober/chart_stats
 
 ```json
 [
-  {
-    "l": "https://www.sample.com/",
-    "s": "https://www.diving-fish.com/maimaidx/prober_static/sample.png"
-  },
-  {
-    "l": "https://www.sample2.com/",
-    "s": "https://www.diving-fish.com/maimaidx/prober_static/sample2.jpg"
-  }
+    {
+        "l": "https://www.sample.com/",
+        "s": "https://www.diving-fish.com/maimaidx/prober_static/sample.png"
+    },
+    {
+        "l": "https://www.sample2.com/",
+        "s": "https://www.diving-fish.com/maimaidx/prober_static/sample2.jpg"
+    }
 ]
 ```
 
