@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "check": "vue-tsc -b",
+        "check": "vue-tsc -b && prettier --check .",
         "build": "vue-tsc -b && vite build && node ./script/generateBuildInfo.cjs",
         "preview": "vite preview",
         "pret": "prettier --check .",
