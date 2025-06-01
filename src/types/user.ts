@@ -22,8 +22,7 @@ type DetailedData = Record<string, DivingFishFullRecord>;
 export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     const result: DetailedData = {};
 
-    for (const item of data) 
-        result[`${item.song_id}-${item.level_index}`] = item;
+    for (const item of data) result[`${item.song_id}-${item.level_index}`] = item;
 
     return result;
 }

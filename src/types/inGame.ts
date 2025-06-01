@@ -24,22 +24,22 @@ export enum SyncStatus {
 }
 
 export interface SongInfo {
-    musicId: number,
-    level: Level,
-    playCount: number,
-    achievement: number,
-    comboStatus: ComboStatus,
-    syncStatus: SyncStatus,
-    deluxscoreMax: number,
-    scoreRank: number,
-};
+    musicId: number;
+    level: Level;
+    playCount: number;
+    achievement: number;
+    comboStatus: ComboStatus;
+    syncStatus: SyncStatus;
+    deluxscoreMax: number;
+    scoreRank: number;
+}
 export interface UserMusic {
-    UserMusicDetailList: SongInfo[],
-    length: number,
+    UserMusicDetailList: SongInfo[];
+    length: number;
 }
 export interface MusicAllResponse {
-    userId: number,
-    length: number,
-    nextIndex: number,
-    userMusicList: UserMusic[]
+    userId: number;
+    length: number;
+    nextIndex: number;
+    userMusicList: UserMusic[];
 }

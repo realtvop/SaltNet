@@ -1,41 +1,41 @@
 name: Update Charts Data
 
 on:
-  schedule:
-    - cron: "0 22 * * *"
-  workflow_dispatch:
+    schedule:
+        - cron: "0 22 * * *"
+    workflow_dispatch:
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  update-charts:
-    runs-on: ubuntu-latest
+    update-charts:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
+        steps:
+            - uses: actions/checkout@v3
 
-      - name: Update charts data
-        run: node script/updateChartsInfo.cjs
+            - name: Update charts data
+              run: node script/updateChartsInfo.cjs
 
-      - name: Check for changes
-        id: verify-changed-files
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
+            - name: Check for changes
+              id: verify-changed-files
+              run: |
+                  if [ -n "$(git status --porcelain)" ]; then
+                    echo "changed=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-      - name: Commit and push changes
-        if: steps.verify-changed-files.outputs.changed == 'true'
-        run: |
-          git config --local user.email "realtvop@realtvop.top"
-          git config --local user.name "realtvop by Actions"
-          git add public/data/charts.json
-          git commit -m "ci: 更新曲目数据"
-          git push
+            - name: Commit and push changes
+              if: steps.verify-changed-files.outputs.changed == 'true'
+              run: |
+                  git config --local user.email "realtvop@realtvop.top"
+                  git config --local user.name "realtvop by Actions"
+                  git add public/data/charts.json
+                  git commit -m "ci: 更新曲目数据"
+                  git push
 
-      - name: No changes detected
-        if: steps.verify-changed-files.outputs.changed == 'false'
-        run: echo "No changes in charts data detected, skipping commit."
+            - name: No changes detected
+              if: steps.verify-changed-files.outputs.changed == 'false'
+              run: echo "No changes in charts data detected, skipping commit."

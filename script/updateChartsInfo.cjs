@@ -11,7 +11,7 @@ fetch(DFMusicDataAPIURL)
             .then(r => r.json())
             .then(res => {
                 const aliases = res.aliases;
-                
+
                 for (const chart of data) {
                     const id = Number(chart.id);
                     const ids = 10000 < id < 100000 ? [id, id - 10000] : [id];
@@ -19,6 +19,6 @@ fetch(DFMusicDataAPIURL)
                     if (aliasList) chart.aliases = aliasList.aliases;
                 }
 
-                fs.writeFileSync("public/data/charts.json", JSON.stringify(data), 'utf8');
+                fs.writeFileSync("src/assets/music/charts.json", JSON.stringify(data), "utf8");
             });
     });

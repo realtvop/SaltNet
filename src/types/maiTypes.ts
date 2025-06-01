@@ -1,39 +1,39 @@
 export enum ComboStatus {
-    None = '',
-    FullCombo = 'fc',
-    FullComboPlus = 'fcp',
-    AllPerfect = 'ap',
-    AllPerfectPlus = 'app',
+    None = "",
+    FullCombo = "fc",
+    FullComboPlus = "fcp",
+    AllPerfect = "ap",
+    AllPerfectPlus = "app",
 }
 
 export enum SyncStatus {
-    None = '',
-    FullSync = 'fs',
-    FullSyncPlus = 'fsp',
-    FullSyncDX = 'fsdx',
-    FullSyncDXPlus = 'fspdx',
+    None = "",
+    FullSync = "fs",
+    FullSyncPlus = "fsp",
+    FullSyncDX = "fsdx",
+    FullSyncDXPlus = "fspdx",
 }
 
 export enum RankRate {
-    d = 'd',
-    c = 'c',
-    b = 'b',
-    bb = 'bb',
-    bbb = 'bbb',
-    a = 'a',
-    aa = 'aa',
-    aaa = 'aaa',
-    s = 's',
-    sp = 'sp',
-    ss = 'ss',
-    ssp = 'ssp',
-    sss = 'sss',
-    sssp = 'sssp'
+    d = "d",
+    c = "c",
+    b = "b",
+    bb = "bb",
+    bbb = "bbb",
+    a = "a",
+    aa = "aa",
+    aaa = "aaa",
+    s = "s",
+    sp = "sp",
+    ss = "ss",
+    ssp = "ssp",
+    sss = "sss",
+    sssp = "sssp",
 }
 
 export enum ChartType {
-    Standard = 'SD',
-    Deluxe = 'DX',
+    Standard = "SD",
+    Deluxe = "DX",
 }
 
 export enum MusicOrigin {

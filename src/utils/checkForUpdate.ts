@@ -14,16 +14,19 @@ export function checkForUpdate() {
         .then(t => JSON.parse(t))
         .then(l => {
             if (l.buildTime && l.assets && l.buildTime !== window.spec.currentVersionBuildTime) {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({ action: "update", assets: l.assets });
-                    showSnackBar("正在更新")
-                } else showSnackBar("更新失败")
+                if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        action: "update",
+                        assets: l.assets,
+                    });
+                    showSnackBar("正在更新");
+                } else showSnackBar("更新失败");
             }
-        })
+        });
     // .catch(e => showSnackBar("更新检查失败"));
 }
 
-const broadcast = new BroadcastChannel('updateFinish');
+const broadcast = new BroadcastChannel("updateFinish");
 broadcast.onmessage = () => {
     snackbar({
         message: "更新成功，刷新生效",
