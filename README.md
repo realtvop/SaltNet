@@ -19,7 +19,7 @@ International & Japanese ver. will be supported later.
         - [x] 谱面信息
         - [x] rating 阶段
         - [x] 好友成绩
-        - [ ] 曲目别名 // 啊啊啊这个怎么搞
+        - [x] 曲目别名 // 啊啊啊这个怎么搞
 - [x] 用户绑定
     - [x] 玩家信息页面 b50
     - [x] 多用户
