@@ -72,7 +72,6 @@ const friendsScores = ref<{ name: string, achievements?: number, ra?: number, ra
 const selfName = ref('');
 const isRatingExpanded = ref(false);
 
-// 获取当前谱面key
 function getChartKey(chart: ChartCardData) {
     return `${chart.song_id}-${typeof chart.level_index === 'number' ? chart.level_index : (chart.grade ?? 0)}`;
 }
@@ -153,8 +152,8 @@ function getRanks(scores: {achievements?: number, played: boolean}[]) {
 }
 
 function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text);
-  snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
+    navigator.clipboard.writeText(text);
+    snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
 }
 
 const SCORE_COEFFICIENT_TABLE: [number, number, string][] = [

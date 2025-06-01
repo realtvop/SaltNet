@@ -5,8 +5,6 @@ import { convertDetailed, type User } from "@/types/user";
 
 import { Snackbar, snackbar, alert } from "mdui";
 
-// let songs = null;
-
 export function updateUser(user: User) {
     if (!user.data) user.data = {};
 
@@ -94,21 +92,6 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
             return null;
         });
 }
-// async function convertInGameData() {
-
-// }
-
-// function fetchSongData() {
-//     info("正在获取曲目数据");
-//     return fetch("https://www.diving-fish.com/api/maimaidxprober/music_data")
-//         .then(r => r.json())
-//         .then(data => {
-//             songs = data;
-//         })
-//         .catch(e => {
-//             info(`获取曲目数据失败：${e.toString()}`, e.toString());
-//         });
-// }
 
 function info(message: string, errorMsg?: string): Snackbar {
     return snackbar({

@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useRouter } from 'vue-router'; // Import useRouter
-// Use default imports for Vue components
+import { useRouter } from 'vue-router';
 import RatingPlate from '@/components/RatingPlate.vue';
 import BindUserDialog from '@/components/users/BindUserDialog.vue';
-// Correct the import path for the User type
 import type { User } from '@/types/user';
 import { checkLogin, updateUser } from '@/utils/updateUser';
 import { confirm } from 'mdui';
@@ -22,15 +20,13 @@ watch(users, v => {
 
 const isDialogVisible = ref(false);
 const currentUserToEdit = ref<User | null>(null);
-const editingUserIndex = ref<number | null>(null); // Add ref for index
+const editingUserIndex = ref<number | null>(null);
 
-const router = useRouter(); // Get router instance
+const router = useRouter();
 
-// Update openEditDialog to accept and store the index
 const openEditDialog = (user: User, index: number) => {
-    // Perform a deep copy instead of assigning by reference
     currentUserToEdit.value = JSON.parse(JSON.stringify(user));
-    editingUserIndex.value = index; // Store the index
+    editingUserIndex.value = index;
     isDialogVisible.value = true;
 };
 
@@ -70,7 +66,6 @@ interface UpdatedUserData {
     inGame: { name: string | null; id: number | null };
 }
 
-// Update handleUserSave to use the stored index
 const handleUserSave = (updatedUserData: UpdatedUserData) => {
     if (editingUserIndex.value === null) {
         users.value.push({
@@ -87,7 +82,6 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
 
     if (index >= 0 && index < users.value.length) {
         const originalUser = users.value[index];
-        // Update the user in the array directly using the index
         users.value[index] = {
             ...originalUser,
             divingFish: {
@@ -97,16 +91,15 @@ const handleUserSave = (updatedUserData: UpdatedUserData) => {
             },
             inGame: {
                 ...originalUser.inGame,
-                id: updatedUserData.inGame.id, // Only update ID from dialog
+                id: updatedUserData.inGame.id,
             }
         };
     } else {
         console.warn("Invalid user index for update:", index);
     }
 
-    // Reset state and close dialog
     currentUserToEdit.value = null;
-    editingUserIndex.value = null; // Reset the index
+    editingUserIndex.value = null;
     isDialogVisible.value = false;
 };
 
@@ -127,7 +120,6 @@ function updateAll() {
 <template>
     <div style="height: 10px;"></div>
     <div class="user-cards-container">
-        <!-- Pass index to openEditDialog -->
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in users"
@@ -145,7 +137,6 @@ function updateAll() {
                 </div>
             </div>
             <div class="user-actions">
-                <!-- Pass index here -->
                 <mdui-button-icon variant="standard" icon="update" @click="updateUser(user)"></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon slot="trigger" icon="more_vert" style="margin-right: 10px;"></mdui-button-icon>
