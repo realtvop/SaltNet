@@ -1,8 +1,10 @@
-name: PR Check
+name: Code Check
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+  push:
+    branches: [ main, dev ]
 
 jobs:
   check:
