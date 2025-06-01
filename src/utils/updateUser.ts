@@ -22,7 +22,7 @@ export function updateUser(user: User) {
 }
 export function checkLogin(user: User) {
     info(`正在从 InGame 获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
-    return fetch("https://salt_api_backup.realtvop.top/checkLogin", {
+    return fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ userId: user.inGame.id }),
@@ -83,7 +83,7 @@ function fromInGame(user: User) {
         });
 }
 function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {
-    return fetch("https://salt_api_backup.realtvop.top/updateUser", {
+    return fetch(`${import.meta.env.VITE_API_URL}/updateUser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', },
         body: JSON.stringify({ userId, importToken }),

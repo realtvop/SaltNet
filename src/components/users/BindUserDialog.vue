@@ -127,7 +127,8 @@ function bindInGame() {
 
 function getUserIdFromQRCode(qrCode: string) {
   qrCode = qrCode.slice(-64);
-  return fetch('https://salt_api_backup.realtvop.top/getQRInfo', {
+  //@ts-ignore
+  return fetch(`${import.meta.env.VITE_API_URL}/getQRInfo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
