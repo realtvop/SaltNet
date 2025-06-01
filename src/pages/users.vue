@@ -78,7 +78,10 @@
                     importToken: updatedUserData.divingFish.importToken,
                 },
                 inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
-                data: {},
+                data: {
+                    updateTime: null,
+                    rating: null,
+                },
             });
             currentUserToEdit.value = null;
             isDialogVisible.value = false;

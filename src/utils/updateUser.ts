@@ -6,7 +6,7 @@ import { convertDetailed, type User } from "@/types/user";
 import { Snackbar, snackbar, alert } from "mdui";
 
 export function updateUser(user: User) {
-    if (!user.data) user.data = {};
+    if (!user.data) user.data = { updateTime: null, rating: null };
 
     if (user.inGame.id) {
         if (typeof user.inGame.id == "number" && user.inGame.id.toString().length == 8)
@@ -53,6 +53,7 @@ function fromDivingFish(user: User) {
             .then((data: DivingFishResponse) => {
                 user.data.rating = data.rating;
                 user.data.b50 = data.charts;
+                user.data.updateTime = Date.now();
                 info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
             })
             .catch(e => {
@@ -71,6 +72,7 @@ function fromInGame(user: User) {
                 user.inGame.name = toHalfWidth(data.userName);
                 user.data.b50 = data.b50;
                 user.data.detailed = convertDetailed(data.divingFishData);
+                user.data.updateTime = Date.now();
                 info(`从 InGame 获取用户信息成功：${user.inGame.name ?? user.divingFish.name}`);
             } else {
                 info(`从 InGame 获取 ${user.inGame.name ?? user.divingFish.name} 信息失败`);
