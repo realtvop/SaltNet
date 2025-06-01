@@ -22,6 +22,7 @@ export interface ChartsSortCached {
     identifier: {
         name: string;
         updateTime: number;
+        verBuildTime: number;
     };
     charts: ChartExtended[];
 }
