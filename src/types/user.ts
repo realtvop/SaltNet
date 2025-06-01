@@ -11,7 +11,7 @@ export interface User {
         id: number | null;
     };
     data: {
-        updateTime: number;
+        updateTime: number | null;
         rating?: number | null;
         b50?: DivingFishB50;
         detailed?: DetailedData;
