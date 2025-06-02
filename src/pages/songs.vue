@@ -111,43 +111,6 @@
         };
         await localForage.setItem("chartsSortCached", cacheData);
     }
-    async function sortChartsByScore() {
-        const currentIdentifier = {
-            name: playerData.value?.divingFish?.name || playerData.value?.inGame?.name || "unknown",
-            updateTime: playerData.value?.data?.updateTime || 0,
-            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0")
-        };
-        
-        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
-        if (cachedData && 
-            cachedData.identifier.name === currentIdentifier.name &&
-            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime) {
-            allCharts.value = cachedData.charts;
-            return;
-        }
-        
-        if (!allCharts.value.length) {
-            await loadChartsWithCache(playerData.value);
-            return;
-        }
-        
-        allCharts.value.sort((a, b) => {
-            const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
-            const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
-            if (chartDataA?.achievements && chartDataB?.achievements)
-                return chartDataB.achievements - chartDataA.achievements;
-            if (chartDataA?.achievements) return -1;
-            if (chartDataB?.achievements) return 1;
-            return 0;
-        });
-        
-        const cacheData: ChartsSortCached = {
-            identifier: currentIdentifier,
-            charts: allCharts.value
-        };
-        await localForage.setItem("chartsSortCached", cacheData);
-    }
     const chartListFiltered = computed(() => {
         if (!allCharts.value.length) return null;
 
