@@ -57,16 +57,16 @@
             ></mdui-button-icon>
         </div>
         <mdui-list>
-            <mdui-list-item v-for="i of displayedRaTable" :key="i.rank" nonclickable>
+            <mdui-list-item v-for="i of displayedRaTable" :key="i.achievements" nonclickable>
                 <div class="list-container">
                     <div class="list-title">
-                        {{ i.rank }}
-                        <span class="description">{{ i.rate.toFixed(4) }}%</span>
+                        ?
+                        <span class="description">{{ i.achievements.toFixed(4) }}%</span>
                     </div>
-                    <span v-if="typeof chart.ra === 'number' && i.ra > chart.ra">
-                        +{{ typeof chart.ra === "number" ? i.ra - chart.ra : i.ra }}
+                    <span v-if="typeof chart.ra === 'number' && i.rating > chart.ra">
+                        +{{ typeof chart.ra === "number" ? i.rating - chart.ra : i.rating }}
                     </span>
-                    {{ i.ra }}
+                    {{ i.rating }}
                 </div>
             </mdui-list-item>
         </mdui-list>
@@ -118,6 +118,7 @@
 
 <script setup lang="ts">
     import type { ChartCardData } from "@/types/music";
+    import { getDetailedRatingsByDs } from "@/utils/rating";
     import { defineProps, watch, nextTick, ref, computed } from "vue";
     import localForage from "localforage";
     import type { User } from "../../types/user";
@@ -232,46 +233,12 @@
         snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
     }
 
-    const SCORE_COEFFICIENT_TABLE: [number, number, string][] = [
-        [100.5, 22.4, "SSS+"],
-        [100.4999, 22.2, "SSS"],
-        [100, 21.6, "SSS"],
-        [99.9999, 21.4, "SS+"],
-        [99.5, 21.1, "SS+"],
-        [99, 20.8, "SS"],
-        [98.9999, 20.6, "S+"],
-        [98, 20.3, "S+"],
-        [97, 20.0, "S"],
-        [96.9999, 17.6, "AAA"],
-        [94, 16.8, "AAA"],
-        [90, 15.2, "AA"],
-        [80, 13.6, "A"],
-        [79.9999, 12.8, "BBB"],
-        [75, 12.0, "BBB"],
-        [70, 11.2, "BB"],
-        [60, 9.6, "B"],
-        [50, 8.0, "C"],
-        [40, 6.4, "D"],
-        [30, 4.8, "D"],
-        [20, 3.2, "D"],
-        [10, 1.6, "D"],
-        [0, 0, "D"],
-    ];
     const raTable = computed(() => {
         if (!props.chart) return [];
         const achievements =
             typeof props.chart.achievements === "number" ? props.chart.achievements : 0;
         const ds = props.chart.ds;
-        const result = [];
-        for (const i of SCORE_COEFFICIENT_TABLE) {
-            result.push({
-                rate: i[0],
-                rank: i[2],
-                ra: Math.floor((i[1] * ds * Math.min(100.5, achievements)) / 100),
-            });
-            if (i[0] <= achievements) break;
-        }
-        return result;
+        return getDetailedRatingsByDs(ds, achievements);
     });
 
     const displayedRaTable = computed(() => {
