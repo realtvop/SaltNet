@@ -160,7 +160,7 @@
         }
 
         // 使用原始排序索引而不是重新计算
-        const chartsWithIndex = finalFilteredCharts.map((chart) => ({
+        const chartsWithIndex = finalFilteredCharts.map(chart => ({
             ...chart,
             index: `${chart.originalIndex}/${chart.totalInDifficulty}`,
         }));
