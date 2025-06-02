@@ -1,12 +1,20 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from "vue";
-    import type { User } from "@/types/user";
+    import type { User, ChartsSortCached } from "@/types/user";
     import localForage from "localforage";
     import type { Chart, ChartExtended } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
     import ScoreCard from "@/components/ScoreCard.vue";
     import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
+
+    declare global {
+        interface Window {
+            spec: {
+                currentVersionBuildTime: string;
+            };
+        }
+    }
 
     const users = ref<User[]>([]);
     const allCharts = ref<ChartExtended[]>([]);
@@ -47,15 +55,34 @@
     localForage.getItem<User[]>("users").then(v => {
         if (Array.isArray(v)) users.value = v;
     });
-    getMusicInfoAsync().then(v => {
-        if (!v) return;
+    
+    async function loadChartsWithCache(userData?: User | null) {
+        const currentUser = userData || playerData.value;
+        
+        const currentIdentifier = {
+            name: currentUser?.divingFish?.name || currentUser?.inGame?.name || "unknown",
+            updateTime: currentUser?.data?.updateTime || 0,
+            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0")
+        };
+        
+        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        if (cachedData && 
+            cachedData.identifier.name === currentIdentifier.name &&
+            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
+            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime) {
+            allCharts.value = cachedData.charts;
+            return;
+        }
+        
+        const musicInfo = await getMusicInfoAsync();
+        if (!musicInfo) return;
+        
         const charts: ChartExtended[] = [];
-        for (const i in v.chartList) {
-            const chart = v.chartList[i] as Chart;
+        for (const i in musicInfo.chartList) {
+            const chart = musicInfo.chartList[i] as Chart;
             charts.push(chart);
         }
         
-        // Sort all charts once by MusicSort logic
         charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
@@ -63,12 +90,48 @@
                 MusicSort.indexOf(a.music.id) -
                 a.grade * 100000
         );
-
+        
+        if (currentUser?.data?.detailed) {
+            charts.sort((a, b) => {
+                const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.grade}`];
+                const chartDataB = currentUser?.data?.detailed?.[`${b.music.id}-${b.grade}`];
+                if (chartDataA?.achievements && chartDataB?.achievements)
+                    return chartDataB.achievements - chartDataA.achievements;
+                if (chartDataA?.achievements) return -1;
+                if (chartDataB?.achievements) return 1;
+                return 0;
+            });
+        }
+        
         allCharts.value = charts;
-        sortChartsByScore();
-    });
-    function sortChartsByScore() {
-        // Sort all charts by score once
+        
+        const cacheData: ChartsSortCached = {
+            identifier: currentIdentifier,
+            charts: charts
+        };
+        await localForage.setItem("chartsSortCached", cacheData);
+    }
+    async function sortChartsByScore() {
+        const currentIdentifier = {
+            name: playerData.value?.divingFish?.name || playerData.value?.inGame?.name || "unknown",
+            updateTime: playerData.value?.data?.updateTime || 0,
+            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0")
+        };
+        
+        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        if (cachedData && 
+            cachedData.identifier.name === currentIdentifier.name &&
+            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
+            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime) {
+            allCharts.value = cachedData.charts;
+            return;
+        }
+        
+        if (!allCharts.value.length) {
+            await loadChartsWithCache(playerData.value);
+            return;
+        }
+        
         allCharts.value.sort((a, b) => {
             const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
             const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
@@ -78,22 +141,23 @@
             if (chartDataB?.achievements) return 1;
             return 0;
         });
+        
+        const cacheData: ChartsSortCached = {
+            identifier: currentIdentifier,
+            charts: allCharts.value
+        };
+        await localForage.setItem("chartsSortCached", cacheData);
     }
     const chartListFiltered = computed(() => {
         if (!allCharts.value.length) return null;
 
         let filteredCharts: ChartExtended[];
 
-        // Filter by difficulty
         if (selectedDifficulty.value === "ALL") {
-            // Show all Master difficulty charts (grade = 3)
             filteredCharts = allCharts.value.filter(chart => chart.grade === 3);
         } else {
-            // Show charts of selected difficulty level
             filteredCharts = allCharts.value.filter(chart => chart.level === selectedDifficulty.value);
         }
-
-        // Apply search filter if query exists
         if (query.value) {
             filteredCharts = filteredCharts.filter((chart: ChartExtended) => {
                 const chartData = playerData.value?.data.detailed
@@ -118,7 +182,6 @@
             });
         }
 
-        // Update index for current display
         const chartsWithIndex = filteredCharts.map((chart, index) => ({
             ...chart,
             index: `${filteredCharts.length - index}/${filteredCharts.length}`
@@ -130,14 +193,15 @@
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage.getItem<User[]>("users").then(v => {
+        localForage.getItem<User[]>("users").then(async v => {
             if (!v) return;
             playerData.value = v[0];
-            sortChartsByScore();
+            await loadChartsWithCache(v[0]);
         });
     };
-    onMounted(() => {
-        loadPlayerData();
+    onMounted(async () => {
+        await loadChartsWithCache();
+        await loadPlayerData();
     });
 
     function genScoreCardData(chart: ChartExtended): any {
