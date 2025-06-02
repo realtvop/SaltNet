@@ -38,7 +38,10 @@
         currentUserToEdit.value = {
             divingFish: { name: null, importToken: null },
             inGame: { name: null, id: null },
-            data: {},
+            data: {
+                updateTime: null,
+                rating: null,
+            },
         };
         editingUserIndex.value = null;
         isDialogVisible.value = true;
