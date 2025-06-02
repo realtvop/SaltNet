@@ -1,12 +1,13 @@
 import { ScoreCoefficient } from "./ScoreCoefficient";
 import { get_min_ach } from "./utils";
+import { getRankRateByAchievement, type RankRate } from "@/types/maiTypes";
 
-export function getDetailedRatingsByDs(ds: number, achievements?: number): Array<{ ds: number, achievements: number, rating: number }> {
+export function getDetailedRatingsByDs(ds: number, achievements?: number): Array<{ ds: number, achievements: number, rating: number, rank: RankRate }> {
     let min_idx = 5;
     let min_ach4 = Math.round(get_min_ach(min_idx) * 10000);
     let max_idx = 13;
     let max_ach4 = Math.round(get_min_ach(max_idx + 1) * 10000);
-    let more_ra: Array<{ ds: number, achievements: number, rating: number }> = [];
+    let more_ra: Array<{ ds: number, achievements: number, rating: number, rank: RankRate }> = [];
     for (
         let curr_ach4 = min_ach4;
         curr_ach4 < max_ach4;
@@ -18,6 +19,7 @@ export function getDetailedRatingsByDs(ds: number, achievements?: number): Array
                 ds: ds,
                 achievements: curr_ach4 / 10000,
                 rating: curr_min_ra,
+                rank: getRankRateByAchievement(curr_ach4 / 10000),
             });
         }
         let curr_max_ra = new ScoreCoefficient((curr_ach4 + 2499) / 10000).ra(ds);
@@ -38,6 +40,7 @@ export function getDetailedRatingsByDs(ds: number, achievements?: number): Array
                 ds: ds,
                 achievements: ans / 10000,
                 rating: curr_max_ra,
+                rank: getRankRateByAchievement(ans / 10000),
             });
         }
     }
@@ -45,7 +48,7 @@ export function getDetailedRatingsByDs(ds: number, achievements?: number): Array
     
     // 如果提供了achievements参数，过滤出achievements高于输入值的数据，并向下多取一个项目
     if (achievements !== undefined) {
-        const filteredItems: Array<{ ds: number, achievements: number, rating: number }> = [];
+        const filteredItems: Array<{ ds: number, achievements: number, rating: number, rank: RankRate }> = [];
         let foundFirstLower = false;
         
         for (let i = 0; i < more_ra.length; i++) {

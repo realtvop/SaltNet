@@ -60,7 +60,7 @@
             <mdui-list-item v-for="i of displayedRaTable" :key="i.achievements" nonclickable>
                 <div class="list-container">
                     <div class="list-title">
-                        ?
+                        {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
                         <span class="description">{{ i.achievements.toFixed(4) }}%</span>
                     </div>
                     <span v-if="typeof chart.ra === 'number' && i.rating > chart.ra">
@@ -119,6 +119,7 @@
 <script setup lang="ts">
     import type { ChartCardData } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
+    import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref, computed } from "vue";
     import localForage from "localforage";
     import type { User } from "../../types/user";
