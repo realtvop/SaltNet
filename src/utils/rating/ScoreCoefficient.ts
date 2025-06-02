@@ -1,4 +1,22 @@
-const SCORE_COEFFICIENT_TABLE = [
+type RankType =
+    | "d"
+    | "c"
+    | "b"
+    | "bb"
+    | "bbb"
+    | "a"
+    | "aa"
+    | "aaa"
+    | "s"
+    | "sp"
+    | "ss"
+    | "ssp"
+    | "sss"
+    | "sssp";
+
+type ScoreCoefficientEntry = [number, number, RankType];
+
+const SCORE_COEFFICIENT_TABLE: readonly ScoreCoefficientEntry[] = [
     [0, 0, "d"],
     [10, 1.6, "d"],
     [20, 3.2, "d"],
@@ -22,10 +40,15 @@ const SCORE_COEFFICIENT_TABLE = [
     [100, 21.6, "sss"],
     [100.4999, 22.2, "sss"],
     [100.5, 22.4, "sssp"],
-];
+] as const;
 
-class ScoreCoefficient {
-    constructor(achievements) {
+export class ScoreCoefficient {
+    public readonly r!: RankType;
+    public readonly c!: number;
+    public readonly min!: number;
+    public readonly a!: number;
+
+    constructor(achievements: number) {
         for (let i = 0; i < SCORE_COEFFICIENT_TABLE.length; i++) {
             if (
                 i === SCORE_COEFFICIENT_TABLE.length - 1 ||
@@ -40,7 +63,7 @@ class ScoreCoefficient {
         }
     }
 
-    ra(ds) {
+    ra(ds: number): number {
         return Math.floor((this.c * ds * Math.min(100.5, this.a)) / 100);
     }
 }

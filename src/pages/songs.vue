@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from "vue";
-    import type { User } from "@/types/user";
+    import type { User, ChartsSortCached } from "@/types/user";
     import localForage from "localforage";
     import type { Chart, ChartExtended } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
@@ -8,9 +8,16 @@
     import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
 
+    declare global {
+        interface Window {
+            spec: {
+                currentVersionBuildTime: string;
+            };
+        }
+    }
+
     const users = ref<User[]>([]);
-    const chartList = ref<Record<string, ChartExtended[]> | null>(null);
-    const allMasterCharts = ref<ChartExtended[]>([]);
+    const allCharts = ref<ChartExtended[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
         "ALL",
@@ -48,31 +55,37 @@
     localForage.getItem<User[]>("users").then(v => {
         if (Array.isArray(v)) users.value = v;
     });
-    getMusicInfoAsync().then(v => {
-        if (!v) return;
-        const sorted: Record<string, ChartExtended[]> = {};
-        const masterCharts: ChartExtended[] = [];
-        for (const i in v.chartList) {
-            const chart = v.chartList[i] as Chart;
-            sorted[chart.level] = sorted[chart.level] || [];
-            sorted[chart.level].push(chart);
 
-            // Collect Master difficulty charts (grade = 3)
-            if (chart.grade === 3) {
-                masterCharts.push(chart);
-            }
+    async function loadChartsWithCache(userData?: User | null) {
+        const currentUser = userData || playerData.value;
+
+        const currentIdentifier = {
+            name: currentUser?.divingFish?.name || currentUser?.inGame?.name || "unknown",
+            updateTime: currentUser?.data?.updateTime || 0,
+            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
+        };
+
+        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        if (
+            cachedData &&
+            cachedData.identifier.name === currentIdentifier.name &&
+            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
+            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+        ) {
+            allCharts.value = cachedData.charts;
+            return;
         }
-        for (const i in sorted)
-            sorted[i].sort(
-                (a, b) =>
-                    MusicSort.indexOf(b.music.id) +
-                    b.grade * 100000 -
-                    MusicSort.indexOf(a.music.id) -
-                    a.grade * 100000
-            );
 
-        // Sort master charts by the same logic
-        masterCharts.sort(
+        const musicInfo = await getMusicInfoAsync();
+        if (!musicInfo) return;
+
+        const charts: ChartExtended[] = [];
+        for (const i in musicInfo.chartList) {
+            const chart = musicInfo.chartList[i] as Chart;
+            charts.push(chart);
+        }
+
+        charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
                 b.grade * 100000 -
@@ -80,139 +93,82 @@
                 a.grade * 100000
         );
 
-        chartList.value = sorted;
-        allMasterCharts.value = masterCharts;
-        sortChartsByScore();
-    });
-    function sortChartsByScore() {
-        for (const i in chartList.value) {
-            chartList.value[i].sort((a, b) => {
-                const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
-                const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
+        if (currentUser?.data?.detailed) {
+            charts.sort((a, b) => {
+                const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.grade}`];
+                const chartDataB = currentUser?.data?.detailed?.[`${b.music.id}-${b.grade}`];
                 if (chartDataA?.achievements && chartDataB?.achievements)
                     return chartDataB.achievements - chartDataA.achievements;
                 if (chartDataA?.achievements) return -1;
                 if (chartDataB?.achievements) return 1;
                 return 0;
             });
-            for (const j in chartList.value[i])
-                chartList.value[i][j].index =
-                    `${chartList.value[i].length - (j as unknown as number)}/${chartList.value[i].length + 1}`;
         }
 
-        // Sort master charts by score as well
-        allMasterCharts.value.sort((a, b) => {
-            const chartDataA = playerData.value?.data?.detailed?.[`${a.music.id}-${a.grade}`];
-            const chartDataB = playerData.value?.data?.detailed?.[`${b.music.id}-${b.grade}`];
-            if (chartDataA?.achievements && chartDataB?.achievements)
-                return chartDataB.achievements - chartDataA.achievements;
-            if (chartDataA?.achievements) return -1;
-            if (chartDataB?.achievements) return 1;
-            return 0;
-        });
-        for (const j in allMasterCharts.value)
-            allMasterCharts.value[j].index =
-                `${allMasterCharts.value.length - (j as unknown as number)}/${allMasterCharts.value.length + 1}`;
+        allCharts.value = charts;
+
+        const cacheData: ChartsSortCached = {
+            identifier: currentIdentifier,
+            charts: charts,
+        };
+        await localForage.setItem("chartsSortCached", cacheData);
     }
     const chartListFiltered = computed(() => {
-        if (!chartList.value) return null;
+        if (!allCharts.value.length) return null;
 
-        // Handle "ALL" tab - show all Master difficulty charts
+        let filteredCharts: ChartExtended[];
+
         if (selectedDifficulty.value === "ALL") {
-            let chartArray: ChartExtended[];
-            if (!query.value) {
-                chartArray = [...allMasterCharts.value];
-            } else {
-                chartArray = allMasterCharts.value.filter((chart: ChartExtended) => {
-                    const chartData = playerData.value?.data.detailed
-                        ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
-                        : null;
-                    return (
-                        // 曲名 曲师 谱师 别名
-                        chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                        chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-                        chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-                        (chart.music.aliases &&
-                            chart.music.aliases
-                                .join()
-                                .toLowerCase()
-                                .includes(query.value.toLowerCase())) ||
-                        (chartData &&
-                            // 达成率 fc sync
-                            (chartData.achievements.toString().includes(query.value) ||
-                                chartData.fc.toString().includes(query.value) ||
-                                chartData.fs.toString().includes(query.value)))
-                    );
-                });
-            }
-
-            // Update index for current tab display
-            for (const j in chartArray) {
-                chartArray[j].index =
-                    `${chartArray.length - (j as unknown as number)}/${chartArray.length}`;
-            }
-
-            return { ALL: chartArray };
-        }
-
-        // Handle regular difficulty tabs
-        let result: Record<string, ChartExtended[]>;
-        if (!query.value) {
-            // Deep copy to avoid modifying original data
-            result = {};
-            for (const i in chartList.value) {
-                result[i] = [...chartList.value[i]];
-            }
+            filteredCharts = allCharts.value.filter(chart => chart.grade === 3);
         } else {
-            result = {};
-            for (const i in chartList.value) {
-                result[i] = chartList.value[i].filter((chart: ChartExtended) => {
-                    const chartData = playerData.value?.data.detailed
-                        ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
-                        : null;
-                    return (
-                        // 曲名 曲师 谱师 别名
-                        chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                        chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-                        chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-                        (chart.music.aliases &&
-                            chart.music.aliases
-                                .join()
-                                .toLowerCase()
-                                .includes(query.value.toLowerCase())) ||
-                        (chartData &&
-                            // 达成率 fc sync
-                            (chartData.achievements.toString().includes(query.value) ||
-                                chartData.fc.toString().includes(query.value) ||
-                                chartData.fs.toString().includes(query.value)))
-                    );
-                });
-            }
+            filteredCharts = allCharts.value.filter(
+                chart => chart.level === selectedDifficulty.value
+            );
+        }
+        if (query.value) {
+            filteredCharts = filteredCharts.filter((chart: ChartExtended) => {
+                const chartData = playerData.value?.data.detailed
+                    ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
+                    : null;
+                return (
+                    // 曲名 曲师 谱师 别名
+                    chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
+                    chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
+                    chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+                    (chart.music.aliases &&
+                        chart.music.aliases
+                            .join()
+                            .toLowerCase()
+                            .includes(query.value.toLowerCase())) ||
+                    (chartData &&
+                        // 达成率 fc sync
+                        (chartData.achievements.toString().includes(query.value) ||
+                            chartData.fc.toString().includes(query.value) ||
+                            chartData.fs.toString().includes(query.value)))
+                );
+            });
         }
 
-        // Update index for selected difficulty level to show position in current tab
-        if (selectedDifficulty.value !== "ALL" && result[selectedDifficulty.value]) {
-            const currentDifficultyCharts = result[selectedDifficulty.value];
-            for (const j in currentDifficultyCharts) {
-                currentDifficultyCharts[j].index =
-                    `${currentDifficultyCharts.length - (j as unknown as number)}/${currentDifficultyCharts.length}`;
-            }
-        }
+        const chartsWithIndex = filteredCharts.map((chart, index) => ({
+            ...chart,
+            index: `${filteredCharts.length - index}/${filteredCharts.length}`,
+        }));
 
-        return result;
+        return { [selectedDifficulty.value]: chartsWithIndex };
     });
 
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage.getItem<User[]>("users").then(v => {
+        localForage.getItem<User[]>("users").then(async v => {
             if (!v) return;
             playerData.value = v[0];
-            sortChartsByScore();
+            await loadChartsWithCache(v[0]);
         });
     };
-    onMounted(() => {
-        loadPlayerData();
+    onMounted(async () => {
+        await loadChartsWithCache();
+        await loadPlayerData();
     });
 
     function genScoreCardData(chart: ChartExtended): any {
