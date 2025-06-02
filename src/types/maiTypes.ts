@@ -118,5 +118,5 @@ export const ACHIEVEMENT_RATE_THRESHOLDS = [
  * @param achievementRate 达成率（百分比形式，如 99.5 表示 99.5%）
  * @returns 对应的RankRate等级
  */
-export const getRankRateByAchievement = (achievementRate: number): RankRate => 
+export const getRankRateByAchievement = (achievementRate: number): RankRate =>
     ACHIEVEMENT_RATE_THRESHOLDS.find(item => achievementRate >= item.threshold)?.rank ?? RankRate.d;

@@ -55,34 +55,36 @@
     localForage.getItem<User[]>("users").then(v => {
         if (Array.isArray(v)) users.value = v;
     });
-    
+
     async function loadChartsWithCache(userData?: User | null) {
         const currentUser = userData || playerData.value;
-        
+
         const currentIdentifier = {
             name: currentUser?.divingFish?.name || currentUser?.inGame?.name || "unknown",
             updateTime: currentUser?.data?.updateTime || 0,
-            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0")
+            verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
         };
-        
+
         const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
-        if (cachedData && 
+        if (
+            cachedData &&
             cachedData.identifier.name === currentIdentifier.name &&
             cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime) {
+            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+        ) {
             allCharts.value = cachedData.charts;
             return;
         }
-        
+
         const musicInfo = await getMusicInfoAsync();
         if (!musicInfo) return;
-        
+
         const charts: ChartExtended[] = [];
         for (const i in musicInfo.chartList) {
             const chart = musicInfo.chartList[i] as Chart;
             charts.push(chart);
         }
-        
+
         charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
@@ -90,7 +92,7 @@
                 MusicSort.indexOf(a.music.id) -
                 a.grade * 100000
         );
-        
+
         if (currentUser?.data?.detailed) {
             charts.sort((a, b) => {
                 const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.grade}`];
@@ -102,12 +104,12 @@
                 return 0;
             });
         }
-        
+
         allCharts.value = charts;
-        
+
         const cacheData: ChartsSortCached = {
             identifier: currentIdentifier,
-            charts: charts
+            charts: charts,
         };
         await localForage.setItem("chartsSortCached", cacheData);
     }
@@ -119,7 +121,9 @@
         if (selectedDifficulty.value === "ALL") {
             filteredCharts = allCharts.value.filter(chart => chart.grade === 3);
         } else {
-            filteredCharts = allCharts.value.filter(chart => chart.level === selectedDifficulty.value);
+            filteredCharts = allCharts.value.filter(
+                chart => chart.level === selectedDifficulty.value
+            );
         }
         if (query.value) {
             filteredCharts = filteredCharts.filter((chart: ChartExtended) => {
@@ -147,7 +151,7 @@
 
         const chartsWithIndex = filteredCharts.map((chart, index) => ({
             ...chart,
-            index: `${filteredCharts.length - index}/${filteredCharts.length}`
+            index: `${filteredCharts.length - index}/${filteredCharts.length}`,
         }));
 
         return { [selectedDifficulty.value]: chartsWithIndex };

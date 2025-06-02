@@ -1,4 +1,18 @@
-type RankType = "d" | "c" | "b" | "bb" | "bbb" | "a" | "aa" | "aaa" | "s" | "sp" | "ss" | "ssp" | "sss" | "sssp";
+type RankType =
+    | "d"
+    | "c"
+    | "b"
+    | "bb"
+    | "bbb"
+    | "a"
+    | "aa"
+    | "aaa"
+    | "s"
+    | "sp"
+    | "ss"
+    | "ssp"
+    | "sss"
+    | "sssp";
 
 type ScoreCoefficientEntry = [number, number, RankType];
 
