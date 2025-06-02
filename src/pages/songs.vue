@@ -125,8 +125,18 @@
                 chart => chart.level === selectedDifficulty.value
             );
         }
+
+        // 先给所有符合难度条件的曲目添加原始排序索引
+        const chartsWithOriginalIndex = filteredCharts.map((chart, index) => ({
+            ...chart,
+            originalIndex: filteredCharts.length - index,
+            totalInDifficulty: filteredCharts.length,
+        }));
+
+        let finalFilteredCharts = chartsWithOriginalIndex;
+
         if (query.value) {
-            filteredCharts = filteredCharts.filter((chart: ChartExtended) => {
+            finalFilteredCharts = chartsWithOriginalIndex.filter((chart: any) => {
                 const chartData = playerData.value?.data.detailed
                     ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
                     : null;
@@ -149,9 +159,10 @@
             });
         }
 
-        const chartsWithIndex = filteredCharts.map((chart, index) => ({
+        // 使用原始排序索引而不是重新计算
+        const chartsWithIndex = finalFilteredCharts.map(chart => ({
             ...chart,
-            index: `${filteredCharts.length - index}/${filteredCharts.length}`,
+            index: `${chart.originalIndex}/${chart.totalInDifficulty}`,
         }));
 
         return { [selectedDifficulty.value]: chartsWithIndex };

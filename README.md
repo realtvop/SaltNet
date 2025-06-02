@@ -35,7 +35,7 @@ International & Japanese ver. will be supported later.
 
 - [ ] 水鱼曲绘信息不全，尝试自建
 - [x] 用户列表移动端显示不全
-- [ ] rating 阶段显示不全
+- [x] rating 阶段显示不全
 
 ## 鸣谢
 
