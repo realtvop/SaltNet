@@ -42,57 +42,101 @@
             </mdui-chip>
         </div>
         
-        <mdui-collapse accordion :value="'3'">
-            <mdui-collapse-item v-for="chart of chart.music?.charts" :value="chart.grade.toString()">
+        <mdui-collapse accordion :value="defaultExpandedValue">
+            <mdui-collapse-item v-for="chartInfo of chart.music?.charts" :key="chartInfo.grade" :value="chartInfo.grade.toString()">
                 <mdui-list-item slot="header">
                     <div class="collapse-header">
-                        <span>{{ [ "BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER" ][chart.grade] }}</span>
+                        <div class="header-left">
+                            <span class="difficulty-badge" :class="`difficulty-${chartInfo.grade}`">
+                                {{ [ "BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER" ][chartInfo.grade] }}
+                            </span>
+                            <span class="level-info">
+                                {{ chartInfo.ds }}
+                            </span>
+                        </div>
+                        <div class="header-right">
+                            <div class="score-info" v-if="getCurrentChartScore(chartInfo)">
+                                <img v-if="getCurrentChartScore(chartInfo).rate" :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`" class="rank-icon" />
+                                <span class="achievement">{{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%</span>
+                                <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">{{ getCurrentChartScore(chartInfo).ra }}</span>
+                                <span class="score-badges">
+                                    <img v-if="getCurrentChartScore(chartInfo).fc" :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`" class="mini-icon" />
+                                    <img v-if="getCurrentChartScore(chartInfo).fs" :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs}.png`" class="mini-icon" />
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </mdui-list-item>
                 
                 <div class="collapse-content">
+                    <!-- 谱面基本信息 -->
+                    <div class="chart-basic-info">
+                        <div class="info-row">
+                            <span class="info-label">谱师</span>
+                            <span class="info-value" @click="copyToClipboard(chartInfo.charter)" style="cursor: pointer">
+                                {{ chartInfo.charter }}
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">项目位置</span>
+                            <span class="info-value">{{ getCurrentChartPosition(chartInfo) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">音符分布</span>
+                            <span class="info-value notes-breakdown">
+                                <span class="note-type">TAP: {{ chartInfo.notes[0] }}</span>
+                                <span class="note-type">HOLD: {{ chartInfo.notes[1] }}</span>
+                                <span class="note-type">SLIDE: {{ chartInfo.notes[2] }}</span>
+                                <span class="note-type">BREAK: {{ chartInfo.notes[3] }}</span>
+                                <span class="note-total">总计: {{ chartInfo.notes.reduce((a, b) => a + b, 0) }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Rating 阶段 -->
                     <div
                         style="
                             display: flex;
                             justify-content: space-between;
                             align-items: center;
                             margin-bottom: 0;
+                            margin-top: 1rem;
                         "
                     >
                         <h3 style="margin-bottom: 0">Rating 阶段</h3>
                         <mdui-button-icon
-                            v-if="raTable.length > 3"
-                            :icon="isRatingExpanded ? 'expand_less' : 'expand_more'"
-                            @click="isRatingExpanded = !isRatingExpanded"
+                            v-if="getChartRaTable(chartInfo).length > 3"
+                            :icon="expandedCharts.has(chartInfo.grade) ? 'expand_less' : 'expand_more'"
+                            @click="toggleChartExpanded(chartInfo.grade)"
                         ></mdui-button-icon>
                     </div>
                     <mdui-list>
-                        <mdui-list-item v-for="i of displayedRaTable" :key="i.achievements" nonclickable>
+                        <mdui-list-item v-for="i of getDisplayedChartRaTable(chartInfo)" :key="i.achievements" nonclickable>
                             <div class="list-container">
                                 <div class="list-title">
                                     {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
                                     <span class="description">{{ i.achievements.toFixed(4) }}%</span>
                                 </div>
-                                <span v-if="typeof chart.ra === 'number' && i.rating > chart.ra">
-                                    +{{ typeof chart.ra === "number" ? i.rating - chart.ra : i.rating }}
+                                <span v-if="getCurrentChartRa(chartInfo) !== null && i.rating > (getCurrentChartRa(chartInfo) || 0)">
+                                    +{{ i.rating - (getCurrentChartRa(chartInfo) || 0) }}
                                 </span>
                                 {{ i.rating }}
                             </div>
                         </mdui-list-item>
                     </mdui-list>
 
-                    <div v-if="friendsScores.length > 1" class="friends-section">
+                    <div v-if="getChartFriendsScores(chartInfo).length > 1" class="friends-section">
                         <h3>好友排名</h3>
                         <mdui-list>
                             <mdui-list-item
-                                v-for="(f, idx) in friendsScores"
+                                v-for="(f, idx) in getChartFriendsScores(chartInfo)"
                                 :key="f.name"
                                 nonclickable
                                 :active="f.name === selfName"
                                 rounded
                             >
                                 <div class="friend-score-row">
-                                    <span class="friend-rank">{{ getRanks(friendsScores)[idx] }}</span>
+                                    <span class="friend-rank">{{ getRanks(getChartFriendsScores(chartInfo))[idx] }}</span>
                                     <span class="friend-name">{{ f.name }}</span>
                                     <span class="friend-achievement">
                                         {{
@@ -103,6 +147,9 @@
                                     </span>
                                     <span class="friend-fc" v-if="f.fc">
                                         <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
+                                    </span>
+                                    <span class="friend-fs" v-if="f.fs">
+                                        <img :src="`/icons/music_icon_${f.fs}.png`" class="icon" />
                                     </span>
                                 </div>
                             </mdui-list-item>
@@ -130,13 +177,14 @@
 </template>
 
 <script setup lang="ts">
-    import type { ChartCardData } from "@/types/music";
+    import type { ChartCardData, Chart, ChartExtended } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
-    import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
+    import { RANK_RATE_DISPLAY_NAMES, type RankRate } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref, computed } from "vue";
     import localForage from "localforage";
-    import type { User } from "../../types/user";
+    import type { User, ChartsSortCached } from "../../types/user";
     import { snackbar } from "mdui";
+    import { getChartPositionFromCache } from "@/utils/chartPosition";
 
     const props = defineProps<{
         open: boolean;
@@ -156,6 +204,13 @@
     >([]);
     const selfName = ref("");
     const isRatingExpanded = ref(false);
+    const expandedCharts = ref<Set<number>>(new Set());
+    const defaultExpandedValue = ref("0");
+    
+    // 存储每个难度对应的好友成绩
+    const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
+    // 存储每个难度对应的项目位置（从缓存中获取）
+    const chartPositionMap = ref<Map<number, string>>(new Map());
 
     function getChartKey(chart: ChartCardData) {
         return `${chart.song_id}-${typeof chart.level_index === "number" ? chart.level_index : (chart.grade ?? 0)}`;
@@ -172,8 +227,14 @@
             friendsScores.value = [];
             selfName.value = "";
             isRatingExpanded.value = false;
-            if (!props.chart) return;
-            const key = getChartKey(props.chart);
+            expandedCharts.value.clear();
+            chartFriendsScoresMap.value.clear();
+            
+            if (!props.chart?.music?.charts) return;
+            
+            // 设置默认展开对应难度
+            defaultExpandedValue.value = props.chart.grade?.toString() || "0";
+            
             const users: User[] = (await localForage.getItem("users")) || [];
             // selfName为用户列表第一个用户
             if (users.length > 0) {
@@ -181,45 +242,60 @@
                     users[0].divingFish?.name || users[0].inGame?.name || users[0].inGame?.id || ""
                 );
             }
-            users.forEach(user => {
-                const uname = String(
-                    user.divingFish?.name || user.inGame?.name || user.inGame?.id || ""
-                );
-                if (!uname) return;
-                const detail = user.data?.detailed?.[key];
-                if (detail) {
-                    friendsScores.value.push({
-                        name: uname,
-                        achievements: detail.achievements,
-                        ra: detail.ra,
-                        rate: detail.rate,
-                        fc: detail.fc,
-                        fs: detail.fs,
-                        played: true,
-                    });
-                } else {
-                    friendsScores.value.push({
-                        name: uname,
-                        achievements: undefined,
-                        ra: undefined,
-                        rate: undefined,
-                        fc: undefined,
-                        fs: undefined,
-                        played: false,
-                    });
-                }
-            });
-            // 排名：已游玩按成绩降序，未游玩排最后
-            friendsScores.value = friendsScores.value.sort((a, b) => {
-                if (a.played && b.played) {
-                    return (b.achievements ?? 0) - (a.achievements ?? 0);
-                } else if (a.played) {
-                    return -1;
-                } else if (b.played) {
-                    return 1;
-                } else {
-                    return 0;
-                }
+            
+            // 从缓存中加载项目位置
+            await loadChartPositionsFromCache();
+            
+            // 为每个难度生成好友成绩数据
+            props.chart.music.charts.forEach(chartInfo => {
+                const chartFriends: any[] = [];
+                
+                users.forEach(user => {
+                    const uname = String(
+                        user.divingFish?.name || user.inGame?.name || user.inGame?.id || ""
+                    );
+                    if (!uname) return;
+                    
+                    const key = `${props.chart!.song_id}-${chartInfo.grade}`;
+                    const detail = user.data?.detailed?.[key];
+                    
+                    if (detail) {
+                        chartFriends.push({
+                            name: uname,
+                            achievements: detail.achievements,
+                            ra: detail.ra,
+                            rate: detail.rate,
+                            fc: detail.fc,
+                            fs: detail.fs,
+                            played: true,
+                        });
+                    } else {
+                        chartFriends.push({
+                            name: uname,
+                            achievements: undefined,
+                            ra: undefined,
+                            rate: undefined,
+                            fc: undefined,
+                            fs: undefined,
+                            played: false,
+                        });
+                    }
+                });
+                
+                // 排名：已游玩按成绩降序，未游玩排最后
+                chartFriends.sort((a, b) => {
+                    if (a.played && b.played) {
+                        return (b.achievements ?? 0) - (a.achievements ?? 0);
+                    } else if (a.played) {
+                        return -1;
+                    } else if (b.played) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+                
+                chartFriendsScoresMap.value.set(chartInfo.grade, chartFriends);
             });
         }
     );
@@ -248,6 +324,22 @@
         snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
     }
 
+    // 从缓存中加载项目位置
+    async function loadChartPositionsFromCache() {
+        if (!props.chart?.music?.charts) return;
+        
+        // 为每个难度加载项目位置
+        for (const chartInfo of props.chart.music.charts) {
+            try {
+                const position = await getChartPositionFromCache(chartInfo, chartInfo.level);
+                chartPositionMap.value.set(chartInfo.grade, position);
+            } catch (error) {
+                console.error(`Failed to get position for chart ${chartInfo.music.id}-${chartInfo.grade}:`, error);
+                chartPositionMap.value.set(chartInfo.grade, '-');
+            }
+        }
+    }
+
     const raTable = computed(() => {
         if (!props.chart) return [];
         const achievements =
@@ -263,6 +355,69 @@
         // 只显示第一个和最后两个
         return [raTable.value[0], ...raTable.value.slice(-2)];
     });
+
+    // 获取指定难度的 Rating 阶段表
+    function getChartRaTable(chartInfo: Chart) {
+        if (!props.chart) return [];
+        const achievements = getCurrentChartAchievements(chartInfo);
+        return getDetailedRatingsByDs(chartInfo.ds, achievements);
+    }
+
+    // 获取指定难度的显示 Rating 阶段表
+    function getDisplayedChartRaTable(chartInfo: Chart) {
+        const raTable = getChartRaTable(chartInfo);
+        if (raTable.length <= 3 || expandedCharts.value.has(chartInfo.grade)) {
+            return raTable;
+        }
+        // 只显示第一个和最后两个
+        return [raTable[0], ...raTable.slice(-2)];
+    }
+
+    // 切换难度展开状态
+    function toggleChartExpanded(grade: number) {
+        if (expandedCharts.value.has(grade)) {
+            expandedCharts.value.delete(grade);
+        } else {
+            expandedCharts.value.add(grade);
+        }
+    }
+
+    // 获取当前用户在指定难度的Ra值
+    function getCurrentChartRa(chartInfo: Chart): number | null {
+        if (!props.chart) return null;
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const currentUserScores = chartScores.find(f => f.name === selfName.value);
+        return currentUserScores?.ra ?? null;
+    }
+
+    // 获取当前用户在指定难度的达成率
+    function getCurrentChartAchievements(chartInfo: Chart): number {
+        if (!props.chart) return 0;
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const currentUserScores = chartScores.find(f => f.name === selfName.value);
+        return currentUserScores?.achievements ?? 0;
+    }
+
+    // 获取指定难度的好友成绩
+    function getChartFriendsScores(chartInfo: Chart) {
+        return chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+    }
+
+    // 获取当前用户在指定难度的成绩信息
+    function getCurrentChartScore(chartInfo: Chart) {
+        if (!props.chart) return null;
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const currentUserScores = chartScores.find(f => f.name === selfName.value);
+        return currentUserScores && currentUserScores.played ? currentUserScores : null;
+    }
+
+    // 获取当前谱面在对应难度的项目位置
+    function getCurrentChartPosition(chartInfo: Chart): string {
+        if (!props.chart) return "-";
+        
+        // 从缓存的Map中获取项目位置
+        return chartPositionMap.value.get(chartInfo.grade) || "-";
+    }
 </script>
 
 <style scoped>
@@ -347,5 +502,183 @@
     }
     .collapse-content {
         padding: 0 1rem 1rem 1rem;
+    }
+
+    /* 难度标识样式 */
+    .difficulty-badge {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: white;
+        margin-right: 12px;
+        min-width: 80px;
+        text-align: center;
+        display: inline-block;
+    }
+
+    .difficulty-0 {
+        background: linear-gradient(45deg, #4CAF50, #66BB6A);
+    }
+
+    .difficulty-1 {
+        background: linear-gradient(45deg, #FF9800, #FFB74D);
+    }
+
+    .difficulty-2 {
+        background: linear-gradient(45deg, #F44336, #EF5350);
+    }
+
+    .difficulty-3 {
+        background: linear-gradient(45deg, #9C27B0, #BA68C8);
+    }
+
+    .difficulty-4 {
+        background: linear-gradient(45deg, #FFFFFF, #F5F5F5);
+        color: #333;
+        border: 2px solid #9C27B0;
+    }
+
+    .level-info {
+        font-weight: 600;
+        margin-right: 12px;
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .notes-info {
+        font-size: 0.875rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        margin-left: auto;
+    }
+
+    /* 谱面基本信息样式 */
+    .chart-basic-info {
+        background: rgba(var(--mdui-color-surface-variant), 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: rgb(var(--mdui-color-on-surface));
+        min-width: 80px;
+    }
+
+    .info-value {
+        flex: 1;
+        text-align: right;
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .info-value.notes-breakdown {
+        text-align: right;
+    }
+
+    .note-type {
+        display: block;
+        font-size: 0.875rem;
+        margin-bottom: 2px;
+    }
+
+    .note-total {
+        display: block;
+        font-weight: 600;
+        color: rgb(var(--mdui-color-primary));
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
+    }
+
+    .collapse-header {
+        width: 100%;
+        gap: 0;
+    }
+
+    .friend-fs {
+        min-width: 2.5em;
+        text-align: left;
+    }
+
+    /* 折叠头部布局样式 */
+    .collapse-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .score-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+    }
+
+    .achievement {
+        font-weight: 600;
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .rating {
+        font-weight: 600;
+        color: rgb(var(--mdui-color-tertiary));
+        background: rgba(var(--mdui-color-tertiary), 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+    }
+
+    .combo-icons {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .mini-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .notes-info {
+        font-size: 0.75rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        opacity: 0.8;
+    }
+
+    .score-badges {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .rank-icon {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
     }
 </style>
