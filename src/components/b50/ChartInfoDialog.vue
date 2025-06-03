@@ -41,63 +41,76 @@
                 {{ chart.charter || "未知" }}
             </mdui-chip>
         </div>
-        <div
-            style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 0;
-            "
-        >
-            <h3 style="margin-bottom: 0">Rating 阶段</h3>
-            <mdui-button-icon
-                v-if="raTable.length > 3"
-                :icon="isRatingExpanded ? 'expand_less' : 'expand_more'"
-                @click="isRatingExpanded = !isRatingExpanded"
-            ></mdui-button-icon>
-        </div>
-        <mdui-list>
-            <mdui-list-item v-for="i of displayedRaTable" :key="i.achievements" nonclickable>
-                <div class="list-container">
-                    <div class="list-title">
-                        {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
-                        <span class="description">{{ i.achievements.toFixed(4) }}%</span>
-                    </div>
-                    <span v-if="typeof chart.ra === 'number' && i.rating > chart.ra">
-                        +{{ typeof chart.ra === "number" ? i.rating - chart.ra : i.rating }}
-                    </span>
-                    {{ i.rating }}
-                </div>
-            </mdui-list-item>
-        </mdui-list>
-
-        <div v-if="friendsScores.length > 1" class="friends-section">
-            <h3>好友排名</h3>
-            <mdui-list>
-                <mdui-list-item
-                    v-for="(f, idx) in friendsScores"
-                    :key="f.name"
-                    nonclickable
-                    :active="f.name === selfName"
-                    rounded
-                >
-                    <div class="friend-score-row">
-                        <span class="friend-rank">{{ getRanks(friendsScores)[idx] }}</span>
-                        <span class="friend-name">{{ f.name }}</span>
-                        <span class="friend-achievement">
-                            {{
-                                typeof f.achievements === "number"
-                                    ? `${f.achievements.toFixed(4)}%`
-                                    : ""
-                            }}
-                        </span>
-                        <span class="friend-fc" v-if="f.fc">
-                            <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
-                        </span>
+        
+        <mdui-collapse accordion value="current">
+            <mdui-collapse-item value="current">
+                <mdui-list-item slot="header">
+                    <div class="collapse-header">
+                        <span>当前难度</span>
                     </div>
                 </mdui-list-item>
-            </mdui-list>
-        </div>
+                
+                <div class="collapse-content">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 0;
+                        "
+                    >
+                        <h3 style="margin-bottom: 0">Rating 阶段</h3>
+                        <mdui-button-icon
+                            v-if="raTable.length > 3"
+                            :icon="isRatingExpanded ? 'expand_less' : 'expand_more'"
+                            @click="isRatingExpanded = !isRatingExpanded"
+                        ></mdui-button-icon>
+                    </div>
+                    <mdui-list>
+                        <mdui-list-item v-for="i of displayedRaTable" :key="i.achievements" nonclickable>
+                            <div class="list-container">
+                                <div class="list-title">
+                                    {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
+                                    <span class="description">{{ i.achievements.toFixed(4) }}%</span>
+                                </div>
+                                <span v-if="typeof chart.ra === 'number' && i.rating > chart.ra">
+                                    +{{ typeof chart.ra === "number" ? i.rating - chart.ra : i.rating }}
+                                </span>
+                                {{ i.rating }}
+                            </div>
+                        </mdui-list-item>
+                    </mdui-list>
+
+                    <div v-if="friendsScores.length > 1" class="friends-section">
+                        <h3>好友排名</h3>
+                        <mdui-list>
+                            <mdui-list-item
+                                v-for="(f, idx) in friendsScores"
+                                :key="f.name"
+                                nonclickable
+                                :active="f.name === selfName"
+                                rounded
+                            >
+                                <div class="friend-score-row">
+                                    <span class="friend-rank">{{ getRanks(friendsScores)[idx] }}</span>
+                                    <span class="friend-name">{{ f.name }}</span>
+                                    <span class="friend-achievement">
+                                        {{
+                                            typeof f.achievements === "number"
+                                                ? `${f.achievements.toFixed(4)}%`
+                                                : ""
+                                        }}
+                                    </span>
+                                    <span class="friend-fc" v-if="f.fc">
+                                        <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
+                                    </span>
+                                </div>
+                            </mdui-list-item>
+                        </mdui-list>
+                    </div>
+                </div>
+            </mdui-collapse-item>
+        </mdui-collapse>
 
         <h3 v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">别名</h3>
         <div
@@ -324,5 +337,14 @@
         width: 24px;
         height: 24px;
         margin-left: 0.5rem;
+    }
+    .collapse-header {
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+    .collapse-content {
+        padding: 0 1rem 1rem 1rem;
     }
 </style>
