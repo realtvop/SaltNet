@@ -33,13 +33,6 @@
             <mdui-chip icon="star" style="cursor: pointer">
                 {{ chart.music.type || "未知" }}
             </mdui-chip>
-            <mdui-chip
-                icon="edit"
-                @click="copyToClipboard(chart.charter || '未知')"
-                style="cursor: pointer"
-            >
-                {{ chart.charter || "未知" }}
-            </mdui-chip>
         </div>
         
         <mdui-collapse accordion :value="defaultExpandedValue">
