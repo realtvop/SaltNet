@@ -67,25 +67,6 @@ export function getChartPositionByDifficulty(
 }
 
 /**
- * 根据Rating值判断段位（保留原有的段位判断逻辑作为备用）
- * @param ra Rating值
- * @returns 段位名称
- */
-export function getRatingRank(ra: number): string {
-    if (ra >= 15000) return "Rainbow";
-    if (ra >= 14500) return "Platinum";
-    if (ra >= 14000) return "Gold";
-    if (ra >= 13000) return "Silver";
-    if (ra >= 12000) return "Bronze";
-    if (ra >= 10000) return "紫";
-    if (ra >= 7000) return "红";
-    if (ra >= 4000) return "黄";
-    if (ra >= 2000) return "绿";
-    if (ra >= 1000) return "蓝";
-    return "白";
-}
-
-/**
  * 为谱面列表添加项目位置信息
  * @param charts 谱面列表
  * @returns 带有项目位置信息的谱面列表
