@@ -88,10 +88,9 @@ export function getRatingRank(ra: number): string {
 /**
  * 为谱面列表添加项目位置信息
  * @param charts 谱面列表
- * @param difficulty 当前难度
  * @returns 带有项目位置信息的谱面列表
  */
-export function addPositionToCharts(charts: ChartExtended[], difficulty: string): ChartExtended[] {
+export function addPositionToCharts(charts: ChartExtended[]): ChartExtended[] {
     // 给所有符合难度条件的曲目添加原始排序索引
     const chartsWithOriginalIndex = charts.map((chart, index) => ({
         ...chart,

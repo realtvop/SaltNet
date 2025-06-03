@@ -170,12 +170,12 @@
 </template>
 
 <script setup lang="ts">
-    import type { ChartCardData, Chart, ChartExtended } from "@/types/music";
+    import type { ChartCardData, Chart } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
-    import { RANK_RATE_DISPLAY_NAMES, type RankRate } from "@/types/maiTypes";
-    import { defineProps, watch, nextTick, ref, computed } from "vue";
+    import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
+    import { defineProps, watch, nextTick, ref } from "vue";
     import localForage from "localforage";
-    import type { User, ChartsSortCached } from "../../types/user";
+    import type { User } from "../../types/user";
     import { snackbar } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";
 
@@ -205,9 +205,6 @@
     // 存储每个难度对应的项目位置（从缓存中获取）
     const chartPositionMap = ref<Map<number, string>>(new Map());
 
-    function getChartKey(chart: ChartCardData) {
-        return `${chart.song_id}-${typeof chart.level_index === "number" ? chart.level_index : (chart.grade ?? 0)}`;
-    }
 
     watch(
         () => props.open,
@@ -333,21 +330,6 @@
         }
     }
 
-    const raTable = computed(() => {
-        if (!props.chart) return [];
-        const achievements =
-            typeof props.chart.achievements === "number" ? props.chart.achievements : 0;
-        const ds = props.chart.ds;
-        return getDetailedRatingsByDs(ds, achievements);
-    });
-
-    const displayedRaTable = computed(() => {
-        if (raTable.value.length <= 3 || isRatingExpanded.value) {
-            return raTable.value;
-        }
-        // 只显示第一个和最后两个
-        return [raTable.value[0], ...raTable.value.slice(-2)];
-    });
 
     // 获取指定难度的 Rating 阶段表
     function getChartRaTable(chartInfo: Chart) {
