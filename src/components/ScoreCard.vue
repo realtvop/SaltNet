@@ -203,6 +203,12 @@
         line-height: 1;
         margin-bottom: 1.5px;
         flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+        display: block;
+        box-sizing: border-box;
     }
 
     .percentage-mark {
