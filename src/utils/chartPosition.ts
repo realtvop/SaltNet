@@ -1,7 +1,7 @@
-import type { Chart, ChartExtended } from '@/types/music';
-import type { User, ChartsSortCached } from '@/types/user';
-import MusicSort from '@/assets/MusicSort';
-import localForage from 'localforage';
+import type { Chart, ChartExtended } from "@/types/music";
+import type { User, ChartsSortCached } from "@/types/user";
+import MusicSort from "@/assets/MusicSort";
+import localForage from "localforage";
 
 /**
  * 计算谱面在特定难度下的项目位置
@@ -21,7 +21,7 @@ export function getChartPositionByDifficulty(
 
     // 按照songs.vue中的逻辑进行排序
     let sortedCharts = [...allCharts];
-    
+
     // 基础排序：按MusicSort索引和难度等级排序
     sortedCharts.sort(
         (a, b) =>
@@ -108,19 +108,16 @@ export function addPositionToCharts(charts: ChartExtended[]): ChartExtended[] {
  * @param difficulty 难度等级
  * @returns 项目位置字符串，格式为 "位置/总数"
  */
-export async function getChartPositionFromCache(
-    chart: Chart,
-    difficulty: string
-): Promise<string> {
+export async function getChartPositionFromCache(chart: Chart, difficulty: string): Promise<string> {
     try {
         // 从缓存中获取排序后的谱面数据
-        const cachedData = await localForage.getItem<ChartsSortCached>('chartsSortCached');
+        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
         if (!cachedData || !cachedData.charts) {
-            return '-';
+            return "-";
         }
 
         const allCharts = cachedData.charts;
-        
+
         // 根据难度筛选
         let filteredCharts: ChartExtended[];
         if (difficulty === "ALL") {
@@ -134,7 +131,7 @@ export async function getChartPositionFromCache(
             c => c.music.id === chart.music.id && c.grade === chart.grade
         );
 
-        if (chartIndex === -1) return '-';
+        if (chartIndex === -1) return "-";
 
         // 计算位置（从1开始计数，索引越小位置越靠后）
         const position = filteredCharts.length - chartIndex;
@@ -142,7 +139,7 @@ export async function getChartPositionFromCache(
 
         return `${position}/${total}`;
     } catch (error) {
-        console.error('Failed to get chart position from cache:', error);
-        return '-';
+        console.error("Failed to get chart position from cache:", error);
+        return "-";
     }
 }

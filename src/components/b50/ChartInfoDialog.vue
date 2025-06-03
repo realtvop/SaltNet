@@ -34,14 +34,22 @@
                 {{ chart.music.type || "未知" }}
             </mdui-chip>
         </div>
-        
+
         <mdui-collapse accordion :value="defaultExpandedValue">
-            <mdui-collapse-item v-for="chartInfo of chart.music?.charts" :key="chartInfo.grade" :value="chartInfo.grade.toString()">
+            <mdui-collapse-item
+                v-for="chartInfo of chart.music?.charts"
+                :key="chartInfo.grade"
+                :value="chartInfo.grade.toString()"
+            >
                 <mdui-list-item slot="header">
                     <div class="collapse-header">
                         <div class="header-left">
                             <span class="difficulty-badge" :class="`difficulty-${chartInfo.grade}`">
-                                {{ [ "BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER" ][chartInfo.grade] }}
+                                {{
+                                    ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][
+                                        chartInfo.grade
+                                    ]
+                                }}
                             </span>
                             <span class="level-info">
                                 {{ chartInfo.ds }}
@@ -49,24 +57,44 @@
                         </div>
                         <div class="header-right">
                             <div class="score-info" v-if="getCurrentChartScore(chartInfo)">
-                                <img v-if="getCurrentChartScore(chartInfo).rate" :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`" class="rank-icon" />
-                                <span class="achievement">{{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%</span>
-                                <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">{{ getCurrentChartScore(chartInfo).ra }}</span>
+                                <img
+                                    v-if="getCurrentChartScore(chartInfo).rate"
+                                    :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
+                                    class="rank-icon"
+                                />
+                                <span class="achievement">
+                                    {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
+                                </span>
+                                <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">
+                                    {{ getCurrentChartScore(chartInfo).ra }}
+                                </span>
                                 <span class="score-badges">
-                                    <img v-if="getCurrentChartScore(chartInfo).fc" :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`" class="mini-icon" />
-                                    <img v-if="getCurrentChartScore(chartInfo).fs" :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs}.png`" class="mini-icon" />
+                                    <img
+                                        v-if="getCurrentChartScore(chartInfo).fc"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
+                                        class="mini-icon"
+                                    />
+                                    <img
+                                        v-if="getCurrentChartScore(chartInfo).fs"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs}.png`"
+                                        class="mini-icon"
+                                    />
                                 </span>
                             </div>
                         </div>
                     </div>
                 </mdui-list-item>
-                
+
                 <div class="collapse-content">
                     <!-- 谱面基本信息 -->
                     <div class="chart-basic-info">
                         <div class="info-row">
                             <span class="info-label">谱师</span>
-                            <span class="info-value" @click="copyToClipboard(chartInfo.charter)" style="cursor: pointer">
+                            <span
+                                class="info-value"
+                                @click="copyToClipboard(chartInfo.charter)"
+                                style="cursor: pointer"
+                            >
                                 {{ chartInfo.charter }}
                             </span>
                         </div>
@@ -81,7 +109,9 @@
                                 <span class="note-type">HOLD: {{ chartInfo.notes[1] }}</span>
                                 <span class="note-type">SLIDE: {{ chartInfo.notes[2] }}</span>
                                 <span class="note-type">BREAK: {{ chartInfo.notes[3] }}</span>
-                                <span class="note-total">总计: {{ chartInfo.notes.reduce((a, b) => a + b, 0) }}</span>
+                                <span class="note-total">
+                                    总计: {{ chartInfo.notes.reduce((a, b) => a + b, 0) }}
+                                </span>
                             </span>
                         </div>
                     </div>
@@ -99,18 +129,31 @@
                         <h3 style="margin-bottom: 0">Rating 阶段</h3>
                         <mdui-button-icon
                             v-if="getChartRaTable(chartInfo).length > 3"
-                            :icon="expandedCharts.has(chartInfo.grade) ? 'expand_less' : 'expand_more'"
+                            :icon="
+                                expandedCharts.has(chartInfo.grade) ? 'expand_less' : 'expand_more'
+                            "
                             @click="toggleChartExpanded(chartInfo.grade)"
                         ></mdui-button-icon>
                     </div>
                     <mdui-list>
-                        <mdui-list-item v-for="i of getDisplayedChartRaTable(chartInfo)" :key="i.achievements" nonclickable>
+                        <mdui-list-item
+                            v-for="i of getDisplayedChartRaTable(chartInfo)"
+                            :key="i.achievements"
+                            nonclickable
+                        >
                             <div class="list-container">
                                 <div class="list-title">
                                     {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
-                                    <span class="description">{{ i.achievements.toFixed(4) }}%</span>
+                                    <span class="description">
+                                        {{ i.achievements.toFixed(4) }}%
+                                    </span>
                                 </div>
-                                <span v-if="getCurrentChartRa(chartInfo) !== null && i.rating > (getCurrentChartRa(chartInfo) || 0)">
+                                <span
+                                    v-if="
+                                        getCurrentChartRa(chartInfo) !== null &&
+                                        i.rating > (getCurrentChartRa(chartInfo) || 0)
+                                    "
+                                >
                                     +{{ i.rating - (getCurrentChartRa(chartInfo) || 0) }}
                                 </span>
                                 {{ i.rating }}
@@ -129,7 +172,9 @@
                                 rounded
                             >
                                 <div class="friend-score-row">
-                                    <span class="friend-rank">{{ getRanks(getChartFriendsScores(chartInfo))[idx] }}</span>
+                                    <span class="friend-rank">
+                                        {{ getRanks(getChartFriendsScores(chartInfo))[idx] }}
+                                    </span>
                                     <span class="friend-name">{{ f.name }}</span>
                                     <span class="friend-achievement">
                                         {{
@@ -199,12 +244,11 @@
     const isRatingExpanded = ref(false);
     const expandedCharts = ref<Set<number>>(new Set());
     const defaultExpandedValue = ref("0");
-    
+
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
     // 存储每个难度对应的项目位置（从缓存中获取）
     const chartPositionMap = ref<Map<number, string>>(new Map());
-
 
     watch(
         () => props.open,
@@ -219,12 +263,12 @@
             isRatingExpanded.value = false;
             expandedCharts.value.clear();
             chartFriendsScoresMap.value.clear();
-            
+
             if (!props.chart?.music?.charts) return;
-            
+
             // 设置默认展开对应难度
             defaultExpandedValue.value = props.chart.grade?.toString() || "0";
-            
+
             const users: User[] = (await localForage.getItem("users")) || [];
             // selfName为用户列表第一个用户
             if (users.length > 0) {
@@ -232,23 +276,23 @@
                     users[0].divingFish?.name || users[0].inGame?.name || users[0].inGame?.id || ""
                 );
             }
-            
+
             // 从缓存中加载项目位置
             await loadChartPositionsFromCache();
-            
+
             // 为每个难度生成好友成绩数据
             props.chart.music.charts.forEach(chartInfo => {
                 const chartFriends: any[] = [];
-                
+
                 users.forEach(user => {
                     const uname = String(
                         user.divingFish?.name || user.inGame?.name || user.inGame?.id || ""
                     );
                     if (!uname) return;
-                    
+
                     const key = `${props.chart!.song_id}-${chartInfo.grade}`;
                     const detail = user.data?.detailed?.[key];
-                    
+
                     if (detail) {
                         chartFriends.push({
                             name: uname,
@@ -271,7 +315,7 @@
                         });
                     }
                 });
-                
+
                 // 排名：已游玩按成绩降序，未游玩排最后
                 chartFriends.sort((a, b) => {
                     if (a.played && b.played) {
@@ -284,7 +328,7 @@
                         return 0;
                     }
                 });
-                
+
                 chartFriendsScoresMap.value.set(chartInfo.grade, chartFriends);
             });
         }
@@ -317,19 +361,21 @@
     // 从缓存中加载项目位置
     async function loadChartPositionsFromCache() {
         if (!props.chart?.music?.charts) return;
-        
+
         // 为每个难度加载项目位置
         for (const chartInfo of props.chart.music.charts) {
             try {
                 const position = await getChartPositionFromCache(chartInfo, chartInfo.level);
                 chartPositionMap.value.set(chartInfo.grade, position);
             } catch (error) {
-                console.error(`Failed to get position for chart ${chartInfo.music.id}-${chartInfo.grade}:`, error);
-                chartPositionMap.value.set(chartInfo.grade, '-');
+                console.error(
+                    `Failed to get position for chart ${chartInfo.music.id}-${chartInfo.grade}:`,
+                    error
+                );
+                chartPositionMap.value.set(chartInfo.grade, "-");
             }
         }
     }
-
 
     // 获取指定难度的 Rating 阶段表
     function getChartRaTable(chartInfo: Chart) {
@@ -389,7 +435,7 @@
     // 获取当前谱面在对应难度的项目位置
     function getCurrentChartPosition(chartInfo: Chart): string {
         if (!props.chart) return "-";
-        
+
         // 从缓存的Map中获取项目位置
         return chartPositionMap.value.get(chartInfo.grade) || "-";
     }
@@ -493,25 +539,25 @@
     }
 
     .difficulty-0 {
-        background: linear-gradient(45deg, #4CAF50, #66BB6A);
+        background: linear-gradient(45deg, #4caf50, #66bb6a);
     }
 
     .difficulty-1 {
-        background: linear-gradient(45deg, #FF9800, #FFB74D);
+        background: linear-gradient(45deg, #ff9800, #ffb74d);
     }
 
     .difficulty-2 {
-        background: linear-gradient(45deg, #F44336, #EF5350);
+        background: linear-gradient(45deg, #f44336, #ef5350);
     }
 
     .difficulty-3 {
-        background: linear-gradient(45deg, #9C27B0, #BA68C8);
+        background: linear-gradient(45deg, #9c27b0, #ba68c8);
     }
 
     .difficulty-4 {
-        background: linear-gradient(45deg, #FFFFFF, #F5F5F5);
+        background: linear-gradient(45deg, #ffffff, #f5f5f5);
         color: #333;
-        border: 2px solid #9C27B0;
+        border: 2px solid #9c27b0;
     }
 
     .level-info {

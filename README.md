@@ -32,6 +32,7 @@ International & Japanese ver. will be supported later.
         - [ ] 网页存档 (intl. ver?)
 
 ### 🫓
+
 - [x] 全曲目 [Working On]
     - [x] ChartInfoDialog
         - [x] 显示所有难度
