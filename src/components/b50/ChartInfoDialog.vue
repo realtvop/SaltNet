@@ -42,11 +42,11 @@
             </mdui-chip>
         </div>
         
-        <mdui-collapse accordion value="current">
-            <mdui-collapse-item value="current">
+        <mdui-collapse accordion :value="'3'">
+            <mdui-collapse-item v-for="chart of chart.music?.charts" :value="chart.grade.toString()">
                 <mdui-list-item slot="header">
                     <div class="collapse-header">
-                        <span>当前难度</span>
+                        <span>{{ [ "BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER" ][chart.grade] }}</span>
                     </div>
                 </mdui-list-item>
                 
@@ -168,6 +168,7 @@
             if (dialogRef.value) {
                 dialogRef.value.open = true;
             }
+            console.log(props.chart); // REMEMBER TO REMOVE AFTER DEVELOPING
             friendsScores.value = [];
             selfName.value = "";
             isRatingExpanded.value = false;
