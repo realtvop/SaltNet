@@ -17,7 +17,7 @@ import type { DivingFishFullRecord } from "@/divingfish/type";
     const stats = computed(() => {
         if (!props.scores || props.scores.length === 0) return null;
 
-        const ratings = props.scores.map((item: any) => item.score?.deluxeRating ?? 0);
+        const ratings = props.scores.map((item: any) => item.ra ?? 0);
         ratings.sort((a: number, b: number) => a - b);
 
         const avg = ratings.reduce((sum: number, score: number) => sum + score, 0) / ratings.length;
