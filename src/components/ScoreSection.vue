@@ -28,7 +28,7 @@
         const range = ratings[ratings.length - 1] - ratings[0];
 
         // Calculate difficulty constant range
-        const constants = props.scores.map((item: any) => item.info.ds);
+        const constants = props.scores.map((item: any) => item.ds);
         constants.sort((a: number, b: number) => a - b);
         const minConstant = constants[0];
         const maxConstant = constants[constants.length - 1];

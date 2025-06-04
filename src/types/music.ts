@@ -34,7 +34,7 @@ export interface ChartInfo {
     charter: string;
     level: string;
     grade: number;
-    ds: number;
+    constant: number;
     deluxeScoreMax: number;
 }
 export interface ChartScore {
@@ -70,9 +70,4 @@ export interface UserChartScore {
     fc: string | null;
     fs: string | null;
     rate: string | null;
-}
-
-// 扩展谱面类型，包含用户成绩
-export interface ChartExtended extends Chart {
-    userScore: UserChartScore | null;
 }

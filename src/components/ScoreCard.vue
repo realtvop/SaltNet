@@ -1,9 +1,11 @@
 <script setup lang="ts">
     import { defineProps, defineEmits } from "vue";
-    import type { Chart, ChartExtended } from "@/types/music";
+    import type { Chart } from "@/types/music";
+    import type { DivingFishFullRecord } from "@/divingfish/type";
+    import { getChartInfo } from "@/utils/checkChartDataType";
 
     const props = defineProps<{
-        data: Chart | ChartExtended;
+        data: Chart | DivingFishFullRecord;
     }>();
 
     const emit = defineEmits(["click"]);
@@ -16,7 +18,7 @@
                 <div
                     class="song-jacket-image"
                     :style="{
-                        'background-image': `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - props.data.music.id.toString().length)}${props.data.music.id}.png')`,
+                        'background-image': `url('https://www.diving-fish.com/covers/${getChartInfo.musicIdString(props.data)}.png')`,
                     }"
                 ></div>
             </div>
@@ -25,33 +27,33 @@
                     <div class="header-pill">
                         <div
                             class="pill-section charttype"
-                            :type="props.data.music.info.type"
+                            :type="getChartInfo.type(props.data)"
                         >
                             <span>
-                                {{ props.data.music.info.type }}
+                                {{ getChartInfo.type(props.data) }}
                             </span>
                         </div>
                         <div
                             class="pill-section level"
                             :style="{
-                                background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][props.data.info.grade]}`,
+                                background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][getChartInfo.grade(props.data)]}`,
                             }"
                         >
-                            {{ props.data.info.ds.toFixed(1) }}
+                            {{ getChartInfo.constant(props.data).toFixed(1) }}
                         </div>
-                        <div class="pill-section points">{{ props.data.score?.deluxeRating ?? "" }}</div>
+                        <div class="pill-section points">{{ getChartInfo.deluxeRating(props.data) ?? "" }}</div>
                     </div>
                 </div>
-                <div class="song-name">{{ props.data.music.info.title }}</div>
+                <div class="song-name">{{ getChartInfo.title(props.data) }}</div>
                 <div class="achievement">
                     {{
-                        typeof props.data.score?.achievements === "number"
-                            ? props.data.score.achievements.toFixed(4)
+                        typeof getChartInfo.achievements(props.data) === "number"
+                            ? (getChartInfo.achievements(props.data) as number).toFixed(4)
                             : "-"
                     }}
                     <span
                         class="percentage-mark"
-                        v-if="typeof props.data.score?.achievements === 'number'"
+                        v-if="typeof getChartInfo.achievements(props.data) === 'number'"
                     >
                         %
                     </span>
@@ -60,22 +62,22 @@
                     <div class="rank-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/${props.data.score?.rankRate ? props.data.score.rankRate.replace('p', 'plus') : ''}.png`"
-                            v-if="props.data.score?.rankRate"
+                            :src="`/icons/${getChartInfo.rankRate(props.data) ? getChartInfo.rankRate(props.data).replace('p', 'plus') : ''}.png`"
+                            v-if="getChartInfo.rankRate(props.data)"
                         />
                     </div>
                     <div class="fc-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/music_icon_${props.data.score?.comboStatus ?? ''}.png`"
-                            v-if="props.data.score?.comboStatus"
+                            :src="`/icons/music_icon_${getChartInfo.comboStatus(props.data) ?? ''}.png`"
+                            v-if="getChartInfo.comboStatus(props.data)"
                         />
                     </div>
                     <div class="sync-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/music_icon_${props.data.score?.syncStatus ? props.data.score.syncStatus.replace('sd', 'dx') : ''}.png`"
-                            v-if="props.data.score?.syncStatus"
+                            :src="`/icons/music_icon_${getChartInfo.syncStatus(props.data) ? getChartInfo.syncStatus(props.data).replace('sd', 'dx') : ''}.png`"
+                            v-if="getChartInfo.syncStatus(props.data)"
                         />
                     </div>
                 </div>

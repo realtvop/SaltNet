@@ -58,15 +58,11 @@
 
     const b50SdCharts = computed(() => {
         if (!player.value?.data?.b50?.sd) return [];
-        return player.value.data.b50.sd
-            .map((record: any) => musicChartMap.value.get(`${record.song_id}-${record.level_index}`))
-            .filter((x): x is Chart => !!x);
+        return player.value.data.b50.sd;
     });
     const b50DxCharts = computed(() => {
         if (!player.value?.data?.b50?.dx) return [];
-        return player.value.data.b50.dx
-            .map((record: any) => musicChartMap.value.get(`${record.song_id}-${record.level_index}`))
-            .filter((x): x is Chart => !!x);
+        return player.value.data.b50.dx;
     });
 
     const chartInfoDialog = ref({

@@ -52,7 +52,7 @@
                                 }}
                             </span>
                             <span class="level-info">
-                                {{ chartInfo.info.ds }}
+                                {{ chartInfo.info.constant }}
                             </span>
                         </div>
                         <div class="header-right">
@@ -381,7 +381,7 @@
     function getChartRaTable(chartInfo: Chart) {
         if (!props.chart) return [];
         const achievements = getCurrentChartAchievements(chartInfo);
-        return getDetailedRatingsByDs(chartInfo.info.ds, achievements);
+        return getDetailedRatingsByDs(chartInfo.info.constant, achievements);
     }
 
     // 获取指定难度的显示 Rating 阶段表
