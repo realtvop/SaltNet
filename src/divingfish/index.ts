@@ -35,20 +35,6 @@ export async function fetchPlayerData(username: string): Promise<DivingFishRespo
     }
 }
 
-export async function fetchMusicData(): Promise<SavedMusicList | null> {
-    try {
-        const response = await fetch(`/data/charts.json`);
-        if (!response.ok) {
-            throw new Error(`Request failed with status code ${response.status}`);
-        }
-        const data = await response.json();
-        return convertDFMusicList(data);
-    } catch (error) {
-        console.error("Error fetching song data:", error);
-        throw error;
-    }
-}
-
 export function convertDFMusicList(data: MusicDataResponse) {
     const musicList: Record<number, Music> = {};
     const chartList: Record<number, Chart> = {};
