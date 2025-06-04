@@ -29,11 +29,6 @@ export interface Chart {
     music: Music;
 }
 
-// 兼容旧代码的扩展类型
-export interface ChartExtended extends Chart {
-    index?: string;
-}
-
 interface ChartInfo {
     notes: [number, number, number, number];
     charter: string;

@@ -6,7 +6,7 @@
     import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
     import type { User } from "@/types/user";
     import localForage from "localforage";
-    import type { ChartExtended } from "@/types/music";
+    import type { Chart } from "@/types/music";
     import { musicInfo } from "@/assets/music";
 
     const route = useRoute();
@@ -14,13 +14,13 @@
     const error = ref<string | null>(null);
     const pending = ref(false);
     const playerData = ref<User | null>(null);
-    const musicChartMap = ref<Map<string, ChartExtended>>(new Map());
+    const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
     function buildMusicChartMap() {
         if (!musicInfo) return;
         const map = new Map();
-        for (const chart of Object.values(musicInfo.chartList) as ChartExtended[]) {
+        for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
             // key: `${song_id}-${level_index}`
             map.set(`${chart.music.id}-${chart.info.grade}`, chart);
         }
@@ -60,13 +60,13 @@
         if (!player.value?.data?.b50?.sd) return [];
         return player.value.data.b50.sd
             .map((record: any) => musicChartMap.value.get(`${record.song_id}-${record.level_index}`))
-            .filter((x): x is ChartExtended => !!x);
+            .filter((x): x is Chart => !!x);
     });
     const b50DxCharts = computed(() => {
         if (!player.value?.data?.b50?.dx) return [];
         return player.value.data.b50.dx
             .map((record: any) => musicChartMap.value.get(`${record.song_id}-${record.level_index}`))
-            .filter((x): x is ChartExtended => !!x);
+            .filter((x): x is Chart => !!x);
     });
 
     const chartInfoDialog = ref({
