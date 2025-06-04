@@ -22,6 +22,13 @@
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
                 icon="music_note"
+                @click="copyToClipboard(chart.music.info.id.toString() || '?')"
+                style="cursor: pointer"
+            >
+                id{{ chart.music.info.id || "?" }}
+            </mdui-chip>
+            <mdui-chip
+                icon="music_note"
                 @click="copyToClipboard(chart.music.info.artist || '未知')"
                 style="cursor: pointer"
             >
