@@ -2,7 +2,7 @@
     import { ref, onMounted, computed } from "vue";
     import type { User, ChartsSortCached } from "@/types/user";
     import localForage from "localforage";
-    import type { Chart, ChartExtended } from "@/types/music";
+    import type { Chart } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
     import ScoreCard from "@/components/ScoreCard.vue";
     import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
@@ -17,7 +17,7 @@
     }
 
     const users = ref<User[]>([]);
-    const allCharts = ref<ChartExtended[]>([]);
+    const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
         "ALL",
@@ -65,24 +65,49 @@
             verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
         };
 
-        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
-        if (
-            cachedData &&
-            cachedData.identifier.name === currentIdentifier.name &&
-            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
-        ) {
-            allCharts.value = cachedData.charts;
-            return;
-        }
+        // const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        // if (
+        //     cachedData &&
+        //     cachedData.identifier.name === currentIdentifier.name &&
+        //     cachedData.identifier.updateTime === currentIdentifier.updateTime &&
+        //     cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+        // ) {
+        //     allCharts.value = cachedData.charts;
+        //     return;
+        // }
 
         const musicInfo = await getMusicInfoAsync();
         if (!musicInfo) return;
 
-        const charts: ChartExtended[] = [];
+        const charts: Chart[] = [];
         for (const i in musicInfo.chartList) {
-            const chart = musicInfo.chartList[i] as Chart;
-            charts.push(chart);
+            const chart: Chart = musicInfo.chartList[i];
+            // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
+            let chartScore: Chart["score"] = undefined;
+            if (currentUser?.data?.detailed) {
+                const d = currentUser.data.detailed[`${chart.music.id}-${chart.info.grade}`];
+                if (
+                    d &&
+                    typeof d.achievements === "number" &&
+                    d.fc !== undefined &&
+                    d.fs !== undefined &&
+                    d.rate !== undefined
+                ) {
+                    chartScore = {
+                        achievements: d.achievements,
+                        comboStatus: d.fc,
+                        syncStatus: d.fs,
+                        rankRate: d.rate,
+                        // TODO
+                        deluxeScore: 0,
+                        deluxeRating: 0,
+                    };
+                }
+            }
+            charts.push({
+                ...chart,
+                score: chartScore,
+            });
         }
 
         charts.sort(
@@ -116,7 +141,7 @@
     const chartListFiltered = computed(() => {
         if (!allCharts.value.length) return null;
 
-        let filteredCharts: ChartExtended[];
+        let filteredCharts: Chart[];
 
         if (selectedDifficulty.value === "ALL") {
             filteredCharts = allCharts.value.filter(chart => chart.info.grade === 3);
@@ -126,20 +151,26 @@
             );
         }
 
+
         // 先给所有符合难度条件的曲目添加原始排序索引
-        const chartsWithOriginalIndex = filteredCharts.map((chart, index) => ({
-            ...chart,
-            originalIndex: filteredCharts.length - index,
-            totalInDifficulty: filteredCharts.length,
-        }));
+        const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
+            if (!chart.score) {
+                chart.score = {};
+            }
+            chart.score!.index = {
+                difficult: {
+                    index: filteredCharts.length - index,
+                    total: filteredCharts.length,
+                },
+            };
+            return chart;
+        });
 
         let finalFilteredCharts = chartsWithOriginalIndex;
 
         if (query.value) {
             finalFilteredCharts = chartsWithOriginalIndex.filter((chart: any) => {
-                const chartData = playerData.value?.data.detailed
-                    ? playerData.value?.data.detailed[`${chart.music.id}-${chart.info.grade}`]
-                    : null;
+                const chartData = chart.score;
                 return (
                     // 曲名 曲师 谱师 别名
                     chart.music.info.title.toLowerCase().includes(query.value.toLowerCase()) ||
@@ -152,18 +183,21 @@
                             .includes(query.value.toLowerCase())) ||
                     (chartData &&
                         // 达成率 fc sync
-                        (chartData.achievements.toString().includes(query.value) ||
-                            chartData.fc.toString().includes(query.value) ||
-                            chartData.fs.toString().includes(query.value)))
+                        (chartData.achievements?.toString().includes(query.value) ||
+                            chartData.comboStatus?.toString().includes(query.value) ||
+                            chartData.syncStatus?.toString().includes(query.value)))
                 );
             });
         }
 
         // 使用原始排序索引而不是重新计算
-        const chartsWithIndex = finalFilteredCharts.map(chart => ({
-            ...chart,
-            index: `${chart.originalIndex}/${chart.totalInDifficulty}`,
-        }));
+        const chartsWithIndex = finalFilteredCharts.map((chart, index) => {
+            chart.score!.index!.queried = {
+                index: filteredCharts.length - index,
+                total: filteredCharts.length,
+            };
+            return chart;
+        });
 
         return { [selectedDifficulty.value]: chartsWithIndex };
     });
@@ -181,25 +215,6 @@
         await loadChartsWithCache();
         await loadPlayerData();
     });
-
-    function genScoreCardData(chart: ChartExtended): any {
-        const chartData = playerData.value?.data.detailed
-            ? playerData.value?.data.detailed[`${chart.music.id}-${chart.info.grade}`]
-            : null;
-        return {
-            ...chart,
-            song_id: chart.music.id,
-            achievements:
-                chartData && typeof chartData.achievements === "number"
-                    ? chartData.achievements
-                    : null,
-            ra: chart.index ?? "",
-            rate: chartData && chartData.rate ? chartData.rate : "",
-            fc: chartData && chartData.fc ? chartData.fc : "",
-            fs: chartData && chartData.fs ? chartData.fs : "",
-            title: chart.music.info.title,
-        };
-    }
 
     function openChartInfoDialog(chart: any) {
         chartInfoDialog.value.chart = chart;
@@ -234,8 +249,8 @@
                     class="score-cell"
                 >
                     <ScoreCard
-                        :data="genScoreCardData(chart)"
-                        @click="openChartInfoDialog(genScoreCardData(chart))"
+                        :data="chart"
+                        @click="openChartInfoDialog(chart)"
                     />
                 </div>
             </div>

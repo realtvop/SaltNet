@@ -47,6 +47,34 @@ interface ChartScore {
     deluxeScore: number;
 
     deluxeRating: number;  // 单曲rating
+
+    index?: {
+        all: ChartIndex;
+        difficult: ChartIndex;
+        queried?: ChartIndex;
+    },
+}
+interface ChartIndex {
+    index: number;  // 索引
+    total: number;  // 总数
+}
+
+export interface SavedMusicList {
+    musicList: Record<number, Music>;
+    chartList: Record<number, Chart>;
+}
+
+// 用户成绩类型
+export interface UserChartScore {
+    achievements: number | null;
+    fc: string | null;
+    fs: string | null;
+    rate: string | null;
+}
+
+// 扩展谱面类型，包含用户成绩
+export interface ChartExtended extends Chart {
+    userScore: UserChartScore | null;
 }
 
 // 结构转换器：将旧数据转换为新版结构
