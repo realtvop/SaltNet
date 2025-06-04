@@ -1,4 +1,11 @@
-import type { MusicOrigin, ChartType, MusicGenre, ComboStatus, SyncStatus, RankRate } from "./maiTypes";
+import type {
+    MusicOrigin,
+    ChartType,
+    MusicGenre,
+    ComboStatus,
+    SyncStatus,
+    RankRate,
+} from "./maiTypes";
 
 export interface Music {
     id: number;
@@ -39,24 +46,24 @@ export interface ChartInfo {
 }
 export interface ChartScore {
     rankRate: RankRate;
-    achievements: number;  // 已小数化
+    achievements: number; // 已小数化
 
     comboStatus: ComboStatus;
     syncStatus: SyncStatus;
 
     deluxeScore: number;
 
-    deluxeRating: number;  // 单曲rating
+    deluxeRating: number; // 单曲rating
 
     index?: {
         all: ChartIndex;
         difficult: ChartIndex;
         queried?: ChartIndex;
-    },
+    };
 }
 export interface ChartIndex {
-    index: number;  // 索引
-    total: number;  // 总数
+    index: number; // 索引
+    total: number; // 总数
 }
 
 export interface SavedMusicList {

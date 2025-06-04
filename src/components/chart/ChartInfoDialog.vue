@@ -44,7 +44,10 @@
                 <mdui-list-item slot="header">
                     <div class="collapse-header">
                         <div class="header-left">
-                            <span class="difficulty-badge" :class="`difficulty-${chartInfo.info.grade}`">
+                            <span
+                                class="difficulty-badge"
+                                :class="`difficulty-${chartInfo.info.grade}`"
+                            >
                                 {{
                                     ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][
                                         chartInfo.info.grade
@@ -130,7 +133,9 @@
                         <mdui-button-icon
                             v-if="getChartRaTable(chartInfo).length > 3"
                             :icon="
-                                expandedCharts.has(chartInfo.info.grade) ? 'expand_less' : 'expand_more'
+                                expandedCharts.has(chartInfo.info.grade)
+                                    ? 'expand_less'
+                                    : 'expand_more'
                             "
                             @click="toggleChartExpanded(chartInfo.info.grade)"
                         ></mdui-button-icon>
@@ -197,7 +202,9 @@
             </mdui-collapse-item>
         </mdui-collapse>
 
-        <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">别名</h3>
+        <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
+            别名
+        </h3>
         <div
             class="chip-container"
             v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length"

@@ -151,18 +151,39 @@
             );
         }
 
-
         // 先给所有符合难度条件的曲目添加原始排序索引
         const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
             if (!chart.score) {
-                chart.score = {};
+                chart.score = {
+                    rankRate: "" as any,
+                    achievements: 0,
+                    comboStatus: "" as any,
+                    syncStatus: "" as any,
+                    deluxeScore: 0,
+                    deluxeRating: 0,
+                    index: {
+                        all: {
+                            index: filteredCharts.length - index,
+                            total: filteredCharts.length,
+                        },
+                        difficult: {
+                            index: filteredCharts.length - index,
+                            total: filteredCharts.length,
+                        },
+                    },
+                };
+            } else {
+                chart.score.index = {
+                    all: {
+                        index: filteredCharts.length - index,
+                        total: filteredCharts.length,
+                    },
+                    difficult: {
+                        index: filteredCharts.length - index,
+                        total: filteredCharts.length,
+                    },
+                };
             }
-            chart.score!.index = {
-                difficult: {
-                    index: filteredCharts.length - index,
-                    total: filteredCharts.length,
-                },
-            };
             return chart;
         });
 
@@ -248,10 +269,7 @@
                     :key="`score-cell-${index}`"
                     class="score-cell"
                 >
-                    <ScoreCard
-                        :data="chart"
-                        @click="openChartInfoDialog(chart)"
-                    />
+                    <ScoreCard :data="chart" @click="openChartInfoDialog(chart)" />
                 </div>
             </div>
         </div>

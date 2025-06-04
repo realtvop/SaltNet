@@ -25,10 +25,7 @@
             <div class="result-details-section">
                 <div class="result-header">
                     <div class="header-pill">
-                        <div
-                            class="pill-section charttype"
-                            :type="getChartInfo.type(props.data)"
-                        >
+                        <div class="pill-section charttype" :type="getChartInfo.type(props.data)">
                             <span>
                                 {{ getChartInfo.type(props.data) }}
                             </span>
@@ -41,7 +38,9 @@
                         >
                             {{ getChartInfo.constant(props.data).toFixed(1) }}
                         </div>
-                        <div class="pill-section points">{{ getChartInfo.deluxeRating(props.data) ?? "" }}</div>
+                        <div class="pill-section points">
+                            {{ getChartInfo.deluxeRating(props.data) ?? "" }}
+                        </div>
                     </div>
                 </div>
                 <div class="song-name">{{ getChartInfo.title(props.data) }}</div>

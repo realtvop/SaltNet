@@ -1,12 +1,12 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
-import type { DivingFishFullRecord } from "@/divingfish/type";
+    import type { DivingFishFullRecord } from "@/divingfish/type";
 
     // Define props for the component
     const props = defineProps<{
         title: string;
-        scores: (DivingFishFullRecord)[];
+        scores: DivingFishFullRecord[];
         chartInfoDialog: {
             open: boolean;
             chart: DivingFishFullRecord | null;

@@ -11,10 +11,11 @@ export function checkChartDataType(chart: Chart | DivingFishFullRecord) {
 export const getChartInfo = {
     // 信息
     musicIdString: (chart: Chart | DivingFishFullRecord) => {
-        const id = checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).music.info.id
-            : (chart as DivingFishFullRecord).song_id;
-        return `${'0'.repeat(5 - id.toString().length)}${id}`;
+        const id =
+            checkChartDataType(chart) === ChartDataType.Chart
+                ? (chart as Chart).music.info.id
+                : (chart as DivingFishFullRecord).song_id;
+        return `${"0".repeat(5 - id.toString().length)}${id}`;
     },
     title: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
@@ -35,22 +36,22 @@ export const getChartInfo = {
     // 成绩
     deluxeRating: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).score?.deluxeRating ?? null
+            ? ((chart as Chart).score?.deluxeRating ?? null)
             : (chart as DivingFishFullRecord).ra,
     achievements: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).score?.achievements ?? null
+            ? ((chart as Chart).score?.achievements ?? null)
             : (chart as DivingFishFullRecord).achievements,
     rankRate: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).score?.rankRate ?? null
+            ? ((chart as Chart).score?.rankRate ?? null)
             : (chart as DivingFishFullRecord).rate,
     comboStatus: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).score?.comboStatus ?? null
+            ? ((chart as Chart).score?.comboStatus ?? null)
             : (chart as DivingFishFullRecord).fc,
     syncStatus: (chart: Chart | DivingFishFullRecord) =>
         checkChartDataType(chart) === ChartDataType.Chart
-            ? (chart as Chart).score?.syncStatus ?? null
+            ? ((chart as Chart).score?.syncStatus ?? null)
             : (chart as DivingFishFullRecord).fs,
 };
