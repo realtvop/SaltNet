@@ -44,7 +44,7 @@
 
         <mdui-collapse accordion :value="defaultExpandedValue">
             <mdui-collapse-item
-                v-for="chartInfo of (singleLevel ? [chart] : chart.music?.charts)"
+                v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="chartInfo.info.grade"
                 :value="chartInfo.info.grade.toString()"
             >

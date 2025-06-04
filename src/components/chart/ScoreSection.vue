@@ -2,8 +2,8 @@
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
     import type { DivingFishFullRecord } from "@/divingfish/type";
-import type { Chart } from "@/types/music";
-import { musicInfo } from "@/assets/music";
+    import type { Chart } from "@/types/music";
+    import { musicInfo } from "@/assets/music";
 
     // Define props for the component
     const props = defineProps<{
