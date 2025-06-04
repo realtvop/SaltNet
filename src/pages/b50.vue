@@ -1,12 +1,12 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from "vue";
     import { useRoute } from "vue-router";
-    import ScoreSection from "@/components/ScoreSection.vue";
-    import RatingPlate from "@/components/RatingPlate.vue";
-    import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
+    import ScoreSection from "@/components/chart/ScoreSection.vue";
+    import RatingPlate from "@/components/user/RatingPlate.vue";
+    import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import type { User } from "@/types/user";
     import localForage from "localforage";
-    import type { ChartExtended, ChartCardData } from "@/types/music";
+    import type { Chart } from "@/types/music";
     import { musicInfo } from "@/assets/music";
 
     const route = useRoute();
@@ -14,15 +14,15 @@
     const error = ref<string | null>(null);
     const pending = ref(false);
     const playerData = ref<User | null>(null);
-    const musicChartMap = ref<Map<string, ChartExtended>>(new Map());
+    const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
     function buildMusicChartMap() {
         if (!musicInfo) return;
         const map = new Map();
-        for (const chart of Object.values(musicInfo.chartList) as ChartExtended[]) {
+        for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
             // key: `${song_id}-${level_index}`
-            map.set(`${chart.music.id}-${chart.grade}`, chart);
+            map.set(`${chart.music.id}-${chart.info.grade}`, chart);
         }
         musicChartMap.value = map;
     }
@@ -56,74 +56,16 @@
         return msg;
     });
 
-    function genScoreCardDataFromB50(record: any): ChartCardData {
-        if (!musicInfo) {
-            // 仅用b50原始数据构造卡片，music等字段缺失时用undefined或空字符串
-            return {
-                song_id: record.song_id,
-                title: record.title || "",
-                ds: record.ds ?? 0,
-                grade: record.level_index ?? 0,
-                level_index: record.level_index ?? 0,
-                type: record.type || "",
-                achievements:
-                    typeof record.achievements === "number" ? record.achievements : undefined,
-                ra: typeof record.ra === "number" ? record.ra : undefined,
-                rate: record.rate || "",
-                fc: record.fc || "",
-                fs: record.fs || "",
-                charter: record.charter || "",
-                music: undefined,
-            };
-        }
-        const chart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
-        if (!chart) {
-            // musicInfo已加载但找不到谱面，兜底同上
-            return {
-                song_id: record.song_id,
-                title: record.title || "",
-                ds: record.ds ?? 0,
-                grade: record.level_index ?? 0,
-                level_index: record.level_index ?? 0,
-                type: record.type || "",
-                achievements:
-                    typeof record.achievements === "number" ? record.achievements : undefined,
-                ra: typeof record.ra === "number" ? record.ra : undefined,
-                rate: record.rate || "",
-                fc: record.fc || "",
-                fs: record.fs || "",
-                charter: record.charter || "",
-                music: undefined,
-            };
-        }
-        return {
-            ...chart,
-            song_id: chart.music.id,
-            title: chart.music.title,
-            ds: chart.ds,
-            grade: chart.grade,
-            level_index: chart.grade,
-            type: chart.music.type,
-            achievements: typeof record.achievements === "number" ? record.achievements : undefined,
-            ra: typeof record.ra === "number" ? record.ra : undefined,
-            rate: record.rate || "",
-            fc: record.fc || "",
-            fs: record.fs || "",
-            charter: chart.charter,
-            music: chart.music,
-        };
-    }
-
     const b50SdCharts = computed(() => {
         if (!player.value?.data?.b50?.sd) return [];
-        return player.value.data.b50.sd.map(genScoreCardDataFromB50);
+        return player.value.data.b50.sd;
     });
     const b50DxCharts = computed(() => {
         if (!player.value?.data?.b50?.dx) return [];
-        return player.value.data.b50.dx.map(genScoreCardDataFromB50);
+        return player.value.data.b50.dx;
     });
 
-    const chartInfoDialog = ref({
+    const chartInfoDialog = ref<{ open: boolean; chart: Chart | null; }>({
         open: false,
         chart: null,
     });
@@ -175,7 +117,7 @@
         </div>
     </div>
 
-    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart"></ChartInfoDialog>
+    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" singleLevel></ChartInfoDialog>
 </template>
 
 <style scoped>

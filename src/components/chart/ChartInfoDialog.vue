@@ -3,10 +3,10 @@
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
             <mdui-top-app-bar-title
-                @click="copyToClipboard(chart?.music?.title || '')"
+                @click="copyToClipboard(chart?.music?.info.title || '')"
                 style="cursor: pointer"
             >
-                {{ chart?.music?.title || "" }}
+                {{ chart?.music?.info.title || "" }}
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
@@ -22,37 +22,47 @@
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
                 icon="music_note"
-                @click="copyToClipboard(chart.music.artist || '未知')"
+                @click="copyToClipboard(chart.music.info.id.toString() || '?')"
                 style="cursor: pointer"
             >
-                {{ chart.music.artist || "未知" }}
+                id{{ chart.music.info.id || "?" }}
+            </mdui-chip>
+            <mdui-chip
+                icon="music_note"
+                @click="copyToClipboard(chart.music.info.artist || '未知')"
+                style="cursor: pointer"
+            >
+                {{ chart.music.info.artist || "未知" }}
             </mdui-chip>
             <mdui-chip icon="access_time_filled" style="cursor: pointer">
-                {{ chart.music.genre || "未知" }}
+                {{ chart.music.info.genre || "未知" }}
             </mdui-chip>
             <mdui-chip icon="star" style="cursor: pointer">
-                {{ chart.music.type || "未知" }}
+                {{ chart.music.info.type || "未知" }}
             </mdui-chip>
         </div>
 
         <mdui-collapse accordion :value="defaultExpandedValue">
             <mdui-collapse-item
-                v-for="chartInfo of chart.music?.charts"
-                :key="chartInfo.grade"
-                :value="chartInfo.grade.toString()"
+                v-for="chartInfo of (singleLevel ? [chart] : chart.music?.charts)"
+                :key="chartInfo.info.grade"
+                :value="chartInfo.info.grade.toString()"
             >
                 <mdui-list-item slot="header">
                     <div class="collapse-header">
                         <div class="header-left">
-                            <span class="difficulty-badge" :class="`difficulty-${chartInfo.grade}`">
+                            <span
+                                class="difficulty-badge"
+                                :class="`difficulty-${chartInfo.info.grade}`"
+                            >
                                 {{
                                     ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][
-                                        chartInfo.grade
+                                        chartInfo.info.grade
                                     ]
                                 }}
                             </span>
                             <span class="level-info">
-                                {{ chartInfo.ds }}
+                                {{ chartInfo.info.constant }}
                             </span>
                         </div>
                         <div class="header-right">
@@ -76,7 +86,7 @@
                                     />
                                     <img
                                         v-if="getCurrentChartScore(chartInfo).fs"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs}.png`"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
                                         class="mini-icon"
                                     />
                                 </span>
@@ -92,10 +102,10 @@
                             <span class="info-label">谱师</span>
                             <span
                                 class="info-value"
-                                @click="copyToClipboard(chartInfo.charter)"
+                                @click="copyToClipboard(chartInfo.info.charter)"
                                 style="cursor: pointer"
                             >
-                                {{ chartInfo.charter }}
+                                {{ chartInfo.info.charter }}
                             </span>
                         </div>
                         <div class="info-row">
@@ -105,12 +115,12 @@
                         <div class="info-row">
                             <span class="info-label">音符分布</span>
                             <span class="info-value notes-breakdown">
-                                <span class="note-type">TAP: {{ chartInfo.notes[0] }}</span>
-                                <span class="note-type">HOLD: {{ chartInfo.notes[1] }}</span>
-                                <span class="note-type">SLIDE: {{ chartInfo.notes[2] }}</span>
-                                <span class="note-type">BREAK: {{ chartInfo.notes[3] }}</span>
+                                <span class="note-type">TAP: {{ chartInfo.info.notes[0] }}</span>
+                                <span class="note-type">HOLD: {{ chartInfo.info.notes[1] }}</span>
+                                <span class="note-type">SLIDE: {{ chartInfo.info.notes[2] }}</span>
+                                <span class="note-type">BREAK: {{ chartInfo.info.notes[3] }}</span>
                                 <span class="note-total">
-                                    总计: {{ chartInfo.notes.reduce((a, b) => a + b, 0) }}
+                                    总计: {{ chartInfo.info.notes.reduce((a, b) => a + b, 0) }}
                                 </span>
                             </span>
                         </div>
@@ -130,9 +140,11 @@
                         <mdui-button-icon
                             v-if="getChartRaTable(chartInfo).length > 3"
                             :icon="
-                                expandedCharts.has(chartInfo.grade) ? 'expand_less' : 'expand_more'
+                                expandedCharts.has(chartInfo.info.grade)
+                                    ? 'expand_less'
+                                    : 'expand_more'
                             "
-                            @click="toggleChartExpanded(chartInfo.grade)"
+                            @click="toggleChartExpanded(chartInfo.info.grade)"
                         ></mdui-button-icon>
                     </div>
                     <mdui-list>
@@ -197,13 +209,15 @@
             </mdui-collapse-item>
         </mdui-collapse>
 
-        <h3 v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length">别名</h3>
+        <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
+            别名
+        </h3>
         <div
             class="chip-container"
-            v-if="chart?.music && chart?.music.aliases && chart.music.aliases.length"
+            v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length"
         >
             <mdui-chip
-                v-for="alias in chart.music.aliases"
+                v-for="alias in chart.music.info.aliases"
                 :key="alias"
                 @click="copyToClipboard(alias)"
                 style="cursor: pointer"
@@ -215,7 +229,7 @@
 </template>
 
 <script setup lang="ts">
-    import type { ChartCardData, Chart } from "@/types/music";
+    import type { Chart } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref } from "vue";
@@ -226,7 +240,8 @@
 
     const props = defineProps<{
         open: boolean;
-        chart: ChartCardData | null;
+        chart: Chart | null;
+        singleLevel?: boolean;
     }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
@@ -267,7 +282,7 @@
             if (!props.chart?.music?.charts) return;
 
             // 设置默认展开对应难度
-            defaultExpandedValue.value = props.chart.grade?.toString() || "0";
+            defaultExpandedValue.value = props.chart.info.grade?.toString() || "0";
 
             const users: User[] = (await localForage.getItem("users")) || [];
             // selfName为用户列表第一个用户
@@ -290,7 +305,7 @@
                     );
                     if (!uname) return;
 
-                    const key = `${props.chart!.song_id}-${chartInfo.grade}`;
+                    const key = `${props.chart!.music.id}-${chartInfo.info.grade}`;
                     const detail = user.data?.detailed?.[key];
 
                     if (detail) {
@@ -329,7 +344,7 @@
                     }
                 });
 
-                chartFriendsScoresMap.value.set(chartInfo.grade, chartFriends);
+                chartFriendsScoresMap.value.set(chartInfo.info.grade, chartFriends);
             });
         }
     );
@@ -365,14 +380,14 @@
         // 为每个难度加载项目位置
         for (const chartInfo of props.chart.music.charts) {
             try {
-                const position = await getChartPositionFromCache(chartInfo, chartInfo.level);
-                chartPositionMap.value.set(chartInfo.grade, position);
+                const position = await getChartPositionFromCache(chartInfo, chartInfo.info.level);
+                chartPositionMap.value.set(chartInfo.info.grade, position);
             } catch (error) {
                 console.error(
-                    `Failed to get position for chart ${chartInfo.music.id}-${chartInfo.grade}:`,
+                    `Failed to get position for chart ${chartInfo.music.id}-${chartInfo.info.grade}:`,
                     error
                 );
-                chartPositionMap.value.set(chartInfo.grade, "-");
+                chartPositionMap.value.set(chartInfo.info.grade, "-");
             }
         }
     }
@@ -381,13 +396,13 @@
     function getChartRaTable(chartInfo: Chart) {
         if (!props.chart) return [];
         const achievements = getCurrentChartAchievements(chartInfo);
-        return getDetailedRatingsByDs(chartInfo.ds, achievements);
+        return getDetailedRatingsByDs(chartInfo.info.constant, achievements);
     }
 
     // 获取指定难度的显示 Rating 阶段表
     function getDisplayedChartRaTable(chartInfo: Chart) {
         const raTable = getChartRaTable(chartInfo);
-        if (raTable.length <= 3 || expandedCharts.value.has(chartInfo.grade)) {
+        if (raTable.length <= 3 || expandedCharts.value.has(chartInfo.info.grade)) {
             return raTable;
         }
         // 只显示第一个和最后两个
@@ -406,7 +421,7 @@
     // 获取当前用户在指定难度的Ra值
     function getCurrentChartRa(chartInfo: Chart): number | null {
         if (!props.chart) return null;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
         const currentUserScores = chartScores.find(f => f.name === selfName.value);
         return currentUserScores?.ra ?? null;
     }
@@ -414,20 +429,20 @@
     // 获取当前用户在指定难度的达成率
     function getCurrentChartAchievements(chartInfo: Chart): number {
         if (!props.chart) return 0;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
         const currentUserScores = chartScores.find(f => f.name === selfName.value);
         return currentUserScores?.achievements ?? 0;
     }
 
     // 获取指定难度的好友成绩
     function getChartFriendsScores(chartInfo: Chart) {
-        return chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        return chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
     }
 
     // 获取当前用户在指定难度的成绩信息
     function getCurrentChartScore(chartInfo: Chart) {
         if (!props.chart) return null;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.grade) || [];
+        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
         const currentUserScores = chartScores.find(f => f.name === selfName.value);
         return currentUserScores && currentUserScores.played ? currentUserScores : null;
     }
@@ -437,7 +452,7 @@
         if (!props.chart) return "-";
 
         // 从缓存的Map中获取项目位置
-        return chartPositionMap.value.get(chartInfo.grade) || "-";
+        return chartPositionMap.value.get(chartInfo.info.grade) || "-";
     }
 </script>
 

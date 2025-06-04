@@ -1,4 +1,4 @@
-import type { Chart, ChartExtended } from "@/types/music";
+import type { Chart } from "@/types/music";
 import type { User, ChartsSortCached } from "@/types/user";
 import MusicSort from "@/assets/MusicSort";
 import localForage from "localforage";
@@ -14,7 +14,7 @@ import localForage from "localforage";
 export function getChartPositionByDifficulty(
     chart: Chart,
     difficulty: string,
-    allCharts: ChartExtended[],
+    allCharts: Chart[],
     userData?: User | null
 ): string {
     if (!allCharts.length) return "-";
@@ -26,16 +26,16 @@ export function getChartPositionByDifficulty(
     sortedCharts.sort(
         (a, b) =>
             MusicSort.indexOf(b.music.id) +
-            b.grade * 100000 -
+            b.info.grade * 100000 -
             MusicSort.indexOf(a.music.id) -
-            a.grade * 100000
+            a.info.grade * 100000
     );
 
     // 如果有用户数据，按达成率排序
     if (userData?.data?.detailed) {
         sortedCharts.sort((a, b) => {
-            const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.grade}`];
-            const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.grade}`];
+            const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
+            const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
             if (chartDataA?.achievements && chartDataB?.achievements)
                 return chartDataB.achievements - chartDataA.achievements;
             if (chartDataA?.achievements) return -1;
@@ -45,16 +45,16 @@ export function getChartPositionByDifficulty(
     }
 
     // 根据难度筛选
-    let filteredCharts: ChartExtended[];
+    let filteredCharts: Chart[];
     if (difficulty === "ALL") {
-        filteredCharts = sortedCharts.filter(c => c.grade === 3); // Master难度
+        filteredCharts = sortedCharts.filter(c => c.info.grade === 3); // Master难度
     } else {
-        filteredCharts = sortedCharts.filter(c => c.level === difficulty);
+        filteredCharts = sortedCharts.filter(c => c.info.level === difficulty);
     }
 
     // 找到当前谱面在筛选后列表中的位置
     const chartIndex = filteredCharts.findIndex(
-        c => c.music.id === chart.music.id && c.grade === chart.grade
+        c => c.music.id === chart.music.id && c.info.grade === chart.info.grade
     );
 
     if (chartIndex === -1) return "-";
@@ -71,7 +71,7 @@ export function getChartPositionByDifficulty(
  * @param charts 谱面列表
  * @returns 带有项目位置信息的谱面列表
  */
-export function addPositionToCharts(charts: ChartExtended[]): ChartExtended[] {
+export function addPositionToCharts(charts: Chart[]): Chart[] {
     // 给所有符合难度条件的曲目添加原始排序索引
     const chartsWithOriginalIndex = charts.map((chart, index) => ({
         ...chart,
@@ -100,16 +100,16 @@ export async function getChartPositionFromCache(chart: Chart, difficulty: string
         const allCharts = cachedData.charts;
 
         // 根据难度筛选
-        let filteredCharts: ChartExtended[];
+        let filteredCharts: Chart[];
         if (difficulty === "ALL") {
-            filteredCharts = allCharts.filter(c => c.grade === 3); // Master难度
+            filteredCharts = allCharts.filter(c => c.info.grade === 3); // Master难度
         } else {
-            filteredCharts = allCharts.filter(c => c.level === difficulty);
+            filteredCharts = allCharts.filter(c => c.info.level === difficulty);
         }
 
         // 找到当前谱面在筛选后列表中的位置
         const chartIndex = filteredCharts.findIndex(
-            c => c.music.id === chart.music.id && c.grade === chart.grade
+            c => c.music.id === chart.music.id && c.info.grade === chart.info.grade
         );
 
         if (chartIndex === -1) return "-";

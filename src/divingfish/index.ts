@@ -1,5 +1,5 @@
-import { convertDFMusicList, type SavedMusicList } from "@/types/music";
-import type { DivingFishResponse } from "./type";
+import type { Music, MusicInfo, Chart, ChartInfo } from "@/types/music";
+import type { DivingFishResponse, MusicDataResponse } from "./type";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
@@ -35,16 +35,53 @@ export async function fetchPlayerData(username: string): Promise<DivingFishRespo
     }
 }
 
-export async function fetchMusicData(): Promise<SavedMusicList | null> {
-    try {
-        const response = await fetch(`/data/charts.json`);
-        if (!response.ok) {
-            throw new Error(`Request failed with status code ${response.status}`);
+export function convertDFMusicList(data: MusicDataResponse) {
+    const musicList: Record<number, Music> = {};
+    const chartList: Record<number, Chart> = {};
+
+    for (const item of data) {
+        const id = Number(item.id);
+        const musicInfo: MusicInfo = {
+            id,
+            title: item.basic_info.title,
+            aliases: item.aliases,
+            artist: item.basic_info.artist,
+            genre: item.basic_info.genre,
+            bpm: item.basic_info.bpm,
+            from: item.basic_info.from,
+            isNew: item.basic_info.is_new,
+            type: item.type,
+        };
+        const music: Music = {
+            id,
+            info: musicInfo,
+            charts: [],
+        };
+
+        for (const [index, dfChart] of item.charts.entries()) {
+            const chartId = item.cids[index];
+            const chartInfo: ChartInfo = {
+                notes: dfChart.notes,
+                charter: dfChart.charter,
+                level: item.level[index],
+                grade: index,
+                constant: item.ds[index],
+                deluxeScoreMax: dfChart.notes.reduce((sum, count) => sum + count, 0) * 3,
+            };
+            const chart: Chart = {
+                id: chartId,
+                info: chartInfo,
+                music: music,
+            };
+            music.charts.push(chart);
+            chartList[chartId] = chart;
         }
-        const data = await response.json();
-        return convertDFMusicList(data);
-    } catch (error) {
-        console.error("Error fetching song data:", error);
-        throw error;
+
+        musicList[id] = music;
     }
+
+    return {
+        musicList,
+        chartList,
+    };
 }
