@@ -1,34 +1,34 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
-    import type { ChartCardData } from "@/types/music";
+    import type { Chart, ChartExtended } from "@/types/music";
 
     // Define props for the component
     const props = defineProps<{
         title: string;
-        scores: ChartCardData[];
+        scores: (Chart | ChartExtended)[];
         chartInfoDialog: {
             open: boolean;
-            chart: ChartCardData | null;
+            chart: Chart | ChartExtended | null;
         };
     }>();
 
-    // Calculate statistics for the scores based on ra values
+    // Calculate statistics for the scores based on deluxeRating values
     const stats = computed(() => {
         if (!props.scores || props.scores.length === 0) return null;
 
-        const scores = props.scores.map((item: any) => item.ra);
-        scores.sort((a: number, b: number) => a - b);
+        const ratings = props.scores.map((item: any) => item.score?.deluxeRating ?? 0);
+        ratings.sort((a: number, b: number) => a - b);
 
-        const avg = scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length;
+        const avg = ratings.reduce((sum: number, score: number) => sum + score, 0) / ratings.length;
         const median =
-            scores.length % 2 === 0
-                ? (scores[scores.length / 2 - 1] + scores[scores.length / 2]) / 2
-                : scores[Math.floor(scores.length / 2)];
-        const range = scores[scores.length - 1] - scores[0];
+            ratings.length % 2 === 0
+                ? (ratings[ratings.length / 2 - 1] + ratings[ratings.length / 2]) / 2
+                : ratings[Math.floor(ratings.length / 2)];
+        const range = ratings[ratings.length - 1] - ratings[0];
 
         // Calculate difficulty constant range
-        const constants = props.scores.map((item: any) => item.ds);
+        const constants = props.scores.map((item: any) => item.info.ds);
         constants.sort((a: number, b: number) => a - b);
         const minConstant = constants[0];
         const maxConstant = constants[constants.length - 1];
@@ -41,7 +41,7 @@
         };
     });
 
-    function openDialog(chart: ChartCardData) {
+    function openDialog(chart: Chart | ChartExtended) {
         props.chartInfoDialog.open = !props.chartInfoDialog.open;
         props.chartInfoDialog.chart = chart;
     }
