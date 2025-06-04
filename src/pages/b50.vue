@@ -6,7 +6,7 @@
     import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
     import type { User } from "@/types/user";
     import localForage from "localforage";
-    import type { ChartExtended, ChartCardData } from "@/types/music";
+    import type { ChartExtended } from "@/types/music";
     import { musicInfo } from "@/assets/music";
 
     const route = useRoute();

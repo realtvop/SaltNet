@@ -34,23 +34,6 @@ export interface ChartExtended extends Chart {
     index?: string;
 }
 
-// 卡片组件专用数据结构，便于页面层提前转换，避免组件内部转换
-export interface ChartCardData {
-    song_id: number;
-    title: string;
-    ds: number;
-    grade: number;
-    level_index: number;
-    type: string;
-    achievements?: number;
-    ra?: number | string;
-    rate?: string;
-    fc?: string;
-    fs?: string;
-    charter?: string;
-    music?: Music; // 可选，便于详情弹窗展示
-    [key: string]: any; // 兼容扩展
-}
 interface ChartInfo {
     notes: [number, number, number, number];
     charter: string;

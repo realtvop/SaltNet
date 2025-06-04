@@ -215,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-    import type { ChartCardData, Chart } from "@/types/music";
+    import type { Chart } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref } from "vue";
@@ -226,7 +226,7 @@
 
     const props = defineProps<{
         open: boolean;
-        chart: ChartCardData | null;
+        chart: Chart | null;
     }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
@@ -267,7 +267,7 @@
             if (!props.chart?.music?.charts) return;
 
             // 设置默认展开对应难度
-            defaultExpandedValue.value = props.chart.grade?.toString() || "0";
+            defaultExpandedValue.value = props.chart.info.grade?.toString() || "0";
 
             const users: User[] = (await localForage.getItem("users")) || [];
             // selfName为用户列表第一个用户
@@ -290,7 +290,7 @@
                     );
                     if (!uname) return;
 
-                    const key = `${props.chart!.song_id}-${chartInfo.info.grade}`;
+                    const key = `${props.chart!.music.id}-${chartInfo.info.grade}`;
                     const detail = user.data?.detailed?.[key];
 
                     if (detail) {
