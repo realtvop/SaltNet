@@ -22,7 +22,7 @@
         const map = new Map();
         for (const chart of Object.values(musicInfo.chartList) as ChartExtended[]) {
             // key: `${song_id}-${level_index}`
-            map.set(`${chart.music.id}-${chart.grade}`, chart);
+            map.set(`${chart.music.id}-${chart.info.grade}`, chart);
         }
         musicChartMap.value = map;
     }
@@ -99,17 +99,17 @@
         return {
             ...chart,
             song_id: chart.music.id,
-            title: chart.music.title,
-            ds: chart.ds,
-            grade: chart.grade,
-            level_index: chart.grade,
-            type: chart.music.type,
+            title: chart.music.info.title,
+            ds: chart.info.ds,
+            grade: chart.info.grade,
+            level_index: chart.info.grade,
+            type: chart.music.info.type,
             achievements: typeof record.achievements === "number" ? record.achievements : undefined,
             ra: typeof record.ra === "number" ? record.ra : undefined,
             rate: record.rate || "",
             fc: record.fc || "",
             fs: record.fs || "",
-            charter: chart.charter,
+            charter: chart.info.charter,
             music: chart.music,
         };
     }

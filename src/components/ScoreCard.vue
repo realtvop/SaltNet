@@ -26,13 +26,13 @@
                         <div
                             class="pill-section charttype"
                             :type="
-                                props.data.music ? props.data.music.type : (props.data.type ?? '')
+                                props.data.music ? props.data.music.info.type : (props.data.type ?? '')
                             "
                         >
                             <span>
                                 {{
                                     props.data.music
-                                        ? props.data.music.type
+                                        ? props.data.music.info.type
                                         : (props.data.type ?? "")
                                 }}
                             </span>

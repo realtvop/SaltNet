@@ -88,15 +88,15 @@
         charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
-                b.grade * 100000 -
+                b.info.grade * 100000 -
                 MusicSort.indexOf(a.music.id) -
-                a.grade * 100000
+                a.info.grade * 100000
         );
 
         if (currentUser?.data?.detailed) {
             charts.sort((a, b) => {
-                const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.grade}`];
-                const chartDataB = currentUser?.data?.detailed?.[`${b.music.id}-${b.grade}`];
+                const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
+                const chartDataB = currentUser?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
                 if (chartDataA?.achievements && chartDataB?.achievements)
                     return chartDataB.achievements - chartDataA.achievements;
                 if (chartDataA?.achievements) return -1;
@@ -119,10 +119,10 @@
         let filteredCharts: ChartExtended[];
 
         if (selectedDifficulty.value === "ALL") {
-            filteredCharts = allCharts.value.filter(chart => chart.grade === 3);
+            filteredCharts = allCharts.value.filter(chart => chart.info.grade === 3);
         } else {
             filteredCharts = allCharts.value.filter(
-                chart => chart.level === selectedDifficulty.value
+                chart => chart.info.level === selectedDifficulty.value
             );
         }
 
@@ -138,15 +138,15 @@
         if (query.value) {
             finalFilteredCharts = chartsWithOriginalIndex.filter((chart: any) => {
                 const chartData = playerData.value?.data.detailed
-                    ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
+                    ? playerData.value?.data.detailed[`${chart.music.id}-${chart.info.grade}`]
                     : null;
                 return (
                     // 曲名 曲师 谱师 别名
-                    chart.music.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.music.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-                    (chart.music.aliases &&
-                        chart.music.aliases
+                    chart.music.info.title.toLowerCase().includes(query.value.toLowerCase()) ||
+                    chart.music.info.artist.toLowerCase().includes(query.value.toLowerCase()) ||
+                    chart.info.charter.toLowerCase().includes(query.value.toLowerCase()) ||
+                    (chart.music.info.aliases &&
+                        chart.music.info.aliases
                             .join()
                             .toLowerCase()
                             .includes(query.value.toLowerCase())) ||
@@ -184,7 +184,7 @@
 
     function genScoreCardData(chart: ChartExtended): any {
         const chartData = playerData.value?.data.detailed
-            ? playerData.value?.data.detailed[`${chart.music.id}-${chart.grade}`]
+            ? playerData.value?.data.detailed[`${chart.music.id}-${chart.info.grade}`]
             : null;
         return {
             ...chart,
@@ -197,7 +197,7 @@
             rate: chartData && chartData.rate ? chartData.rate : "",
             fc: chartData && chartData.fc ? chartData.fc : "",
             fs: chartData && chartData.fs ? chartData.fs : "",
-            title: chart.music.title,
+            title: chart.music.info.title,
         };
     }
 
