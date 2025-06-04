@@ -23,7 +23,6 @@
 <script setup lang="ts">
     import localforage from "localforage";
     import { snackbar, confirm } from "mdui";
-    import { fetchMusicData } from "@/divingfish";
 
     const userData = {
         import: () => {
@@ -42,22 +41,6 @@
                         message: "导入成功，正在同步曲目数据...",
                         autoCloseDelay: 500,
                     });
-                    // 自动获取全曲目列表
-                    try {
-                        const musicData = await fetchMusicData();
-                        if (musicData) {
-                            await localforage.setItem("musicInfo", musicData);
-                            snackbar({
-                                message: "曲目数据已自动同步",
-                                autoCloseDelay: 500,
-                            });
-                        }
-                    } catch (err) {
-                        snackbar({
-                            message: "曲目数据同步失败，可在用户页手动更新",
-                            autoCloseDelay: 1000,
-                        });
-                    }
                 } catch (err) {
                     snackbar({
                         message: "导入失败，文件格式错误或数据损坏",

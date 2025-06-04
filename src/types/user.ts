@@ -1,6 +1,6 @@
 // src/types/user.ts
 import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
-import type { ChartExtended } from "./music";
+import type { Chart } from "./music";
 
 export interface User {
     divingFish: {
@@ -24,7 +24,7 @@ export interface ChartsSortCached {
         updateTime: number;
         verBuildTime: number;
     };
-    charts: ChartExtended[];
+    charts: Chart[];
 }
 
 type DetailedData = Record<string, DivingFishFullRecord>;

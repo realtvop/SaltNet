@@ -15,7 +15,7 @@ International & Japanese ver. will be supported later.
 - [x] 谱面详情
     - [ ] 全部曲目
     - [x] 曲目详情
-        - [ ] 当前成绩
+        - [x] 当前成绩
         - [x] 谱面信息
         - [x] rating 阶段
         - [x] 好友成绩
@@ -30,6 +30,16 @@ International & Japanese ver. will be supported later.
         - [x] In Game
             - [x] 查询用户是否已上机
         - [ ] 网页存档 (intl. ver?)
+
+### 🫓
+
+- [x] 全曲目 [Working On]
+    - [x] ChartInfoDialog
+        - [x] 显示所有难度
+    - [ ] Songs
+        - [ ] 所有曲目 tab
+    - [ ] ScoreCard(还是新建一个)
+        - [ ] 新增全曲目数据显示格式
 
 ### 已知 bugs
 
