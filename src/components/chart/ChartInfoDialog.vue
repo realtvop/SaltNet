@@ -37,7 +37,7 @@
 
         <mdui-collapse accordion :value="defaultExpandedValue">
             <mdui-collapse-item
-                v-for="chartInfo of chart.music?.charts"
+                v-for="chartInfo of (singleLevel ? [chart] : chart.music?.charts)"
                 :key="chartInfo.info.grade"
                 :value="chartInfo.info.grade.toString()"
             >
@@ -79,7 +79,7 @@
                                     />
                                     <img
                                         v-if="getCurrentChartScore(chartInfo).fs"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs}.png`"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
                                         class="mini-icon"
                                     />
                                 </span>
@@ -234,6 +234,7 @@
     const props = defineProps<{
         open: boolean;
         chart: Chart | null;
+        singleLevel?: boolean;
     }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<

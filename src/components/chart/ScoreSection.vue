@@ -2,6 +2,8 @@
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
     import type { DivingFishFullRecord } from "@/divingfish/type";
+import type { Chart } from "@/types/music";
+import { musicInfo } from "@/assets/music";
 
     // Define props for the component
     const props = defineProps<{
@@ -9,7 +11,7 @@
         scores: DivingFishFullRecord[];
         chartInfoDialog: {
             open: boolean;
-            chart: DivingFishFullRecord | null;
+            chart: Chart | null;
         };
     }>();
 
@@ -43,7 +45,7 @@
 
     function openDialog(chart: DivingFishFullRecord) {
         props.chartInfoDialog.open = !props.chartInfoDialog.open;
-        props.chartInfoDialog.chart = chart;
+        props.chartInfoDialog.chart = musicInfo.musicList[chart.song_id].charts[chart.level_index];
     }
 </script>
 

@@ -1,4 +1,4 @@
-import type { SavedMusicList, Music, MusicInfo, Chart, ChartInfo } from "@/types/music";
+import type { Music, MusicInfo, Chart, ChartInfo } from "@/types/music";
 import type { DivingFishResponse, MusicDataResponse } from "./type";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";

@@ -65,7 +65,7 @@
         return player.value.data.b50.dx;
     });
 
-    const chartInfoDialog = ref({
+    const chartInfoDialog = ref<{ open: boolean; chart: Chart | null; }>({
         open: false,
         chart: null,
     });
@@ -117,7 +117,7 @@
         </div>
     </div>
 
-    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart"></ChartInfoDialog>
+    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" singleLevel></ChartInfoDialog>
 </template>
 
 <style scoped>
