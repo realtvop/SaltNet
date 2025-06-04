@@ -1,8 +1,8 @@
 <script setup lang="ts">
     import { defineProps } from "vue";
 
-    import plates from "../assets/plates";
-    import { getPlateId } from "../utils/genPlate";
+    import plates from "@/assets/plates";
+    import { getPlateId } from "@/utils/genPlate";
 
     const props = defineProps<{
         ra: number;

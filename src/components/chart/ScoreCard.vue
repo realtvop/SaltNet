@@ -48,7 +48,7 @@
                 <div class="achievement">
                     {{
                         typeof getChartInfo.achievements(props.data) === "number"
-                            ? (getChartInfo.achievements(props.data) as number).toFixed(4)
+                            ? getChartInfo.achievements(props.data)?.toFixed(4)
                             : "-"
                     }}
                     <span
@@ -62,7 +62,7 @@
                     <div class="rank-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/${getChartInfo.rankRate(props.data) ? getChartInfo.rankRate(props.data).replace('p', 'plus') : ''}.png`"
+                            :src="`/icons/${getChartInfo.rankRate(props.data)?.replace('p', 'plus')}.png`"
                             v-if="getChartInfo.rankRate(props.data)"
                         />
                     </div>
@@ -76,7 +76,7 @@
                     <div class="sync-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/music_icon_${getChartInfo.syncStatus(props.data) ? getChartInfo.syncStatus(props.data).replace('sd', 'dx') : ''}.png`"
+                            :src="`/icons/music_icon_${getChartInfo.syncStatus(props.data)?.replace('sd', 'dx')}.png`"
                             v-if="getChartInfo.syncStatus(props.data)"
                         />
                     </div>

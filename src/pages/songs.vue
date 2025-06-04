@@ -4,8 +4,8 @@
     import localForage from "localforage";
     import type { Chart } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
-    import ScoreCard from "@/components/ScoreCard.vue";
-    import ChartInfoDialog from "@/components/b50/ChartInfoDialog.vue";
+    import ScoreCard from "@/components/chart/ScoreCard.vue";
+    import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
 
     declare global {

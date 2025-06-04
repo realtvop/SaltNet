@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted } from "vue";
-    import RatingPlate from "@/components/RatingPlate.vue";
+    import RatingPlate from "@/components/user/RatingPlate.vue";
     import { useRouter } from "vue-router";
     import localForage from "localforage";
     import type { User } from "@/types/user";

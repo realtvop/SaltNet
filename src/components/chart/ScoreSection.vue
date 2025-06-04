@@ -1,15 +1,15 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
-    import type { Chart, ChartExtended } from "@/types/music";
+import type { DivingFishFullRecord } from "@/divingfish/type";
 
     // Define props for the component
     const props = defineProps<{
         title: string;
-        scores: (Chart | ChartExtended)[];
+        scores: (DivingFishFullRecord)[];
         chartInfoDialog: {
             open: boolean;
-            chart: Chart | ChartExtended | null;
+            chart: DivingFishFullRecord | null;
         };
     }>();
 
@@ -41,7 +41,7 @@
         };
     });
 
-    function openDialog(chart: Chart | ChartExtended) {
+    function openDialog(chart: DivingFishFullRecord) {
         props.chartInfoDialog.open = !props.chartInfoDialog.open;
         props.chartInfoDialog.chart = chart;
     }

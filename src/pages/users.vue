@@ -1,8 +1,8 @@
 <script setup lang="ts">
     import { ref, watch } from "vue";
     import { useRouter } from "vue-router";
-    import RatingPlate from "@/components/RatingPlate.vue";
-    import BindUserDialog from "@/components/users/BindUserDialog.vue";
+    import RatingPlate from "@/components/user/RatingPlate.vue";
+    import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
     import { checkLogin, updateUser } from "@/utils/updateUser";
     import { confirm } from "mdui";
