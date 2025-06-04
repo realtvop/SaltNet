@@ -6,7 +6,7 @@ export interface Music {
 
     charts: Chart[];
 }
-interface MusicInfo {
+export interface MusicInfo {
     id: number;
     title: string;
 
@@ -29,7 +29,7 @@ export interface Chart {
     music: Music;
 }
 
-interface ChartInfo {
+export interface ChartInfo {
     notes: [number, number, number, number];
     charter: string;
     level: string;
@@ -37,7 +37,7 @@ interface ChartInfo {
     ds: number;
     deluxeScoreMax: number;
 }
-interface ChartScore {
+export interface ChartScore {
     rankRate: RankRate;
     achievements: number;  // 已小数化
 
@@ -54,7 +54,7 @@ interface ChartScore {
         queried?: ChartIndex;
     },
 }
-interface ChartIndex {
+export interface ChartIndex {
     index: number;  // 索引
     total: number;  // 总数
 }
@@ -75,57 +75,4 @@ export interface UserChartScore {
 // 扩展谱面类型，包含用户成绩
 export interface ChartExtended extends Chart {
     userScore: UserChartScore | null;
-}
-
-// 结构转换器：将旧数据转换为新版结构
-import type { MusicDataResponse } from "@/divingfish/type";
-export function convertDFMusicList(data: MusicDataResponse) {
-    const musicList: Record<number, Music> = {};
-    const chartList: Record<number, Chart> = {};
-
-    for (const item of data) {
-        const id = Number(item.id);
-        const musicInfo: MusicInfo = {
-            id,
-            title: item.basic_info.title,
-            aliases: item.aliases,
-            artist: item.basic_info.artist,
-            genre: item.basic_info.genre,
-            bpm: item.basic_info.bpm,
-            from: item.basic_info.from,
-            isNew: item.basic_info.is_new,
-            type: item.type,
-        };
-        const music: Music = {
-            id,
-            info: musicInfo,
-            charts: [],
-        };
-
-        for (const [index, dfChart] of item.charts.entries()) {
-            const chartId = item.cids[index];
-            const chartInfo: ChartInfo = {
-                notes: dfChart.notes,
-                charter: dfChart.charter,
-                level: item.level[index],
-                grade: index,
-                ds: item.ds[index],
-                deluxeScoreMax: dfChart.notes.reduce((sum, count) => sum + count, 0) * 3,
-            };
-            const chart: Chart = {
-                id: chartId,
-                info: chartInfo,
-                music: music,
-            };
-            music.charts.push(chart);
-            chartList[chartId] = chart;
-        }
-
-        musicList[id] = music;
-    }
-
-    return {
-        musicList,
-        chartList,
-    };
 }
