@@ -85,7 +85,7 @@
         ) {
             loadedIdentifier.name = cachedData.identifier.name;
             loadedIdentifier.updateTime = cachedData.identifier.updateTime;
-            
+
             allCharts.value = cachedData.charts;
             return;
         }
@@ -241,7 +241,8 @@
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage.getItem<User[]>("users")
+        localForage
+            .getItem<User[]>("users")
             .then(async v => {
                 if (!v) throw new Error("No users found");
                 playerData.value = v[0];

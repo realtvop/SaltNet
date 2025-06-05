@@ -4,9 +4,9 @@
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
-import { checkLoginWithWorker, updateUserWithWorker } from "@/utils/updateUser";
-import { confirm, snackbar, alert } from "mdui";
-import localForage from "localforage";
+    import { checkLoginWithWorker, updateUserWithWorker } from "@/utils/updateUser";
+    import { confirm, snackbar, alert } from "mdui";
+    import localForage from "localforage";
 
     const users = ref<User[]>([]);
 
@@ -40,6 +40,7 @@ import localForage from "localforage";
             inGame: { name: null, id: null },
             data: {
                 updateTime: null,
+                name: null,
                 rating: null,
             },
         };
@@ -83,6 +84,7 @@ import localForage from "localforage";
                 inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
                 data: {
                     updateTime: null,
+                    name: null,
                     rating: null,
                 },
             });
@@ -123,53 +125,53 @@ import localForage from "localforage";
         }
     };
 
-async function updateUserWithWorkerUI(user: User) {
-    try {
-        const { status, message } = await updateUserWithWorker(user);
-        snackbar({
-            message: message || "用户信息更新完成",
-            placement: "bottom",
-            autoCloseDelay: status === "success" ? 1500 : 3000,
-        });
-    } catch (err: any) {
-        snackbar({
-            message: (err?.message ? err.message : "更新用户信息失败"),
-            placement: "bottom",
-            autoCloseDelay: 3000,
-        });
-    }
-}
-
-function updateAll() {
-    users.value.forEach(user => {
-        updateUserWithWorkerUI(user);
-    });
-}
-
-async function checkLoginUI(user: User) {
-    try {
-        const data = await checkLoginWithWorker(user);
-        if (data.message)
+    async function updateUserWithWorkerUI(user: User) {
+        try {
+            const { status, message } = await updateUserWithWorker(user);
             snackbar({
-                message: data.message,
+                message: message || "用户信息更新完成",
+                placement: "bottom",
+                autoCloseDelay: status === "success" ? 1500 : 3000,
+            });
+        } catch (err: any) {
+            snackbar({
+                message: err?.message ? err.message : "更新用户信息失败",
                 placement: "bottom",
                 autoCloseDelay: 3000,
             });
-        else
-            alert({
-                headline: data.headline,
-                description: data.description,
-                closeOnEsc: true,
-                closeOnOverlayClick: true,
-            });
-    } catch (err: any) {
-        snackbar({
-            message: err?.message || "查询登录状态失败",
-            placement: "bottom",
-            autoCloseDelay: 3000,
+        }
+    }
+
+    function updateAll() {
+        users.value.forEach(user => {
+            updateUserWithWorkerUI(user);
         });
     }
-}
+
+    async function checkLoginUI(user: User) {
+        try {
+            const data = await checkLoginWithWorker(user);
+            if (data.message)
+                snackbar({
+                    message: data.message,
+                    placement: "bottom",
+                    autoCloseDelay: 3000,
+                });
+            else
+                alert({
+                    headline: data.headline,
+                    description: data.description,
+                    closeOnEsc: true,
+                    closeOnOverlayClick: true,
+                });
+        } catch (err: any) {
+            snackbar({
+                message: err?.message || "查询登录状态失败",
+                placement: "bottom",
+                autoCloseDelay: 3000,
+            });
+        }
+    }
 </script>
 
 <template>
@@ -184,7 +186,7 @@ async function checkLoginUI(user: User) {
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{ user.data.name ??user.divingFish?.name ?? user.inGame?.name ?? "未知" }}
+                        {{ user.data.name ?? user.divingFish?.name ?? user.inGame?.name ?? "未知" }}
                     </h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>

@@ -4,14 +4,18 @@ import type { DivingFishResponse } from "@/divingfish/type";
 import type { UpdateUserResponse } from "@/types/updateUser";
 import { convertDetailed } from "@/types/user";
 
-self.onmessage = async (event) => {
+self.onmessage = async event => {
     const { type, user } = event.data;
     if (type === "updateUser") {
         let result = null;
         let status = "success";
         let message = "";
         try {
-            if (user.inGame.id && typeof user.inGame.id === "number" && user.inGame.id.toString().length === 8) {
+            if (
+                user.inGame.id &&
+                typeof user.inGame.id === "number" &&
+                user.inGame.id.toString().length === 8
+            ) {
                 result = await fromInGame(user);
                 message = "InGame 用户信息获取成功";
             } else if (user.divingFish.name) {
@@ -23,7 +27,10 @@ self.onmessage = async (event) => {
             }
             self.postMessage({ type: "updateUserResult", result, status, message });
         } catch (e) {
-            self.postMessage({ type: "updateUserError", error: e?.toString?.() || "Unknown error" });
+            self.postMessage({
+                type: "updateUserError",
+                error: e?.toString?.() || "Unknown error",
+            });
         }
     }
 };
@@ -39,7 +46,10 @@ async function fromDivingFish(user: any) {
 }
 
 async function fromInGame(user: any) {
-    const data: UpdateUserResponse | null = await fetchInGameData(user.inGame.id, user.divingFish.importToken);
+    const data: UpdateUserResponse | null = await fetchInGameData(
+        user.inGame.id,
+        user.divingFish.importToken
+    );
     if (data) {
         return {
             rating: data.rating,
