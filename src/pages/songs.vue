@@ -51,6 +51,11 @@
         open: false,
         chart: null,
     });
+    const loadedIdentifier = {
+        name: "",
+        updateTime: 0,
+        // verBuildTime: 0,
+    };
 
     localForage.getItem<User[]>("users").then(v => {
         if (Array.isArray(v)) users.value = v;
@@ -65,16 +70,25 @@
             verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
         };
 
-        // const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
-        // if (
-        //     cachedData &&
-        //     cachedData.identifier.name === currentIdentifier.name &&
-        //     cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-        //     cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
-        // ) {
-        //     allCharts.value = cachedData.charts;
-        //     return;
-        // }
+        if (
+            currentIdentifier.updateTime === loadedIdentifier.updateTime &&
+            currentIdentifier.name === loadedIdentifier.name
+        )
+            return;
+
+        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        if (
+            cachedData &&
+            cachedData.identifier.name === currentIdentifier.name &&
+            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
+            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+        ) {
+            loadedIdentifier.name = cachedData.identifier.name;
+            loadedIdentifier.updateTime = cachedData.identifier.updateTime;
+            
+            allCharts.value = cachedData.charts;
+            return;
+        }
 
         const musicInfo = await getMusicInfoAsync();
         if (!musicInfo) return;
@@ -227,14 +241,15 @@
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage.getItem<User[]>("users").then(async v => {
-            if (!v) return;
-            playerData.value = v[0];
-            await loadChartsWithCache(v[0]);
-        });
+        localForage.getItem<User[]>("users")
+            .then(async v => {
+                if (!v) throw new Error("No users found");
+                playerData.value = v[0];
+                await loadChartsWithCache(v[0]);
+            })
+            .catch(() => loadChartsWithCache());
     };
     onMounted(async () => {
-        await loadChartsWithCache();
         await loadPlayerData();
     });
 
