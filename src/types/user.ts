@@ -13,7 +13,8 @@ export interface User {
     };
     data: {
         updateTime: number | null;
-        rating?: number | null;
+        name: string | null;
+        rating: number | null;
         b50?: DivingFishB50;
         detailed?: DetailedData;
     };

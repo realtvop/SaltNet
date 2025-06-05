@@ -199,7 +199,10 @@
                                         <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
                                     </span>
                                     <span class="friend-fs" v-if="f.fs">
-                                        <img :src="`/icons/music_icon_${f.fs}.png`" class="icon" />
+                                        <img
+                                            :src="`/icons/music_icon_${f.fs.replace('sd', 'dx')}.png`"
+                                            class="icon"
+                                        />
                                     </span>
                                 </div>
                             </mdui-list-item>
@@ -287,9 +290,7 @@
             const users: User[] = (await localForage.getItem("users")) || [];
             // selfName为用户列表第一个用户
             if (users.length > 0) {
-                selfName.value = String(
-                    users[0].divingFish?.name || users[0].inGame?.name || users[0].inGame?.id || ""
-                );
+                selfName.value = String(users[0].data.name || "");
             }
 
             // 从缓存中加载项目位置

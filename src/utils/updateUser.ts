@@ -1,118 +1,60 @@
-import { fetchPlayerData } from "@/divingfish";
-import type { DivingFishResponse } from "@/divingfish/type";
-import type { UpdateUserResponse } from "@/types/updateUser";
-import { convertDetailed, type User } from "@/types/user";
+import type { User } from "@/types/user";
+// @ts-ignore
+import UpdateUserWorker from "@/utils/updateUser.worker.ts?worker&inline";
 
-import { Snackbar, snackbar, alert } from "mdui";
+const updateUserWorker = new UpdateUserWorker();
 
-export function updateUser(user: User) {
-    if (!user.data) user.data = { updateTime: null, rating: null };
-
-    if (user.inGame.id) {
-        if (typeof user.inGame.id == "number" && user.inGame.id.toString().length == 8)
-            return fromInGame(user);
-        else {
-            info("用户 ID 错误，请检查配置");
-            return fromDivingFish(user);
-        }
-    } else return fromDivingFish(user);
-}
-export function checkLogin(user: User) {
-    info(`正在从 InGame 获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
-    return fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.inGame.id }),
-    })
-        .then(r => r.json())
-        .then((data: { isLogin: string } | null) => {
-            if (data) {
-                alert({
-                    headline: (user.inGame.name ?? user.divingFish.name) as string,
-                    description: data.isLogin ? "上机了哟！" : "还没有上机",
-                    closeOnEsc: true,
-                    closeOnOverlayClick: true,
-                });
-            } else {
-                info(`从 InGame 获取 ${user.inGame.name ?? user.divingFish.name} 信息失败`);
+export function updateUserWithWorker(user: User) {
+    return new Promise<{ status: string; message: string }>((resolve, reject) => {
+        const plainUser = JSON.parse(JSON.stringify(user));
+        updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
+        updateUserWorker.onmessage = (event: MessageEvent) => {
+            const { type, result, error, status, message } = event.data;
+            if (type === "updateUserResult") {
+                if (result) {
+                    user.data = { ...user.data, ...result };
+                    if (
+                        user.inGame.id &&
+                        typeof user.inGame.id === "number" &&
+                        user.inGame.id.toString().length === 8
+                    )
+                        user.inGame.name = result.name;
+                }
+                resolve({ status, message });
+            } else if (type === "updateUserError") {
+                reject({ status: "fail", message: error || "未知错误" });
             }
-        })
-        .catch(e => {
-            info(
-                `获取 ${user.inGame.name ?? user.divingFish.name} InGame 数据失败：${e.toString()}`,
-                e.toString()
-            );
-        });
-}
-
-// 水鱼
-function fromDivingFish(user: User) {
-    if (user.divingFish.name) {
-        info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
-        return fetchPlayerData(user.divingFish.name as string)
-            .then((data: DivingFishResponse) => {
-                user.data.rating = data.rating;
-                user.data.b50 = data.charts;
-                user.data.updateTime = Date.now();
-                info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
-            })
-            .catch(e => {
-                info(`从水鱼获取 ${user.divingFish.name} 信息失败：${e.toString()}`, e.toString());
-            });
-    } else info("用户数据为空？？？如配置没有错误，请反馈");
-}
-
-// InGame 数据
-function fromInGame(user: User) {
-    info(`正在从 InGame 获取用户信息：${user.inGame.name ?? user.divingFish.name}`);
-    return fetchInGameData(user.inGame.id as number, user.divingFish.importToken as string)
-        .then((data: UpdateUserResponse | null) => {
-            if (data) {
-                user.data.rating = data.rating;
-                user.inGame.name = toHalfWidth(data.userName);
-                user.data.b50 = data.b50;
-                user.data.detailed = convertDetailed(data.divingFishData);
-                user.data.updateTime = Date.now();
-                info(`从 InGame 获取用户信息成功：${user.inGame.name ?? user.divingFish.name}`);
-            } else {
-                info(`从 InGame 获取 ${user.inGame.name ?? user.divingFish.name} 信息失败`);
-                return fromDivingFish(user);
-            }
-        })
-        .catch(e => {
-            info(
-                `获取 ${user.inGame.name ?? user.divingFish.name} InGame 数据失败：${e.toString()}`,
-                e.toString()
-            );
-        });
-}
-function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {
-    return fetch(`${import.meta.env.VITE_API_URL}/updateUser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, importToken }),
-    })
-        .then(r => r.json())
-        .catch(e => {
-            info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
-            return null;
-        });
-}
-
-function info(message: string, errorMsg?: string): Snackbar {
-    return snackbar({
-        message,
-        placement: "bottom",
-        autoCloseDelay: errorMsg ? 3000 : 1500,
-        action: errorMsg ? "复制错误" : undefined,
-        onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,
+        };
     });
 }
 
-function toHalfWidth(str: string): string {
-    return str
-        .replace(/[\uFF01-\uFF5E]/g, char => {
-            return String.fromCharCode(char.charCodeAt(0) - 65248);
-        })
-        .replace(/\u3000/g, " ");
+export function checkLoginWithWorker(user: User) {
+    const userName = user.data.name ?? user.inGame?.id ?? "未知";
+    return new Promise<{ headline?: string; description?: string; message?: string }>(
+        (resolve, reject) => {
+            fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.inGame.id }),
+            })
+                .then(r => r.json())
+                .then((data: { isLogin: string } | null) => {
+                    if (data) {
+                        resolve({
+                            headline: `${userName}`,
+                            description: data.isLogin ? "上机了哟！" : "还没有上机",
+                        });
+                    } else {
+                        resolve({
+                            message: `[${userName}] 从 InGame 获取信息失败`,
+                        });
+                    }
+                })
+                .catch(e => {
+                    reject({
+                        message: `[${userName}] 获取 InGame 数据失败：${e.toString()}`,
+                    });
+                });
+        }
+    );
 }
