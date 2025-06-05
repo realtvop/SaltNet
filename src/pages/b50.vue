@@ -87,7 +87,7 @@
         <div v-else-if="player && player.data" class="player-b50">
             <div class="player-header">
                 <span class="player-name">
-                    {{ player.inGame?.name ?? player.divingFish?.name ?? "wmc" }}
+                    {{ player.data.name ?? "wmc" }}
                 </span>
                 <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
             </div>

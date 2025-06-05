@@ -34,6 +34,7 @@ async function fromDivingFish(user: any) {
         rating: data.rating,
         b50: data.charts,
         updateTime: Date.now(),
+        name: data.nickname,
     };
 }
 
@@ -64,8 +65,9 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
 }
 
 function toHalfWidth(str: string): string {
-    // 半角转换示例，仅保留原逻辑
-    return str.replace(/[-]/g, function (ch) {
-        return String.fromCharCode(ch.charCodeAt(0) - 65248);
-    });
+    return str
+        .replace(/[\uFF01-\uFF5E]/g, char => {
+            return String.fromCharCode(char.charCodeAt(0) - 65248);
+        })
+        .replace(/\u3000/g, " ");
 }

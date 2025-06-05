@@ -65,7 +65,7 @@
         const currentUser = userData || playerData.value;
 
         const currentIdentifier = {
-            name: currentUser?.divingFish?.name || currentUser?.inGame?.name || "unknown",
+            name: currentUser?.data.name || "unknown",
             updateTime: currentUser?.data?.updateTime || 0,
             verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
         };

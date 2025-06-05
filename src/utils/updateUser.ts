@@ -23,6 +23,7 @@ export function updateUserWithWorker(user: User) {
 }
 
 export function checkLoginWithWorker(user: User) {
+                const userName = user.data.name ?? user.inGame?.id ?? "未知";
     return new Promise<{ headline?: string; description?: string, message?: string }>((resolve, reject) => {
         fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
             method: "POST",
@@ -31,7 +32,6 @@ export function checkLoginWithWorker(user: User) {
         })
             .then(r => r.json())
             .then((data: { isLogin: string } | null) => {
-                const userName = user.inGame?.name || user.divingFish?.name || user.inGame?.id || "未知";
                 if (data) {
                     resolve({
                         headline: `${userName}`,
@@ -44,7 +44,6 @@ export function checkLoginWithWorker(user: User) {
                 }
             })
             .catch(e => {
-                const userName = user.inGame?.name || user.divingFish?.name || user.inGame?.id || "未知";
                 reject({
                     message: `[${userName}] 获取 InGame 数据失败：${e.toString()}`,
                 });

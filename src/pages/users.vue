@@ -178,13 +178,13 @@ async function checkLoginUI(user: User) {
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in users"
-            :key="user.divingFish?.name || user.inGame?.id || index"
+            :key="index"
             clickable
         >
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{ user.divingFish?.name ?? user.inGame?.name ?? "未知" }}
+                        {{ user.data.name ??user.divingFish?.name ?? user.inGame?.name ?? "未知" }}
                     </h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>

@@ -288,7 +288,7 @@
             // selfName为用户列表第一个用户
             if (users.length > 0) {
                 selfName.value = String(
-                    users[0].divingFish?.name || users[0].inGame?.name || users[0].inGame?.id || ""
+                    users[0].data.name || ""
                 );
             }
 
