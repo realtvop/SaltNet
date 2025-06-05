@@ -202,6 +202,7 @@
                             .join()
                             .toLowerCase()
                             .includes(query.value.toLowerCase())) ||
+                    chart.music.info.id.toString() === query.value ||
                     (chartData &&
                         // 达成率 fc sync
                         (chartData.achievements?.toString().includes(query.value) ||
@@ -259,7 +260,7 @@
             clearable
             icon="search"
             label="搜索"
-            placeholder="曲名 别名 曲师 谱师"
+            placeholder="曲名 别名 id 曲师 谱师"
             @input="query = $event.target.value"
         ></mdui-text-field>
         <div class="score-grid-wrapper">

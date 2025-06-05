@@ -199,7 +199,7 @@
                                         <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
                                     </span>
                                     <span class="friend-fs" v-if="f.fs">
-                                        <img :src="`/icons/music_icon_${f.fs}.png`" class="icon" />
+                                        <img :src="`/icons/music_icon_${f.fs.replace('sd', 'dx')}.png`" class="icon" />
                                     </span>
                                 </div>
                             </mdui-list-item>
