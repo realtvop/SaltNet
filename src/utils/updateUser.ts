@@ -13,6 +13,8 @@ export function updateUserWithWorker(user: User) {
             if (type === "updateUserResult") {
                 if (result) {
                     user.data = { ...user.data, ...result };
+                    if (user.inGame.id && typeof user.inGame.id === "number" && user.inGame.id.toString().length === 8)
+                        user.inGame.name = result.name;
                 }
                 resolve({ status, message });
             } else if (type === "updateUserError") {
