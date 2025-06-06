@@ -29,7 +29,7 @@ export function updateUserWithWorker(user: User) {
 }
 
 export function checkLoginWithWorker(user: User) {
-    const userName = user.data.name ?? user.inGame?.id ?? "未知";
+    const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
     return new Promise<{ headline?: string; description?: string; message?: string }>(
         (resolve, reject) => {
             fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
