@@ -4,7 +4,7 @@ import type { DivingFishResponse } from "@/divingfish/type";
 import type { UpdateUserResponse } from "@/types/updateUser";
 import { convertDetailed, type User } from "@/types/user";
 
-self.onmessage = async event => {
+self.onmessage = event => {
     const { type, user } = event.data;
     if (type === "updateUser") {
         let result = null;
@@ -16,13 +16,19 @@ self.onmessage = async event => {
                 typeof user.inGame.id === "number" &&
                 user.inGame.id.toString().length === 8
             ) {
-                result = await fromInGame(user);
+                fromInGame(user).then(data => {
+                    result = data;
+                    self.postMessage({ type: "updateUserResult", result, status, message });
+                });
             } else if (user.divingFish.name) {
-                result = await fromDivingFish(user);
+                fromDivingFish(user).then(data => {
+                    result = data;
+                    self.postMessage({ type: "updateUserResult", result, status, message });
+                });
             } else {
                 status = "fail";
+                self.postMessage({ type: "updateUserResult", result, status, message });
             }
-            self.postMessage({ type: "updateUserResult", result, status, message });
         } catch (e) {
             self.postMessage({
                 type: "updateUserError",
@@ -31,7 +37,7 @@ self.onmessage = async event => {
         }
     } else if (type === "checkLogin") {
         try {
-            await checkLogin(user);
+            checkLogin(user);
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`检查登录状态失败：${errorMsg}`, errorMsg);
