@@ -1,12 +1,12 @@
 import type { User } from "@/types/user";
 // @ts-ignore
-import UpdateUserWorker from "@/utils/updateUser.worker.ts?worker&inline";
+import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
-const updateUserWorker = new UpdateUserWorker();
 
 export function updateUserWithWorker(user: User) {
     return new Promise<{ status: string; message: string }>((resolve, reject) => {
         const plainUser = JSON.parse(JSON.stringify(user));
+        const updateUserWorker = new UpdateUserWorker();
         updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
         updateUserWorker.onmessage = (event: MessageEvent) => {
             const { type, result, error, status, message } = event.data;
@@ -21,8 +21,10 @@ export function updateUserWithWorker(user: User) {
                         user.inGame.name = result.name;
                 }
                 resolve({ status, message });
+                updateUserWorker.terminate();
             } else if (type === "updateUserError") {
                 reject({ status: "fail", message: error || "未知错误" });
+                updateUserWorker.terminate();
             }
         };
     });

@@ -4,7 +4,7 @@
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
-    import { checkLoginWithWorker, updateUserWithWorker } from "@/utils/updateUser";
+    import { checkLogin, updateUser } from "@/utils/user";
     import { confirm, snackbar, alert } from "mdui";
     import localForage from "localforage";
 
@@ -125,9 +125,9 @@
         }
     };
 
-    async function updateUserWithWorkerUI(user: User) {
+    async function updateUserUI(user: User) {
         try {
-            const { status, message } = await updateUserWithWorker(user);
+            const { status, message } = await updateUser(user);
             snackbar({
                 message: message || "用户信息更新完成",
                 placement: "bottom",
@@ -144,13 +144,13 @@
 
     function updateAll() {
         users.value.forEach(user => {
-            updateUserWithWorkerUI(user);
+            updateUserUI(user);
         });
     }
 
     async function checkLoginUI(user: User) {
         try {
-            const data = await checkLoginWithWorker(user);
+            const data = await checkLogin(user);
             if (data.message)
                 snackbar({
                     message: data.message,
@@ -211,7 +211,7 @@
                 <mdui-button-icon
                     variant="standard"
                     icon="update"
-                    @click="updateUserWithWorker(user)"
+                    @click="updateUser(user)"
                 ></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon
