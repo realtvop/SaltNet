@@ -17,13 +17,10 @@ self.onmessage = async event => {
                 user.inGame.id.toString().length === 8
             ) {
                 result = await fromInGame(user);
-                message = "InGame 用户信息获取成功";
             } else if (user.divingFish.name) {
                 result = await fromDivingFish(user);
-                message = "水鱼用户信息获取成功";
             } else {
                 status = "fail";
-                message = "用户数据为空";
             }
             self.postMessage({ type: "updateUserResult", result, status, message });
         } catch (e) {
@@ -36,21 +33,30 @@ self.onmessage = async event => {
 };
 
 async function fromDivingFish(user: any) {
-    const data: DivingFishResponse = await fetchPlayerData(user.divingFish.name);
-    return {
-        rating: data.rating,
-        b50: data.charts,
-        updateTime: Date.now(),
-        name: data.nickname,
-    };
+    info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
+    return fetchPlayerData(user.divingFish.name)
+        .then((data: DivingFishResponse) => {
+            info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
+            return {
+                rating: data.rating,
+                b50: data.charts,
+                updateTime: Date.now(),
+                name: data.nickname,
+            };
+        })
+        .catch(e => {
+            info(`从水鱼获取 ${user.divingFish.name} 信息失败：${e.toString()}`, e.toString());
+        });
 }
 
 async function fromInGame(user: any) {
+    info(`正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id,
         user.divingFish.importToken
     );
     if (data) {
+            info(`从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
@@ -59,7 +65,7 @@ async function fromInGame(user: any) {
             updateTime: Date.now(),
         };
     } else {
-        // 失败时返回 null，前端决定如何提示
+                info(`从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`);
         return null;
     }
 }
@@ -71,7 +77,10 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
         body: JSON.stringify({ userId, importToken }),
     })
         .then(r => r.json())
-        .catch(() => null);
+        .catch(e => {
+            info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
+            return null;
+        });
 }
 
 function toHalfWidth(str: string): string {
@@ -80,4 +89,14 @@ function toHalfWidth(str: string): string {
             return String.fromCharCode(char.charCodeAt(0) - 65248);
         })
         .replace(/\u3000/g, " ");
+}
+
+function info(message: string, errorMsg?: string) {
+    self.postMessage({
+        type: "snackbar",
+        data: {
+            message,
+            errorMsg,
+        },
+    });
 }

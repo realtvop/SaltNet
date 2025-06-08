@@ -1,30 +1,39 @@
 import type { User } from "@/types/user";
+import { snackbar } from "mdui";
 // @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
+const updateUserWorker = new UpdateUserWorker();
 
 export function updateUserWithWorker(user: User) {
     return new Promise<{ status: string; message: string }>((resolve, reject) => {
         const plainUser = JSON.parse(JSON.stringify(user));
-        const updateUserWorker = new UpdateUserWorker();
+
         updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
         updateUserWorker.onmessage = (event: MessageEvent) => {
-            const { type, result, error, status, message } = event.data;
-            if (type === "updateUserResult") {
-                if (result) {
-                    user.data = { ...user.data, ...result };
+            const { type, data } = event.data;
+            if (type === "snackbar") {
+                const { message, errorMsg } = data;
+                snackbar({
+                    message,
+                    placement: "bottom",
+                    autoCloseDelay: errorMsg ? 3000 : 1500,
+                    action: errorMsg ? "复制错误" : undefined,
+                    onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,
+                });
+            } else if (type === "updateUserResult") {
+                if (data) {
+                    user.data = { ...user.data, ...data };
                     if (
                         user.inGame.id &&
                         typeof user.inGame.id === "number" &&
                         user.inGame.id.toString().length === 8
                     )
-                        user.inGame.name = result.name;
+                        user.inGame.name = data.name;
                 }
                 resolve({ status, message });
-                updateUserWorker.terminate();
             } else if (type === "updateUserError") {
                 reject({ status: "fail", message: error || "未知错误" });
-                updateUserWorker.terminate();
             }
         };
     });
