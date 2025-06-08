@@ -30,7 +30,6 @@ export function updateUserWithWorker(user: User) {
                 )
                     user.inGame.name = data.name;
             }
-        } else if (type === "updateUserError") {
         } else if (type === "alert") {
             alert(data);
         }

@@ -41,7 +41,7 @@ self.onmessage = async event => {
 
 async function fromDivingFish(user: User) {
     info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
-    return fetchPlayerData(user.divingFish.name)
+    return fetchPlayerData(user.divingFish.name as string)
         .then((data: DivingFishResponse) => {
             info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
             return {
@@ -59,8 +59,8 @@ async function fromDivingFish(user: User) {
 async function fromInGame(user: User) {
     info(`正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
     const data: UpdateUserResponse | null = await fetchInGameData(
-        user.inGame.id,
-        user.divingFish.importToken
+        user.inGame.id as number,
+        user.divingFish.importToken as string,
     );
     if (data) {
         info(`从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
