@@ -3,6 +3,7 @@ import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
 import type { Chart } from "./music";
 
 export interface User {
+    uid?: string;
     divingFish: {
         name: string | null;
         importToken?: string | null;

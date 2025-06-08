@@ -6,6 +6,10 @@ import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 const updateUserWorker = new UpdateUserWorker();
 
 export function updateUserWithWorker(user: User) {
+    // 检查并生成 uid
+    if (!user.uid) {
+        user.uid = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+    }
     const plainUser = JSON.parse(JSON.stringify(user));
 
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
