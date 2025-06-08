@@ -2,7 +2,7 @@
 import { fetchPlayerData } from "@/divingfish";
 import type { DivingFishResponse } from "@/divingfish/type";
 import type { UpdateUserResponse } from "@/types/updateUser";
-import { convertDetailed } from "@/types/user";
+import { convertDetailed, type User } from "@/types/user";
 
 self.onmessage = async event => {
     const { type, user } = event.data;
@@ -29,10 +29,17 @@ self.onmessage = async event => {
                 error: e?.toString?.() || "Unknown error",
             });
         }
+    } else if (type === "checkLogin") {
+        try {
+            await checkLogin(user);
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            info(`检查登录状态失败：${errorMsg}`, errorMsg);
+        }
     }
 };
 
-async function fromDivingFish(user: any) {
+async function fromDivingFish(user: User) {
     info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
     return fetchPlayerData(user.divingFish.name)
         .then((data: DivingFishResponse) => {
@@ -49,14 +56,14 @@ async function fromDivingFish(user: any) {
         });
 }
 
-async function fromInGame(user: any) {
+async function fromInGame(user: User) {
     info(`正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id,
         user.divingFish.importToken
     );
     if (data) {
-            info(`从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
+        info(`从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
@@ -65,7 +72,7 @@ async function fromInGame(user: any) {
             updateTime: Date.now(),
         };
     } else {
-                info(`从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`);
+        info(`从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`);
         return null;
     }
 }
@@ -80,6 +87,33 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
         .catch(e => {
             info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
             return null;
+        });
+}
+
+
+function checkLogin(user: User) {
+    const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
+    return fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.inGame.id }),
+    })
+        .then(r => r.json())
+        .then((data: { isLogin: string } | null) => {
+            if (data) {
+                self.postMessage({
+                    type: "alert",
+                    data: {
+                        headline: `${userName}`,
+                        description: data.isLogin ? "上机了哟！" : "还没有上机",
+                    },
+                });
+            } else {
+                info(`从 InGame 获取信息失败：${userName}`);
+            }
+        })
+        .catch(e => {
+            info(`获取 InGame 数据失败：${userName} - ${e.toString()}`, e.toString());
         });
 }
 
