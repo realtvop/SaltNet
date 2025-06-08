@@ -57,13 +57,17 @@ async function fromDivingFish(user: User) {
 }
 
 async function fromInGame(user: User) {
-    info(`正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
+    info(
+        `正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
+    );
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
-        user.divingFish.importToken as string,
+        user.divingFish.importToken as string
     );
     if (data) {
-        info(`从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`);
+        info(
+            `从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
+        );
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
@@ -72,7 +76,9 @@ async function fromInGame(user: User) {
             updateTime: Date.now(),
         };
     } else {
-        info(`从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`);
+        info(
+            `从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`
+        );
         return null;
     }
 }
@@ -89,7 +95,6 @@ function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUs
             return null;
         });
 }
-
 
 function checkLogin(user: User) {
     const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
