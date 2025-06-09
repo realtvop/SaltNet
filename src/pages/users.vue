@@ -4,8 +4,8 @@
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
-    import { checkLoginWithWorker, updateUserWithWorker } from "@/utils/updateUser";
-    import { confirm, snackbar, alert } from "mdui";
+    import { checkLogin, updateUser } from "@/utils/user";
+    import { confirm } from "mdui";
     import localForage from "localforage";
 
     const users = ref<User[]>([]);
@@ -125,52 +125,10 @@
         }
     };
 
-    async function updateUserWithWorkerUI(user: User) {
-        try {
-            const { status, message } = await updateUserWithWorker(user);
-            snackbar({
-                message: message || "用户信息更新完成",
-                placement: "bottom",
-                autoCloseDelay: status === "success" ? 1500 : 3000,
-            });
-        } catch (err: any) {
-            snackbar({
-                message: err?.message ? err.message : "更新用户信息失败",
-                placement: "bottom",
-                autoCloseDelay: 3000,
-            });
-        }
-    }
-
     function updateAll() {
         users.value.forEach(user => {
-            updateUserWithWorkerUI(user);
+            updateUser(user);
         });
-    }
-
-    async function checkLoginUI(user: User) {
-        try {
-            const data = await checkLoginWithWorker(user);
-            if (data.message)
-                snackbar({
-                    message: data.message,
-                    placement: "bottom",
-                    autoCloseDelay: 3000,
-                });
-            else
-                alert({
-                    headline: data.headline,
-                    description: data.description,
-                    closeOnEsc: true,
-                    closeOnOverlayClick: true,
-                });
-        } catch (err: any) {
-            snackbar({
-                message: err?.message || "查询登录状态失败",
-                placement: "bottom",
-                autoCloseDelay: 3000,
-            });
-        }
     }
 </script>
 
@@ -211,7 +169,7 @@
                 <mdui-button-icon
                     variant="standard"
                     icon="update"
-                    @click="updateUserWithWorker(user)"
+                    @click="updateUser(user)"
                 ></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon
@@ -231,7 +189,7 @@
 
                         <mdui-divider />
 
-                        <mdui-menu-item @click="checkLoginUI(user)">
+                        <mdui-menu-item @click="checkLogin(user)">
                             视奸（查询登录状态）
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
                         </mdui-menu-item>
