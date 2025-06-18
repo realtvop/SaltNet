@@ -7,6 +7,7 @@
     import ScoreCard from "@/components/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
+    import { useShared } from "@/utils/shared";
 
     declare global {
         interface Window {
@@ -16,7 +17,7 @@
         }
     }
 
-    const users = ref<User[]>([]);
+    const shared = useShared();
     const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
@@ -56,10 +57,6 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
-
-    localForage.getItem<User[]>("users").then(v => {
-        if (Array.isArray(v)) users.value = v;
-    });
 
     async function loadChartsWithCache(userData?: User | null) {
         const currentUser = userData || playerData.value;
@@ -241,14 +238,8 @@
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage
-            .getItem<User[]>("users")
-            .then(async v => {
-                if (!v) throw new Error("No users found");
-                playerData.value = v[0];
-                await loadChartsWithCache(v[0]);
-            })
-            .catch(() => loadChartsWithCache());
+        if (shared.users[0]) loadChartsWithCache(shared.users[0]);
+        else loadChartsWithCache();
     };
     onMounted(async () => {
         await loadPlayerData();
