@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, watch, defineProps, defineEmits, nextTick } from "vue";
+    import { ref, watch, defineProps, defineEmits, nextTick, toRaw } from "vue";
     import type { User } from "@/types/user";
     import { prompt, snackbar } from "mdui";
 
@@ -72,7 +72,7 @@
         () => props.user,
         newUser => {
             if (newUser) {
-                localUser.value = JSON.parse(JSON.stringify(newUser));
+                localUser.value = toRaw(newUser);
                 if (!localUser.value.divingFish) {
                     localUser.value.divingFish = { name: null, importToken: null };
                 }

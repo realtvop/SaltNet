@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref } from "vue";
+    import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
@@ -17,7 +17,7 @@
     const router = useRouter();
 
     const openEditDialog = (user: User, index: number) => {
-        currentUserToEdit.value = JSON.parse(JSON.stringify(user));
+        currentUserToEdit.value = toRaw(user);
         editingUserIndex.value = index;
         isDialogVisible.value = true;
     };
