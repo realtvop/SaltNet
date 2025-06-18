@@ -1,7 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from "vue";
-    import type { User, ChartsSortCached } from "@/types/user";
-    import localForage from "localforage";
+    import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
     import ScoreCard from "@/components/chart/ScoreCard.vue";
@@ -73,17 +72,16 @@
         )
             return;
 
-        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
         if (
-            cachedData &&
-            cachedData.identifier.name === currentIdentifier.name &&
-            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+            shared.chartsSort &&
+            shared.chartsSort.identifier.name === currentIdentifier.name &&
+            shared.chartsSort.identifier.updateTime === currentIdentifier.updateTime &&
+            shared.chartsSort.identifier.verBuildTime === currentIdentifier.verBuildTime
         ) {
-            loadedIdentifier.name = cachedData.identifier.name;
-            loadedIdentifier.updateTime = cachedData.identifier.updateTime;
+            loadedIdentifier.name = shared.chartsSort.identifier.name;
+            loadedIdentifier.updateTime = shared.chartsSort.identifier.updateTime;
 
-            allCharts.value = cachedData.charts;
+            allCharts.value = shared.chartsSort.charts;
             return;
         }
 
@@ -143,11 +141,10 @@
 
         allCharts.value = charts;
 
-        const cacheData: ChartsSortCached = {
+        shared.chartsSort = {
             identifier: currentIdentifier,
             charts: charts,
         };
-        await localForage.setItem("chartsSortCached", cacheData);
     }
     const chartListFiltered = computed(() => {
         if (!allCharts.value.length) return null;
