@@ -261,6 +261,14 @@
 </script>
 
 <template>
+    <mdui-text-field
+        id="search-input"
+        clearable
+        icon="search"
+        label="搜索"
+        placeholder="曲名 别名 id 曲师 谱师"
+        @input="query = $event.target.value"
+    ></mdui-text-field>
     <mdui-tabs :value="selectedDifficulty">
         <mdui-tab
             v-for="difficulty in difficulties"
@@ -272,13 +280,6 @@
         </mdui-tab>
     </mdui-tabs>
     <div class="card-container" v-if="chartListFiltered">
-        <mdui-text-field
-            clearable
-            icon="search"
-            label="搜索"
-            placeholder="曲名 别名 id 曲师 谱师"
-            @input="query = $event.target.value"
-        ></mdui-text-field>
         <div class="score-grid-wrapper">
             <div class="score-grid">
                 <div
@@ -299,13 +300,13 @@
         width: 100%;
     }
 
+    #search-input {
+        padding: 5px 20px;
+    }
+
     .card-container {
         padding: 5px 20px;
     }
-    /* mdui-card {
-    width: 100%;
-    height: 100px;
-} */
 
     .score-grid-wrapper {
         width: 100%;
