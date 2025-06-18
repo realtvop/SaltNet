@@ -8,7 +8,10 @@
     import { confirm } from "mdui";
     import localForage from "localforage";
 
+    import { useUsersStore } from "@/utils/store";
+
     const users = ref<User[]>([]);
+    const usersStore = useUsersStore();
 
     localForage.getItem<User[]>("users").then(v => {
         if (Array.isArray(v)) users.value = v;
