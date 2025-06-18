@@ -1,20 +1,10 @@
 <script setup lang="ts">
-    import { ref, onMounted } from "vue";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import { useRouter } from "vue-router";
-    import localForage from "localforage";
-    import type { User } from "@/types/user";
+    import { useShared } from "@/utils/shared";
 
-    const playerData = ref<User | null>(null);
     const router = useRouter();
-
-    onMounted(() => {
-        localForage.getItem<User[]>("users").then(v => {
-            if (v && v[0]) {
-                playerData.value = v[0];
-            }
-        });
-    });
+    const shared = useShared();
 </script>
 
 <template>
@@ -27,15 +17,15 @@
             <div style="padding: 20px; text-align: center">
                 <mdui-typography variant="headline-medium" class="welcome-text">
                     欢迎，{{
-                        playerData
-                            ? playerData.divingFish.name || playerData.inGame.name || "wmc"
+                        shared.users[0]
+                            ? shared.users[0].divingFish.name || shared.users[0].inGame.name || "wmc"
                             : "wmc"
                     }}
                 </mdui-typography>
 
-                <div v-if="playerData" class="rating-container">
+                <div v-if="shared.users[0]" class="rating-container">
                     <RatingPlate
-                        :ra="playerData.data.rating as number"
+                        :ra="shared.users[0].data.rating as number"
                         :small="false"
                         class="large-rating"
                     />
