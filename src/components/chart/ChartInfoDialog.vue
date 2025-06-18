@@ -237,7 +237,6 @@
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref } from "vue";
     import { useShared } from "@/utils/shared";
-    import type { User } from "../../types/user";
     import { snackbar } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";
 

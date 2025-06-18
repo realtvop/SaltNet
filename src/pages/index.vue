@@ -18,7 +18,9 @@
                 <mdui-typography variant="headline-medium" class="welcome-text">
                     欢迎，{{
                         shared.users[0]
-                            ? shared.users[0].divingFish.name || shared.users[0].inGame.name || "wmc"
+                            ? shared.users[0].divingFish.name ||
+                              shared.users[0].inGame.name ||
+                              "wmc"
                             : "wmc"
                     }}
                 </mdui-typography>

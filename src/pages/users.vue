@@ -198,8 +198,12 @@
     <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
 
     <div class="fab-container">
-        <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">全部更新</mdui-fab>
-        <mdui-fab icon="add" :extended="!shared.users.length" @click="openAddDialog">添加用户</mdui-fab>
+        <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
+            全部更新
+        </mdui-fab>
+        <mdui-fab icon="add" :extended="!shared.users.length" @click="openAddDialog">
+            添加用户
+        </mdui-fab>
     </div>
 </template>
 

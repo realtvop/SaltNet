@@ -1,6 +1,5 @@
 <script setup lang="ts">
     import { ref, provide } from "vue";
-    import { defineStore } from 'pinia'
     import { useRoute, useRouter } from "vue-router";
     import TopAppBar from "./components/app/TopAppBar.vue";
 
