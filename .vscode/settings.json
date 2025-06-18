@@ -3,5 +3,8 @@
     "css.customData": ["./node_modules/mdui/css-data.zh-cn.json"],
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "volar.checkVueTsc": true,
+    "js/ts.implicitProjectConfig.checkJs": false
 }

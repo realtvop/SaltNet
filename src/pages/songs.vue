@@ -1,12 +1,12 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from "vue";
-    import type { User, ChartsSortCached } from "@/types/user";
-    import localForage from "localforage";
+    import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import MusicSort from "@/assets/MusicSort";
     import ScoreCard from "@/components/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
+    import { useShared } from "@/utils/shared";
 
     declare global {
         interface Window {
@@ -16,7 +16,7 @@
         }
     }
 
-    const users = ref<User[]>([]);
+    const shared = useShared();
     const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
@@ -57,10 +57,6 @@
         // verBuildTime: 0,
     };
 
-    localForage.getItem<User[]>("users").then(v => {
-        if (Array.isArray(v)) users.value = v;
-    });
-
     async function loadChartsWithCache(userData?: User | null) {
         const currentUser = userData || playerData.value;
 
@@ -76,17 +72,16 @@
         )
             return;
 
-        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
         if (
-            cachedData &&
-            cachedData.identifier.name === currentIdentifier.name &&
-            cachedData.identifier.updateTime === currentIdentifier.updateTime &&
-            cachedData.identifier.verBuildTime === currentIdentifier.verBuildTime
+            shared.chartsSort &&
+            shared.chartsSort.identifier.name === currentIdentifier.name &&
+            shared.chartsSort.identifier.updateTime === currentIdentifier.updateTime &&
+            shared.chartsSort.identifier.verBuildTime === currentIdentifier.verBuildTime
         ) {
-            loadedIdentifier.name = cachedData.identifier.name;
-            loadedIdentifier.updateTime = cachedData.identifier.updateTime;
+            loadedIdentifier.name = shared.chartsSort.identifier.name;
+            loadedIdentifier.updateTime = shared.chartsSort.identifier.updateTime;
 
-            allCharts.value = cachedData.charts;
+            allCharts.value = shared.chartsSort.charts;
             return;
         }
 
@@ -146,11 +141,10 @@
 
         allCharts.value = charts;
 
-        const cacheData: ChartsSortCached = {
+        shared.chartsSort = {
             identifier: currentIdentifier,
             charts: charts,
         };
-        await localForage.setItem("chartsSortCached", cacheData);
     }
     const chartListFiltered = computed(() => {
         if (!allCharts.value.length) return null;
@@ -241,14 +235,8 @@
     const loadPlayerData = async () => {
         playerData.value = null;
 
-        localForage
-            .getItem<User[]>("users")
-            .then(async v => {
-                if (!v) throw new Error("No users found");
-                playerData.value = v[0];
-                await loadChartsWithCache(v[0]);
-            })
-            .catch(() => loadChartsWithCache());
+        if (shared.users[0]) loadChartsWithCache(shared.users[0]);
+        else loadChartsWithCache();
     };
     onMounted(async () => {
         await loadPlayerData();
@@ -261,6 +249,14 @@
 </script>
 
 <template>
+    <mdui-text-field
+        id="search-input"
+        clearable
+        icon="search"
+        label="搜索"
+        placeholder="曲名 别名 id 曲师 谱师"
+        @input="query = $event.target.value"
+    ></mdui-text-field>
     <mdui-tabs :value="selectedDifficulty">
         <mdui-tab
             v-for="difficulty in difficulties"
@@ -272,13 +268,6 @@
         </mdui-tab>
     </mdui-tabs>
     <div class="card-container" v-if="chartListFiltered">
-        <mdui-text-field
-            clearable
-            icon="search"
-            label="搜索"
-            placeholder="曲名 别名 id 曲师 谱师"
-            @input="query = $event.target.value"
-        ></mdui-text-field>
         <div class="score-grid-wrapper">
             <div class="score-grid">
                 <div
@@ -299,13 +288,13 @@
         width: 100%;
     }
 
+    #search-input {
+        padding: 5px 20px;
+    }
+
     .card-container {
         padding: 5px 20px;
     }
-    /* mdui-card {
-    width: 100%;
-    height: 100px;
-} */
 
     .score-grid-wrapper {
         width: 100%;

@@ -21,8 +21,10 @@
 </template>
 
 <script setup lang="ts">
-    import localforage from "localforage";
+    import { useShared } from "@/utils/shared";
     import { snackbar, confirm } from "mdui";
+
+    const shared = useShared();
 
     const userData = {
         import: () => {
@@ -36,7 +38,7 @@
                     const text = await file.text();
                     const data = JSON.parse(text);
                     const decoded = userData.dataDecoder[0](data);
-                    await localforage.setItem("users", decoded.users);
+                    shared.users = decoded.users;
                     snackbar({
                         message: "导入成功，正在同步曲目数据...",
                         autoCloseDelay: 500,
@@ -55,33 +57,30 @@
                 message: "正在导出",
                 autoCloseDelay: 500,
             });
-            localforage.getItem("users").then(v => {
-                if (v) {
-                    const data = {
-                        version: 0,
-                        tip: "为简单保护用户id，以下内容使用base64编码",
-                        users: btoa(unescape(encodeURIComponent(JSON.stringify(v)))),
-                    };
+            if (shared.users) {
+                const data = {
+                    version: 0,
+                    tip: "为简单保护用户id，以下内容使用base64编码",
+                    users: btoa(unescape(encodeURIComponent(JSON.stringify(shared.users)))),
+                };
+                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "SaltNet_用户数据.json";
+                a.click();
+                URL.revokeObjectURL(url);
 
-                    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "SaltNet_用户数据.json";
-                    a.click();
-                    URL.revokeObjectURL(url);
-
-                    snackbar({
-                        message: "已导出",
-                        autoCloseDelay: 500,
-                    });
-                } else {
-                    snackbar({
-                        message: "没有数据可导出",
-                        autoCloseDelay: 500,
-                    });
-                }
-            });
+                snackbar({
+                    message: "已导出",
+                    autoCloseDelay: 500,
+                });
+            } else {
+                snackbar({
+                    message: "没有数据可导出",
+                    autoCloseDelay: 500,
+                });
+            }
         },
         dataDecoder: [
             (data: { users: string }) => {

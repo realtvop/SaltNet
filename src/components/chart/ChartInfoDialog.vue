@@ -236,10 +236,11 @@
     import { getDetailedRatingsByDs } from "@/utils/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref } from "vue";
-    import localForage from "localforage";
-    import type { User } from "../../types/user";
+    import { useShared } from "@/utils/shared";
     import { snackbar } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";
+
+    const shared = useShared();
 
     const props = defineProps<{
         open: boolean;
@@ -287,10 +288,8 @@
             // 设置默认展开对应难度
             defaultExpandedValue.value = props.chart.info.grade?.toString() || "0";
 
-            const users: User[] = (await localForage.getItem("users")) || [];
-            // selfName为用户列表第一个用户
-            if (users.length > 0) {
-                selfName.value = String(users[0].data.name || "");
+            if (shared.users.length > 0) {
+                selfName.value = String(shared.users[0].data.name || "");
             }
 
             // 从缓存中加载项目位置
@@ -300,7 +299,7 @@
             props.chart.music.charts.forEach(chartInfo => {
                 const chartFriends: any[] = [];
 
-                users.forEach(user => {
+                shared.users.forEach(user => {
                     const uname = String(
                         user.divingFish?.name || user.inGame?.name || user.inGame?.id || ""
                     );

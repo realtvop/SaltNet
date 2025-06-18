@@ -1,26 +1,14 @@
 <script setup lang="ts">
-    import { ref, watch } from "vue";
+    import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
     import { checkLogin, updateUser } from "@/utils/user";
     import { confirm } from "mdui";
-    import localForage from "localforage";
+    import { useShared } from "@/utils/shared";
 
-    const users = ref<User[]>([]);
-
-    localForage.getItem<User[]>("users").then(v => {
-        if (Array.isArray(v)) users.value = v;
-    });
-
-    watch(
-        users,
-        v => {
-            localForage.setItem("users", JSON.parse(JSON.stringify(v)));
-        },
-        { deep: true }
-    );
+    const shared = useShared();
 
     const isDialogVisible = ref(false);
     const currentUserToEdit = ref<User | null>(null);
@@ -29,7 +17,7 @@
     const router = useRouter();
 
     const openEditDialog = (user: User, index: number) => {
-        currentUserToEdit.value = JSON.parse(JSON.stringify(user));
+        currentUserToEdit.value = toRaw(user);
         editingUserIndex.value = index;
         isDialogVisible.value = true;
     };
@@ -50,15 +38,15 @@
 
     const openDeleteDialog = (index: number) => {
         confirm({
-            headline: `删除绑定的用户：${users.value[index].divingFish.name ?? users.value[index].inGame.name ?? users.value[index].inGame.id}？`,
+            headline: `删除绑定的用户：${shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onConfirm: () => {
-                if (index !== null && index >= 0 && index < users.value.length)
-                    users.value.splice(index, 1);
+                if (index !== null && index >= 0 && index < shared.users.length)
+                    shared.users.splice(index, 1);
                 return true;
             },
         });
@@ -76,7 +64,7 @@
 
     const handleUserSave = (updatedUserData: UpdatedUserData) => {
         if (editingUserIndex.value === null) {
-            users.value.push({
+            shared.users.push({
                 divingFish: {
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
@@ -95,9 +83,9 @@
 
         const index = editingUserIndex.value;
 
-        if (index >= 0 && index < users.value.length) {
-            const originalUser = users.value[index];
-            users.value[index] = {
+        if (index >= 0 && index < shared.users.length) {
+            const originalUser = shared.users[index];
+            shared.users[index] = {
                 ...originalUser,
                 divingFish: {
                     ...originalUser.divingFish,
@@ -119,14 +107,14 @@
     };
 
     const setAsDefault = (index: number) => {
-        if (index > 0 && index < users.value.length) {
-            const user = users.value.splice(index, 1)[0];
-            users.value.unshift(user);
+        if (index > 0 && index < shared.users.length) {
+            const user = shared.users.splice(index, 1)[0];
+            shared.users.unshift(user);
         }
     };
 
     function updateAll() {
-        users.value.forEach(user => {
+        shared.users.forEach(user => {
             updateUser(user);
         });
     }
@@ -137,7 +125,7 @@
     <div class="user-cards-container">
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
-            v-for="(user, index) in users"
+            v-for="(user, index) in shared.users"
             :key="index"
             clickable
         >
@@ -210,8 +198,12 @@
     <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
 
     <div class="fab-container">
-        <mdui-fab icon="update" extended v-if="users.length" @click="updateAll">全部更新</mdui-fab>
-        <mdui-fab icon="add" :extended="!users.length" @click="openAddDialog">添加用户</mdui-fab>
+        <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
+            全部更新
+        </mdui-fab>
+        <mdui-fab icon="add" :extended="!shared.users.length" @click="openAddDialog">
+            添加用户
+        </mdui-fab>
     </div>
 </template>
 
