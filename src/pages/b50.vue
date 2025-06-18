@@ -1,19 +1,18 @@
 <script setup lang="ts">
-    import { ref, computed, onMounted } from "vue";
+    import { ref, computed } from "vue";
     import { useRoute } from "vue-router";
     import ScoreSection from "@/components/chart/ScoreSection.vue";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
-    import type { User } from "@/types/user";
-    import localForage from "localforage";
     import type { Chart } from "@/types/music";
     import { musicInfo } from "@/assets/music";
+    import { useShared } from "@/utils/shared";
 
     const route = useRoute();
+    const shared = useShared();
     const userId = ref(route.params.id as string);
     const error = ref<string | null>(null);
     const pending = ref(false);
-    const playerData = ref<User | null>(null);
     const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
@@ -28,23 +27,8 @@
     }
     buildMusicChartMap();
 
-    const loadPlayerData = async (id: number) => {
-        pending.value = true;
-        error.value = null;
-        playerData.value = null;
-
-        localForage.getItem<User[]>("users").then(v => {
-            if (v) playerData.value = v[id];
-            pending.value = false;
-        });
-    };
-
-    onMounted(() => {
-        loadPlayerData(Number(userId.value ?? "0"));
-    });
-
     const player = computed(() => {
-        return playerData.value ?? null;
+        return shared.users[Number(userId.value ?? "0")] ?? null;
     });
 
     const errorMessage = computed(() => {
@@ -127,7 +111,6 @@
 <style scoped>
     .player-profile {
         width: 100%;
-        /* padding-top: 80px; */ /* 移除此行，由 App.vue 的 content-padding 处理 */
         display: flex;
         flex-direction: column;
         align-items: center;
