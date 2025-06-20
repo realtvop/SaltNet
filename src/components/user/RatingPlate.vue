@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { defineProps } from "vue";
 
-    import plates from "@/assets/plates";
+    import plates from "@/assets/plates.json";
 
     const props = defineProps<{
         ra: number;

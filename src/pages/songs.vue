@@ -2,7 +2,7 @@
     import { ref, onMounted, computed } from "vue";
     import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
-    import MusicSort from "@/assets/MusicSort";
+    import { MusicSort } from "@/assets/music";
     import ScoreCard from "@/components/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import { getMusicInfoAsync } from "@/assets/music";
