@@ -1,7 +1,6 @@
-<script lang="ts">
-    import { defineStore } from "pinia";
-    import { ref, watch, toRaw } from "vue";
-    import localForage from "localforage";
+import { defineStore } from "pinia";
+import { ref, watch, toRaw } from "vue";
+import localForage from "localforage";
 
     import type { ChartsSortCached, User } from "@/types/user";
 
@@ -34,6 +33,5 @@
             });
         });
 
-        return { users, chartsSort };
-    });
-</script>
+    return { users, chartsSort };
+});

@@ -6,7 +6,7 @@
     import type { User } from "@/types/user";
     import { checkLogin, updateUser } from "@/utils/user";
     import { confirm } from "mdui";
-    import { useShared } from "@/components/shared.vue";
+    import { useShared } from "@/utils/shared";
 
     const shared = useShared();
 
