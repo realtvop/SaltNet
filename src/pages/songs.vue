@@ -6,7 +6,7 @@
     import ScoreCard from "@/components/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import { getMusicInfoAsync } from "@/assets/music";
-    import { useShared } from "@/utils/shared";
+    import { useShared } from "@/components/shared.vue";
 
     declare global {
         interface Window {

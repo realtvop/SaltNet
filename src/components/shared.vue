@@ -1,3 +1,4 @@
+<script lang="ts">
 import { defineStore } from "pinia";
 import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
@@ -35,3 +36,4 @@ export const useShared = defineStore("shared", () => {
 
     return { users, chartsSort };
 });
+</script>

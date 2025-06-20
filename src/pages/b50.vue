@@ -6,7 +6,7 @@
     import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
     import type { Chart } from "@/types/music";
     import { musicInfo } from "@/assets/music";
-    import { useShared } from "@/utils/shared";
+    import { useShared } from "@/components/shared.vue";
 
     const route = useRoute();
     const shared = useShared();
