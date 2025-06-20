@@ -36,4 +36,6 @@
 
         return { users, chartsSort };
     });
+
+    export default undefined;
 </script>
