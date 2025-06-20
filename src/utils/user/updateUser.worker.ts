@@ -18,31 +18,16 @@ self.onmessage = event => {
             ) {
                 fromInGame(user).then(data => {
                     result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
+                    self.postMessage({ type: `updateUserResult::${user.uid}`, result, status, message });
                 });
             } else if (user.divingFish.name) {
                 fromDivingFish(user).then(data => {
                     result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
+                    self.postMessage({ type: `updateUserResult::${user.uid}`, result, status, message });
                 });
             } else {
                 status = "fail";
-                self.postMessage({
-                    type: `updateUserResult::${user.uid}`,
-                    result,
-                    status,
-                    message,
-                });
+                self.postMessage({ type: `updateUserResult::${user.uid}`, result, status, message });
             }
         } catch (e) {
             self.postMessage({
