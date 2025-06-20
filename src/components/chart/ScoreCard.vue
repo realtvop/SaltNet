@@ -285,7 +285,7 @@
     export function checkChartDataType(chart: Chart | DivingFishFullRecord) {
         return "song_id" in chart ? ChartDataType.DivingFishFullRecord : ChartDataType.Chart;
     }
-    
+
     export const getChartInfo = {
         // 信息
         musicIdString: (chart: Chart | DivingFishFullRecord) => {
