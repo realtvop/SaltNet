@@ -3,7 +3,7 @@
     import { useRoute } from "vue-router";
     import ScoreSection from "@/components/chart/ScoreSection.vue";
     import RatingPlate from "@/components/user/RatingPlate.vue";
-    import ChartInfoDialog from "@/components/chart/ChartInfoDialog.vue";
+    import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import type { Chart } from "@/types/music";
     import { musicInfo } from "@/assets/music";
     import { useShared } from "@/components/shared.vue";
