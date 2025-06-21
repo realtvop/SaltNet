@@ -14,11 +14,12 @@
     <div class="maimai-card-wrapper">
         <mdui-card variant="filled" class="maimai-result-card" clickable @click="emit('click')">
             <div class="song-jacket-section">
-                <img
+                <div
                     class="song-jacket-image"
-                    :src="`https://www.diving-fish.com/covers/${getChartInfo.musicIdString(props.data)}.png`"
-                    loading="lazy"
-                />
+                    :style="{
+                        'background-image': `url('https://www.diving-fish.com/covers/${getChartInfo.musicIdString(props.data)}.png')`,
+                    }"
+                ></div>
             </div>
             <div class="result-details-section">
                 <div class="result-header">
@@ -110,8 +111,8 @@
         width: 100%;
         height: 100%;
         position: absolute;
-        object-fit: cover;
-        object-position: center;
+        background-size: cover;
+        background-position: center;
     }
 
     .result-details-section {
