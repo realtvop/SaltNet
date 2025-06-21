@@ -1,8 +1,7 @@
 <script setup lang="ts">
     import { defineProps } from "vue";
 
-    import plates from "@/assets/plates";
-    import { getPlateId } from "@/utils/genPlate";
+    import plates from "@/assets/plates.json";
 
     const props = defineProps<{
         ra: number;
@@ -30,6 +29,21 @@
         </text>
     </svg>
 </template>
+
+<script lang="ts">
+    export function getPlateId(rating: number): string {
+        const levels = [1000, 2000, 4000, 7000, 10000, 12000, 13000, 14000, 14500, 15000];
+
+        if (rating < levels[0]) return "01";
+        if (rating >= levels[9]) return "11";
+
+        const plateIndex = levels.findIndex(
+            (threshold, i) => rating >= threshold && rating < levels[i + 1]
+        );
+
+        return plateIndex >= 0 ? (plateIndex + 2).toString().padStart(2, "0") : "00";
+    }
+</script>
 
 <style scoped>
     svg {
