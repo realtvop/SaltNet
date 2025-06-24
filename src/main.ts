@@ -7,7 +7,6 @@ import router from "./components/router.vue";
 import "mdui/mdui.css";
 import { setColorScheme } from "mdui";
 import { checkForUpdate } from "./utils/checkForUpdate";
-import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 
 const pinia = createPinia();
 const app = createApp(App);

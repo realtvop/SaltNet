@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, onUnmounted, computed } from "vue";
+    import { ref, onMounted, computed } from "vue";
     import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import { MusicSort } from "@/assets/music";
@@ -7,7 +7,6 @@
     import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import { getMusicInfoAsync } from "@/assets/music";
     import { useShared } from "@/utils/shared";
-    import { RecycleScroller } from 'vue-virtual-scroller';
 
     declare global {
         interface Window {
@@ -20,7 +19,6 @@
     const shared = useShared();
     const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
-    const itemsPerRow = ref<number>(5);
     const difficulties = [
         "ALL",
         "1",
@@ -234,32 +232,12 @@
         return { [selectedDifficulty.value]: chartsWithIndex };
     });
 
-    const chartRows = computed(() => {
-        if (!chartListFiltered.value) return [];
-        
-        const charts = chartListFiltered.value[selectedDifficulty.value] || [];
-        const rows = [];
-        
-        // Group charts into rows based on current items per row
-        const perRow = itemsPerRow.value;
-        
-        for (let i = 0; i < charts.length; i += perRow) {
-            rows.push({
-                id: `row-${i}`,
-                charts: charts.slice(i, i + perRow)
-            });
-        }
-        
-        return rows;
-    });
-
     const loadPlayerData = async () => {
         playerData.value = null;
 
         if (shared.users[0]) loadChartsWithCache(shared.users[0]);
         else loadChartsWithCache();
     };
-
     onMounted(async () => {
         await loadPlayerData();
     });
@@ -290,23 +268,17 @@
         </mdui-tab>
     </mdui-tabs>
     <div class="card-container" v-if="chartListFiltered">
-        <RecycleScroller
-            class="scroller"
-            :items="chartRows"
-            :item-size="99"
-            key-field="id"
-            v-slot="{ item }"
-        >
-            <div class="chart-row">
+        <div class="score-grid-wrapper">
+            <div class="score-grid">
                 <div
-                    v-for="chart in item.charts"
-                    :key="`score-cell-${chart.music.id}-${chart.info.grade}`"
+                    v-for="(chart, index) in chartListFiltered[selectedDifficulty]"
+                    :key="`score-cell-${index}`"
                     class="score-cell"
                 >
                     <ScoreCard :data="chart" @click="openChartInfoDialog(chart)" />
                 </div>
             </div>
-        </RecycleScroller>
+        </div>
     </div>
     <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
 </template>
@@ -322,31 +294,21 @@
 
     .card-container {
         padding: 5px 20px;
-        height: calc(100vh - 200px);
-    }
-
-    .scroller {
-        height: 100%;
-    }
-
-    .chart-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 210px);
-        gap: 15px;
-        padding: 0;
-        /* margin-bottom: 15px; */
-        width: 100%;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-
-    .chart-row:first-child {
-        margin-top: 20px;
     }
 
     .score-grid-wrapper {
         width: 100%;
         overflow: visible;
+    }
+
+    .score-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 210px);
+        gap: 15px;
+        margin-top: 20px;
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
     }
 
     .score-cell {
@@ -359,37 +321,45 @@
     }
 
     @media (min-width: 1254px) {
-        .chart-row {
+        .score-grid {
             grid-template-columns: repeat(5, 210px);
             justify-content: center;
         }
     }
 
     @media (max-width: 1253px) and (min-width: 1000px) {
-        .chart-row {
+        .score-grid {
             grid-template-columns: repeat(4, 210px);
             justify-content: center;
         }
     }
 
     @media (max-width: 999px) and (min-width: 768px) {
-        .chart-row {
+        .score-grid {
             grid-template-columns: repeat(3, 210px);
             justify-content: center;
         }
     }
 
     @media (max-width: 767px) and (min-width: 500px) {
-        .chart-row {
+        .score-grid {
             grid-template-columns: repeat(2, 210px);
             justify-content: center;
         }
     }
 
     @media (max-width: 499px) {
-        .chart-row {
+        .score-grid-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: auto;
+            overflow: visible;
+        }
+        .score-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
+            transform: none;
             width: 100%;
             margin: 0;
             justify-content: center;
@@ -420,7 +390,7 @@
     }
 
     @media (max-width: 349px) {
-        .chart-row {
+        .score-grid {
             grid-template-columns: 210px;
             justify-content: center;
         }
