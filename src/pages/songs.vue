@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed } from "vue";
+    import { ref, onMounted, computed, watch } from "vue";
     import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import { MusicSort } from "@/assets/music";
@@ -152,10 +152,10 @@
         let filteredCharts: Chart[];
 
         if (selectedDifficulty.value === "ALL") {
-            filteredCharts = allCharts.value.filter(chart => chart.info.grade === 3);
+            filteredCharts = allCharts.value.filter((chart: Chart) => chart.info.grade === 3);
         } else {
             filteredCharts = allCharts.value.filter(
-                chart => chart.info.level === selectedDifficulty.value
+                (chart: Chart) => chart.info.level === selectedDifficulty.value
             );
         }
 
@@ -246,6 +246,37 @@
         chartInfoDialog.value.chart = chart;
         chartInfoDialog.value.open = !chartInfoDialog.value.open;
     }
+
+    const itemsToRender = computed(() => {
+        if (!chartListFiltered.value) return [];
+        return chartListFiltered.value[selectedDifficulty.value] || [];
+    });
+
+    const visibleItemsCount = ref(50);
+    const maxVisibleItems = computed(() =>
+        Math.min(visibleItemsCount.value, itemsToRender.value.length)
+    );
+
+    // 监听难度变化，重置可见项目数量
+    watch(selectedDifficulty, () => {
+        visibleItemsCount.value = 50;
+    });
+
+    const loadMore = () => {
+        if (visibleItemsCount.value < itemsToRender.value.length) {
+            visibleItemsCount.value = Math.min(
+                visibleItemsCount.value + 50,
+                itemsToRender.value.length
+            );
+        }
+    };
+
+    const handleScroll = (event: Event) => {
+        const target = event.target as HTMLElement;
+        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+            loadMore();
+        }
+    };
 </script>
 
 <template>
@@ -267,15 +298,19 @@
             {{ difficulty }}
         </mdui-tab>
     </mdui-tabs>
-    <div class="card-container" v-if="chartListFiltered">
+    <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
             <div class="score-grid">
                 <div
-                    v-for="(chart, index) in chartListFiltered[selectedDifficulty]"
+                    v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
                     :key="`score-cell-${index}`"
                     class="score-cell"
                 >
                     <ScoreCard :data="chart" @click="openChartInfoDialog(chart)" />
+                </div>
+
+                <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
+                    正在加载更多...
                 </div>
             </div>
         </div>
@@ -294,6 +329,18 @@
 
     .card-container {
         padding: 5px 20px;
+        min-height: 600px;
+        overflow-y: auto;
+        height: calc(100vh - 76px - 11.75rem);
+
+        @supports (-webkit-touch-callout: none) {
+            @media all and (display-mode: standalone) {
+                height: calc(100vh - 76px - 12.75rem);
+            }
+        }
+        @media (min-aspect-ratio: 1.001/1) {
+            height: calc(100vh - 76px - 6.75rem);
+        }
     }
 
     .score-grid-wrapper {
@@ -370,23 +417,6 @@
             box-sizing: border-box;
             padding: 0;
         }
-        .score-section {
-            padding: 0 20px;
-            overflow: visible;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .section-title {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 5px;
-        }
-
-        .stats-info {
-            margin-left: 5px;
-            font-size: 0.8rem;
-        }
     }
 
     @media (max-width: 349px) {
@@ -397,8 +427,12 @@
         .score-cell {
             width: 210px;
         }
-        .score-section {
-            padding: 0 20px;
-        }
+    }
+
+    .loading-indicator {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        margin-top: 20px;
     }
 </style>
