@@ -253,7 +253,9 @@
     });
 
     const visibleItemsCount = ref(50);
-    const maxVisibleItems = computed(() => Math.min(visibleItemsCount.value, itemsToRender.value.length));
+    const maxVisibleItems = computed(() =>
+        Math.min(visibleItemsCount.value, itemsToRender.value.length)
+    );
 
     // 监听难度变化，重置可见项目数量
     watch(selectedDifficulty, () => {
@@ -262,7 +264,10 @@
 
     const loadMore = () => {
         if (visibleItemsCount.value < itemsToRender.value.length) {
-            visibleItemsCount.value = Math.min(visibleItemsCount.value + 50, itemsToRender.value.length);
+            visibleItemsCount.value = Math.min(
+                visibleItemsCount.value + 50,
+                itemsToRender.value.length
+            );
         }
     };
 
