@@ -303,9 +303,10 @@
                 >
                     <ScoreCard :data="chart" @click="openChartInfoDialog(chart)" />
                 </div>
-            </div>
-            <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
-                正在加载更多...
+
+                <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
+                    正在加载更多...
+                </div>
             </div>
         </div>
     </div>
@@ -323,9 +324,18 @@
 
     .card-container {
         padding: 5px 20px;
-        height: calc(100vh - 200px);
         min-height: 600px;
         overflow-y: auto;
+        height: calc(100vh - 76px - 11.75rem);
+
+        @supports (-webkit-touch-callout: none) {
+            @media all and (display-mode: standalone) {
+                height: calc(100vh - 76px - 12.75rem);
+            }
+        }
+        @media (min-aspect-ratio: 1.001/1) {
+            height: calc(100vh - 76px - 6.75rem);
+        }
     }
 
     .score-grid-wrapper {
