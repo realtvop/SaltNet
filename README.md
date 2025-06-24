@@ -4,6 +4,8 @@
 
 开发中的 **舞萌DX** 查分网站
 
+用户群: [QQ: 638052667](https://qm.qq.com/q/mwhqbv7FpQ)
+
 International & Japanese ver. will be supported later.
 
 ## TODO
