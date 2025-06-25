@@ -42,60 +42,63 @@
             </mdui-chip>
         </div>
 
-        <mdui-collapse accordion :value="defaultExpandedValue">
-            <mdui-collapse-item
+        <mdui-tabs :value="defaultExpandedValue" placement="top">
+            <mdui-tab
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="chartInfo.info.grade"
                 :value="chartInfo.info.grade.toString()"
             >
-                <mdui-list-item slot="header">
-                    <div class="collapse-header">
-                        <div class="header-left">
-                            <span
-                                class="difficulty-badge"
-                                :class="`difficulty-${chartInfo.info.grade}`"
-                            >
-                                {{
-                                    ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][
-                                        chartInfo.info.grade
-                                    ]
-                                }}
+                <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
+                <div class="tab-header" slot="icon">
+                    <span
+                        class="difficulty-badge"
+                        :class="`difficulty-${chartInfo.info.grade}`"
+                    >
+                        {{
+                            ["BAS", "ADV", "EXP", "MAS", "ReM"][
+                                chartInfo.info.grade
+                            ]
+                        }}
+                    </span>
+                </div>
+            </mdui-tab>
+            
+            <mdui-tab-panel
+                v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
+                :key="`panel-${chartInfo.info.grade}`"
+                :value="chartInfo.info.grade.toString()"
+                slot="panel"
+            >
+                <div class="tab-content">
+                    <!-- 当前用户成绩信息 -->
+                    <div class="score-summary" v-if="getCurrentChartScore(chartInfo)">
+                        <div class="score-info">
+                            <img
+                                v-if="getCurrentChartScore(chartInfo).rate"
+                                :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
+                                class="rank-icon"
+                            />
+                            <span class="achievement">
+                                {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
                             </span>
-                            <span class="level-info">
-                                {{ chartInfo.info.constant }}
+                            <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">
+                                {{ getCurrentChartScore(chartInfo).ra }}
                             </span>
-                        </div>
-                        <div class="header-right">
-                            <div class="score-info" v-if="getCurrentChartScore(chartInfo)">
+                            <span class="score-badges">
                                 <img
-                                    v-if="getCurrentChartScore(chartInfo).rate"
-                                    :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
-                                    class="rank-icon"
+                                    v-if="getCurrentChartScore(chartInfo).fc"
+                                    :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
+                                    class="mini-icon"
                                 />
-                                <span class="achievement">
-                                    {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
-                                </span>
-                                <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">
-                                    {{ getCurrentChartScore(chartInfo).ra }}
-                                </span>
-                                <span class="score-badges">
-                                    <img
-                                        v-if="getCurrentChartScore(chartInfo).fc"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
-                                        class="mini-icon"
-                                    />
-                                    <img
-                                        v-if="getCurrentChartScore(chartInfo).fs"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
-                                        class="mini-icon"
-                                    />
-                                </span>
-                            </div>
+                                <img
+                                    v-if="getCurrentChartScore(chartInfo).fs"
+                                    :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
+                                    class="mini-icon"
+                                />
+                            </span>
                         </div>
                     </div>
-                </mdui-list-item>
-
-                <div class="collapse-content">
+                    
                     <!-- 谱面基本信息 -->
                     <div class="chart-basic-info">
                         <div class="info-row">
@@ -209,8 +212,8 @@
                         </mdui-list>
                     </div>
                 </div>
-            </mdui-collapse-item>
-        </mdui-collapse>
+            </mdui-tab-panel>
+        </mdui-tabs>
 
         <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
             别名
@@ -463,6 +466,7 @@
         aspect-ratio: 1 / 1;
         margin: 0 auto;
         display: block;
+        max-width: 300px;
 
         background: image("https://www.diving-fish.com/covers/00000.png");
     }
@@ -530,6 +534,32 @@
         height: 24px;
         margin-left: 0.5rem;
     }
+    .tab-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .tab-content {
+        padding: 1rem 0;
+    }
+
+    .score-summary {
+        background: rgba(var(--mdui-color-surface-variant), 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .score-summary .score-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.875rem;
+        justify-content: center;
+    }
+
+    /* 移除折叠面板相关样式，保留通用样式 */
     .collapse-header {
         display: flex;
         align-items: center;
@@ -540,17 +570,24 @@
         padding: 0 1rem 1rem 1rem;
     }
 
+    mdui-tabs {
+        --mdui-color-surface: #6cf;
+    }
     /* 难度标识样式 */
     .difficulty-badge {
-        padding: 4px 12px;
+        padding: 2px 12px;
         border-radius: 16px;
         font-weight: 600;
         font-size: 0.75rem;
         color: white;
-        margin-right: 12px;
-        min-width: 80px;
         text-align: center;
         display: inline-block;
+    }
+    .difficulty-constant {
+        font-size: 1rem;
+
+        margin-top: 0.25rem;
+        margin-bottom: -0.1rem;
     }
 
     .difficulty-0 {
@@ -637,24 +674,12 @@
         border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
     }
 
-    .collapse-header {
-        width: 100%;
-        gap: 0;
-    }
-
     .friend-fs {
         min-width: 2.5em;
         text-align: left;
     }
 
-    /* 折叠头部布局样式 */
-    .collapse-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
-
+    /* 移除折叠头部布局样式，保留需要的通用样式 */
     .header-left {
         display: flex;
         align-items: center;
