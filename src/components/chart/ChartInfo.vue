@@ -42,7 +42,7 @@
             </mdui-chip>
         </div>
 
-        <mdui-tabs :value="defaultExpandedValue" placement="top">
+        <mdui-tabs :value="defaultExpandedValue" placement="top" full-width>
             <mdui-tab
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="chartInfo.info.grade"
