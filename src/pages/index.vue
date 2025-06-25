@@ -68,7 +68,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: calc(100vh - 64px - 40px);
+        min-height: calc(100vh - 64px - 40px - 6rem);
         width: 100%;
         padding: 20px;
         box-sizing: border-box;
