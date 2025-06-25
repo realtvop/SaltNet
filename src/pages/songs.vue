@@ -78,7 +78,7 @@
             loadedIdentifier.name = shared.chartsSort.identifier.name;
             loadedIdentifier.updateTime = shared.chartsSort.identifier.updateTime;
 
-            allCharts.value = shared.chartsSort.charts;
+            shared.chartsSort.charts = shared.chartsSort.charts;
             return;
         }
 
@@ -136,8 +136,6 @@
             });
         }
 
-        allCharts.value = charts;
-
         if (userData)
             shared.chartsSort = {
                 identifier: currentIdentifier,
@@ -145,14 +143,14 @@
             };
     }
     const chartListFiltered = computed(() => {
-        if (!allCharts.value.length) return null;
+        if (!shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
 
         if (selectedDifficulty.value === "ALL") {
-            filteredCharts = allCharts.value.filter((chart: Chart) => chart.info.grade === 3);
+            filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => chart.info.grade === 3);
         } else {
-            filteredCharts = allCharts.value.filter(
+            filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) => chart.info.level === selectedDifficulty.value
             );
         }
