@@ -3,18 +3,19 @@ import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, User } from "@/types/user";
+import type { Chart } from "@/types/music";
 
 // MARK: shared
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
     const chartsSort = ref<ChartsSortCached>({
-            identifier: {
-                name: null,
-                updateTime: null,
-                verBuildTime: null,
-            },
-            charts: null,
-        });
+        identifier: {
+            name: null as unknown as string,
+            updateTime: null as unknown as number,
+            verBuildTime: null as unknown as number,
+        },
+        charts: null as unknown as Chart[],
+    });
 
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) users.value = v;

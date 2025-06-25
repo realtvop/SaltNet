@@ -50,19 +50,12 @@
             >
                 <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
                 <div class="tab-header" slot="icon">
-                    <span
-                        class="difficulty-badge"
-                        :class="`difficulty-${chartInfo.info.grade}`"
-                    >
-                        {{
-                            ["BAS", "ADV", "EXP", "MAS", "ReM"][
-                                chartInfo.info.grade
-                            ]
-                        }}
+                    <span class="difficulty-badge" :class="`difficulty-${chartInfo.info.grade}`">
+                        {{ ["BAS", "ADV", "EXP", "MAS", "ReM"][chartInfo.info.grade] }}
                     </span>
                 </div>
             </mdui-tab>
-            
+
             <mdui-tab-panel
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="`panel-${chartInfo.info.grade}`"
@@ -98,7 +91,7 @@
                             </span>
                         </div>
                     </div>
-                    
+
                     <!-- 谱面基本信息 -->
                     <div class="chart-basic-info">
                         <div class="info-row">
@@ -539,7 +532,7 @@
         align-items: center;
         gap: 8px;
     }
-    
+
     .tab-content {
         padding: 1rem 0;
     }

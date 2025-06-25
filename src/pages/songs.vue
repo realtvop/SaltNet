@@ -17,7 +17,6 @@
     }
 
     const shared = useShared();
-    const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
         "ALL",
@@ -148,7 +147,9 @@
         let filteredCharts: Chart[];
 
         if (selectedDifficulty.value === "ALL") {
-            filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => chart.info.grade === 3);
+            filteredCharts = shared.chartsSort.charts.filter(
+                (chart: Chart) => chart.info.grade === 3
+            );
         } else {
             filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) => chart.info.level === selectedDifficulty.value
@@ -247,7 +248,9 @@
     });
 
     const visibleItemsCount = ref(50);
-    const maxVisibleItems = computed(() => Math.min(visibleItemsCount.value, itemsToRender.value.length));
+    const maxVisibleItems = computed(() =>
+        Math.min(visibleItemsCount.value, itemsToRender.value.length)
+    );
 
     // 监听难度变化，重置可见项目数量
     watch(selectedDifficulty, () => {
@@ -256,7 +259,10 @@
 
     const loadMore = () => {
         if (visibleItemsCount.value < itemsToRender.value.length) {
-            visibleItemsCount.value = Math.min(visibleItemsCount.value + 50, itemsToRender.value.length);
+            visibleItemsCount.value = Math.min(
+                visibleItemsCount.value + 50,
+                itemsToRender.value.length
+            );
         }
     };
 
@@ -289,7 +295,7 @@
         placeholder="曲名 别名 id 曲师 谱师"
         @input="query = $event.target.value"
     ></mdui-text-field>
-    
+
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
             <div class="score-grid">
