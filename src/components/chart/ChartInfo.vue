@@ -272,7 +272,6 @@
             if (dialogRef.value) {
                 dialogRef.value.open = true;
             }
-            console.log(props.chart); // REMEMBER TO REMOVE AFTER DEVELOPING
             friendsScores.value = [];
             selfName.value = "";
             isRatingExpanded.value = false;
