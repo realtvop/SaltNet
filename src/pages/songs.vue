@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import { MusicSort } from "@/assets/music";
@@ -235,6 +235,11 @@
     };
     onMounted(async () => {
         await loadPlayerData();
+        window.addEventListener('resize', handleResize);
+    });
+
+    onUnmounted(() => {
+        window.removeEventListener('resize', handleResize);
     });
 
     function openChartInfoDialog(chart: any) {
@@ -247,20 +252,51 @@
         return chartListFiltered.value[selectedDifficulty.value] || [];
     });
 
-    const visibleItemsCount = ref(50);
+    const getColumnsPerRow = () => {
+        const width = window.innerWidth;
+        if (width >= 1254) return 5;
+        if (width >= 1000) return 4;
+        if (width >= 768) return 3;
+        if (width >= 500) return 2;
+        if (width >= 350) return 2;
+        return 1;
+    };
+
+    const getItemsPerPage = () => {
+        const columns = getColumnsPerRow();
+        const containerHeight = window.innerHeight - 76 - 188; // 减去导航栏和其他元素高度
+        const cardHeight = 280; // 大约的卡片高度加间距
+        const rowsPerPage = Math.max(Math.floor(containerHeight / cardHeight), 2);
+        return columns * rowsPerPage;
+    };
+
+    const getLoadSize = () => {
+        const itemsPerPage = getItemsPerPage();
+        return itemsPerPage * 3; // 默认一次加载三页
+    };
+
+    const visibleItemsCount = ref(getLoadSize());
     const maxVisibleItems = computed(() =>
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
     // 监听难度变化，重置可见项目数量
     watch(selectedDifficulty, () => {
-        visibleItemsCount.value = 50;
+        visibleItemsCount.value = getLoadSize();
     });
+
+    // 监听窗口大小变化，调整加载数量
+    const handleResize = () => {
+        const newLoadSize = getLoadSize();
+        if (visibleItemsCount.value < newLoadSize) {
+            visibleItemsCount.value = newLoadSize;
+        }
+    };
 
     const loadMore = () => {
         if (visibleItemsCount.value < itemsToRender.value.length) {
             visibleItemsCount.value = Math.min(
-                visibleItemsCount.value + 50,
+                visibleItemsCount.value + getLoadSize(),
                 itemsToRender.value.length
             );
         }
