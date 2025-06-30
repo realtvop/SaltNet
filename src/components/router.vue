@@ -27,6 +27,7 @@
     let addedHistory = false;
     let previousRoute: string | null = null;
     let isHandlingPopstate = false;
+    let dialogHashAdded = false;
 
     router.beforeEach((to, from, next) => {
         if (isHandlingPopstate) {
@@ -58,9 +59,20 @@
     });
 
     window.addEventListener('popstate', () => {
+        const currentHash = window.location.hash;
+        const openDialogs = document.querySelectorAll('mdui-dialog[open]');
+
+        // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
+        if (dialogHashAdded) {
+            if (openDialogs.length <= 1) dialogHashAdded = false;
+            const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
+            if (topDialog) (topDialog as any).open = false;
+
+            return;
+        }
+        if (currentHash.endsWith("#dialog")) return; // 手动关闭窗口
+
         if (addedHistory && previousRoute) {
-            const currentHash = window.location.hash;
-            
             if (!currentHash || currentHash === '') {
                 addedHistory = false;
                 isHandlingPopstate = true;
@@ -96,6 +108,19 @@
             }, 0);
         }
     });
+
+    export function markDialogOpen() {
+        dialogHashAdded = true;
+        const currentHash = window.location.hash;
+        const newHash = currentHash ? `${currentHash}#dialog` : '#dialog';
+        history.pushState({ isDialogHistory: true }, '', newHash);
+    }
+
+    export function markDialogClosed() {
+        if (dialogHashAdded) {
+            history.back();
+        }
+    }
 
     export default router;
 </script>
