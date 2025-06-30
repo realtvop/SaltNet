@@ -5,7 +5,7 @@ import "./style.css";
 import App from "./App.vue";
 import router from "./components/router.vue";
 import "mdui/mdui.css";
-import { setColorScheme } from "mdui";
+import { setColorScheme, snackbar } from "mdui";
 import { checkForUpdate } from "./utils/checkForUpdate";
 
 const pinia = createPinia();
