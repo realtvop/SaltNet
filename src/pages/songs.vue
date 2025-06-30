@@ -349,7 +349,11 @@
             </div>
         </div>
     </div>
-    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
+
+    <ChartInfoDialog
+        :open="chartInfoDialog.open"
+        :chart="chartInfoDialog.chart"
+    />
 </template>
 
 <style scoped>

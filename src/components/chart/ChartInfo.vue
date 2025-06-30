@@ -1,5 +1,5 @@
 <template>
-    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" v-if="chart">
+    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" @open="markDialogOpen" @close="markDialogClosed">
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
             <mdui-top-app-bar-title
@@ -42,7 +42,7 @@
             </mdui-chip>
         </div>
 
-        <mdui-tabs :value="defaultExpandedValue" placement="top" full-width>
+        <mdui-tabs :value="defaultExpandedValue" placement="top" full-width v-if="chart">
             <mdui-tab
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="chartInfo.info.grade"
@@ -232,6 +232,7 @@
     import { getDetailedRatingsByDs } from "@/utils/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
     import { defineProps, watch, nextTick, ref } from "vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import { useShared } from "@/utils/shared";
     import { snackbar } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";

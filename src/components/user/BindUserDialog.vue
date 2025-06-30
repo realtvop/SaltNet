@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
     import { ref, watch, defineProps, defineEmits, nextTick, toRaw } from "vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import type { User } from "@/types/user";
     import { prompt, snackbar } from "mdui";
 
@@ -122,6 +123,8 @@
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: async (value: string) => {
                 if (value) {
                     const id = parseInt(value);
