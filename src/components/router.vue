@@ -133,6 +133,10 @@
 
     export function markDialogClosed() {
         if (dialogHashAdded) {
+            const currentHash = window.location.hash;
+            const openDialogs = document.querySelectorAll('mdui-dialog[open]');
+            if (openDialogs.length <= (currentHash.match(/#dialog/g) || []).length) return;
+            
             history.back();
         }
     }
