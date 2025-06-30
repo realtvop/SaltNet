@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createRouter, createWebHashHistory } from "vue-router";
+    import { createRouter, createMemoryHistory } from "vue-router";
     import IndexPage from "../pages/index.vue";
     import UserPage from "../pages/b50.vue";
     import AboutPage from "../pages/About.vue";
@@ -18,7 +18,7 @@
     ];
 
     const router = createRouter({
-        history: createWebHashHistory(),
+        history: createMemoryHistory(),
         routes,
     });
 
