@@ -29,6 +29,21 @@
     let isHandlingPopstate = false;
     let dialogHashAdded = false;
 
+    // 检测页面刷新并清空hash
+    window.addEventListener('beforeunload', () => {
+        sessionStorage.setItem('isPageRefresh', 'true');
+    });
+
+    window.addEventListener('load', () => {
+        const isPageRefresh = sessionStorage.getItem('isPageRefresh');
+        if (isPageRefresh) {
+            sessionStorage.removeItem('isPageRefresh');
+            if (window.location.hash) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+        }
+    });
+
     router.beforeEach((to, from, next) => {
         if (isHandlingPopstate) {
             isHandlingPopstate = false;
