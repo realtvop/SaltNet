@@ -17,9 +17,84 @@
         { path: "/about", component: AboutPage },
     ];
 
+    const routesNeedAddHistory = ["/settings", "/b50/:id"];
+
     const router = createRouter({
         history: createMemoryHistory(),
         routes,
+    });
+
+    let addedHistory = false;
+    let previousRoute: string | null = null;
+    let isHandlingPopstate = false;
+
+    router.beforeEach((to, from, next) => {
+        if (isHandlingPopstate) {
+            isHandlingPopstate = false;
+            next();
+            return;
+        }
+
+        const needsHistory = routesNeedAddHistory.some(route => {
+            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            return regex.test(to.path);
+        });
+
+        if (needsHistory && !addedHistory) {
+            // 保存当前的 from.path 作为返回路径，如果为空则使用根路径
+            previousRoute = from.path && from.path !== '/' ? from.path : '/';
+            addedHistory = true;
+            
+            history.pushState({ isCustomHistory: true }, '', `#${to.path}`);
+        } else if (!needsHistory && from.path && from.path !== '/' && !routesNeedAddHistory.some(route => {
+            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            return regex.test(from.path);
+        })) {
+            // 更新 previousRoute 为正常的页面路径
+            previousRoute = from.path;
+        }
+
+        next();
+    });
+
+    window.addEventListener('popstate', () => {
+        if (addedHistory && previousRoute) {
+            const currentHash = window.location.hash;
+            
+            if (!currentHash || currentHash === '') {
+                addedHistory = false;
+                isHandlingPopstate = true;
+                const targetRoute = previousRoute;
+                previousRoute = null;
+                
+                // 删除之前添加的历史记录，防止用户点击向前箭头
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                
+                router.push(targetRoute);
+            }
+        }
+    });
+
+    router.afterEach((to, from) => {
+        const fromNeedsHistory = routesNeedAddHistory.some(route => {
+            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            return regex.test(from.path);
+        });
+
+        const toNeedsHistory = routesNeedAddHistory.some(route => {
+            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            return regex.test(to.path);
+        });
+
+        if (fromNeedsHistory && !toNeedsHistory && addedHistory) {
+            addedHistory = false;
+            
+            setTimeout(() => {
+                if (window.history.length > 1) {
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+            }, 0);
+        }
     });
 
     export default router;
