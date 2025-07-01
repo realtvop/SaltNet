@@ -4,6 +4,7 @@
         close-on-esc
         close-on-overlay-click
         :open="open"
+        :fullscreen="isSmallScreen"
         @open="markDialogOpen"
         @close="markDialogClosed"
     >
@@ -262,7 +263,7 @@
     import type { Chart } from "@/types/music";
     import { getDetailedRatingsByDs } from "@/utils/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
-    import { defineProps, watch, nextTick, ref } from "vue";
+    import { defineProps, watch, nextTick, ref, onMounted, onUnmounted } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import { useShared } from "@/utils/shared";
     import { snackbar } from "mdui";
@@ -291,11 +292,32 @@
     const isRatingExpanded = ref(false);
     const expandedCharts = ref<Set<number>>(new Set());
     const defaultExpandedValue = ref("0");
+    const isSmallScreen = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
     // 存储每个难度对应的项目位置（从缓存中获取）
     const chartPositionMap = ref<Map<number, string>>(new Map());
+
+    // 检查屏幕尺寸
+    function checkScreenSize() {
+        isSmallScreen.value = window.innerWidth < 600;
+    }
+
+    // 处理窗口大小变化
+    function handleResize() {
+        checkScreenSize();
+    }
+
+    // 生命周期钩子
+    onMounted(() => {
+        checkScreenSize();
+        window.addEventListener('resize', handleResize);
+    });
+
+    onUnmounted(() => {
+        window.removeEventListener('resize', handleResize);
+    });
 
     watch(
         () => props.open,
