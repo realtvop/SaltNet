@@ -1,3 +1,5 @@
+<img alt="screenshot" src="https://github.com/user-attachments/assets/f7823159-87af-4630-8f27-bd0a0affc8f2" />
+
 # SaltNet
 
 <img src="https://deploy-badge.vercel.app/?url=http%3A%2F%2Fsalt.realtvop.top&logo=vercel&name=vercel" alt="Website Deploy"></img>
