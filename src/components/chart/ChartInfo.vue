@@ -91,16 +91,22 @@
                         <!-- 第二行：fc/fs图标和rating -->
                         <div class="score-row-secondary">
                             <div class="score-badges">
-                                <img
-                                    v-if="getCurrentChartScore(chartInfo).fc"
-                                    :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
-                                    class="badge-icon"
-                                />
-                                <img
-                                    v-if="getCurrentChartScore(chartInfo).fs"
-                                    :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
-                                    class="badge-icon"
-                                />
+                                <span class="badge-slot">
+                                    <img
+                                        v-if="getCurrentChartScore(chartInfo).fc"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
+                                        class="badge-icon"
+                                    />
+                                    <span v-else class="badge-placeholder"></span>
+                                </span>
+                                <span class="badge-slot">
+                                    <img
+                                        v-if="getCurrentChartScore(chartInfo).fs"
+                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
+                                        class="badge-icon"
+                                    />
+                                    <span v-else class="badge-placeholder"></span>
+                                </span>
                             </div>
                             <div class="rating-display" v-if="getCurrentChartScore(chartInfo).ra">
                                 <div class="rating-value">
@@ -206,17 +212,24 @@
                                         {{
                                             typeof f.achievements === "number"
                                                 ? `${f.achievements.toFixed(4)}%`
-                                                : ""
+                                                : f.played ? "0.0000%" : "-"
                                         }}
                                     </span>
-                                    <span class="friend-fc" v-if="f.fc">
-                                        <img :src="`/icons/music_icon_${f.fc}.png`" class="icon" />
+                                    <span class="friend-fc">
+                                        <img 
+                                            v-if="f.fc" 
+                                            :src="`/icons/music_icon_${f.fc}.png`" 
+                                            class="icon" 
+                                        />
+                                        <span v-else class="icon-placeholder"></span>
                                     </span>
-                                    <span class="friend-fs" v-if="f.fs">
+                                    <span class="friend-fs">
                                         <img
+                                            v-if="f.fs"
                                             :src="`/icons/music_icon_${f.fs.replace('sd', 'dx')}.png`"
                                             class="icon"
                                         />
+                                        <span v-else class="icon-placeholder"></span>
                                     </span>
                                 </div>
                             </mdui-list-item>
@@ -521,29 +534,102 @@
         align-items: center;
         justify-content: flex-start;
         padding: 0.5rem 1.5rem 0.5rem 1rem;
-        gap: 1.5rem;
+        gap: 1rem;
     }
+    
+    @media (max-width: 480px) {
+        .friend-score-row {
+            padding: 0.5rem 1rem 0.5rem 0.75rem;
+            gap: 0.5rem;
+        }
+    }
+    
     .friend-rank {
         min-width: 2.5em;
         text-align: left;
+        flex-shrink: 0;
     }
+    
+    @media (max-width: 480px) {
+        .friend-rank {
+            min-width: 2em;
+            font-size: 0.9rem;
+        }
+    }
+    
     .friend-name {
         font-weight: bold;
         min-width: 5em;
         text-align: left;
+        flex-shrink: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
+    
+    @media (max-width: 480px) {
+        .friend-name {
+            min-width: 3em;
+            max-width: 4em;
+            font-size: 0.9rem;
+        }
+    }
+    
     .friend-achievement {
-        min-width: 5em;
-        text-align: left;
+        min-width: 6em;
+        text-align: right;
+        flex: 1;
+        font-family: monospace;
     }
-    .friend-fc {
+    
+    @media (max-width: 480px) {
+        .friend-achievement {
+            min-width: 4.5em;
+            font-size: 0.85rem;
+        }
+    }
+    
+    .friend-fc,
+    .friend-fs {
         min-width: 2.5em;
-        text-align: left;
+        text-align: center;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
+    
+    @media (max-width: 480px) {
+        .friend-fc,
+        .friend-fs {
+            min-width: 2em;
+        }
+    }
+    
     .icon {
         width: 24px;
         height: 24px;
-        margin-left: 0.5rem;
+        object-fit: contain;
+    }
+    
+    @media (max-width: 480px) {
+        .icon {
+            width: 20px;
+            height: 20px;
+        }
+    }
+    
+    .icon-placeholder {
+        width: 24px;
+        height: 24px;
+        display: inline-block;
+    }
+    
+    @media (max-width: 480px) {
+        .icon-placeholder {
+            width: 20px;
+            height: 20px;
+        }
     }
     .tab-header {
         display: flex;
@@ -694,6 +780,14 @@
         flex-shrink: 0;
     }
 
+    .badge-slot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        min-height: 22px;
+    }
+
     .badge-icon {
         width: 22px;
         height: 22px;
@@ -701,19 +795,45 @@
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     }
 
+    .badge-placeholder {
+        width: 22px;
+        height: 22px;
+        display: inline-block;
+    }
+
     @media (max-width: 480px) {
         .score-badges {
             gap: 4px;
+        }
+        
+        .badge-slot {
+            min-width: 18px;
+            min-height: 18px;
         }
         
         .badge-icon {
             width: 18px;
             height: 18px;
         }
+
+        .badge-placeholder {
+            width: 18px;
+            height: 18px;
+        }
     }
 
     @media (max-width: 360px) {
+        .badge-slot {
+            min-width: 16px;
+            min-height: 16px;
+        }
+
         .badge-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .badge-placeholder {
             width: 16px;
             height: 16px;
         }
@@ -832,11 +952,6 @@
         margin-top: 4px;
         padding-top: 4px;
         border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
-    }
-
-    .friend-fs {
-        min-width: 2.5em;
-        text-align: left;
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */
