@@ -9,7 +9,10 @@
         @close="markDialogClosed"
     >
         <mdui-top-app-bar slot="header">
-            <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
+            <mdui-button-icon :icon="isSmallScreen ? 'arrow_back' : 'close'" @click="dialogRef.open = false"></mdui-button-icon>
+            <mdui-button v-if="isSmallScreen" variant="text" class="icon-btn" @click="dialogRef.open = false" style="aspect-ratio: 1">
+                <img src="/favicon.ico" alt="icon" class="favicon-icon" />
+            </mdui-button>
             <mdui-top-app-bar-title
                 @click="copyToClipboard(chart?.music?.info.title || '')"
                 style="cursor: pointer"
@@ -301,7 +304,7 @@
 
     // 检查屏幕尺寸
     function checkScreenSize() {
-        isSmallScreen.value = window.innerWidth < 600;
+        isSmallScreen.value = window.innerWidth < 560;
     }
 
     // 处理窗口大小变化
@@ -506,6 +509,20 @@
 </script>
 
 <style scoped>
+    .icon-btn {
+        height: 40px;
+        min-width: 40px;
+        padding: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .favicon-icon {
+        width: 24px;
+        height: 24px;
+        display: block;
+    }
+
     .song-cover {
         width: 100%;
         height: auto;
