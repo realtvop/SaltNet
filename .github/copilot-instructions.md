@@ -6,3 +6,5 @@ Use `slot` prop when needed or already written EVEN OUTDATED.
 Avoid explaining what you're doing in code comments.
 
 When unnecessary, don't create a bunch of functions to finish a simple task.
+
+After completing the task, execute `pnpm check` to check for ts errors and `pnpm pret:fix` to format the code when needed.

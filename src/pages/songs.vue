@@ -334,7 +334,6 @@
         placeholder="曲名 别名 id 曲师 谱师"
         @input="query = $event.target.value"
     ></mdui-text-field>
-    {{ maxVisibleItems }}
 
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
