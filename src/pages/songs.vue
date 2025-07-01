@@ -235,6 +235,8 @@
     };
     onMounted(async () => {
         await loadPlayerData();
+        // 在组件挂载后重新计算正确的初始可见项目数量
+        visibleItemsCount.value = getLoadSize();
         window.addEventListener('resize', handleResize);
     });
 
@@ -264,8 +266,8 @@
 
     const getItemsPerPage = () => {
         const columns = getColumnsPerRow();
-        const containerHeight = window.innerHeight - 76 - 188; // 减去导航栏和其他元素高度
-        const cardHeight = 280; // 大约的卡片高度加间距
+        const containerHeight = window.innerHeight; // 减去导航栏和其他元素高度
+        const cardHeight = 200; // 大约的卡片高度加间距
         const rowsPerPage = Math.max(Math.floor(containerHeight / cardHeight), 2);
         return columns * rowsPerPage;
     };
@@ -288,8 +290,13 @@
     // 监听窗口大小变化，调整加载数量
     const handleResize = () => {
         const newLoadSize = getLoadSize();
+        // 重新计算当前应该显示的页数
+        const currentPages = Math.ceil(visibleItemsCount.value / getItemsPerPage());
+        visibleItemsCount.value = Math.min(currentPages * getItemsPerPage(), itemsToRender.value.length);
+        
+        // 确保至少显示一个加载单位
         if (visibleItemsCount.value < newLoadSize) {
-            visibleItemsCount.value = newLoadSize;
+            visibleItemsCount.value = Math.min(newLoadSize, itemsToRender.value.length);
         }
     };
 
@@ -331,6 +338,7 @@
         placeholder="曲名 别名 id 曲师 谱师"
         @input="query = $event.target.value"
     ></mdui-text-field>
+    {{ maxVisibleItems }}
 
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
@@ -344,7 +352,10 @@
                 </div>
 
                 <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
-                    正在加载更多...
+                    <div class="loading-text">正在加载更多...</div>
+                    <mdui-button variant="text" @click="loadMore">
+                        点击加载
+                    </mdui-button>
                 </div>
             </div>
         </div>
@@ -470,7 +481,18 @@
     .loading-indicator {
         text-align: center;
         padding: 20px;
-        color: #666;
         margin-top: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        grid-column: 1 / -1;
+    }
+
+    .loading-text {
+        color: #666;
+        margin-bottom: 10px;
     }
 </style>

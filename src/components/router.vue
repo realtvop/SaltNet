@@ -71,7 +71,6 @@
         if (previousHash.endsWith("#dialog")) {
             // if (openDialogs.length <= 1) dialogHashAdded = false;
             const dialogHashLength = (previousHash.match(/#dialog/g) || []).length;
-            console.log(openDialogs.length, dialogHashLength)
             if (openDialogs.length >= dialogHashLength) {
                 const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
                 if (topDialog) (topDialog as any).open = false;
