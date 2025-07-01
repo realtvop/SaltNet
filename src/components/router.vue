@@ -1,6 +1,5 @@
 <script lang="ts">
     import { createRouter, createMemoryHistory } from "vue-router";
-    import { computed } from "vue";
     import IndexPage from "../pages/index.vue";
     import UserPage from "../pages/b50.vue";
     import AboutPage from "../pages/About.vue";
@@ -71,9 +70,12 @@
         // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
         if (previousHash.endsWith("#dialog")) {
             // if (openDialogs.length <= 1) dialogHashAdded = false;
-            const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
-            if (topDialog) (topDialog as any).open = false;
-
+            const dialogHashLength = (previousHash.match(/#dialog/g) || []).length;
+            console.log(openDialogs.length, dialogHashLength)
+            if (openDialogs.length >= dialogHashLength) {
+                const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
+                if (topDialog) (topDialog as any).open = false;
+            }
             return previousHash = currentHash;
         }
         if (currentHash.endsWith("#dialog"))
