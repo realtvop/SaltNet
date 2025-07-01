@@ -233,16 +233,6 @@
         if (shared.users[0]) loadChartsWithCache(shared.users[0]);
         else loadChartsWithCache();
     };
-    onMounted(async () => {
-        await loadPlayerData();
-        // 在组件挂载后重新计算正确的初始可见项目数量
-        visibleItemsCount.value = getLoadSize();
-        window.addEventListener('resize', handleResize);
-    });
-
-    onUnmounted(() => {
-        window.removeEventListener('resize', handleResize);
-    });
 
     function openChartInfoDialog(chart: any) {
         chartInfoDialog.value.chart = chart;
@@ -254,67 +244,73 @@
         return chartListFiltered.value[selectedDifficulty.value] || [];
     });
 
-    const getColumnsPerRow = () => {
-        const width = window.innerWidth;
-        if (width >= 1254) return 5;
-        if (width >= 1000) return 4;
-        if (width >= 768) return 3;
-        if (width >= 500) return 2;
-        if (width >= 350) return 2;
-        return 1;
-    };
+    // 虚拟滚动状态管理
+    const visibleItemsCount = ref(0);
 
-    const getItemsPerPage = () => {
-        const columns = getColumnsPerRow();
-        const containerHeight = window.innerHeight; // 减去导航栏和其他元素高度
-        const cardHeight = 200; // 大约的卡片高度加间距
-        const rowsPerPage = Math.max(Math.floor(containerHeight / cardHeight), 2);
-        return columns * rowsPerPage;
-    };
-
+    // 根据屏幕宽度计算每次加载的项目数
     const getLoadSize = () => {
-        const itemsPerPage = getItemsPerPage();
-        return itemsPerPage * 3; // 默认一次加载三页
+        const width = window.innerWidth;
+        
+        // 根据屏幕宽度确定列数
+        let columns = 1;
+        if (width >= 1254) columns = 5;
+        else if (width >= 1000) columns = 4;
+        else if (width >= 768) columns = 3;
+        else if (width >= 500) columns = 2;
+        else if (width >= 350) columns = 2;
+        
+        // 计算行数和总加载数量
+        const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
+        return columns * rowsPerPage * 3; // 一次加载3页的量
     };
 
-    const visibleItemsCount = ref(getLoadSize());
     const maxVisibleItems = computed(() =>
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
-    // 监听难度变化，重置可见项目数量
-    watch(selectedDifficulty, () => {
-        visibleItemsCount.value = getLoadSize();
-    });
-
-    // 监听窗口大小变化，调整加载数量
-    const handleResize = () => {
-        const newLoadSize = getLoadSize();
-        // 重新计算当前应该显示的页数
-        const currentPages = Math.ceil(visibleItemsCount.value / getItemsPerPage());
-        visibleItemsCount.value = Math.min(currentPages * getItemsPerPage(), itemsToRender.value.length);
-        
-        // 确保至少显示一个加载单位
-        if (visibleItemsCount.value < newLoadSize) {
-            visibleItemsCount.value = Math.min(newLoadSize, itemsToRender.value.length);
-        }
-    };
-
+    // 加载更多项目
     const loadMore = () => {
-        if (visibleItemsCount.value < itemsToRender.value.length) {
-            visibleItemsCount.value = Math.min(
-                visibleItemsCount.value + getLoadSize(),
-                itemsToRender.value.length
-            );
+        const remainingItems = itemsToRender.value.length - visibleItemsCount.value;
+        if (remainingItems > 0) {
+            const loadSize = Math.min(getLoadSize(), remainingItems);
+            visibleItemsCount.value += loadSize;
         }
     };
 
+    // 滚动事件处理
     const handleScroll = (event: Event) => {
         const target = event.target as HTMLElement;
+        // 检查是否接近底部（距离底部200px时触发）
         if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
             loadMore();
         }
     };
+
+    // 窗口大小变化处理
+    const handleResize = () => {
+        const currentItemsPerPage = getLoadSize() / 3; // 单页数量
+        const currentPages = Math.ceil(visibleItemsCount.value / currentItemsPerPage);
+        const newVisibleCount = Math.min(
+            currentPages * currentItemsPerPage,
+            itemsToRender.value.length
+        );
+        
+        visibleItemsCount.value = Math.max(newVisibleCount, getLoadSize());
+    };
+
+    watch(selectedDifficulty, () => {
+        visibleItemsCount.value = getLoadSize();
+    });
+
+    onMounted(async () => {
+        await loadPlayerData();
+        visibleItemsCount.value = getLoadSize();
+        window.addEventListener('resize', handleResize);
+    });
+
+    onUnmounted(() => {
+        window.removeEventListener('resize', handleResize);
+    });
 </script>
 
 <template>
