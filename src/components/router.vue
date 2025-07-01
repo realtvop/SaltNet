@@ -29,9 +29,9 @@
     let isHandlingPopstate = false;
     let previousHash: string = "";
 
-    window.addEventListener('load', () => {
+    window.addEventListener("load", () => {
         if (window.location.hash)
-            history.replaceState(null, '', window.location.pathname + window.location.search);
+            history.replaceState(null, "", window.location.pathname + window.location.search);
     });
 
     router.beforeEach((to, from, next) => {
@@ -42,20 +42,25 @@
         }
 
         const needsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
             return regex.test(to.path);
         });
 
         if (needsHistory && !addedHistory) {
             // 保存当前的 from.path 作为返回路径，如果为空则使用根路径
-            previousRoute = from.path && from.path !== '/' ? from.path : '/';
+            previousRoute = from.path && from.path !== "/" ? from.path : "/";
             addedHistory = true;
-            
-            history.pushState({ isCustomHistory: true }, '', `#${to.path}`);
-        } else if (!needsHistory && from.path && from.path !== '/' && !routesNeedAddHistory.some(route => {
-            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
-            return regex.test(from.path);
-        })) {
+
+            history.pushState({ isCustomHistory: true }, "", `#${to.path}`);
+        } else if (
+            !needsHistory &&
+            from.path &&
+            from.path !== "/" &&
+            !routesNeedAddHistory.some(route => {
+                const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
+                return regex.test(from.path);
+            })
+        ) {
             // 更新 previousRoute 为正常的页面路径
             previousRoute = from.path;
         }
@@ -63,33 +68,39 @@
         next();
     });
 
-    window.addEventListener('popstate', () => {
+    window.addEventListener("popstate", () => {
         const currentHash = window.location.hash;
-        const openDialogs = document.querySelectorAll('mdui-dialog[open]');
+        const openDialogs = document.querySelectorAll("mdui-dialog[open]");
 
         // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
         if (previousHash.endsWith("#dialog")) {
             // if (openDialogs.length <= 1) dialogHashAdded = false;
             const dialogHashLength = (previousHash.match(/#dialog/g) || []).length;
             if (openDialogs.length >= dialogHashLength) {
-                const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
+                const topDialog =
+                    openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
                 if (topDialog) (topDialog as any).open = false;
             }
-            return previousHash = currentHash;
+            return (previousHash = currentHash);
         }
         if (currentHash.endsWith("#dialog"))
-            history.replaceState(null, '', currentHash.replace("#dialog", "") || window.location.pathname + window.location.search);
+            history.replaceState(
+                null,
+                "",
+                currentHash.replace("#dialog", "") ||
+                    window.location.pathname + window.location.search
+            );
 
         if (addedHistory && previousRoute) {
-            if (!currentHash || currentHash === '') {
+            if (!currentHash || currentHash === "") {
                 addedHistory = false;
                 isHandlingPopstate = true;
                 const targetRoute = previousRoute;
                 previousRoute = null;
-                
+
                 // 删除之前添加的历史记录，防止用户点击向前箭头
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-                
+                history.replaceState(null, "", window.location.pathname + window.location.search);
+
                 router.push(targetRoute);
             }
         }
@@ -99,21 +110,25 @@
 
     router.afterEach((to, from) => {
         const fromNeedsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
             return regex.test(from.path);
         });
 
         const toNeedsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
+            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
             return regex.test(to.path);
         });
 
         if (fromNeedsHistory && !toNeedsHistory && addedHistory) {
             addedHistory = false;
-            
+
             setTimeout(() => {
                 if (window.history.length > 1) {
-                    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                    window.history.replaceState(
+                        null,
+                        "",
+                        window.location.pathname + window.location.search
+                    );
                 }
             }, 0);
         }
@@ -122,8 +137,8 @@
     export function markDialogOpen() {
         // dialogHashAdded = true;
         const currentHash = window.location.hash;
-        const newHash = currentHash ? `${currentHash}#dialog` : '#dialog';
-        history.pushState({ isDialogHistory: true }, '', newHash);
+        const newHash = currentHash ? `${currentHash}#dialog` : "#dialog";
+        history.pushState({ isDialogHistory: true }, "", newHash);
         previousHash = newHash;
     }
 
@@ -132,8 +147,11 @@
 
         const currentHash = window.location.hash;
         if (currentHash.endsWith("#dialog")) {
-            const openDialogs = document.querySelectorAll('mdui-dialog[open]');
-            if (!Array.from(openDialogs).includes(element) && openDialogs.length < (currentHash.match(/#dialog/g) || []).length)
+            const openDialogs = document.querySelectorAll("mdui-dialog[open]");
+            if (
+                !Array.from(openDialogs).includes(element) &&
+                openDialogs.length < (currentHash.match(/#dialog/g) || []).length
+            )
                 history.back();
         }
     }

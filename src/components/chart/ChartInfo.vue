@@ -1,5 +1,12 @@
 <template>
-    <mdui-dialog ref="dialogRef" close-on-esc close-on-overlay-click :open="open" @open="markDialogOpen" @close="markDialogClosed">
+    <mdui-dialog
+        ref="dialogRef"
+        close-on-esc
+        close-on-overlay-click
+        :open="open"
+        @open="markDialogOpen"
+        @close="markDialogClosed"
+    >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>
             <mdui-top-app-bar-title
@@ -65,30 +72,41 @@
                 <div class="tab-content">
                     <!-- 当前用户成绩信息 -->
                     <div class="score-summary" v-if="getCurrentChartScore(chartInfo)">
-                        <div class="score-info">
-                            <img
-                                v-if="getCurrentChartScore(chartInfo).rate"
-                                :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
-                                class="rank-icon"
-                            />
-                            <span class="achievement">
-                                {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
-                            </span>
-                            <span class="rating" v-if="getCurrentChartScore(chartInfo).ra">
-                                {{ getCurrentChartScore(chartInfo).ra }}
-                            </span>
-                            <span class="score-badges">
+                        <!-- 第一行：rank图标和achievement百分比 -->
+                        <div class="score-row-main">
+                            <div class="rank-section">
+                                <img
+                                    v-if="getCurrentChartScore(chartInfo).rate"
+                                    :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
+                                    class="rank-icon-large"
+                                />
+                            </div>
+                            <div class="achievement-section">
+                                <div class="achievement-percentage">
+                                    {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 第二行：fc/fs图标和rating -->
+                        <div class="score-row-secondary">
+                            <div class="score-badges">
                                 <img
                                     v-if="getCurrentChartScore(chartInfo).fc"
                                     :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
-                                    class="mini-icon"
+                                    class="badge-icon"
                                 />
                                 <img
                                     v-if="getCurrentChartScore(chartInfo).fs"
                                     :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
-                                    class="mini-icon"
+                                    class="badge-icon"
                                 />
-                            </span>
+                            </div>
+                            <div class="rating-display" v-if="getCurrentChartScore(chartInfo).ra">
+                                <div class="rating-value">
+                                    {{ getCurrentChartScore(chartInfo).ra }}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -538,18 +556,167 @@
     }
 
     .score-summary {
-        background: rgba(var(--mdui-color-surface-variant), 0.1);
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        background: linear-gradient(
+            135deg,
+            rgba(var(--mdui-color-primary), 0.05),
+            rgba(var(--mdui-color-secondary), 0.05)
+        );
+        border: 1px solid rgba(var(--mdui-color-outline), 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .score-summary .score-info {
+    @media (max-width: 480px) {
+        .score-summary {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .score-summary {
+            padding: 0.75rem;
+        }
+    }
+
+    .score-row-main {
         display: flex;
         align-items: center;
-        gap: 12px;
-        font-size: 0.875rem;
-        justify-content: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .score-row-secondary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    @media (max-width: 480px) {
+        .score-row-main {
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    .rank-section {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .rank-icon-large {
+        width: 64px;
+        height: 32px;
+        object-fit: cover;
+        object-position: center;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    @media (max-width: 480px) {
+        .rank-icon-large {
+            width: 48px;
+            height: 24px;
+        }
+    }
+
+    .achievement-section {
+        flex: 1;
+        text-align: right;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .rating-display {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .rating-display .rating-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgb(var(--mdui-color-tertiary));
+        background: rgba(var(--mdui-color-tertiary), 0.15);
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid rgba(var(--mdui-color-tertiary), 0.3);
+        line-height: 1;
+        box-shadow: 0 1px 2px rgba(var(--mdui-color-tertiary), 0.2);
+    }
+
+    @media (max-width: 480px) {
+        .rating-display .rating-value {
+            font-size: 0.8rem;
+            padding: 0.15rem 0.4rem;
+        }
+    }
+
+    .achievement-percentage {
+        font-size: 2rem;
+        font-weight: 700;
+        color: rgb(var(--mdui-color-primary));
+        line-height: 1;
+        margin-bottom: 0.25rem;
+        background: linear-gradient(
+            135deg,
+            rgb(var(--mdui-color-primary)),
+            rgb(var(--mdui-color-secondary))
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        word-break: break-all;
+    }
+
+    @media (max-width: 480px) {
+        .achievement-percentage {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .achievement-percentage {
+            font-size: 1.25rem;
+        }
+    }
+
+    .score-badges {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .badge-icon {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    }
+
+    @media (max-width: 480px) {
+        .score-badges {
+            gap: 4px;
+        }
+        
+        .badge-icon {
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .badge-icon {
+            width: 16px;
+            height: 16px;
+        }
     }
 
     /* 移除折叠面板相关样式，保留通用样式 */
@@ -686,27 +853,6 @@
         flex-shrink: 0;
     }
 
-    .score-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-    }
-
-    .achievement {
-        font-weight: 600;
-        color: rgb(var(--mdui-color-primary));
-    }
-
-    .rating {
-        font-weight: 600;
-        color: rgb(var(--mdui-color-tertiary));
-        background: rgba(var(--mdui-color-tertiary), 0.1);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-    }
-
     .combo-icons {
         display: flex;
         align-items: center;
@@ -722,17 +868,5 @@
         font-size: 0.75rem;
         color: rgb(var(--mdui-color-on-surface-variant));
         opacity: 0.8;
-    }
-
-    .score-badges {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .rank-icon {
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
     }
 </style>

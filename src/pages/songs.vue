@@ -250,7 +250,7 @@
     // 根据屏幕宽度计算每次加载的项目数
     const getLoadSize = () => {
         const width = window.innerWidth;
-        
+
         // 根据屏幕宽度确定列数
         let columns = 1;
         if (width >= 1254) columns = 5;
@@ -258,7 +258,7 @@
         else if (width >= 768) columns = 3;
         else if (width >= 500) columns = 2;
         else if (width >= 350) columns = 2;
-        
+
         // 计算行数和总加载数量
         const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
         return columns * rowsPerPage * 3; // 一次加载3页的量
@@ -294,7 +294,7 @@
             currentPages * currentItemsPerPage,
             itemsToRender.value.length
         );
-        
+
         visibleItemsCount.value = Math.max(newVisibleCount, getLoadSize());
     };
 
@@ -305,11 +305,11 @@
     onMounted(async () => {
         await loadPlayerData();
         visibleItemsCount.value = getLoadSize();
-        window.addEventListener('resize', handleResize);
+        window.addEventListener("resize", handleResize);
     });
 
     onUnmounted(() => {
-        window.removeEventListener('resize', handleResize);
+        window.removeEventListener("resize", handleResize);
     });
 </script>
 
@@ -348,18 +348,13 @@
 
                 <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
                     <div class="loading-text">正在加载更多...</div>
-                    <mdui-button variant="text" @click="loadMore">
-                        点击加载
-                    </mdui-button>
+                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
                 </div>
             </div>
         </div>
     </div>
 
-    <ChartInfoDialog
-        :open="chartInfoDialog.open"
-        :chart="chartInfoDialog.chart"
-    />
+    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
 </template>
 
 <style scoped>
