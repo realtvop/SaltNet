@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createRouter, createMemoryHistory } from "vue-router";
+    import { computed } from "vue";
     import IndexPage from "../pages/index.vue";
     import UserPage from "../pages/b50.vue";
     import AboutPage from "../pages/About.vue";
@@ -27,21 +28,11 @@
     let addedHistory = false;
     let previousRoute: string | null = null;
     let isHandlingPopstate = false;
-    let dialogHashAdded = false;
-
-    // 检测页面刷新并清空hash
-    window.addEventListener('beforeunload', () => {
-        sessionStorage.setItem('isPageRefresh', 'true');
-    });
+    let previousHash: string = "";
 
     window.addEventListener('load', () => {
-        const isPageRefresh = sessionStorage.getItem('isPageRefresh');
-        if (isPageRefresh) {
-            sessionStorage.removeItem('isPageRefresh');
-            if (window.location.hash) {
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-            }
-        }
+        if (window.location.hash)
+            history.replaceState(null, '', window.location.pathname + window.location.search);
     });
 
     router.beforeEach((to, from, next) => {
@@ -78,14 +69,15 @@
         const openDialogs = document.querySelectorAll('mdui-dialog[open]');
 
         // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
-        if (dialogHashAdded) {
-            if (openDialogs.length <= 1) dialogHashAdded = false;
+        if (previousHash.endsWith("#dialog")) {
+            // if (openDialogs.length <= 1) dialogHashAdded = false;
             const topDialog = openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
             if (topDialog) (topDialog as any).open = false;
 
-            return;
+            return previousHash = currentHash;
         }
-        if (currentHash.endsWith("#dialog")) return; // 手动关闭窗口
+        if (currentHash.endsWith("#dialog"))
+            history.replaceState(null, '', currentHash.replace("#dialog", "") || window.location.pathname + window.location.search);
 
         if (addedHistory && previousRoute) {
             if (!currentHash || currentHash === '') {
@@ -100,6 +92,8 @@
                 router.push(targetRoute);
             }
         }
+
+        previousHash = currentHash;
     });
 
     router.afterEach((to, from) => {
@@ -125,19 +119,21 @@
     });
 
     export function markDialogOpen() {
-        dialogHashAdded = true;
+        // dialogHashAdded = true;
         const currentHash = window.location.hash;
         const newHash = currentHash ? `${currentHash}#dialog` : '#dialog';
         history.pushState({ isDialogHistory: true }, '', newHash);
+        previousHash = newHash;
     }
 
-    export function markDialogClosed() {
-        if (dialogHashAdded) {
-            const currentHash = window.location.hash;
+    export function markDialogClosed(evtOrEle: Element | Event) {
+        const element = evtOrEle instanceof Element ? evtOrEle : (evtOrEle.target as Element);
+
+        const currentHash = window.location.hash;
+        if (currentHash.endsWith("#dialog")) {
             const openDialogs = document.querySelectorAll('mdui-dialog[open]');
-            if (openDialogs.length <= (currentHash.match(/#dialog/g) || []).length) return;
-            
-            history.back();
+            if (!Array.from(openDialogs).includes(element) && openDialogs.length < (currentHash.match(/#dialog/g) || []).length)
+                history.back();
         }
     }
 
