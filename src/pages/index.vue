@@ -2,6 +2,7 @@
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import { useRouter } from "vue-router";
     import { useShared } from "@/utils/shared";
+    import { updateUser } from "@/utils/user";
 
     const router = useRouter();
     const shared = useShared();
@@ -13,34 +14,41 @@
             <img src="/favicon.png" alt="Favicon" class="favicon-image" />
             <h1 variant="display-large" class="project-title">SaltNet</h1>
         </div>
-        <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px">
-            <div style="padding: 20px; text-align: center">
-                <mdui-typography variant="headline-medium" class="welcome-text">
-                    欢迎，{{
-                        shared.users[0]
-                            ? shared.users[0].divingFish.name ||
-                              shared.users[0].inGame.name ||
-                              "wmc"
-                            : "wmc"
-                    }}
-                </mdui-typography>
+        <mdui-tooltip content="点击更新成绩" placement="bottom">
+            <mdui-card
+                variant="filled"
+                style="width: 100%; max-width: 600px; margin-bottom: 24px"
+                :clickable="shared.users[0]"
+                @click="shared.users[0] && updateUser(shared.users[0])"
+            >
+                <div style="padding: 20px; text-align: center">
+                    <mdui-typography variant="headline-medium" class="welcome-text">
+                        欢迎，{{
+                            shared.users[0]
+                                ? shared.users[0].divingFish.name ||
+                                shared.users[0].inGame.name ||
+                                "wmc"
+                                : "wmc"
+                        }}
+                    </mdui-typography>
 
-                <div v-if="shared.users[0]" class="rating-container">
-                    <RatingPlate
-                        :ra="shared.users[0].data.rating as number"
-                        :small="false"
-                        class="large-rating"
-                    />
+                    <div v-if="shared.users[0]" class="rating-container">
+                        <RatingPlate
+                            :ra="shared.users[0].data.rating as number"
+                            :small="false"
+                            class="large-rating"
+                        />
+                    </div>
+                    <div v-else class="loading-text">
+                        <mdui-chip variant="assist" @click="router.push('/users')">
+                            请在
+                            <a href="javascript:void(0)">用户</a>
+                            中绑定并更新用户
+                        </mdui-chip>
+                    </div>
                 </div>
-                <div v-else class="loading-text">
-                    <mdui-chip variant="assist">
-                        请在
-                        <a href="javascript:void(0)" @click="router.push('/users')">用户</a>
-                        中绑定并更新用户
-                    </mdui-chip>
-                </div>
-            </div>
-        </mdui-card>
+            </mdui-card>
+        </mdui-tooltip>
     </div>
 </template>
 
