@@ -42,7 +42,13 @@ International & Japanese ver. may be supported later.
 
 ## ⭐ 星标历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=realtvop/saltnet&type=Date)](https://www.star-history.com/#realtvop/saltnet&Date)
+<a href="https://www.star-history.com/#realtvop/saltnet&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=realtvop/saltnet&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=realtvop/saltnet&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=realtvop/saltnet&type=Date" />
+ </picture>
+</a>
 
 ## 📜 许可证
 本开源项目遵循 [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html) 许可证。
