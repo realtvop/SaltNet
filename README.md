@@ -14,48 +14,40 @@
 
 International & Japanese ver. may be supported later.
 
-## TODO
+## ✨ 功能特色
 
-### 开发进度
+- **PWA** 支持 (iPhone都可以直接装)
+- 全曲目列表
+- 查询朋友分数
+- 获取成绩并更新到水鱼
 
-- [x] PWA
-- [x] 全谱面列表
-- [x] 谱面详情
-    - [ ] 全部曲目
-    - [x] 曲目详情
-        - [x] 当前成绩
-        - [x] 谱面信息
-        - [x] rating 阶段
-        - [x] 好友成绩
-        - [x] 曲目别名 // 啊啊啊这个怎么搞
-- [x] 用户绑定
-    - [x] 玩家信息页面 b50
-    - [x] 多用户
-    - [x] 数据导入
-        - [x] 水鱼
-            - [x] 上传
-            - [ ] 获取全部信息
-        - [x] In Game
-            - [x] 查询用户是否已上机
-        - [ ] 网页存档 (intl. ver?)
+## 🛠️ 技术栈
 
-### 🫓
+### 前端框架
+- [Vue 3](https://vuejs.org/): 现代化的前端框架
+- [Vue Router](https://router.vuejs.org/): 路由管理
+- [Pinia](https://pinia.vuejs.org/): 状态管理
+- [TypeScript](https://www.typescriptlang.org/): 提供全程类型安全的开发体验
+### 样式和 UI
+- [MDUI 2](https://mdui.org/): Material Design 风格的 UI 框架
+### 开发工具
+- [Vite](https://vitejs.dev/): 快速构建工具和开发服务器，支持PWA
+- [Prettier](https://prettier.io/): 代码格式化
+- [PNPM](https://pnpm.io/): 包管理器
 
-- [x] 全曲目 [Working On]
-    - [x] ChartInfoDialog
-        - [x] 显示所有难度
-    - [ ] Songs
-        - [ ] 所有曲目 tab
-    - [ ] ScoreCard(还是新建一个)
-        - [ ] 新增全曲目数据显示格式
+## 🤝 贡献
+欢迎贡献！请随时提交 [Issue](https://github.com/realtvop/SaltNet/issues) 和 [Pull Request](https://github.com/realtvop/SaltNet/pulls)。
 
-### 已知 bugs
+## [TODO](todo.md)
 
-- [ ] 水鱼曲绘信息不全，尝试自建
-- [x] 用户列表移动端显示不全
-- [x] rating 阶段显示不全
+## ⭐ 星标历史
 
-## 鸣谢
+[![Star History Chart](https://api.star-history.com/svg?repos=realtvop/saltnet&type=Date)](https://www.star-history.com/#realtvop/saltnet&Date)
+
+## 📜 许可证
+本开源项目遵循 [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html) 许可证。
+
+## 🙏 致谢
 
 - [luoling8192/dxrating](https://github.com/luoling8192/dxrating) - DX Rating 显示框
 - [水鱼查分器](https://www.diving-fish.com/maimaidx/prober/) - 曲目数据
