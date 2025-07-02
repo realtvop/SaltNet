@@ -55,6 +55,12 @@
         // verBuildTime: 0,
     };
 
+    enum Category {
+        InGame = "难度",
+        Favorite = "收藏夹",
+    }
+    const category = ref<Category>(Category.InGame);
+
     async function loadChartsWithCache(userData?: User | null) {
         const currentIdentifier = {
             name: userData?.data.name || "unknown",
@@ -315,16 +321,24 @@
 
 <template>
     <!-- [游戏排序]难度选单 -->
-    <mdui-tabs :value="selectedDifficulty">
-        <mdui-tab
-            v-for="difficulty in difficulties"
-            :key="difficulty"
-            :value="difficulty"
-            @click="selectedDifficulty = difficulty"
-        >
-            {{ difficulty }}
-        </mdui-tab>
-    </mdui-tabs>
+    <div class="category-bar">
+        <mdui-dropdown>
+            <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
+            <mdui-menu>
+                <mdui-menu-item @click="category = item" v-for="(item, index) in Object.values(Category)" :key="index">{{ item }}</mdui-menu-item>
+            </mdui-menu>
+        </mdui-dropdown>
+        <mdui-tabs :value="selectedDifficulty">
+            <mdui-tab
+                v-for="difficulty in difficulties"
+                :key="difficulty"
+                :value="difficulty"
+                @click="selectedDifficulty = difficulty"
+            >
+                {{ difficulty }}
+            </mdui-tab>
+        </mdui-tabs>
+    </div>
 
     <mdui-text-field
         id="search-input"
@@ -358,8 +372,20 @@
 </template>
 
 <style scoped>
+    .category-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0 10px;
+        gap: 10px;
+        overflow: hidden;
+    }
+
     mdui-tabs {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     #search-input {
