@@ -116,7 +116,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: calc(100vh - 64px - 40px - 6rem);
+        min-height: calc(100vh - 64px - 6rem);
         width: 100%;
         padding: 20px;
         box-sizing: border-box;
@@ -163,6 +163,12 @@
         width: 100%;
         max-width: 600px;
         margin-top: 24px;
+    }
+
+    @media (max-width: 460px) {
+        .links-section {
+            grid-template-columns: 1fr;
+        }
     }
 
     .link-wrapper {
