@@ -26,8 +26,8 @@
                         欢迎，{{
                             shared.users[0]
                                 ? shared.users[0].divingFish.name ||
-                                shared.users[0].inGame.name ||
-                                "wmc"
+                                  shared.users[0].inGame.name ||
+                                  "wmc"
                                 : "wmc"
                         }}
                     </mdui-typography>
@@ -49,6 +49,46 @@
                 </div>
             </mdui-card>
         </mdui-tooltip>
+        
+        <!-- 友链导航 -->
+        <div class="links-section">
+            <a href="https://www.diving-fish.com/maimaidx/prober/" target="_blank" class="link-wrapper">
+                <mdui-card 
+                    variant="outlined" 
+                    clickable 
+                    class="link-card"
+                >
+                    <div class="link-content">
+                        <mdui-icon name="set_meal"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">水鱼查分器</mdui-typography>
+                            <mdui-typography variant="body-small" style="color: var(--mdui-color-on-surface-variant)">
+                                本站使用的成绩同步网站
+                            </mdui-typography>
+                        </div>
+                    </div>
+                </mdui-card>
+            </a>
+            
+            <a href="https://nearcade.phi.zone/" target="_blank" class="link-wrapper">
+                <mdui-card 
+                    variant="outlined" 
+                    clickable 
+                    class="link-card"
+                >
+                    <div class="link-content">
+                        <mdui-icon name="map"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">nearcade</mdui-typography>
+                            <mdui-typography variant="body-small" style="color: var(--mdui-color-on-surface-variant)">
+                                找找附近的机厅
+                            </mdui-typography>
+                        </div>
+                    </div>
+                </mdui-card>
+            </a>
+        </div>
+        
     </div>
 </template>
 
@@ -114,5 +154,55 @@
     }
     mdui-card {
         text-align: center;
+    }
+
+    .links-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 24px;
+    }
+
+    .link-wrapper {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .link-card {
+        width: 100%;
+    }
+
+    .link-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .link-content mdui-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .link-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        text-align: left;
+    }
+
+    .link-text mdui-typography[variant="title-medium"] {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+
+    .link-text mdui-typography[variant="body-small"] {
+        font-size: 12px;
+        line-height: 1.2;
     }
 </style>
