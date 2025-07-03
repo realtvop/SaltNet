@@ -710,7 +710,6 @@
 
     .card-container {
         padding: 5px 20px;
-        min-height: 600px;
         overflow-y: auto;
         height: calc(100vh - 76px - 11.75rem);
 
