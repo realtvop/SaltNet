@@ -24,18 +24,24 @@ International & Japanese ver. may be supported later.
 ## 🛠️ 技术栈
 
 ### 前端框架
+
 - [Vue 3](https://vuejs.org/): 现代化的前端框架
 - [Vue Router](https://router.vuejs.org/): 路由管理
 - [Pinia](https://pinia.vuejs.org/): 状态管理
 - [TypeScript](https://www.typescriptlang.org/): 提供全程类型安全的开发体验
+
 ### 样式和 UI
+
 - [MDUI 2](https://mdui.org/): Material Design 风格的 UI 框架
+
 ### 开发工具
+
 - [Vite](https://vitejs.dev/): 快速构建工具和开发服务器，支持PWA
 - [Prettier](https://prettier.io/): 代码格式化
 - [PNPM](https://pnpm.io/): 包管理器
 
 ## 🤝 贡献
+
 欢迎贡献！请随时提交 [Issue](https://github.com/realtvop/SaltNet/issues) 和 [Pull Request](https://github.com/realtvop/SaltNet/pulls)。
 
 ## [TODO](todo.md)
@@ -51,6 +57,7 @@ International & Japanese ver. may be supported later.
 </a>
 
 ## 📜 许可证
+
 本开源项目遵循 [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html) 许可证。
 
 ## 🙏 致谢

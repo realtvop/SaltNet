@@ -164,8 +164,24 @@
                                             :key="fav.name"
                                             :value="fav.name"
                                             @click="toggleFavorite(fav, chartInfo)"
-                                            :style="{ backgroundColor: fav.charts.some(({ i, d }) => i === chartInfo.music.id && d === expandedValue) ? 'rgba(var(--mdui-color-primary),12%)' : '' }"
-                                            :icon="fav.charts.some(({ i, d }) => i === chartInfo.music.id && d === expandedValue) ? 'check' : ''"
+                                            :style="{
+                                                backgroundColor: fav.charts.some(
+                                                    ({ i, d }) =>
+                                                        i === chartInfo.music.id &&
+                                                        d === expandedValue
+                                                )
+                                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                                    : '',
+                                            }"
+                                            :icon="
+                                                fav.charts.some(
+                                                    ({ i, d }) =>
+                                                        i === chartInfo.music.id &&
+                                                        d === expandedValue
+                                                )
+                                                    ? 'check'
+                                                    : ''
+                                            "
                                         >
                                             {{ fav.name }}
                                         </mdui-menu-item>
@@ -549,14 +565,14 @@
     // 切换收藏状态
     function toggleFavorite(favoriteList: FavoriteList, chartInfo: Chart) {
         if (!props.chart?.music) return;
-        
+
         const chartId = props.chart.music.id;
         const chartLevel = chartInfo.info.grade;
-        
+
         const existingIndex = favoriteList.charts.findIndex(
             chart => chart.i === chartId && chart.d === chartLevel
         );
-        
+
         if (existingIndex >= 0) {
             // 如果已收藏，则取消收藏
             favoriteList.charts.splice(existingIndex, 1);

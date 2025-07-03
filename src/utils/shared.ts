@@ -38,18 +38,26 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
-    watch(favorites, (newFavorites: FavoriteList[]) => {
-        if (!newFavorites) return;
-        localForage.setItem("favorites", toRaw(newFavorites)).catch((err: any) => {
-            console.error("Failed to save favorites:", err);
-        });
-    }, { deep: true });
-    watch(chartsSort, (newChartsSort: ChartsSortCached) => {
-        if (!newChartsSort) return;
-        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
-            console.error("Failed to save charts sort:", err);
-        });
-    }, { deep: true });
+    watch(
+        favorites,
+        (newFavorites: FavoriteList[]) => {
+            if (!newFavorites) return;
+            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: any) => {
+                console.error("Failed to save favorites:", err);
+            });
+        },
+        { deep: true }
+    );
+    watch(
+        chartsSort,
+        (newChartsSort: ChartsSortCached) => {
+            if (!newChartsSort) return;
+            localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
+                console.error("Failed to save charts sort:", err);
+            });
+        },
+        { deep: true }
+    );
 
     return { users, chartsSort, favorites };
 });

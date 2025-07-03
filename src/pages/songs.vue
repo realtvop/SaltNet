@@ -435,7 +435,7 @@
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
 
-            textFieldOptions: { value: "", },
+            textFieldOptions: { value: "" },
             validator: value => {
                 if (!value || value.trim() === "") {
                     return "请输入收藏夹数据";
@@ -454,7 +454,7 @@
                 try {
                     const data = JSON.parse(value);
                     const originalName = data.n;
-                    
+
                     // 检查是否有同名收藏夹
                     if (shared.favorites.some(fav => fav.name === originalName)) {
                         // 弹出重命名对话框
@@ -501,22 +501,29 @@
     }
     function exportFavList() {
         if (shared.favorites.length === 0) return;
-        const currentFavorite = shared.favorites.find(f => f.name === selectedTab.value[Category.Favorite]);
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
         if (!currentFavorite) return;
 
         const json = JSON.stringify({
             n: currentFavorite.name,
             s: currentFavorite.charts,
         });
-        navigator.clipboard.writeText(json).then(() => {
-            snackbar({ message: "导出成功，已复制到剪切板" });
-        }).catch(() => {
-            snackbar({ message: "导出失败，请重试" });
-        });
+        navigator.clipboard
+            .writeText(json)
+            .then(() => {
+                snackbar({ message: "导出成功，已复制到剪切板" });
+            })
+            .catch(() => {
+                snackbar({ message: "导出失败，请重试" });
+            });
     }
     function renameFavList() {
         if (shared.favorites.length === 0) return;
-        const currentFavorite = shared.favorites.find(f => f.name === selectedTab.value[Category.Favorite]);
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
         if (!currentFavorite) return;
         prompt({
             headline: "重命名收藏夹",
@@ -527,7 +534,7 @@
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
 
-            textFieldOptions: { value: currentFavorite.name, },
+            textFieldOptions: { value: currentFavorite.name },
             validator: value => {
                 if (!value || value.trim() === "") {
                     return "收藏夹名称不能为空";
@@ -545,7 +552,9 @@
     }
     function deleteFavList() {
         if (shared.favorites.length === 0) return;
-        const currentFavorite = shared.favorites.find(f => f.name === selectedTab.value[Category.Favorite]);
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
         if (!currentFavorite) return;
         confirm({
             headline: "删除收藏夹",
@@ -558,15 +567,15 @@
             onClose: markDialogClosed,
 
             onConfirm: () => {
-            const index = shared.favorites.findIndex(f => f.name === currentFavorite.name);
-            if (index !== -1) {
-                shared.favorites.splice(index, 1);
-                if (shared.favorites.length > 0) {
-                selectedTab.value[Category.Favorite] = shared.favorites[0].name;
-                } else {
-                selectedTab.value[Category.Favorite] = "";
+                const index = shared.favorites.findIndex(f => f.name === currentFavorite.name);
+                if (index !== -1) {
+                    shared.favorites.splice(index, 1);
+                    if (shared.favorites.length > 0) {
+                        selectedTab.value[Category.Favorite] = shared.favorites[0].name;
+                    } else {
+                        selectedTab.value[Category.Favorite] = "";
+                    }
                 }
-            }
             },
         });
     }
@@ -607,11 +616,32 @@
             <mdui-button-icon slot="trigger" icon="more_vert"></mdui-button-icon>
             <mdui-menu>
                 <mdui-menu-item icon="add" @click="newFavList">新建收藏夹</mdui-menu-item>
-                <mdui-menu-item icon="content_paste" @click="importFavList">导入收藏夹</mdui-menu-item>
+                <mdui-menu-item icon="content_paste" @click="importFavList">
+                    导入收藏夹
+                </mdui-menu-item>
                 <mdui-divider v-if="shared.favorites.length > 0" />
-                <mdui-menu-item v-if="shared.favorites.length > 0" icon="edit" @click="renameFavList">重命名</mdui-menu-item>
-                <mdui-menu-item v-if="shared.favorites.length > 0" icon="content_copy" @click="exportFavList">导出</mdui-menu-item>
-                <mdui-menu-item v-if="shared.favorites.length > 0" icon="delete" style="color: red;" @click="deleteFavList">删除</mdui-menu-item>
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="edit"
+                    @click="renameFavList"
+                >
+                    重命名
+                </mdui-menu-item>
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="content_copy"
+                    @click="exportFavList"
+                >
+                    导出
+                </mdui-menu-item>
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="delete"
+                    style="color: red"
+                    @click="deleteFavList"
+                >
+                    删除
+                </mdui-menu-item>
             </mdui-menu>
         </mdui-dropdown>
     </div>
