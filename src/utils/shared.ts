@@ -2,12 +2,13 @@ import { defineStore } from "pinia";
 import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
-import type { ChartsSortCached, User } from "@/types/user";
+import type { ChartsSortCached, FavoriteList, User } from "@/types/user";
 import type { Chart } from "@/types/music";
 
 // MARK: shared
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
+    const favorites = ref<FavoriteList[]>([]);
     const chartsSort = ref<ChartsSortCached>({
         identifier: {
             name: null as unknown as string,
@@ -19,6 +20,9 @@ export const useShared = defineStore("shared", () => {
 
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) users.value = v;
+    });
+    localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
+        if (Array.isArray(v)) favorites.value = v;
     });
     localForage.getItem<ChartsSortCached>("chartsSortCached").then((v: ChartsSortCached | null) => {
         if (v) chartsSort.value = v;
@@ -34,12 +38,26 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
-    watch(chartsSort, (newChartsSort: ChartsSortCached) => {
-        if (!newChartsSort) return;
-        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
-            console.error("Failed to save charts sort:", err);
-        });
-    });
+    watch(
+        favorites,
+        (newFavorites: FavoriteList[]) => {
+            if (!newFavorites) return;
+            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: any) => {
+                console.error("Failed to save favorites:", err);
+            });
+        },
+        { deep: true }
+    );
+    watch(
+        chartsSort,
+        (newChartsSort: ChartsSortCached) => {
+            if (!newChartsSort) return;
+            localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
+                console.error("Failed to save charts sort:", err);
+            });
+        },
+        { deep: true }
+    );
 
-    return { users, chartsSort };
+    return { users, chartsSort, favorites };
 });

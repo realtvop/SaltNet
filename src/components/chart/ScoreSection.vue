@@ -67,7 +67,7 @@
                     :key="`score-cell-${index}`"
                     class="score-cell"
                 >
-                    <ScoreCard @click="openDialog(score)" :data="score" />
+                    <ScoreCard @click="openDialog(score)" :data="score" :rating="score.ra" />
                 </div>
             </div>
         </div>

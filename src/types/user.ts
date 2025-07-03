@@ -1,6 +1,7 @@
 // src/types/user.ts
 import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
 import type { Chart } from "./music";
+import type { Level } from "./inGame";
 
 export interface User {
     uid?: string;
@@ -27,6 +28,16 @@ export interface ChartsSortCached {
         verBuildTime: number;
     };
     charts: Chart[];
+}
+
+// favorite charts
+export interface FavoriteList {
+    name: string;
+    charts: FavoriteChart[];
+}
+export interface FavoriteChart {
+    i: number; // id
+    d: Level;
 }
 
 type DetailedData = Record<string, DivingFishFullRecord>;
