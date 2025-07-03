@@ -3,9 +3,10 @@
     import type { Chart } from "@/types/music";
     import type { DivingFishFullRecord } from "@/divingfish/type";
 
-    const { data, rating } = defineProps<{
+    const { data, rating, cover } = defineProps<{
         data: Chart | DivingFishFullRecord;
         rating?: number | string;
+        cover?: string;
     }>();
 
     const emit = defineEmits(["click"]);
@@ -18,7 +19,7 @@
                 <div
                     class="song-jacket-image"
                     :style="{
-                        'background-image': `url('https://www.diving-fish.com/covers/${getChartInfo.musicIdString(data)}.png')`,
+                        'background-image': cover ? `url('${cover}')` : `url('https://www.diving-fish.com/covers/${getChartInfo.musicIdString(data)}.png')`,
                     }"
                 ></div>
             </div>
@@ -36,7 +37,7 @@
                                 background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][getChartInfo.grade(data)]}`,
                             }"
                         >
-                            {{ getChartInfo.constant(data).toFixed(1) }}
+                            {{ getChartInfo.constant(data) ? getChartInfo.constant(data).toFixed(1) : "" }}
                         </div>
                         <div class="pill-section points">
                             {{ rating }}

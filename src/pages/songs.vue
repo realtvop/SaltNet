@@ -71,6 +71,43 @@
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
 
+    function getRandomChart() {
+        if (!chartListFiltered.value) return null;
+        const charts = chartListFiltered.value[selectedDifficulty.value] || [];
+        if (charts.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * charts.length);
+        return charts[randomIndex];
+    }
+    const randomChartDummy = {
+        music: {
+            info: {
+                title: "随机",
+                artist: "",
+                id: -1,
+                aliases: [],
+            },
+        },
+        info: {
+            grade: 3,
+            level: "ALL",
+            charter: "系统",
+            constant: 0,
+        },
+        score: {
+            achievements: "-",
+            comboStatus: "",
+            syncStatus: "",
+            rankRate: "",
+            deluxeScore: 0,
+            deluxeRating: 0,
+            index: {
+                all: { index: 0, total: 1 },
+                difficult: { index: 0, total: 1 },
+                queried: { index: 0, total: 1 },
+            },
+        },
+    };
+
     async function loadChartsWithCache(userData?: User | null) {
         const currentIdentifier = {
             name: userData?.data.name || "unknown",
@@ -402,6 +439,7 @@
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
             <div class="score-grid">
+                <ScoreCard v-if="category == Category.Favorite" cover="/icons/random.png" :data="randomChartDummy" @click="openChartInfoDialog(getRandomChart())" />
                 <div
                     v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
                     :key="`score-cell-${index}`"
