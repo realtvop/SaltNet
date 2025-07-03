@@ -16,34 +16,38 @@
         }
     }
 
+    enum Category {
+        InGame = "难度",
+        Favorite = "收藏夹",
+    }
+
     const shared = useShared();
-    const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
-        "ALL",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "7+",
-        "8",
-        "8+",
-        "9",
-        "9+",
-        "10",
-        "10+",
-        "11",
-        "11+",
-        "12",
-        "12+",
-        "13",
-        "13+",
-        "14",
-        "14+",
-        "15",
-    ];
+            "ALL",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "7+",
+            "8",
+            "8+",
+            "9",
+            "9+",
+            "10",
+            "10+",
+            "11",
+            "11+",
+            "12",
+            "12+",
+            "13",
+            "13+",
+            "14",
+            "14+",
+            "15",
+        ];
     const query = ref<string>("");
     const chartInfoDialog = ref({
         open: false,
@@ -55,11 +59,17 @@
         // verBuildTime: 0,
     };
 
-    enum Category {
-        InGame = "难度",
-        Favorite = "收藏夹",
-    }
     const category = ref<Category>(Category.InGame);
+    const tabs = computed(() => {
+        if (category.value === Category.InGame) return difficulties;
+        if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
+    });
+    const selectedTab = ref({
+        [Category.InGame]: "ALL",
+        [Category.Favorite]: shared.favorites[0]?.name || "",
+    });
+
+    const selectedDifficulty = computed(() => selectedTab.value[category.value]);
 
     async function loadChartsWithCache(userData?: User | null) {
         const currentIdentifier = {
@@ -146,20 +156,39 @@
                 identifier: currentIdentifier,
                 charts: charts,
             };
-    }
-    const chartListFiltered = computed(() => {
+    }    const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts.length) return null;
-
+        
         let filteredCharts: Chart[];
 
-        if (selectedDifficulty.value === "ALL") {
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) => chart.info.grade === 3
-            );
+        // 根据当前分类模式筛选曲目
+        if (category.value === Category.InGame) {
+            // 游戏内难度模式
+            if (selectedDifficulty.value === "ALL") {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.grade === 3
+                );
+            } else {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.level === selectedDifficulty.value
+                );
+            }
+        } else if (category.value === Category.Favorite) {
+            // 收藏夹模式
+            const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
+            if (!currentFavorite) {
+                filteredCharts = [];
+            } else {
+                // 根据收藏夹中的曲目ID和难度筛选
+                const favoriteChartIds = new Set(
+                    currentFavorite.charts.map(fc => `${fc.i}-${fc.d}`)
+                );
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
+                );
+            }
         } else {
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) => chart.info.level === selectedDifficulty.value
-            );
+            filteredCharts = [];
         }
 
         // 先给所有符合难度条件的曲目添加原始排序索引
@@ -308,6 +337,16 @@
         visibleItemsCount.value = getLoadSize();
     });
 
+    watch(category, (newCategory) => {
+        // 切换分类时，重置到该分类的默认选项
+        if (newCategory === Category.InGame) {
+            selectedTab.value[Category.InGame] = "ALL";
+        } else if (newCategory === Category.Favorite) {
+            selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
+        }
+        visibleItemsCount.value = getLoadSize();
+    });
+
     onMounted(async () => {
         await loadPlayerData();
         visibleItemsCount.value = getLoadSize();
@@ -325,17 +364,28 @@
         <mdui-dropdown>
             <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
             <mdui-menu>
-                <mdui-menu-item @click="category = item" v-for="(item, index) in Object.values(Category)" :key="index">{{ item }}</mdui-menu-item>
+                <mdui-menu-item
+                    @click="category = item"
+                    v-for="(item, index) in Object.values(Category)"
+                    :key="index"
+                    :style="{
+                        backgroundColor:
+                            category == item ? 'rgba(var(--mdui-color-primary),12%)' : '',
+                    }"
+                    :icon="category == item ? 'check' : ''"
+                >
+                    {{ item }}
+                </mdui-menu-item>
             </mdui-menu>
         </mdui-dropdown>
         <mdui-tabs :value="selectedDifficulty">
             <mdui-tab
-                v-for="difficulty in difficulties"
-                :key="difficulty"
-                :value="difficulty"
-                @click="selectedDifficulty = difficulty"
+                v-for="tab in tabs"
+                :key="tab"
+                :value="tab"
+                @click="selectedTab[category] = tab"
             >
-                {{ difficulty }}
+                {{ tab }}
             </mdui-tab>
         </mdui-tabs>
     </div>
