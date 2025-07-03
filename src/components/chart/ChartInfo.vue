@@ -65,11 +65,12 @@
             </mdui-chip>
         </div>
 
-        <mdui-tabs :value="defaultExpandedValue" placement="top" full-width v-if="chart">
+        <mdui-tabs :value="expandedValue.toString()" placement="top" full-width v-if="chart">
             <mdui-tab
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
                 :key="chartInfo.info.grade"
                 :value="chartInfo.info.grade.toString()"
+                @click="expandedValue = chartInfo.info.grade"
             >
                 <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
                 <div class="tab-header" slot="icon">
@@ -157,10 +158,14 @@
                                     <mdui-button slot="trigger" variant="text" icon="playlist_add">
                                         收藏
                                     </mdui-button>
-                                    <mdui-menu selects="multiple">
+                                    <mdui-menu>
                                         <mdui-menu-item
                                             v-for="fav in shared.favorites"
-                                            :value="fav"
+                                            :key="fav.name"
+                                            :value="fav.name"
+                                            @click="toggleFavorite(fav, chartInfo)"
+                                            :style="{ backgroundColor: fav.charts.some(({ i, d }) => i === chartInfo.music.id && d === expandedValue) ? 'rgba(var(--mdui-color-primary),12%)' : '' }"
+                                            :icon="fav.charts.some(({ i, d }) => i === chartInfo.music.id && d === expandedValue) ? 'check' : ''"
                                         >
                                             {{ fav.name }}
                                         </mdui-menu-item>
@@ -305,6 +310,7 @@
     import { useShared } from "@/utils/shared";
     import { snackbar, prompt } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";
+    import type { FavoriteList, FavoriteChart } from "@/types/user";
 
     const shared = useShared();
 
@@ -328,7 +334,7 @@
     const selfName = ref("");
     const isRatingExpanded = ref(false);
     const expandedCharts = ref<Set<number>>(new Set());
-    const defaultExpandedValue = ref("0");
+    const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
 
     // 存储每个难度对应的好友成绩
@@ -371,8 +377,7 @@
 
             if (!props.chart?.music?.charts) return;
 
-            // 设置默认展开对应难度
-            defaultExpandedValue.value = props.chart.info.grade?.toString() || "0";
+            expandedValue.value = props.chart.info.grade || 0;
 
             if (shared.users.length > 0) {
                 selfName.value = String(shared.users[0].data.name || "");
@@ -541,16 +546,38 @@
         return chartPositionMap.value.get(chartInfo.info.grade) || "-";
     }
 
+    // 切换收藏状态
+    function toggleFavorite(favoriteList: FavoriteList, chartInfo: Chart) {
+        if (!props.chart?.music) return;
+        
+        const chartId = props.chart.music.id;
+        const chartLevel = chartInfo.info.grade;
+        
+        const existingIndex = favoriteList.charts.findIndex(
+            chart => chart.i === chartId && chart.d === chartLevel
+        );
+        
+        if (existingIndex >= 0) {
+            // 如果已收藏，则取消收藏
+            favoriteList.charts.splice(existingIndex, 1);
+        } else {
+            // 如果未收藏，则添加收藏
+            favoriteList.charts.push({
+                i: chartId,
+                d: chartLevel,
+            } as FavoriteChart);
+        }
+    }
+
+    // 新增收藏夹
     function newFavList() {
         prompt({
             headline: "新增收藏夹",
-            // description: "Prompt description",
             confirmText: "新增",
             cancelText: "取消",
             closeOnOverlayClick: true,
             closeOnEsc: true,
             onOpen: markDialogOpen,
-            // onClose: markDialogClosed,
 
             validator: value => {
                 if (!value || value.trim() === "") {
