@@ -7,6 +7,8 @@
     import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import { getMusicInfoAsync } from "@/assets/music";
     import { useShared } from "@/utils/shared";
+    import { prompt, confirm, snackbar } from "mdui";
+    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
 
     declare global {
         interface Window {
@@ -16,8 +18,12 @@
         }
     }
 
+    enum Category {
+        InGame = "难度",
+        Favorite = "收藏夹",
+    }
+
     const shared = useShared();
-    const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
         "ALL",
         "1",
@@ -54,6 +60,55 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
+
+    const category = ref<Category>(Category.InGame);
+    const tabs = computed(() => {
+        if (category.value === Category.InGame) return difficulties;
+        if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
+    });
+    const selectedTab = ref({
+        [Category.InGame]: "ALL",
+        [Category.Favorite]: shared.favorites[0]?.name || "",
+    });
+
+    const selectedDifficulty = computed(() => selectedTab.value[category.value]);
+
+    function getRandomChart() {
+        if (!chartListFiltered.value) return null;
+        const charts = chartListFiltered.value[selectedDifficulty.value] || [];
+        if (charts.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * charts.length);
+        return charts[randomIndex];
+    }
+    const randomChartDummy = {
+        music: {
+            info: {
+                title: "随机",
+                artist: "",
+                id: -1,
+                aliases: [],
+            },
+        },
+        info: {
+            grade: 3,
+            level: "ALL",
+            charter: "系统",
+            constant: 0,
+        },
+        score: {
+            achievements: "-",
+            comboStatus: "",
+            syncStatus: "",
+            rankRate: "",
+            deluxeScore: 0,
+            deluxeRating: 0,
+            index: {
+                all: { index: 0, total: 1 },
+                difficult: { index: 0, total: 1 },
+                queried: { index: 0, total: 1 },
+            },
+        },
+    } as unknown as Chart;
 
     async function loadChartsWithCache(userData?: User | null) {
         const currentIdentifier = {
@@ -146,14 +201,34 @@
 
         let filteredCharts: Chart[];
 
-        if (selectedDifficulty.value === "ALL") {
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) => chart.info.grade === 3
-            );
+        // 根据当前分类模式筛选曲目
+        if (category.value === Category.InGame) {
+            // 游戏内难度模式
+            if (selectedDifficulty.value === "ALL") {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.grade === 3
+                );
+            } else {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.level === selectedDifficulty.value
+                );
+            }
+        } else if (category.value === Category.Favorite) {
+            // 收藏夹模式
+            const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
+            if (!currentFavorite) {
+                filteredCharts = [];
+            } else {
+                // 根据收藏夹中的曲目ID和难度筛选
+                const favoriteChartIds = new Set(
+                    currentFavorite.charts.map(fc => `${fc.i}-${fc.d}`)
+                );
+                filteredCharts = shared.chartsSort.charts.filter((chart: Chart) =>
+                    favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
+                );
+            }
         } else {
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) => chart.info.level === selectedDifficulty.value
-            );
+            filteredCharts = [];
         }
 
         // 先给所有符合难度条件的曲目添加原始排序索引
@@ -302,6 +377,16 @@
         visibleItemsCount.value = getLoadSize();
     });
 
+    watch(category, newCategory => {
+        // 切换分类时，重置到该分类的默认选项
+        if (newCategory === Category.InGame) {
+            selectedTab.value[Category.InGame] = "ALL";
+        } else if (newCategory === Category.Favorite) {
+            selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
+        }
+        visibleItemsCount.value = getLoadSize();
+    });
+
     onMounted(async () => {
         await loadPlayerData();
         visibleItemsCount.value = getLoadSize();
@@ -311,20 +396,255 @@
     onUnmounted(() => {
         window.removeEventListener("resize", handleResize);
     });
+
+    // 新增收藏夹
+    function newFavList() {
+        prompt({
+            headline: "新增收藏夹",
+            confirmText: "新增",
+            cancelText: "取消",
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+
+            validator: value => {
+                if (!value || value.trim() === "") {
+                    return "收藏夹名称不能为空";
+                }
+                if (shared.favorites.some(fav => fav.name === value)) {
+                    return "收藏夹已存在";
+                }
+                return true;
+            },
+            onConfirm: value => {
+                shared.favorites.push({
+                    name: value,
+                    charts: [],
+                });
+            },
+        });
+    }
+    function importFavList() {
+        prompt({
+            headline: "导入收藏夹",
+            confirmText: "导入",
+            cancelText: "取消",
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+
+            textFieldOptions: { value: "" },
+            validator: value => {
+                if (!value || value.trim() === "") {
+                    return "请输入收藏夹数据";
+                }
+                try {
+                    const fav = JSON.parse(value);
+                    if (!fav.n || !Array.isArray(fav.s)) {
+                        return "无效的收藏夹数据格式";
+                    }
+                } catch (e) {
+                    return "无效的 JSON 格式";
+                }
+                return true;
+            },
+            onConfirm: value => {
+                try {
+                    const data = JSON.parse(value);
+                    const originalName = data.n;
+
+                    // 检查是否有同名收藏夹
+                    if (shared.favorites.some(fav => fav.name === originalName)) {
+                        // 弹出重命名对话框
+                        prompt({
+                            headline: "收藏夹名称冲突",
+                            confirmText: "导入",
+                            cancelText: "取消",
+                            closeOnOverlayClick: true,
+                            closeOnEsc: true,
+                            onOpen: markDialogOpen,
+                            onClose: markDialogClosed,
+
+                            textFieldOptions: { value: originalName },
+                            validator: newName => {
+                                if (!newName || newName.trim() === "") {
+                                    return "收藏夹名称不能为空";
+                                }
+                                if (shared.favorites.some(fav => fav.name === newName)) {
+                                    return "收藏夹已存在";
+                                }
+                                return true;
+                            },
+                            onConfirm: newName => {
+                                shared.favorites.push({
+                                    name: newName,
+                                    charts: data.s,
+                                });
+                                snackbar({ message: "导入成功" });
+                            },
+                        });
+                    } else {
+                        // 直接导入
+                        shared.favorites.push({
+                            name: originalName,
+                            charts: data.s,
+                        });
+                        snackbar({ message: "导入成功" });
+                    }
+                } catch (e) {
+                    snackbar({ message: "导入失败，请检查数据格式" });
+                }
+            },
+        });
+    }
+    function exportFavList() {
+        if (shared.favorites.length === 0) return;
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
+        if (!currentFavorite) return;
+
+        const json = JSON.stringify({
+            n: currentFavorite.name,
+            s: currentFavorite.charts,
+        });
+        navigator.clipboard
+            .writeText(json)
+            .then(() => {
+                snackbar({ message: "导出成功，已复制到剪切板" });
+            })
+            .catch(() => {
+                snackbar({ message: "导出失败，请重试" });
+            });
+    }
+    function renameFavList() {
+        if (shared.favorites.length === 0) return;
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
+        if (!currentFavorite) return;
+        prompt({
+            headline: "重命名收藏夹",
+            confirmText: "重命名",
+            cancelText: "取消",
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+
+            textFieldOptions: { value: currentFavorite.name },
+            validator: value => {
+                if (!value || value.trim() === "") {
+                    return "收藏夹名称不能为空";
+                }
+                if (shared.favorites.some(fav => fav.name === value && fav !== currentFavorite)) {
+                    return "收藏夹已存在";
+                }
+                return true;
+            },
+            onConfirm: value => {
+                currentFavorite.name = value;
+                selectedTab.value[Category.Favorite] = value;
+            },
+        });
+    }
+    function deleteFavList() {
+        if (shared.favorites.length === 0) return;
+        const currentFavorite = shared.favorites.find(
+            f => f.name === selectedTab.value[Category.Favorite]
+        );
+        if (!currentFavorite) return;
+        confirm({
+            headline: "删除收藏夹",
+            description: `确定要删除收藏夹 "${currentFavorite.name}" 吗？`,
+            confirmText: "删除",
+            cancelText: "取消",
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+
+            onConfirm: () => {
+                const index = shared.favorites.findIndex(f => f.name === currentFavorite.name);
+                if (index !== -1) {
+                    shared.favorites.splice(index, 1);
+                    if (shared.favorites.length > 0) {
+                        selectedTab.value[Category.Favorite] = shared.favorites[0].name;
+                    } else {
+                        selectedTab.value[Category.Favorite] = "";
+                    }
+                }
+            },
+        });
+    }
 </script>
 
 <template>
     <!-- [游戏排序]难度选单 -->
-    <mdui-tabs :value="selectedDifficulty">
-        <mdui-tab
-            v-for="difficulty in difficulties"
-            :key="difficulty"
-            :value="difficulty"
-            @click="selectedDifficulty = difficulty"
-        >
-            {{ difficulty }}
-        </mdui-tab>
-    </mdui-tabs>
+    <div class="category-bar">
+        <mdui-dropdown>
+            <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
+            <mdui-menu>
+                <mdui-menu-item
+                    @click="category = item"
+                    v-for="(item, index) in Object.values(Category)"
+                    :key="index"
+                    :style="{
+                        backgroundColor:
+                            category == item ? 'rgba(var(--mdui-color-primary),12%)' : '',
+                    }"
+                    :icon="category == item ? 'check' : ''"
+                >
+                    {{ item }}
+                </mdui-menu-item>
+            </mdui-menu>
+        </mdui-dropdown>
+        <mdui-tabs :value="selectedDifficulty">
+            <mdui-tab
+                v-for="tab in tabs"
+                :key="tab"
+                :value="tab"
+                @click="selectedTab[category] = tab"
+            >
+                {{ tab }}
+            </mdui-tab>
+        </mdui-tabs>
+        <!-- 收藏选项 -->
+        <mdui-dropdown v-if="category == Category.Favorite">
+            <mdui-button-icon slot="trigger" icon="more_vert"></mdui-button-icon>
+            <mdui-menu>
+                <mdui-menu-item icon="add" @click="newFavList">新建收藏夹</mdui-menu-item>
+                <mdui-menu-item icon="content_paste" @click="importFavList">
+                    导入收藏夹
+                </mdui-menu-item>
+                <mdui-divider v-if="shared.favorites.length > 0" />
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="edit"
+                    @click="renameFavList"
+                >
+                    重命名
+                </mdui-menu-item>
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="content_copy"
+                    @click="exportFavList"
+                >
+                    导出
+                </mdui-menu-item>
+                <mdui-menu-item
+                    v-if="shared.favorites.length > 0"
+                    icon="delete"
+                    style="color: red"
+                    @click="deleteFavList"
+                >
+                    删除
+                </mdui-menu-item>
+            </mdui-menu>
+        </mdui-dropdown>
+    </div>
 
     <mdui-text-field
         id="search-input"
@@ -338,12 +658,22 @@
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
             <div class="score-grid">
+                <ScoreCard
+                    v-if="category == Category.Favorite && shared.favorites.length > 0"
+                    cover="/icons/random.png"
+                    :data="randomChartDummy"
+                    @click="openChartInfoDialog(getRandomChart())"
+                />
                 <div
                     v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
                     :key="`score-cell-${index}`"
                     class="score-cell"
                 >
-                    <ScoreCard :data="chart" @click="openChartInfoDialog(chart)" />
+                    <ScoreCard
+                        :data="chart"
+                        @click="openChartInfoDialog(chart)"
+                        :rating="category == Category.Favorite ? index + 1 : ''"
+                    />
                 </div>
 
                 <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
@@ -358,8 +688,20 @@
 </template>
 
 <style scoped>
+    .category-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0 10px;
+        gap: 10px;
+        overflow: hidden;
+    }
+
     mdui-tabs {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     #search-input {
@@ -368,7 +710,6 @@
 
     .card-container {
         padding: 5px 20px;
-        min-height: 600px;
         overflow-y: auto;
         height: calc(100vh - 76px - 11.75rem);
 

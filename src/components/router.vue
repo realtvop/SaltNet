@@ -18,6 +18,7 @@
     ];
 
     const routesNeedAddHistory = ["/settings", "/b50/:id"];
+    const routesNeedFixedPage = ["/about", "/songs"];
 
     const router = createRouter({
         history: createMemoryHistory(),
@@ -66,6 +67,22 @@
         }
 
         next();
+    });
+
+    router.afterEach(to => {
+        window.scrollTo(0, 0);
+
+        // Check if the current route needs fixed page
+        const needsFixedPage = routesNeedFixedPage.some(route => {
+            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
+            return regex.test(to.path);
+        });
+
+        if (needsFixedPage) {
+            document.body.style.overflowY = "hidden";
+        } else {
+            document.body.style.overflowY = "";
+        }
     });
 
     window.addEventListener("popstate", () => {
