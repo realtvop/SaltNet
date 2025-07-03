@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
+    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
     import type { User } from "@/types/user";
@@ -195,7 +196,13 @@
         </mdui-card>
     </div>
 
-    <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
+    <BindUserDialog
+        v-model="isDialogVisible"
+        :user="currentUserToEdit"
+        @save="handleUserSave"
+        @open="markDialogOpen"
+        @close="markDialogClosed"
+    />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

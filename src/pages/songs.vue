@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
     import { MusicSort } from "@/assets/music";
@@ -17,7 +17,6 @@
     }
 
     const shared = useShared();
-    const allCharts = ref<Chart[]>([]);
     const selectedDifficulty = ref<string>("ALL");
     const difficulties = [
         "ALL",
@@ -45,7 +44,6 @@
         "14+",
         "15",
     ];
-    const playerData = ref<User | null>(null);
     const query = ref<string>("");
     const chartInfoDialog = ref({
         open: false,
@@ -58,11 +56,9 @@
     };
 
     async function loadChartsWithCache(userData?: User | null) {
-        const currentUser = userData || playerData.value;
-
         const currentIdentifier = {
-            name: currentUser?.data.name || "unknown",
-            updateTime: currentUser?.data?.updateTime || 0,
+            name: userData?.data.name || "unknown",
+            updateTime: userData?.data?.updateTime || 0,
             verBuildTime: parseInt(window.spec?.currentVersionBuildTime || "0"),
         };
 
@@ -81,7 +77,7 @@
             loadedIdentifier.name = shared.chartsSort.identifier.name;
             loadedIdentifier.updateTime = shared.chartsSort.identifier.updateTime;
 
-            allCharts.value = shared.chartsSort.charts;
+            shared.chartsSort.charts = shared.chartsSort.charts;
             return;
         }
 
@@ -93,8 +89,8 @@
             const chart: Chart = musicInfo.chartList[i];
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (currentUser?.data?.detailed) {
-                const d = currentUser.data.detailed[`${chart.music.id}-${chart.info.grade}`];
+            if (userData?.data?.detailed) {
+                const d = userData.data.detailed[`${chart.music.id}-${chart.info.grade}`];
                 if (
                     d &&
                     typeof d.achievements === "number" &&
@@ -127,10 +123,10 @@
                 a.info.grade * 100000
         );
 
-        if (currentUser?.data?.detailed) {
+        if (userData?.data?.detailed) {
             charts.sort((a, b) => {
-                const chartDataA = currentUser?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
-                const chartDataB = currentUser?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
+                const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
+                const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
                 if (chartDataA?.achievements && chartDataB?.achievements)
                     return chartDataB.achievements - chartDataA.achievements;
                 if (chartDataA?.achievements) return -1;
@@ -139,22 +135,23 @@
             });
         }
 
-        allCharts.value = charts;
-
-        shared.chartsSort = {
-            identifier: currentIdentifier,
-            charts: charts,
-        };
+        if (userData)
+            shared.chartsSort = {
+                identifier: currentIdentifier,
+                charts: charts,
+            };
     }
     const chartListFiltered = computed(() => {
-        if (!allCharts.value.length) return null;
+        if (!shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
 
         if (selectedDifficulty.value === "ALL") {
-            filteredCharts = allCharts.value.filter((chart: Chart) => chart.info.grade === 3);
+            filteredCharts = shared.chartsSort.charts.filter(
+                (chart: Chart) => chart.info.grade === 3
+            );
         } else {
-            filteredCharts = allCharts.value.filter(
+            filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) => chart.info.level === selectedDifficulty.value
             );
         }
@@ -233,14 +230,9 @@
     });
 
     const loadPlayerData = async () => {
-        playerData.value = null;
-
         if (shared.users[0]) loadChartsWithCache(shared.users[0]);
         else loadChartsWithCache();
     };
-    onMounted(async () => {
-        await loadPlayerData();
-    });
 
     function openChartInfoDialog(chart: any) {
         chartInfoDialog.value.chart = chart;
@@ -252,42 +244,77 @@
         return chartListFiltered.value[selectedDifficulty.value] || [];
     });
 
-    const visibleItemsCount = ref(50);
+    // 虚拟滚动状态管理
+    const visibleItemsCount = ref(0);
+
+    // 根据屏幕宽度计算每次加载的项目数
+    const getLoadSize = () => {
+        const width = window.innerWidth;
+
+        // 根据屏幕宽度确定列数
+        let columns = 1;
+        if (width >= 1254) columns = 5;
+        else if (width >= 1000) columns = 4;
+        else if (width >= 768) columns = 3;
+        else if (width >= 500) columns = 2;
+        else if (width >= 350) columns = 2;
+
+        // 计算行数和总加载数量
+        const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
+        return columns * rowsPerPage * 3; // 一次加载3页的量
+    };
+
     const maxVisibleItems = computed(() =>
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
-    // 监听难度变化，重置可见项目数量
-    watch(selectedDifficulty, () => {
-        visibleItemsCount.value = 50;
-    });
-
+    // 加载更多项目
     const loadMore = () => {
-        if (visibleItemsCount.value < itemsToRender.value.length) {
-            visibleItemsCount.value = Math.min(
-                visibleItemsCount.value + 50,
-                itemsToRender.value.length
-            );
+        const remainingItems = itemsToRender.value.length - visibleItemsCount.value;
+        if (remainingItems > 0) {
+            const loadSize = Math.min(getLoadSize(), remainingItems);
+            visibleItemsCount.value += loadSize;
         }
     };
 
+    // 滚动事件处理
     const handleScroll = (event: Event) => {
         const target = event.target as HTMLElement;
+        // 检查是否接近底部（距离底部200px时触发）
         if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
             loadMore();
         }
     };
+
+    // 窗口大小变化处理
+    const handleResize = () => {
+        const currentItemsPerPage = getLoadSize() / 3; // 单页数量
+        const currentPages = Math.ceil(visibleItemsCount.value / currentItemsPerPage);
+        const newVisibleCount = Math.min(
+            currentPages * currentItemsPerPage,
+            itemsToRender.value.length
+        );
+
+        visibleItemsCount.value = Math.max(newVisibleCount, getLoadSize());
+    };
+
+    watch(selectedDifficulty, () => {
+        visibleItemsCount.value = getLoadSize();
+    });
+
+    onMounted(async () => {
+        await loadPlayerData();
+        visibleItemsCount.value = getLoadSize();
+        window.addEventListener("resize", handleResize);
+    });
+
+    onUnmounted(() => {
+        window.removeEventListener("resize", handleResize);
+    });
 </script>
 
 <template>
-    <mdui-text-field
-        id="search-input"
-        clearable
-        icon="search"
-        label="搜索"
-        placeholder="曲名 别名 id 曲师 谱师"
-        @input="query = $event.target.value"
-    ></mdui-text-field>
+    <!-- [游戏排序]难度选单 -->
     <mdui-tabs :value="selectedDifficulty">
         <mdui-tab
             v-for="difficulty in difficulties"
@@ -298,6 +325,16 @@
             {{ difficulty }}
         </mdui-tab>
     </mdui-tabs>
+
+    <mdui-text-field
+        id="search-input"
+        clearable
+        icon="search"
+        label="搜索"
+        placeholder="曲名 别名 id 曲师 谱师"
+        @input="query = $event.target.value"
+    ></mdui-text-field>
+
     <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
         <div class="score-grid-wrapper">
             <div class="score-grid">
@@ -310,11 +347,13 @@
                 </div>
 
                 <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
-                    正在加载更多...
+                    <div class="loading-text">正在加载更多...</div>
+                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
                 </div>
             </div>
         </div>
     </div>
+
     <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
 </template>
 
@@ -432,7 +471,18 @@
     .loading-indicator {
         text-align: center;
         padding: 20px;
-        color: #666;
         margin-top: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        grid-column: 1 / -1;
+    }
+
+    .loading-text {
+        color: #666;
+        margin-bottom: 10px;
     }
 </style>

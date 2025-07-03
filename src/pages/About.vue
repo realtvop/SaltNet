@@ -65,7 +65,7 @@
         align-items: center;
         justify-content: center; /* Center content vertically */
         min-height: calc(
-            100vh - 64px - 40px
+            100vh - 64px - 40px - 6rem
         ); /* Adjust based on app bar and potential footer/padding */
         width: 100%;
         padding: 20px;

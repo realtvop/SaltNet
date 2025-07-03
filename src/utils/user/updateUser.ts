@@ -1,6 +1,7 @@
 import type { User } from "@/types/user";
 import { snackbar, alert } from "mdui";
 import { toRaw } from "vue";
+import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
 // @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
@@ -30,7 +31,11 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
                 user.inGame.name = data.name;
         }
     } else if (type === "alert") {
-        alert(event.data.data);
+        alert({
+            ...event.data.data,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+        });
     } else console.log(type, event.data);
 };
 

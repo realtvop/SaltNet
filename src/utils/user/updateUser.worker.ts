@@ -132,6 +132,8 @@ function checkLogin(user: User) {
                     data: {
                         headline: `${userName}`,
                         description: data.isLogin ? "上机了哟！" : "还没有上机",
+                        closeOnOverlayClick: true,
+                        closeOnEsc: true,
                     },
                 });
             } else {
