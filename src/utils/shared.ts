@@ -48,15 +48,12 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
-    watch(
-        chartsSort,
-        (newChartsSort: ChartsSortCached) => {
-            if (!newChartsSort) return;
-            localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
-                console.error("Failed to save charts sort:", err);
-            });
-        }
-    );
+    watch(chartsSort, (newChartsSort: ChartsSortCached) => {
+        if (!newChartsSort) return;
+        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
+            console.error("Failed to save charts sort:", err);
+        });
+    });
 
     return { users, chartsSort, favorites };
 });
