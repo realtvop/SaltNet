@@ -9,8 +9,17 @@
         @close="markDialogClosed"
     >
         <mdui-top-app-bar slot="header">
-            <mdui-button-icon :icon="isSmallScreen ? 'arrow_back' : 'close'" @click="dialogRef.open = false"></mdui-button-icon>
-            <mdui-button v-if="isSmallScreen" variant="text" class="icon-btn" @click="dialogRef.open = false" style="aspect-ratio: 1">
+            <mdui-button-icon
+                :icon="isSmallScreen ? 'arrow_back' : 'close'"
+                @click="dialogRef.open = false"
+            ></mdui-button-icon>
+            <mdui-button
+                v-if="isSmallScreen"
+                variant="text"
+                class="icon-btn"
+                @click="dialogRef.open = false"
+                style="aspect-ratio: 1"
+            >
                 <img src="/favicon.ico" alt="icon" class="favicon-icon" />
             </mdui-button>
             <mdui-top-app-bar-title
@@ -94,7 +103,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- 第二行：fc/fs图标和rating -->
                         <div class="score-row-secondary">
                             <div class="score-badges">
@@ -219,14 +228,16 @@
                                         {{
                                             typeof f.achievements === "number"
                                                 ? `${f.achievements.toFixed(4)}%`
-                                                : f.played ? "0.0000%" : "-"
+                                                : f.played
+                                                  ? "0.0000%"
+                                                  : "-"
                                         }}
                                     </span>
                                     <span class="friend-fc">
-                                        <img 
-                                            v-if="f.fc" 
-                                            :src="`/icons/music_icon_${f.fc}.png`" 
-                                            class="icon" 
+                                        <img
+                                            v-if="f.fc"
+                                            :src="`/icons/music_icon_${f.fc}.png`"
+                                            class="icon"
                                         />
                                         <span v-else class="icon-placeholder"></span>
                                     </span>
@@ -318,11 +329,11 @@
     // 生命周期钩子
     onMounted(() => {
         checkScreenSize();
-        window.addEventListener('resize', handleResize);
+        window.addEventListener("resize", handleResize);
     });
 
     onUnmounted(() => {
-        window.removeEventListener('resize', handleResize);
+        window.removeEventListener("resize", handleResize);
     });
 
     watch(
@@ -578,27 +589,27 @@
         padding: 0.5rem 1.5rem 0.5rem 1rem;
         gap: 1rem;
     }
-    
+
     @media (max-width: 480px) {
         .friend-score-row {
             padding: 0.5rem 1rem 0.5rem 0.75rem;
             gap: 0.5rem;
         }
     }
-    
+
     .friend-rank {
         min-width: 2.5em;
         text-align: left;
         flex-shrink: 0;
     }
-    
+
     @media (max-width: 480px) {
         .friend-rank {
             min-width: 2em;
             font-size: 0.9rem;
         }
     }
-    
+
     .friend-name {
         font-weight: bold;
         min-width: 5em;
@@ -608,7 +619,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    
+
     @media (max-width: 480px) {
         .friend-name {
             min-width: 3em;
@@ -616,21 +627,21 @@
             font-size: 0.9rem;
         }
     }
-    
+
     .friend-achievement {
         min-width: 6em;
         text-align: right;
         flex: 1;
         font-family: monospace;
     }
-    
+
     @media (max-width: 480px) {
         .friend-achievement {
             min-width: 4.5em;
             font-size: 0.85rem;
         }
     }
-    
+
     .friend-fc,
     .friend-fs {
         min-width: 2.5em;
@@ -640,33 +651,33 @@
         justify-content: center;
         align-items: center;
     }
-    
+
     @media (max-width: 480px) {
         .friend-fc,
         .friend-fs {
             min-width: 2em;
         }
     }
-    
+
     .icon {
         width: 24px;
         height: 24px;
         object-fit: contain;
     }
-    
+
     @media (max-width: 480px) {
         .icon {
             width: 20px;
             height: 20px;
         }
     }
-    
+
     .icon-placeholder {
         width: 24px;
         height: 24px;
         display: inline-block;
     }
-    
+
     @media (max-width: 480px) {
         .icon-placeholder {
             width: 20px;
@@ -847,12 +858,12 @@
         .score-badges {
             gap: 4px;
         }
-        
+
         .badge-slot {
             min-width: 18px;
             min-height: 18px;
         }
-        
+
         .badge-icon {
             width: 18px;
             height: 18px;

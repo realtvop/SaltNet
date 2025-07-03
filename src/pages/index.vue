@@ -49,38 +49,40 @@
                 </div>
             </mdui-card>
         </mdui-tooltip>
-        
+
         <!-- 友链导航 -->
         <div class="links-section">
-            <a href="https://www.diving-fish.com/maimaidx/prober/" target="_blank" class="link-wrapper">
-                <mdui-card 
-                    variant="outlined" 
-                    clickable 
-                    class="link-card"
-                >
+            <a
+                href="https://www.diving-fish.com/maimaidx/prober/"
+                target="_blank"
+                class="link-wrapper"
+            >
+                <mdui-card variant="outlined" clickable class="link-card">
                     <div class="link-content">
                         <mdui-icon name="set_meal"></mdui-icon>
                         <div class="link-text">
                             <mdui-typography variant="title-medium">水鱼查分器</mdui-typography>
-                            <mdui-typography variant="body-small" style="color: var(--mdui-color-on-surface-variant)">
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
                                 本站使用的成绩同步网站
                             </mdui-typography>
                         </div>
                     </div>
                 </mdui-card>
             </a>
-            
+
             <a href="https://nearcade.phi.zone/" target="_blank" class="link-wrapper">
-                <mdui-card 
-                    variant="outlined" 
-                    clickable 
-                    class="link-card"
-                >
+                <mdui-card variant="outlined" clickable class="link-card">
                     <div class="link-content">
                         <mdui-icon name="map"></mdui-icon>
                         <div class="link-text">
                             <mdui-typography variant="title-medium">nearcade</mdui-typography>
-                            <mdui-typography variant="body-small" style="color: var(--mdui-color-on-surface-variant)">
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
                                 找找附近的机厅
                             </mdui-typography>
                         </div>
@@ -88,7 +90,6 @@
                 </mdui-card>
             </a>
         </div>
-        
     </div>
 </template>
 
