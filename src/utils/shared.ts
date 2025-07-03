@@ -55,8 +55,7 @@ export const useShared = defineStore("shared", () => {
             localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
                 console.error("Failed to save charts sort:", err);
             });
-        },
-        { deep: true }
+        }
     );
 
     return { users, chartsSort, favorites };
