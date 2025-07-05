@@ -29,7 +29,7 @@
                 value="/b50"
                 @click="router.push('/b50')"
             >
-                成绩
+                B50
             </mdui-navigation-bar-item>
             <mdui-navigation-bar-item
                 icon="library_music"
@@ -54,7 +54,7 @@
                 value="/b50"
                 @click="router.push('/b50')"
             >
-                成绩
+                B50
             </mdui-navigation-rail-item>
             <mdui-navigation-rail-item
                 icon="library_music"
