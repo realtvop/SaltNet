@@ -21,7 +21,7 @@
         <div class="userid-textfield">
             <mdui-text-field
                 v-if="localUser.inGame"
-                label="舞萌 UserID (神秘8位数字)"
+                label="舞萌 UserID 右侧绑定"
                 placeholder="未绑定"
                 type="password"
                 :value="localUser.inGame.id ?? ''"
@@ -118,7 +118,7 @@
     function bindInGame() {
         prompt({
             headline: "绑定用户",
-            description: "输入 UserID、二维码扫描结果或复制的二维码页面链接",
+            description: "输入二维码扫描结果或复制的二维码页面链接",
             confirmText: "绑定",
             cancelText: "取消",
             closeOnEsc: true,
