@@ -14,9 +14,14 @@
 
 <template>
     <mdui-list class="announcement-list">
-        <mdui-list-item nonclickable rounded active icon="update" v-if="shared.isUpdated">
+        <mdui-list-item nonclickable rounded active icon="update" v-if="true || shared.isUpdated">
             更新完成！刷新生效
-            <mdui-button slot="end-icon" variant="text" style="margin-right: -1rem" @click="reloadPage">
+            <mdui-button
+                slot="end-icon"
+                variant="text"
+                style="margin-right: -1rem"
+                @click="reloadPage"
+            >
                 立即刷新
             </mdui-button>
         </mdui-list-item>
@@ -147,10 +152,8 @@
 
     .announcement-list {
         position: fixed;
-        /* top: 64px; */
-        left: var(--content-left-padding);
-        right: 0;
-        width: calc(100% - var(--content-left-padding));
+        left: calc(0.5rem + var(--content-left-padding));
+        right: 0.5rem;
         z-index: 10;
         background-color: var(--mdui-color-surface);
         border-bottom: 1px solid var(--mdui-color-outline-variant);

@@ -16,8 +16,8 @@
     /* 一堆变量 */
 
     --nav-bar-height: 5rem;
-    --nav-bar-padding-bottom: 0;
-    --content-left-padding: 0;
+    --nav-bar-padding-bottom: 0px;
+    --content-left-padding: 0px;
     @supports (-webkit-touch-callout: none) {
         @media all and (display-mode: standalone) {
             --nav-bar-height: 6rem !important;
