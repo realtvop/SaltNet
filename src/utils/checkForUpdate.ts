@@ -1,4 +1,5 @@
 import { snackbar } from "mdui";
+import { useShared } from "./shared";
 
 declare global {
     interface Window {
@@ -28,6 +29,8 @@ export function checkForUpdate() {
 
 const broadcast = new BroadcastChannel("updateFinish");
 broadcast.onmessage = () => {
+    useShared().isUpdated = true;
+
     snackbar({
         message: "更新成功，刷新生效",
         placement: "bottom",

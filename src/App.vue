@@ -87,19 +87,14 @@
         overflow-y: auto;
     }
 
-    @supports (-webkit-touch-callout: none) {
-        mdui-navigation-bar {
-            @media all and (display-mode: standalone) {
-                height: 6rem;
-                padding-bottom: 1rem;
-            }
-            -webkit-tap-highlight-color: transparent;
-        }
-    }
-
     mdui-navigation-bar,
     mdui-navigation-rail {
         position: fixed !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+    mdui-navigation-bar {
+        height: var(--nav-bar-height);
+        padding-bottom: var(--nav-bar-padding-bottom);
     }
 
     mdui-navigation-rail-item {

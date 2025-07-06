@@ -12,6 +12,22 @@
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
+
+    /* 一堆变量 */
+
+    --nav-bar-height: 5rem;
+    --nav-bar-padding-bottom: 0;
+    --content-left-padding: 0;
+    @supports (-webkit-touch-callout: none) {
+        @media all and (display-mode: standalone) {
+            --nav-bar-height: 6rem !important;
+            --nav-bar-padding-bottom: 1rem !important;
+        }
+        -webkit-tap-highlight-color: transparent;
+    }
+    @media (min-aspect-ratio: 1.001/1) {
+        --content-left-padding: 5rem;
+    }
 }
 
 img {
@@ -21,6 +37,7 @@ img {
 html {
     overscroll-behavior-y: none;
 }
+
 body {
     margin: 0;
     overscroll-behavior-y: contain;
@@ -30,11 +47,13 @@ body {
 mdui-snackbar {
     margin-bottom: 5rem;
 }
+
 @media (min-aspect-ratio: 1.001/1) {
     mdui-snackbar {
         margin-bottom: 0;
     }
 }
+
 @supports (-webkit-touch-callout: none) {
     mdui-snackbar {
         @media all and (display-mode: standalone) {
