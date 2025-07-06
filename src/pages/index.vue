@@ -14,7 +14,7 @@
 
 <template>
     <mdui-list class="announcement-list">
-        <mdui-list-item nonclickable rounded active icon="update" v-if="true || shared.isUpdated">
+        <mdui-list-item nonclickable rounded active icon="update" v-if="shared.isUpdated">
             更新完成！刷新生效
             <mdui-button
                 slot="end-icon"
