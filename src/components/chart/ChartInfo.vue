@@ -146,12 +146,22 @@
                             </span>
                         </div>
                         <div class="info-row">
+                            <span class="info-label">拟合定数</span>
+                            <span
+                                class="info-value"
+                                @click="chartInfo.info.stat && showChartStats(chartInfo.info.stat)"
+                                style="cursor: pointer"
+                            >
+                                {{ chartInfo.info.stat ? chartInfo.info.stat.fit_diff.toFixed(4) : '蛤 怎么没数据' }}
+                            </span>
+                        </div>
+                        <div class="info-row">
                             <span class="info-label">项目位置</span>
                             <span class="info-value">{{ getCurrentChartPosition(chartInfo) }}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">
-                                Note 分布
+                                Note 统计
                                 <br />
                                 <br />
                                 <mdui-dropdown stay-open-on-click @open.stop @close.stop>
@@ -324,9 +334,10 @@
     import { defineProps, watch, nextTick, ref, onMounted, onUnmounted } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import { useShared } from "@/utils/shared";
-    import { snackbar, prompt } from "mdui";
+    import { snackbar, prompt, dialog } from "mdui";
     import { getChartPositionFromCache } from "@/utils/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/types/user";
+    import type { ChartStats } from "@/divingfish/type";
 
     const shared = useShared();
 
@@ -610,6 +621,23 @@
                     charts: [],
                 });
             },
+        });
+    }
+
+    function showChartStats(stat: ChartStats) {
+        dialog({
+            headline: "谱面统计数据",
+            body: `
+                样本容量: ${stat.cnt}<br>
+                拟合定数: ${stat.fit_diff}<br>
+                平均达成率: ${stat.avg}<br>
+                平均 DX 分: ${stat.avg_dx}<br>
+                达成率标准差: ${stat.std_dev}<br>
+            `,
+            closeOnOverlayClick: true,
+            closeOnEsc: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
         });
     }
 </script>
