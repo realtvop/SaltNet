@@ -67,6 +67,7 @@ export function convertDFMusicList(data: MusicDataResponse) {
                 grade: index,
                 constant: item.ds[index],
                 deluxeScoreMax: dfChart.notes.reduce((sum, count) => sum + count, 0) * 3,
+                stat: dfChart.stats || undefined,
             };
             const chart: Chart = {
                 id: chartId,
