@@ -1,6 +1,5 @@
 import type { User } from "@/types/user";
 import { snackbar, alert } from "mdui";
-import { toRaw } from "vue";
 import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
 // @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
@@ -46,14 +45,14 @@ export function updateUserWithWorker(user: User) {
     if (!user.uid) {
         user.uid = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
     }
-    const plainUser: User = toRaw(user);
+    const plainUser: User = JSON.parse(JSON.stringify(user));
 
     pendingUsers[user.uid] = user;
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
 }
 
 export function checkLoginWithWorker(user: User) {
-    const plainUser: User = toRaw(user);
+    const plainUser: User = JSON.parse(JSON.stringify(user));
 
     updateUserWorker.postMessage({ type: "checkLogin", user: plainUser });
 }

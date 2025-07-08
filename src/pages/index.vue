@@ -6,9 +6,35 @@
 
     const router = useRouter();
     const shared = useShared();
+
+    function reloadPage() {
+        window.location.reload();
+    }
 </script>
 
 <template>
+    <mdui-list class="announcement-list">
+        <mdui-list-item nonclickable rounded active icon="update" v-if="shared.isUpdated">
+            更新完成！刷新生效
+            <mdui-button
+                slot="end-icon"
+                variant="text"
+                style="margin-right: -1rem"
+                @click="reloadPage"
+            >
+                立即刷新
+            </mdui-button>
+        </mdui-list-item>
+        <mdui-list-item
+            class="pwa-install-prompt"
+            rounded
+            icon="install_mobile"
+            href="https://docs.salt.realtvop.top/basis/pwa/"
+            target="_blank"
+        >
+            想将 SaltNet 安装为应用吗？点击查看教程
+        </mdui-list-item>
+    </mdui-list>
     <div class="page-content">
         <div class="header-content">
             <img src="/favicon.png" alt="Favicon" class="favicon-image" />
@@ -120,7 +146,26 @@
         min-height: calc(100vh - 64px - 6rem);
         width: 100%;
         padding: 20px;
+        padding-top: calc(20px + var(--announcement-height, 0px));
         box-sizing: border-box;
+    }
+
+    .announcement-list {
+        position: fixed;
+        left: calc(0.5rem + var(--content-left-padding));
+        right: 0.5rem;
+        z-index: 10;
+        background-color: var(--mdui-color-surface);
+        border-bottom: 1px solid var(--mdui-color-outline-variant);
+        --announcement-height: auto;
+    }
+
+    .pwa-install-prompt {
+        display: block;
+
+        @media (display-mode: standalone) {
+            display: none;
+        }
     }
 
     .welcome-text {

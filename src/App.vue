@@ -29,7 +29,7 @@
                 value="/b50"
                 @click="router.push('/b50')"
             >
-                成绩
+                B50
             </mdui-navigation-bar-item>
             <mdui-navigation-bar-item
                 icon="library_music"
@@ -54,7 +54,7 @@
                 value="/b50"
                 @click="router.push('/b50')"
             >
-                成绩
+                B50
             </mdui-navigation-rail-item>
             <mdui-navigation-rail-item
                 icon="library_music"
@@ -87,19 +87,14 @@
         overflow-y: auto;
     }
 
-    @supports (-webkit-touch-callout: none) {
-        mdui-navigation-bar {
-            @media all and (display-mode: standalone) {
-                height: 6rem;
-                padding-bottom: 1rem;
-            }
-            -webkit-tap-highlight-color: transparent;
-        }
-    }
-
     mdui-navigation-bar,
     mdui-navigation-rail {
         position: fixed !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+    mdui-navigation-bar {
+        height: var(--nav-bar-height);
+        padding-bottom: var(--nav-bar-padding-bottom);
     }
 
     mdui-navigation-rail-item {

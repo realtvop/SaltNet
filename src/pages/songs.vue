@@ -132,7 +132,6 @@
             loadedIdentifier.name = shared.chartsSort.identifier.name;
             loadedIdentifier.updateTime = shared.chartsSort.identifier.updateTime;
 
-            shared.chartsSort.charts = shared.chartsSort.charts;
             return;
         }
 

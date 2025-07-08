@@ -17,6 +17,7 @@ export const useShared = defineStore("shared", () => {
         },
         charts: null as unknown as Chart[],
     });
+    const isUpdated = ref<boolean>(false);
 
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) users.value = v;
@@ -55,5 +56,5 @@ export const useShared = defineStore("shared", () => {
         });
     });
 
-    return { users, chartsSort, favorites };
+    return { users, chartsSort, favorites, isUpdated };
 });
