@@ -152,7 +152,11 @@
                                 @click="chartInfo.info.stat && showChartStats(chartInfo.info.stat)"
                                 style="cursor: pointer"
                             >
-                                {{ chartInfo.info.stat ? chartInfo.info.stat.fit_diff.toFixed(4) : '蛤 怎么没数据' }}
+                                {{
+                                    chartInfo.info.stat
+                                        ? chartInfo.info.stat.fit_diff.toFixed(4)
+                                        : "蛤 怎么没数据"
+                                }}
                             </span>
                         </div>
                         <div class="info-row">
