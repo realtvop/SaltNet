@@ -32,9 +32,11 @@ async function updateData() {
     for (const song of musicData) {
         chartCount.songs++;
         for (const level of song.level) {
+            let realLevel = level;
             chartCount.all++;
-            chartCount.byLevel[level] = (chartCount.byLevel[level] || 0) + 1;
-            if (song.genre != "宴会場") chartCount.byDifficulty[song.level.indexOf(level)]++;
+            if (song.basic_info.genre != "宴会場") chartCount.byDifficulty[song.level.indexOf(level)]++;
+            else if (!level.includes("?")) realLevel = (song.level[song.level.indexOf(level)] += "?");
+            chartCount.byLevel[realLevel] = (chartCount.byLevel[realLevel] || 0) + 1;
         }
     }
 

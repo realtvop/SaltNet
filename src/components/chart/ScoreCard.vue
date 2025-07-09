@@ -20,7 +20,7 @@
                     :style="{
                         'background-image': cover
                             ? `url('${cover}')`
-                            : `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - data.music.info.id.toString().length)}${data.music.info.id}.png')`,
+                            : `url('https://www.diving-fish.com/covers/${'0'.repeat(Math.max(5 - data.music.info.id.toString().length, 0))}${data.music.info.id}.png')`,
                     }"
                 ></div>
             </div>

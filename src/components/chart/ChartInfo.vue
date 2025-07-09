@@ -34,7 +34,7 @@
             class="song-cover"
             :src="
                 chart?.music
-                    ? `https://www.diving-fish.com/covers/${'0'.repeat(5 - chart.music.id.toString().length)}${chart.music.id}.png`
+                    ? `https://www.diving-fish.com/covers/${'0'.repeat(Math.max(5 - chart.music.id.toString().length, 0))}${chart.music.id}.png`
                     : ''
             "
         />
