@@ -48,7 +48,7 @@ export interface ChartInfo {
 }
 export interface ChartScore {
     rankRate: RankRate;
-    achievements: number; // 已小数化
+    achievements: number | null; // 已小数化
 
     comboStatus: ComboStatus;
     syncStatus: SyncStatus;

@@ -242,7 +242,7 @@
             if (!chart.score) {
                 chart.score = {
                     rankRate: "" as any,
-                    achievements: 0,
+                    achievements: null,
                     comboStatus: "" as any,
                     syncStatus: "" as any,
                     deluxeScore: 0,
