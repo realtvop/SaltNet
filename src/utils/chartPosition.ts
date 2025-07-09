@@ -118,7 +118,7 @@ export async function getChartPositionFromCache(chart: Chart, difficulty: string
         const position = filteredCharts.length - chartIndex;
         const total = filteredCharts.length;
 
-        return `${position}/${total}`;
+        return `${position}/${total + 1}`;
     } catch (error) {
         console.error("Failed to get chart position from cache:", error);
         return "-";
