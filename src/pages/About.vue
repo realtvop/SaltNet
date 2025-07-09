@@ -5,7 +5,7 @@
 <template>
     <div class="page-content">
         <div class="header-content">
-            <img src="/favicon.png" alt="Favicon" class="favicon-image" />
+            <img src="/favicon.png" alt="Favicon" class="favicon-image favicon" />
             <h1 variant="display-large" class="project-title">SaltNet</h1>
         </div>
         <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px">

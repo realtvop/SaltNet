@@ -76,7 +76,7 @@
             style="aspect-ratio: 1"
         ></mdui-button-icon>
         <mdui-button variant="text" class="icon-btn" @click="goToHomepage" style="aspect-ratio: 1">
-            <img src="/favicon.ico" alt="icon" class="favicon-icon" />
+            <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
         </mdui-button>
         <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
         <template v-if="shouldShowHomepage">

@@ -33,6 +33,14 @@
 img {
     -webkit-user-drag: none;
 }
+img.favicon {
+    pointer-events: none; /* 主要方法，阻擋所有滑鼠事件 */
+    user-select: none; /* 禁止選取 */
+    -webkit-user-select: none; /* 針對舊版WebKit瀏覽器 */
+    -moz-user-select: none; /* 針對Firefox瀏覽器 */
+    -ms-user-select: none; /* 針對IE/Edge瀏覽器 */
+    -webkit-user-drag: none; /* 禁止在WebKit瀏覽器中拖曳 */
+}
 
 html {
     overscroll-behavior-y: none;

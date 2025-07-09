@@ -37,7 +37,7 @@
     </mdui-list>
     <div class="page-content">
         <div class="header-content">
-            <img src="/favicon.png" alt="Favicon" class="favicon-image" />
+            <img src="/favicon.png" alt="Favicon" class="favicon-image favicon" />
             <h1 variant="display-large" class="project-title">SaltNet</h1>
         </div>
         <mdui-tooltip content="点击更新成绩" placement="bottom">

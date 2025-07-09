@@ -20,7 +20,7 @@
                 @click="dialogRef.open = false"
                 style="aspect-ratio: 1"
             >
-                <img src="/favicon.ico" alt="icon" class="favicon-icon" />
+                <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
             </mdui-button>
             <mdui-top-app-bar-title
                 @click="copyToClipboard(chart?.music?.info.title || '')"
