@@ -291,7 +291,9 @@
     }
 
     export function checkChartDataType(chart: Chart | DivingFishFullRecord) {
-        return "song_id" in chart ? ChartDataType.DivingFishFullRecord : ChartDataType.Chart;
+        const typeis = "song_id" in chart ? ChartDataType.DivingFishFullRecord : ChartDataType.Chart;
+        console.log(`Chart data type is: ${ChartDataType[typeis]}`);
+        return typeis;
     }
 
     export const getChartInfo = {

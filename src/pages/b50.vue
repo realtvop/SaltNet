@@ -5,6 +5,7 @@
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import type { Chart } from "@/types/music";
+    import type { DivingFishFullRecord } from "@/divingfish/type";
     import { musicInfo } from "@/assets/music";
     import { useShared } from "@/utils/shared";
 
@@ -42,17 +43,41 @@
 
     const b50SdCharts = computed(() => {
         if (!player.value?.data?.b50?.sd) return [];
-        return player.value.data.b50.sd;
+        return player.value.data.b50.sd
+            .map(convertDFRecordToChart)
+            .filter((chart): chart is Chart => chart !== null);
     });
     const b50DxCharts = computed(() => {
         if (!player.value?.data?.b50?.dx) return [];
-        return player.value.data.b50.dx;
+        return player.value.data.b50.dx
+            .map(convertDFRecordToChart)
+            .filter((chart): chart is Chart => chart !== null);
     });
 
     const chartInfoDialog = ref<{ open: boolean; chart: Chart | null }>({
         open: false,
         chart: null,
     });
+
+    // 将 DivingFishFullRecord 转换为 Chart 类型
+    function convertDFRecordToChart(record: DivingFishFullRecord): Chart | null {
+        const baseChart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
+        if (!baseChart) return null;
+
+        const chartScore: Chart["score"] = {
+            achievements: record.achievements,
+            comboStatus: record.fc,
+            syncStatus: record.fs,
+            rankRate: record.rate,
+            deluxeRating: record.ra,
+            deluxeScore: record.dxScore,
+        };
+
+        return {
+            ...baseChart,
+            score: chartScore,
+        };
+    }
 </script>
 
 <template>
