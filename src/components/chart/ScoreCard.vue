@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { defineProps, defineEmits } from "vue";
     import type { Chart } from "@/types/music";
+    import { getDFCoverURL } from "@/divingfish";
 
     const { data, rating, cover } = defineProps<{
         data: Chart;
@@ -20,7 +21,7 @@
                     :style="{
                         'background-image': cover
                             ? `url('${cover}')`
-                            : `url('https://www.diving-fish.com/covers/${'0'.repeat(Math.max(5 - data.music.info.id.toString().length, 0))}${data.music.info.id}.png')`,
+                            : `url('${getDFCoverURL(data.music.info.id)}')`,
                     }"
                 ></div>
             </div>

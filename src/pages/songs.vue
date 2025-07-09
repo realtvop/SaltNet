@@ -190,8 +190,7 @@
                 const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
                 const playedA = typeof chartDataA?.achievements === "number";
                 const playedB = typeof chartDataB?.achievements === "number";
-                if (playedA && playedB)
-                    return chartDataB.achievements - chartDataA.achievements;
+                if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
                 if (playedA) return -1;
                 if (playedB) return 1;
                 return 0;

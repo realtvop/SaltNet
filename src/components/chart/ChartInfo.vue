@@ -30,14 +30,7 @@
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img
-            class="song-cover"
-            :src="
-                chart?.music
-                    ? `https://www.diving-fish.com/covers/${'0'.repeat(Math.max(5 - chart.music.id.toString().length, 0))}${chart.music.id}.png`
-                    : ''
-            "
-        />
+        <img class="song-cover" :src="chart?.music ? getDFCoverURL(chart.music.id) : ''" />
 
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
@@ -342,6 +335,7 @@
     import { getChartPositionFromCache } from "@/utils/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/types/user";
     import type { ChartStats } from "@/divingfish/type";
+    import { getDFCoverURL } from "@/divingfish";
 
     const shared = useShared();
 
