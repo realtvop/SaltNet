@@ -1,10 +1,9 @@
 <script setup lang="ts">
     import { defineProps, defineEmits } from "vue";
     import type { Chart } from "@/types/music";
-    import type { DivingFishFullRecord } from "@/divingfish/type";
 
     const { data, rating, cover } = defineProps<{
-        data: Chart | DivingFishFullRecord;
+        data: Chart;
         rating?: number | string;
         cover?: string;
     }>();
@@ -21,45 +20,41 @@
                     :style="{
                         'background-image': cover
                             ? `url('${cover}')`
-                            : `url('https://www.diving-fish.com/covers/${getChartInfo.musicIdString(data)}.png')`,
+                            : `url('https://www.diving-fish.com/covers/${'0'.repeat(5 - data.music.info.id.toString().length)}${data.music.info.id}.png')`,
                     }"
                 ></div>
             </div>
             <div class="result-details-section">
                 <div class="result-header">
                     <div class="header-pill">
-                        <div class="pill-section charttype" :type="getChartInfo.type(data)">
+                        <div class="pill-section charttype" :type="data.music.info.type">
                             <span>
-                                {{ getChartInfo.type(data) }}
+                                {{ data.music.info.type }}
                             </span>
                         </div>
                         <div
                             class="pill-section level"
                             :style="{
-                                background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][getChartInfo.grade(data)]}`,
+                                background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][data.info.grade]}`,
                             }"
                         >
-                            {{
-                                getChartInfo.constant(data)
-                                    ? getChartInfo.constant(data).toFixed(1)
-                                    : ""
-                            }}
+                            {{ data.info.constant ? data.info.constant.toFixed(1) : "" }}
                         </div>
                         <div class="pill-section points">
                             {{ rating }}
                         </div>
                     </div>
                 </div>
-                <div class="song-name">{{ getChartInfo.title(data) }}</div>
+                <div class="song-name">{{ data.music.info.title }}</div>
                 <div class="achievement">
                     {{
-                        typeof getChartInfo.achievements(data) === "number"
-                            ? getChartInfo.achievements(data)?.toFixed(4)
+                        typeof data.score?.achievements === "number"
+                            ? data.score.achievements.toFixed(4)
                             : "-"
                     }}
                     <span
                         class="percentage-mark"
-                        v-if="typeof getChartInfo.achievements(data) === 'number'"
+                        v-if="typeof data.score?.achievements === 'number'"
                     >
                         %
                     </span>
@@ -68,22 +63,22 @@
                     <div class="rank-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/${getChartInfo.rankRate(data)?.replace('p', 'plus')}.png`"
-                            v-if="getChartInfo.rankRate(data)"
+                            :src="`/icons/${data.score?.rankRate?.replace('p', 'plus')}.png`"
+                            v-if="data.score?.rankRate"
                         />
                     </div>
                     <div class="fc-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/music_icon_${getChartInfo.comboStatus(data) ?? ''}.png`"
-                            v-if="getChartInfo.comboStatus(data)"
+                            :src="`/icons/music_icon_${data.score?.comboStatus ?? ''}.png`"
+                            v-if="data.score?.comboStatus"
                         />
                     </div>
                     <div class="sync-achievement">
                         <img
                             class="achievement-icon"
-                            :src="`/icons/music_icon_${getChartInfo.syncStatus(data)?.replace('sd', 'dx')}.png`"
-                            v-if="getChartInfo.syncStatus(data)"
+                            :src="`/icons/music_icon_${data.score?.syncStatus?.replace('sd', 'dx')}.png`"
+                            v-if="data.score?.syncStatus"
                         />
                     </div>
                 </div>
@@ -283,64 +278,3 @@
         }
     }
 </style>
-
-<script lang="ts">
-    export enum ChartDataType {
-        Chart,
-        DivingFishFullRecord,
-    }
-
-    export function checkChartDataType(chart: Chart | DivingFishFullRecord) {
-        const typeis = "song_id" in chart ? ChartDataType.DivingFishFullRecord : ChartDataType.Chart;
-        console.log(`Chart data type is: ${ChartDataType[typeis]}`);
-        return typeis;
-    }
-
-    export const getChartInfo = {
-        // 信息
-        musicIdString: (chart: Chart | DivingFishFullRecord) => {
-            const id =
-                checkChartDataType(chart) === ChartDataType.Chart
-                    ? (chart as Chart).music.info.id
-                    : (chart as DivingFishFullRecord).song_id;
-            return `${"0".repeat(5 - id.toString().length)}${id}`;
-        },
-        title: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? (chart as Chart).music.info.title
-                : (chart as DivingFishFullRecord).title,
-        type: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? (chart as Chart).music.info.type
-                : (chart as DivingFishFullRecord).type,
-        constant: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? (chart as Chart).info.constant
-                : (chart as DivingFishFullRecord).ds,
-        grade: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? (chart as Chart).info.grade
-                : (chart as DivingFishFullRecord).level_index,
-        // 成绩
-        deluxeRating: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? ((chart as Chart).score?.deluxeRating ?? null)
-                : (chart as DivingFishFullRecord).ra,
-        achievements: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? ((chart as Chart).score?.achievements ?? null)
-                : (chart as DivingFishFullRecord).achievements,
-        rankRate: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? ((chart as Chart).score?.rankRate ?? null)
-                : (chart as DivingFishFullRecord).rate,
-        comboStatus: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? ((chart as Chart).score?.comboStatus ?? null)
-                : (chart as DivingFishFullRecord).fc,
-        syncStatus: (chart: Chart | DivingFishFullRecord) =>
-            checkChartDataType(chart) === ChartDataType.Chart
-                ? ((chart as Chart).score?.syncStatus ?? null)
-                : (chart as DivingFishFullRecord).fs,
-    };
-</script>
