@@ -134,7 +134,6 @@
         text-align: center;
     }
 
-
     .link-wrapper {
         text-decoration: none;
         color: inherit;

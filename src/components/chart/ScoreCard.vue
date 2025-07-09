@@ -99,7 +99,7 @@
     .maimai-result-card {
         display: flex;
         overflow: hidden;
-        aspect-ratio: 2.5 / 1;
+        /* aspect-ratio: 2.5 / 1; */
         width: 100%;
         height: auto;
         min-height: 85px;
