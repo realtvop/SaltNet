@@ -157,9 +157,8 @@
                         comboStatus: d.fc,
                         syncStatus: d.fs,
                         rankRate: d.rate,
-                        // TODO
-                        deluxeScore: 0,
-                        deluxeRating: 0,
+                        deluxeRating: d.ra,
+                        deluxeScore: d.dxScore,
                     };
                 }
             }
