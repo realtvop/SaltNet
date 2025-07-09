@@ -188,10 +188,12 @@
             charts.sort((a, b) => {
                 const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
                 const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
-                if (chartDataA?.achievements && chartDataB?.achievements)
+                const playedA = typeof chartDataA?.achievements === "number";
+                const playedB = typeof chartDataB?.achievements === "number";
+                if (playedA && playedB)
                     return chartDataB.achievements - chartDataA.achievements;
-                if (chartDataA?.achievements) return -1;
-                if (chartDataB?.achievements) return 1;
+                if (playedA) return -1;
+                if (playedB) return 1;
                 return 0;
             });
         }
