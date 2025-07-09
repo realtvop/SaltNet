@@ -27,10 +27,27 @@
             </div>
         </mdui-card>
 
+        <a href="https://docs.salt.realtvop.top/basis/intro/" target="_blank" class="link-wrapper">
+            <mdui-card variant="outlined" clickable class="link-card">
+                <div class="link-content">
+                    <mdui-icon name="help_center"></mdui-icon>
+                    <div class="link-text">
+                        <mdui-typography variant="title-medium">SaltNet 帮助</mdui-typography>
+                        <mdui-typography
+                            variant="body-small"
+                            style="color: var(--mdui-color-on-surface-variant)"
+                        >
+                            SaltNet 使用帮助
+                        </mdui-typography>
+                    </div>
+                </div>
+            </mdui-card>
+        </a>
+
         <div class="github-footer">
             <mdui-chip
                 variant="outlined"
-                icon="link"
+                icon="code"
                 href="https://github.com/realtvop/SaltNet"
                 target="_blank"
             >
@@ -100,7 +117,7 @@
     }
 
     .github-footer {
-        margin-top: 40px;
+        margin-top: 10px;
         text-align: center;
         width: 100%;
         /* Optional: Re-add fixed positioning if desired */
@@ -115,5 +132,48 @@
     }
     mdui-card {
         text-align: center;
+    }
+
+
+    .link-wrapper {
+        text-decoration: none;
+        color: inherit;
+        width: 100%;
+    }
+
+    .link-card {
+        width: 100%;
+    }
+
+    .link-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .link-content mdui-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .link-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        text-align: left;
+    }
+
+    .link-text mdui-typography[variant="title-medium"] {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+
+    .link-text mdui-typography[variant="body-small"] {
+        font-size: 12px;
+        line-height: 1.2;
     }
 </style>
