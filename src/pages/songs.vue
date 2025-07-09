@@ -665,7 +665,7 @@
         <div class="score-grid-wrapper">
             <div class="score-grid">
                 <ScoreCard
-                    v-if="category == Category.Favorite && shared.favorites.length > 0"
+                    v-if="category !== Category.Favorite || shared.favorites.length > 0"
                     cover="/icons/random.png"
                     :data="randomChartDummy"
                     @click="openChartInfoDialog(getRandomChart())"
@@ -678,7 +678,7 @@
                     <ScoreCard
                         :data="chart"
                         @click="openChartInfoDialog(chart)"
-                        :rating="category == Category.Favorite ? index + 1 : ''"
+                        :rating="category == Category.Favorite ? index + 1 : `${itemsToRender.length - index}/${itemsToRender.length + 1}`"
                     />
                 </div>
 

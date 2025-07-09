@@ -63,7 +63,7 @@ export function getChartPositionByDifficulty(
     const position = filteredCharts.length - chartIndex;
     const total = filteredCharts.length;
 
-    return `${position}/${total}`;
+    return `${position}/${total + 1}`;
 }
 
 /**
