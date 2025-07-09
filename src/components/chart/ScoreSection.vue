@@ -1,14 +1,12 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
-    import type { DivingFishFullRecord } from "@/divingfish/type";
     import type { Chart } from "@/types/music";
-    import { musicInfo } from "@/assets/music";
 
     // Define props for the component
     const props = defineProps<{
         title: string;
-        scores: DivingFishFullRecord[];
+        scores: Chart[];
         chartInfoDialog: {
             open: boolean;
             chart: Chart | null;
@@ -19,7 +17,7 @@
     const stats = computed(() => {
         if (!props.scores || props.scores.length === 0) return null;
 
-        const ratings = props.scores.map((item: any) => item.ra ?? 0);
+        const ratings = props.scores.map((chart: Chart) => chart.score?.deluxeRating ?? 0);
         ratings.sort((a: number, b: number) => a - b);
 
         const avg = ratings.reduce((sum: number, score: number) => sum + score, 0) / ratings.length;
@@ -30,7 +28,7 @@
         const range = ratings[ratings.length - 1] - ratings[0];
 
         // Calculate difficulty constant range
-        const constants = props.scores.map((item: any) => item.ds);
+        const constants = props.scores.map((chart: Chart) => chart.info.constant);
         constants.sort((a: number, b: number) => a - b);
         const minConstant = constants[0];
         const maxConstant = constants[constants.length - 1];
@@ -43,9 +41,9 @@
         };
     });
 
-    function openDialog(chart: DivingFishFullRecord) {
+    function openDialog(chart: Chart) {
         props.chartInfoDialog.open = !props.chartInfoDialog.open;
-        props.chartInfoDialog.chart = musicInfo.musicList[chart.song_id].charts[chart.level_index];
+        props.chartInfoDialog.chart = chart;
     }
 </script>
 
@@ -67,7 +65,11 @@
                     :key="`score-cell-${index}`"
                     class="score-cell"
                 >
-                    <ScoreCard @click="openDialog(score)" :data="score" :rating="score.ra" />
+                    <ScoreCard
+                        @click="openDialog(score)"
+                        :data="score"
+                        :rating="score.score?.deluxeRating"
+                    />
                 </div>
             </div>
         </div>

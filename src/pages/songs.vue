@@ -49,6 +49,14 @@
         "14",
         "14+",
         "15",
+        // 宴会場
+        "11?",
+        "12?",
+        "12+?",
+        "13?",
+        "13+?",
+        "14?",
+        "14+?",
     ];
     const query = ref<string>("");
     const chartInfoDialog = ref({
@@ -157,9 +165,8 @@
                         comboStatus: d.fc,
                         syncStatus: d.fs,
                         rankRate: d.rate,
-                        // TODO
-                        deluxeScore: 0,
-                        deluxeRating: 0,
+                        deluxeRating: d.ra,
+                        deluxeScore: d.dxScore,
                     };
                 }
             }
@@ -658,7 +665,7 @@
         <div class="score-grid-wrapper">
             <div class="score-grid">
                 <ScoreCard
-                    v-if="category == Category.Favorite && shared.favorites.length > 0"
+                    v-if="category !== Category.Favorite || shared.favorites.length > 0"
                     cover="/icons/random.png"
                     :data="randomChartDummy"
                     @click="openChartInfoDialog(getRandomChart())"
@@ -671,7 +678,11 @@
                     <ScoreCard
                         :data="chart"
                         @click="openChartInfoDialog(chart)"
-                        :rating="category == Category.Favorite ? index + 1 : ''"
+                        :rating="
+                            category == Category.Favorite
+                                ? index + 1
+                                : `${itemsToRender.length - index}/${itemsToRender.length + 1}`
+                        "
                     />
                 </div>
 

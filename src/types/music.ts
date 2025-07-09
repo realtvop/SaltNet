@@ -1,3 +1,4 @@
+import type { ChartStats } from "@/divingfish/type";
 import type {
     MusicOrigin,
     ChartType,
@@ -43,6 +44,7 @@ export interface ChartInfo {
     grade: number;
     constant: number;
     deluxeScoreMax: number;
+    stat?: ChartStats;
 }
 export interface ChartScore {
     rankRate: RankRate;
