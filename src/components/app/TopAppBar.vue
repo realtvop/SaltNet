@@ -1,68 +1,8 @@
 <script setup lang="ts">
     import { useRouter } from "vue-router";
-    import { ref, computed } from "vue";
-
-    const props = defineProps({
-        playerInfo: {
-            type: Object,
-            required: false,
-            default: undefined,
-        },
-    });
 
     const router = useRouter();
     const route = router.currentRoute;
-
-    const searchInput = ref("");
-
-    const goToHomepage = () => router.push("/");
-
-    // 判断当前是否在首页
-    const shouldShowHomepage = computed(
-        () => route.value.path === "/" || route.value.path === "/index"
-    );
-
-    // 获取当前页面用户名
-    const usernameFromURL = computed(() => {
-        if (route.value.params.username) return route.value.params.username as string;
-        return "";
-    });
-
-    // 登录用户名
-    const loggedInUsername = computed(() => ""); // TODO
-
-    // 玩家数据加载状态
-    const playerDataLoaded = computed(() => props.playerInfo && props.playerInfo.data);
-
-    // 收藏状态
-    const favorited = ref(false);
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-        if (e.key === "Enter") {
-            navigateToPlayer();
-        }
-    };
-
-    const navigateToPlayer = () => {
-        const name = searchInput.value.trim();
-        if (name) {
-            router.push(`/${encodeURIComponent(name)}`);
-            searchInput.value = "";
-        }
-    };
-
-    defineExpose({
-        goToHomepage,
-        shouldShowHomepage,
-        playerDataLoaded,
-        playerInfo: props.playerInfo,
-        usernameFromURL,
-        loggedInUsername,
-        favorited,
-        searchInput,
-        handleKeyPress,
-        navigateToPlayer,
-    });
 </script>
 
 <template>
@@ -75,11 +15,11 @@
             @click="router.back"
             style="aspect-ratio: 1"
         ></mdui-button-icon>
-        <mdui-button variant="text" class="icon-btn" @click="goToHomepage" style="aspect-ratio: 1">
+        <mdui-button variant="text" class="icon-btn" @click="router.push('/')" style="aspect-ratio: 1">
             <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
         </mdui-button>
         <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
-        <template v-if="shouldShowHomepage">
+        <template v-if="route.path === '/' || route.path === '/index'">
             <mdui-button-icon icon="settings" @click="router.push('/settings')"></mdui-button-icon>
         </template>
     </mdui-top-app-bar>
