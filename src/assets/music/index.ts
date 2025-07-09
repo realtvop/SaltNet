@@ -4,6 +4,6 @@ import Charts from "./charts.json";
 import { type SavedMusicList } from "@/types/music";
 import { convertDFMusicList } from "@/divingfish";
 
-export const musicInfo: SavedMusicList = convertDFMusicList(Charts as unknown as MusicDataResponse);
+export const musicInfo: SavedMusicList = convertDFMusicList(Charts.data as unknown as MusicDataResponse);
 export const getMusicInfoAsync = async () => musicInfo;
 export { MusicSort };

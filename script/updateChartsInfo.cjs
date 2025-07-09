@@ -23,7 +23,25 @@ async function updateData() {
         for (const chart of song.charts) chart.stats = stats[song.charts.indexOf(chart)] || {};
     }
 
-    fs.writeFileSync("src/assets/music/charts.json", JSON.stringify(musicData), "utf8");
+    const chartCount = {
+        all: 0,
+        songs: 0,
+        byDifficulty: [0, 0, 0, 0, 0], // easy, normal, expert, master, remaster
+        byLevel: {},
+    };
+    for (const song of musicData) {
+        chartCount.songs++;
+        for (const level of song.level) {
+            chartCount.all++;
+            chartCount.byLevel[level] = (chartCount.byLevel[level] || 0) + 1;
+            if (song.genre != "宴会場") chartCount.byDifficulty[song.level.indexOf(level)]++;
+        }
+    }
+
+    fs.writeFileSync("src/assets/music/charts.json", JSON.stringify({
+        data: musicData,
+        chartCount,
+    }), "utf8");
 }
 
 updateData();
