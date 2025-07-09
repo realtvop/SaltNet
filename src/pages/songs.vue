@@ -207,6 +207,9 @@
         if (!shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
+        const allCharts: Chart[] = shared.chartsSort.charts.filter(
+            (chart: Chart) => chart.info.grade === 3
+        );
 
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
@@ -250,8 +253,8 @@
                     deluxeRating: 0,
                     index: {
                         all: {
-                            index: filteredCharts.length - index,
-                            total: filteredCharts.length,
+                            index: allCharts.length - allCharts.indexOf(chart),
+                            total: allCharts.length,
                         },
                         difficult: {
                             index: filteredCharts.length - index,
@@ -262,8 +265,8 @@
             } else {
                 chart.score.index = {
                     all: {
-                        index: filteredCharts.length - index,
-                        total: filteredCharts.length,
+                        index: allCharts.length - allCharts.indexOf(chart),
+                        total: allCharts.length,
                     },
                     difficult: {
                         index: filteredCharts.length - index,
@@ -682,7 +685,7 @@
                         :rating="
                             category == Category.Favorite
                                 ? index + 1
-                                : `${itemsToRender.length - index}/${itemsToRender.length + 1}`
+                                : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
                         "
                     />
                 </div>
