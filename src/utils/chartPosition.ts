@@ -77,7 +77,7 @@ export function addPositionToCharts(charts: Chart[]): Chart[] {
         ...chart,
         originalIndex: charts.length - index,
         totalInDifficulty: charts.length,
-        index: `${charts.length - index}/${charts.length}`,
+        index: `${charts.length - index}/${charts.length + 1}`,
     }));
 
     return chartsWithOriginalIndex;
