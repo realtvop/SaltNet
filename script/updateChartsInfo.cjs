@@ -34,16 +34,21 @@ async function updateData() {
         for (const level of song.level) {
             let realLevel = level;
             chartCount.all++;
-            if (song.basic_info.genre != "宴会場") chartCount.byDifficulty[song.level.indexOf(level)]++;
-            else if (!level.includes("?")) realLevel = (song.level[song.level.indexOf(level)] += "?");
+            if (song.basic_info.genre != "宴会場")
+                chartCount.byDifficulty[song.level.indexOf(level)]++;
+            else if (!level.includes("?")) realLevel = song.level[song.level.indexOf(level)] += "?";
             chartCount.byLevel[realLevel] = (chartCount.byLevel[realLevel] || 0) + 1;
         }
     }
 
-    fs.writeFileSync("src/assets/music/charts.json", JSON.stringify({
-        data: musicData,
-        chartCount,
-    }), "utf8");
+    fs.writeFileSync(
+        "src/assets/music/charts.json",
+        JSON.stringify({
+            data: musicData,
+            chartCount,
+        }),
+        "utf8"
+    );
 }
 
 updateData();

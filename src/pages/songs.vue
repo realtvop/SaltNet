@@ -678,7 +678,11 @@
                     <ScoreCard
                         :data="chart"
                         @click="openChartInfoDialog(chart)"
-                        :rating="category == Category.Favorite ? index + 1 : `${itemsToRender.length - index}/${itemsToRender.length + 1}`"
+                        :rating="
+                            category == Category.Favorite
+                                ? index + 1
+                                : `${itemsToRender.length - index}/${itemsToRender.length + 1}`
+                        "
                     />
                 </div>
 
