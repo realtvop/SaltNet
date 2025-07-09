@@ -5,6 +5,8 @@ import localForage from "localforage";
 import type { ChartsSortCached, FavoriteList, User } from "@/types/user";
 import type { Chart } from "@/types/music";
 
+const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
 // MARK: shared
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
@@ -18,7 +20,9 @@ export const useShared = defineStore("shared", () => {
         charts: null as unknown as Chart[],
     });
     const isUpdated = ref<boolean>(false);
+    const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
 
+    darkModeMediaQuery.addEventListener("change", event => (isDarkMode.value = !!event.matches));
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) users.value = v;
     });
@@ -56,5 +60,5 @@ export const useShared = defineStore("shared", () => {
         });
     });
 
-    return { users, chartsSort, favorites, isUpdated };
+    return { users, chartsSort, favorites, isUpdated, isDarkMode };
 });

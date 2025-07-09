@@ -2,19 +2,26 @@
     import { defineProps, defineEmits } from "vue";
     import type { Chart } from "@/types/music";
     import { getDFCoverURL } from "@/divingfish";
+    import { useShared } from "@/utils/shared";
 
     const { data, rating, cover } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
     }>();
+    const { isDarkMode } = useShared();
 
     const emit = defineEmits(["click"]);
 </script>
 
 <template>
     <div class="maimai-card-wrapper">
-        <mdui-card variant="filled" class="maimai-result-card" clickable @click="emit('click')">
+        <mdui-card
+            :variant="isDarkMode ? 'filled' : 'elevated'"
+            class="maimai-result-card"
+            clickable
+            @click="emit('click')"
+        >
             <div class="song-jacket-section">
                 <div
                     class="song-jacket-image"
@@ -33,12 +40,7 @@
                                 {{ data.music.info.type }}
                             </span>
                         </div>
-                        <div
-                            class="pill-section level"
-                            :style="{
-                                background: `#${['45c124', 'ffba01', 'ff7b7b', '9f51dc', 'dbaaff', 'ff6ffd'][data.info.grade]}`,
-                            }"
-                        >
+                        <div class="pill-section level" :difficulty="data.info.grade">
                             {{ data.info.constant ? data.info.constant.toFixed(1) : "" }}
                         </div>
                         <div class="pill-section points">
@@ -159,6 +161,7 @@
         background-color: #63acf8;
         font-weight: 1000;
         flex-grow: 0.5;
+        color: white;
     }
     .pill-section.charttype[type="DX"] {
         background-color: white;
@@ -174,6 +177,44 @@
     .pill-section.level {
         color: white;
         flex-grow: 0.75;
+    }
+    .pill-section.level[difficulty="0"] {
+        background: #96d767;
+    }
+    .pill-section.level[difficulty="1"] {
+        background: #eeba41;
+    }
+    .pill-section.level[difficulty="2"] {
+        background: #ef888f;
+    }
+    .pill-section.level[difficulty="3"] {
+        background: #b54fdf;
+    }
+    .pill-section.level[difficulty="4"] {
+        background: #d3acf9;
+    }
+    .pill-section.level[difficulty="5"] {
+        background: #ee78f6;
+    }
+    @media (prefers-color-scheme: dark) {
+        .pill-section.level[difficulty="0"] {
+            background: #45c124;
+        }
+        .pill-section.level[difficulty="1"] {
+            background: #ffba01;
+        }
+        .pill-section.level[difficulty="2"] {
+            background: #ff7b7b;
+        }
+        .pill-section.level[difficulty="3"] {
+            background: #9f51dc;
+        }
+        .pill-section.level[difficulty="4"] {
+            background: #dbaaff;
+        }
+        .pill-section.level[difficulty="5"] {
+            background: #ff6ffd;
+        }
     }
 
     .pill-section.points {

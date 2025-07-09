@@ -138,6 +138,7 @@
         text-decoration: none;
         color: inherit;
         width: 100%;
+        max-width: 600px;
     }
 
     .link-card {
