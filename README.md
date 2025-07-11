@@ -5,6 +5,7 @@
 <img src="https://deploy-badge.vercel.app/?url=http%3A%2F%2Fsalt.realtvop.top&logo=vercel&name=vercel" alt="Website Deploy"></img>
 [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v1/monitor/20f6g.svg)](https://status.realtvop.top/)
 ![mdui2](https://img.shields.io/badge/MDUI-2-blue)
+[![wakatime](https://wakatime.com/badge/github/realtvop/SaltNet.svg)](https://wakatime.com/badge/github/realtvop/SaltNet)
 
 [salt.realtvop.top](https://salt.realtvop.top)
 

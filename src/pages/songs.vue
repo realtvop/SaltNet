@@ -188,10 +188,11 @@
             charts.sort((a, b) => {
                 const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
                 const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
-                if (chartDataA?.achievements && chartDataB?.achievements)
-                    return chartDataB.achievements - chartDataA.achievements;
-                if (chartDataA?.achievements) return -1;
-                if (chartDataB?.achievements) return 1;
+                const playedA = typeof chartDataA?.achievements === "number";
+                const playedB = typeof chartDataB?.achievements === "number";
+                if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
+                if (playedA) return -1;
+                if (playedB) return 1;
                 return 0;
             });
         }
@@ -206,6 +207,9 @@
         if (!shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
+        const allCharts: Chart[] = shared.chartsSort.charts.filter(
+            (chart: Chart) => chart.info.grade === 3
+        );
 
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
@@ -242,15 +246,15 @@
             if (!chart.score) {
                 chart.score = {
                     rankRate: "" as any,
-                    achievements: 0,
+                    achievements: null,
                     comboStatus: "" as any,
                     syncStatus: "" as any,
                     deluxeScore: 0,
                     deluxeRating: 0,
                     index: {
                         all: {
-                            index: filteredCharts.length - index,
-                            total: filteredCharts.length,
+                            index: allCharts.length - allCharts.indexOf(chart),
+                            total: allCharts.length,
                         },
                         difficult: {
                             index: filteredCharts.length - index,
@@ -261,8 +265,8 @@
             } else {
                 chart.score.index = {
                     all: {
-                        index: filteredCharts.length - index,
-                        total: filteredCharts.length,
+                        index: allCharts.length - allCharts.indexOf(chart),
+                        total: allCharts.length,
                     },
                     difficult: {
                         index: filteredCharts.length - index,
@@ -681,7 +685,7 @@
                         :rating="
                             category == Category.Favorite
                                 ? index + 1
-                                : `${itemsToRender.length - index}/${itemsToRender.length + 1}`
+                                : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
                         "
                     />
                 </div>

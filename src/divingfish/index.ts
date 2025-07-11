@@ -86,3 +86,8 @@ export function convertDFMusicList(data: MusicDataResponse) {
         chartList,
     };
 }
+
+export function getDFCoverURL(id: number): string {
+    if (10000 < id && id < 11000) id -= 10000;
+    return `https://www.diving-fish.com/covers/${"0".repeat(Math.max(5 - id.toString().length, 0))}${id}.png`;
+}
