@@ -227,7 +227,12 @@
                             @click="ratingDisplayMode = $event.target.value"
                         >
                             <mdui-menu-item value="简洁">简洁</mdui-menu-item>
-                            <mdui-menu-item value="吃分" v-if="getChartRaTable(chartInfo).length > 3">吃分</mdui-menu-item>
+                            <mdui-menu-item
+                                value="吃分"
+                                v-if="getChartRaTable(chartInfo).length > 3"
+                            >
+                                吃分
+                            </mdui-menu-item>
                             <mdui-menu-item value="完整">全部</mdui-menu-item>
                         </mdui-select>
                     </div>
@@ -510,7 +515,7 @@
     function getChartRaTable(chartInfo: Chart) {
         if (!props.chart) return [];
         const achievements = getCurrentChartAchievements(chartInfo);
-        
+
         if (ratingDisplayMode.value === "完整") {
             // 完整模式：显示从0开始的所有成绩阶段
             return getDetailedRatingsByDs(chartInfo.info.constant);
@@ -523,7 +528,7 @@
     // 获取指定难度的显示 Rating 阶段表
     function getDisplayedChartRaTable(chartInfo: Chart) {
         const raTable = getChartRaTable(chartInfo);
-        
+
         if (ratingDisplayMode.value === "简洁") {
             // 简洁模式：只显示第一个和最后两个
             if (raTable.length <= 3) {

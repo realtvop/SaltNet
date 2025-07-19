@@ -38,7 +38,7 @@ const SCORE_COEFFICIENT_TABLE: readonly ScoreCoefficientEntry[] = [
     [99.5, 21.1, "ssp"],
     [99.9999, 21.4, "ssp"],
     [100, 21.6, "sss"],
-    [100.4999, 21.6, "sss"],  // wtf   * 水鱼大神啊你好像写错了
+    [100.4999, 21.6, "sss"], // wtf   * 水鱼大神啊你好像写错了
     [100.5, 22.4, "sssp"],
 ] as const;
 

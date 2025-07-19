@@ -44,7 +44,10 @@ export function getDetailedRatingsByDs(
         }
     }
     more_ra.sort((a, b) => b.achievements - a.achievements);
-    more_ra = more_ra.filter((item, index) => item.achievements % 0.5 === 0 || more_ra[index + 1].achievements % 0.5 === 0);
+    more_ra = more_ra.filter(
+        (item, index) =>
+            item.achievements % 0.5 === 0 || more_ra[index + 1].achievements % 0.5 === 0
+    );
 
     // 如果提供了achievements参数，过滤出achievements高于输入值的数据，并向下多取一个项目
     if (achievements !== undefined) {
