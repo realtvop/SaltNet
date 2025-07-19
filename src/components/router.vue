@@ -151,7 +151,10 @@
         }
     });
 
-    export function markDialogOpen() {
+    export function markDialogOpen(evtOrEle: Element | Event) {
+        const element = evtOrEle instanceof Element ? evtOrEle : (evtOrEle.target as Element);
+        if (element.localName !== "mdui-dialog") return; // fuck mdui-select
+
         // dialogHashAdded = true;
         const currentHash = window.location.hash;
         const newHash = currentHash ? `${currentHash}#dialog` : "#dialog";
@@ -161,6 +164,7 @@
 
     export function markDialogClosed(evtOrEle: Element | Event) {
         const element = evtOrEle instanceof Element ? evtOrEle : (evtOrEle.target as Element);
+        if (element.localName !== "mdui-dialog") return; // fuck mdui-select
 
         const currentHash = window.location.hash;
         if (currentHash.endsWith("#dialog")) {

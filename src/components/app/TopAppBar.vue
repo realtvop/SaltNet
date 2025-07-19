@@ -15,7 +15,12 @@
             @click="router.back"
             style="aspect-ratio: 1"
         ></mdui-button-icon>
-        <mdui-button variant="text" class="icon-btn" @click="router.push('/')" style="aspect-ratio: 1">
+        <mdui-button
+            variant="text"
+            class="icon-btn"
+            @click="router.push('/')"
+            style="aspect-ratio: 1"
+        >
             <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
         </mdui-button>
         <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
