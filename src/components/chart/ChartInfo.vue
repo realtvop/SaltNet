@@ -221,15 +221,15 @@
                         "
                     >
                         <h3 style="margin-bottom: 0">Rating 阶段</h3>
-                        <mdui-button-icon
-                            v-if="getChartRaTable(chartInfo).length > 3"
-                            :icon="
-                                expandedCharts.has(chartInfo.info.grade)
-                                    ? 'expand_less'
-                                    : 'expand_more'
-                            "
-                            @click="toggleChartExpanded(chartInfo.info.grade)"
-                        ></mdui-button-icon>
+                        <mdui-select
+                            v-model="ratingDisplayMode"
+                            style="width: 5em; --mdui-comp-select-menu-container-shape: 8px"
+                            @click="ratingDisplayMode = $event.target.value"
+                        >
+                            <mdui-menu-item value="简洁">简洁</mdui-menu-item>
+                            <mdui-menu-item value="吃分" v-if="getChartRaTable(chartInfo).length > 3">吃分</mdui-menu-item>
+                            <mdui-menu-item value="完整">全部</mdui-menu-item>
+                        </mdui-select>
                     </div>
                     <mdui-list>
                         <mdui-list-item
@@ -357,8 +357,7 @@
         }[]
     >([]);
     const selfName = ref("");
-    const isRatingExpanded = ref(false);
-    const expandedCharts = ref<Set<number>>(new Set());
+    const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
 
@@ -396,8 +395,7 @@
             }
             friendsScores.value = [];
             selfName.value = "";
-            isRatingExpanded.value = false;
-            expandedCharts.value.clear();
+            ratingDisplayMode.value = "简洁";
             chartFriendsScoresMap.value.clear();
 
             if (!props.chart?.music?.charts) return;
@@ -512,27 +510,33 @@
     function getChartRaTable(chartInfo: Chart) {
         if (!props.chart) return [];
         const achievements = getCurrentChartAchievements(chartInfo);
-        return getDetailedRatingsByDs(chartInfo.info.constant, achievements);
+        
+        if (ratingDisplayMode.value === "完整") {
+            // 完整模式：显示从0开始的所有成绩阶段
+            return getDetailedRatingsByDs(chartInfo.info.constant);
+        } else {
+            // 简洁和吃分模式：根据当前成绩过滤
+            return getDetailedRatingsByDs(chartInfo.info.constant, achievements);
+        }
     }
 
     // 获取指定难度的显示 Rating 阶段表
     function getDisplayedChartRaTable(chartInfo: Chart) {
         const raTable = getChartRaTable(chartInfo);
-        if (raTable.length <= 3 || expandedCharts.value.has(chartInfo.info.grade)) {
+        
+        if (ratingDisplayMode.value === "简洁") {
+            // 简洁模式：只显示第一个和最后两个
+            if (raTable.length <= 3) {
+                return raTable;
+            }
+            return [raTable[0], ...raTable.slice(-2)];
+        } else {
+            // 吃分和完整模式：显示全部
             return raTable;
         }
-        // 只显示第一个和最后两个
-        return [raTable[0], ...raTable.slice(-2)];
     }
 
-    // 切换难度展开状态
-    function toggleChartExpanded(grade: number) {
-        if (expandedCharts.value.has(grade)) {
-            expandedCharts.value.delete(grade);
-        } else {
-            expandedCharts.value.add(grade);
-        }
-    }
+    // 移除旧的切换难度展开状态函数，不再需要
 
     // 获取当前用户在指定难度的Ra值
     function getCurrentChartRa(chartInfo: Chart): number | null {
