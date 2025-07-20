@@ -95,9 +95,20 @@
 
         <div v-else-if="player && player.data" class="player-b50">
             <div class="player-header">
-                <span class="player-name">
-                    {{ player.data.name ?? "wmc" }}
-                </span>
+                <div class="player-name-container">
+                    <span class="player-name">
+                        {{ player.remark ?? player.data.name ?? "wmc" }}
+                    </span>
+                    <span
+                        v-if="
+                            player.remark &&
+                            (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                        "
+                        class="player-original-name"
+                    >
+                        {{ player.data.name ?? player.divingFish?.name ?? player.inGame?.name }}
+                    </span>
+                </div>
                 <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
             </div>
             <ScoreSection
@@ -187,9 +198,22 @@
         padding: 0 20px;
     }
 
+    .player-name-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
     .player-name {
         font-size: 2em;
         font-weight: bold;
+    }
+
+    .player-original-name {
+        font-size: 0.9em;
+        color: var(--mdui-color-on-surface-variant);
+        font-weight: normal;
     }
 
     .error-message {
