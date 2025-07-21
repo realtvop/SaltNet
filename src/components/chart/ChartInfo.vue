@@ -420,7 +420,11 @@
 
                 shared.users.forEach(user => {
                     const uname = String(
-                        user.divingFish?.name || user.inGame?.name || user.inGame?.id || ""
+                        user.remark ||
+                            user.divingFish?.name ||
+                            user.inGame?.name ||
+                            user.inGame?.id ||
+                            ""
                     );
                     if (!uname) return;
 
