@@ -25,6 +25,7 @@
 
     const openAddDialog = () => {
         currentUserToEdit.value = {
+            remark: null,
             divingFish: { name: null, importToken: null },
             inGame: { name: null, id: null },
             data: {
@@ -39,7 +40,7 @@
 
     const openDeleteDialog = (index: number) => {
         confirm({
-            headline: `删除绑定的用户：${shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id}？`,
+            headline: `删除绑定的用户：${shared.users[index].remark ?? shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
             cancelText: "取消",
@@ -59,6 +60,7 @@
     };
 
     interface UpdatedUserData {
+        remark?: string | null;
         divingFish: { name: string | null; importToken: string | null };
         inGame: { name: string | null; id: number | null };
     }
@@ -66,6 +68,7 @@
     const handleUserSave = (updatedUserData: UpdatedUserData) => {
         if (editingUserIndex.value === null) {
             shared.users.push({
+                remark: updatedUserData.remark,
                 divingFish: {
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
@@ -88,6 +91,7 @@
             const originalUser = shared.users[index];
             shared.users[index] = {
                 ...originalUser,
+                remark: updatedUserData.remark,
                 divingFish: {
                     ...originalUser.divingFish,
                     name: updatedUserData.divingFish.name,
@@ -133,7 +137,13 @@
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{ user.data.name ?? user.divingFish?.name ?? user.inGame?.name ?? "未知" }}
+                        {{
+                            user.remark ??
+                            user.data.name ??
+                            user.divingFish?.name ??
+                            user.inGame?.name ??
+                            "未知"
+                        }}
                     </h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>

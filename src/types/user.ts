@@ -5,6 +5,7 @@ import type { Level } from "./inGame";
 
 export interface User {
     uid?: string;
+    remark?: string | null;
     divingFish: {
         name: string | null;
         importToken?: string | null;

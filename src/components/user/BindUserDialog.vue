@@ -7,6 +7,18 @@
         </mdui-top-app-bar>
 
         <mdui-text-field
+            label="用户备注"
+            :value="localUser.remark ?? ''"
+            @input="localUser.remark = $event.target.value || null"
+            placeholder="用于显示的自定义名称"
+            autocapitalize="off"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            clearable
+        ></mdui-text-field>
+
+        <mdui-text-field
             v-if="localUser.divingFish"
             label="水鱼用户名"
             :value="localUser.divingFish.name ?? ''"
@@ -106,6 +118,7 @@
 
     const handleSave = () => {
         emit("save", {
+            remark: localUser.value.remark ?? null,
             divingFish: {
                 name: localUser.value.divingFish?.name ?? null,
                 importToken: localUser.value.divingFish?.importToken ?? null,
