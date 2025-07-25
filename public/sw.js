@@ -115,7 +115,7 @@ self.addEventListener("fetch", async function (e) {
             urlOri.includes("diving-fish.com/api") || urlParsed.host == "api.salt.realtvop.top" || urlParsed.host == "salt_api_backup.realtvop.top"
         ) {
             return;
-        } else if (urlOri.includes("diving-fish.com/covers")) {
+        } else if (urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
             e.respondWith(cacheFirst(e.request, cacheStorageKey + "Covers"));
             return;
         } else if (urlParsed.host == currentUrlParsed.host) {

@@ -676,7 +676,7 @@
         display: block;
         max-width: 300px;
 
-        background: image("https://www.diving-fish.com/covers/00000.png");
+        background: image("https://jacket.maimai.realtvop.top/00000.png");
     }
 
     .chip-container {
