@@ -204,7 +204,7 @@
             };
     }
     const chartListFiltered = computed(() => {
-        if (!shared.chartsSort.charts.length) return null;
+        if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
         const allCharts: Chart[] = shared.chartsSort.charts.filter(
