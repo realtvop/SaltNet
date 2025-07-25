@@ -30,7 +30,11 @@
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img class="song-cover" :src="chart?.music ? getDFCoverURL(chart.music.id) : ''" />
+        <img
+            class="song-cover"
+            :src="chart?.music ? getDFCoverURL(chart.music.id) : ''"
+            crossorigin="anonymous"
+        />
 
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
@@ -676,7 +680,7 @@
         display: block;
         max-width: 300px;
 
-        background: image("https://www.diving-fish.com/covers/00000.png");
+        background: image("https://jacket.maimai.realtvop.top/00000.png");
     }
 
     .chip-container {
