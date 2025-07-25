@@ -30,7 +30,11 @@
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img class="song-cover" :src="chart?.music ? getDFCoverURL(chart.music.id) : ''" crossorigin="anonymous" />
+        <img
+            class="song-cover"
+            :src="chart?.music ? getDFCoverURL(chart.music.id) : ''"
+            crossorigin="anonymous"
+        />
 
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
