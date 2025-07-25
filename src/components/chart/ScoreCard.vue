@@ -23,14 +23,12 @@
             @click="emit('click')"
         >
             <div class="song-jacket-section">
-                <div
+                <img
                     class="song-jacket-image"
-                    :style="{
-                        'background-image': cover
-                            ? `url('${cover}')`
-                            : `url('${getDFCoverURL(data.music.info.id)}')`,
-                    }"
-                ></div>
+                    :src="cover || getDFCoverURL(data.music.info.id)"
+                    :alt="data.music.info.title"
+                    crossorigin="anonymous"
+                />
             </div>
             <div class="result-details-section">
                 <div class="result-header">
@@ -116,9 +114,8 @@
     .song-jacket-image {
         width: 100%;
         height: 100%;
-        position: absolute;
-        background-size: cover;
-        background-position: center;
+        object-fit: cover;
+        object-position: center;
     }
 
     .result-details-section {
