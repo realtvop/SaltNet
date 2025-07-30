@@ -8,6 +8,7 @@
     import type { DivingFishFullRecord } from "@/divingfish/type";
     import { musicInfo } from "@/assets/music";
     import { useShared } from "@/utils/shared";
+    import { ScoreCoefficient } from "@/utils/rating/ScoreCoefficient";
 
     const route = useRoute();
     const shared = useShared();
@@ -59,6 +60,11 @@
         chart: null,
     });
 
+    // 拟合定数计算相关状态
+    const showFittingB50 = ref(false);
+    const fittingB50SdCharts = ref<Chart[]>([]);
+    const fittingB50DxCharts = ref<Chart[]>([]);
+
     // 将 DivingFishFullRecord 转换为 Chart 类型
     function convertDFRecordToChart(record: DivingFishFullRecord): Chart | null {
         const baseChart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
@@ -77,6 +83,63 @@
             ...baseChart,
             score: chartScore,
         };
+    }
+
+    // 使用拟合定数计算新的B50
+    function calculateFittingB50() {
+        if (!player.value?.data?.detailed) {
+            console.warn("No detailed data available for fitting calculation");
+            return;
+        }
+
+        const detailedData = player.value.data.detailed;
+        const allCharts: Chart[] = [];
+
+        // 遍历用户的所有成绩记录
+        for (const [key, record] of Object.entries(detailedData)) {
+            const baseChart = musicChartMap.value.get(key);
+            if (!baseChart) continue;
+
+            // 选择使用拟合定数还是原始定数
+            const constant = baseChart.info.stat?.fit_diff ?? baseChart.info.constant;
+
+            // 使用选定的定数重新计算rating
+            const newRating = new ScoreCoefficient(record.achievements).ra(constant);
+
+            const chartWithNewRating: Chart = {
+                ...baseChart,
+                score: {
+                    achievements: record.achievements,
+                    comboStatus: record.fc,
+                    syncStatus: record.fs,
+                    rankRate: record.rate,
+                    deluxeRating: newRating,
+                    deluxeScore: record.dxScore,
+                },
+            };
+
+            allCharts.push(chartWithNewRating);
+        }
+
+        // 按类型分类并排序
+        const sdCharts = allCharts
+            .filter(chart => chart.music.info.type === "SD")
+            .sort((a, b) => (b.score?.deluxeRating ?? 0) - (a.score?.deluxeRating ?? 0))
+            .slice(0, 35);
+
+        const dxCharts = allCharts
+            .filter(chart => chart.music.info.type === "DX")
+            .sort((a, b) => (b.score?.deluxeRating ?? 0) - (a.score?.deluxeRating ?? 0))
+            .slice(0, 15);
+
+        fittingB50SdCharts.value = sdCharts;
+        fittingB50DxCharts.value = dxCharts;
+        showFittingB50.value = true;
+    }
+
+    // 返回原始B50显示
+    function showOriginalB50() {
+        showFittingB50.value = false;
     }
 </script>
 
@@ -111,24 +174,68 @@
                 </div>
                 <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
             </div>
-            <ScoreSection
-                v-if="b50SdCharts.length"
-                title="旧版本成绩"
-                :scores="b50SdCharts"
-                :chartInfoDialog="chartInfoDialog"
-            />
-            <ScoreSection
-                v-if="b50DxCharts.length"
-                title="新版本成绩"
-                :scores="b50DxCharts"
-                :chartInfoDialog="chartInfoDialog"
-            />
-            <p
-                v-if="!(b50SdCharts.length || b50DxCharts.length)"
-                style="text-align: center; color: orange; margin-top: 20px"
-            >
-                未更新成绩或成绩更新失败，请到“用户”更新成绩
-            </p>
+
+            <!-- B50 模式切换按钮 -->
+            <div class="b50-controls">
+                <mdui-button-group>
+                    <mdui-button
+                        :variant="!showFittingB50 ? 'filled' : 'outlined'"
+                        @click="showOriginalB50"
+                    >
+                        原始B50
+                    </mdui-button>
+                    <mdui-button
+                        :variant="showFittingB50 ? 'filled' : 'outlined'"
+                        @click="calculateFittingB50"
+                        :disabled="!player.data.detailed"
+                    >
+                        拟合定数B50
+                    </mdui-button>
+                </mdui-button-group>
+            </div>
+
+            <!-- 根据模式显示不同的B50 -->
+            <template v-if="!showFittingB50">
+                <ScoreSection
+                    v-if="b50SdCharts.length"
+                    title="旧版本成绩"
+                    :scores="b50SdCharts"
+                    :chartInfoDialog="chartInfoDialog"
+                />
+                <ScoreSection
+                    v-if="b50DxCharts.length"
+                    title="新版本成绩"
+                    :scores="b50DxCharts"
+                    :chartInfoDialog="chartInfoDialog"
+                />
+                <p
+                    v-if="!(b50SdCharts.length || b50DxCharts.length)"
+                    style="text-align: center; color: orange; margin-top: 20px"
+                >
+                    未更新成绩或成绩更新失败，请到“用户”更新成绩
+                </p>
+            </template>
+
+            <template v-else>
+                <ScoreSection
+                    v-if="fittingB50SdCharts.length"
+                    title="旧版本成绩（拟合定数计算）"
+                    :scores="fittingB50SdCharts"
+                    :chartInfoDialog="chartInfoDialog"
+                />
+                <ScoreSection
+                    v-if="fittingB50DxCharts.length"
+                    title="新版本成绩（拟合定数计算）"
+                    :scores="fittingB50DxCharts"
+                    :chartInfoDialog="chartInfoDialog"
+                />
+                <p
+                    v-if="!(fittingB50SdCharts.length || fittingB50DxCharts.length)"
+                    style="text-align: center; color: orange; margin-top: 20px"
+                >
+                    没有详细成绩数据，无法计算拟合定数B50
+                </p>
+            </template>
         </div>
 
         <div v-else class="error-message">
@@ -230,5 +337,16 @@
     .error-message h2 {
         color: var(--error-color, #ff6b6b);
         margin-bottom: 10px;
+    }
+
+    .b50-controls {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+        padding: 0 20px;
+    }
+
+    .b50-controls mdui-button-group {
+        width: auto;
     }
 </style>
