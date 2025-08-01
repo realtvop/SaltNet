@@ -11,6 +11,20 @@
     provide("playerInfo", playerInfo);
     const route = useRoute();
     const router = useRouter();
+
+    // Handle songs navigation - focus search if already on songs page
+    function handleSongsNavigation() {
+        if (route.path === "/songs") {
+            // Already on songs page, focus the search input
+            const searchInput = document.getElementById("search-input");
+            if (searchInput) {
+                searchInput.focus();
+            }
+        } else {
+            // Navigate to songs page
+            router.push("/songs");
+        }
+    }
 </script>
 
 <template>
@@ -34,7 +48,7 @@
             <mdui-navigation-bar-item
                 icon="library_music"
                 value="/songs"
-                @click="router.push('/songs')"
+                @click="handleSongsNavigation"
             >
                 谱面
             </mdui-navigation-bar-item>
@@ -59,7 +73,7 @@
             <mdui-navigation-rail-item
                 icon="library_music"
                 value="/songs"
-                @click="router.push('/songs')"
+                @click="handleSongsNavigation"
             >
                 谱面
             </mdui-navigation-rail-item>
