@@ -26,7 +26,7 @@ self.onmessage = event => {
                     });
                 });
             } else if (user.divingFish.name) {
-                fromDivingFish(user).then(data => {
+                fromDFLikeInGame(user).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -103,12 +103,46 @@ async function fromInGame(user: User) {
         return null;
     }
 }
+async function fromDFLikeInGame(user: User) {
+    info(
+        `正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
+    );
+    const data: UpdateUserResponse | null = await fetchDFDataLikeInGame(
+        user.divingFish.name as string
+    );
+    if (data) {
+        info(
+            `从水鱼获取用户详细信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
+        );
+        return {
+            rating: data.rating,
+            name: toHalfWidth(data.userName),
+            b50: data.b50,
+            detailed: convertDetailed(data.divingFishData),
+            updateTime: Date.now(),
+        };
+    } else {
+        return await fromDivingFish(user);
+    }
+}
 
 function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {
     return fetch(`${import.meta.env.VITE_API_URL}/updateUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, importToken }),
+    })
+        .then(r => r.json())
+        .catch(e => {
+            info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
+            return null;
+        });
+}
+function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | null> {
+    return fetch(`${import.meta.env.VITE_API_URL}/updateUserFromDF`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userName }),
     })
         .then(r => r.json())
         .catch(e => {
