@@ -352,6 +352,7 @@
         open: boolean;
         chart: Chart | null;
         singleLevel?: boolean;
+        targetUserId?: string;
     }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
@@ -412,7 +413,24 @@
             expandedValue.value = props.chart.info.grade || 0;
 
             if (shared.users.length > 0) {
-                selfName.value = String(shared.users[0].data.name || "");
+                // If targetUserId is provided, use that user, otherwise use the first user (current user)
+                if (props.targetUserId) {
+                    const targetUserIndex = parseInt(props.targetUserId);
+                    const targetUser = shared.users[targetUserIndex];
+                    if (targetUser) {
+                        selfName.value = String(
+                            targetUser.remark ||
+                                targetUser.divingFish?.name ||
+                                targetUser.inGame?.name ||
+                                targetUser.data?.name ||
+                                ""
+                        );
+                    } else {
+                        selfName.value = String(shared.users[0].data.name || "");
+                    }
+                } else {
+                    selfName.value = String(shared.users[0].data.name || "");
+                }
             }
 
             // 从缓存中加载项目位置

@@ -140,6 +140,7 @@
     <ChartInfoDialog
         :open="chartInfoDialog.open"
         :chart="chartInfoDialog.chart"
+        :targetUserId="userId"
         singleLevel
     ></ChartInfoDialog>
 </template>
