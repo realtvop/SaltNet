@@ -2,6 +2,7 @@
     import { ref, computed, watch, onMounted, onUnmounted } from "vue";
     import { icons, plates, frames, titles } from "@/assets/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/types/collection";
+    import { useShared } from "@/utils/shared";
 
     const Category = {
         Title: "称号",
@@ -12,8 +13,17 @@
 
     type CategoryType = (typeof Category)[keyof typeof Category];
 
+    const { users } = useShared();
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
+    const ownedCollections = computed<number[]>(() => {
+        if (!users || !users[0] || !users[0].data.items) return [];
+
+        const owned = [];
+        for (const collection of users[0].data.items) owned.push(collection.itemId);
+
+        return owned;
+    });
 
     // 获取当前分类下的所有数据
     const collections = computed<Collection[]>(() => {
@@ -203,6 +213,7 @@
 
     <!-- 收藏品网格 -->
     <div class="collections-container" @scroll="handleScroll">
+        {{ ownedCollections }}
         <div class="collections-grid">
             <mdui-card
                 v-for="collection in itemsToRender"
