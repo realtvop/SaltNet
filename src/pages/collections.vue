@@ -2,18 +2,34 @@
     import { ref, computed, watch, onMounted, onUnmounted } from "vue";
     import { icons, plates, frames, titles } from "@/assets/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/types/collection";
+    import { useShared } from "@/utils/shared";
 
     const Category = {
         Title: "称号",
         Icon: "头像",
         Plate: "姓名框",
         Frame: "背景",
+        // Partner: "旅行伙伴",
     } as const;
 
     type CategoryType = (typeof Category)[keyof typeof Category];
 
+    const { users } = useShared();
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
+    const ownedCollections = computed<Record<number, number[]>>(() => {
+        if (!users || !users[0] || !users[0].data.items) return { 1: [], 2: [], 3: [], 4: [] };
+
+        const owned: Record<number, number[]> = { 1: [], 2: [], 3: [], 10: [], 11: [] };
+        for (const collection of users[0].data.items[1]) owned[1].push(collection.itemId);
+        for (const collection of users[0].data.items[2]) owned[2].push(collection.itemId);
+        for (const collection of users[0].data.items[3]) owned[3].push(collection.itemId);
+        for (const collection of users[0].data.items[10]) owned[10].push(collection.itemId);
+        for (const collection of users[0].data.items[11]) owned[11].push(collection.itemId);
+
+        console.log("Owned Collections:", owned);
+        return owned;
+    });
 
     // 获取当前分类下的所有数据
     const collections = computed<Collection[]>(() => {
@@ -179,6 +195,12 @@
                 return "";
         }
     };
+
+    // 检查收藏品是否已拥有
+    const isCollectionOwned = (collection: Collection) => {
+        const owned = ownedCollections.value;
+        return owned[collection.type] && owned[collection.type].includes(collection.id);
+    };
 </script>
 
 <template>
@@ -207,7 +229,7 @@
             <mdui-card
                 v-for="collection in itemsToRender"
                 :key="`${collection.type}-${collection.id}`"
-                variant="filled"
+                :variant="isCollectionOwned(collection) ? 'filled' : 'outlined'"
                 class="collection-card"
             >
                 <div class="collection-content">

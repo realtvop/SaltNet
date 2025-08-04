@@ -20,7 +20,7 @@ export interface User {
         rating: number | null;
         b50?: DivingFishB50;
         detailed?: DetailedData;
-        items?: UserItem[];
+        items?: UserItem[][];
     };
 }
 export interface ChartsSortCached {

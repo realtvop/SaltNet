@@ -9,5 +9,5 @@ export interface UpdateUserResponse {
     divingFishData: DivingFishFullRecord[];
     b50: DivingFishB50;
     isLogin: boolean;
-    items: UserItem[];
+    items: UserItem[][];
 }

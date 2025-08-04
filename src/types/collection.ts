@@ -1,8 +1,9 @@
 export enum CollectionKind {
-    Title = 1, // 称号
-    Icon = 2, // 头像
-    Plate = 3, // 姓名框
-    Frame = 4, // 背景
+    Plate = 1, // 姓名框
+    Title = 2, // 称号
+    Icon = 3, // 头像
+    Partner = 10, // 旅行伙伴
+    Frame = 11, // 背景
 }
 export enum TitleColor {
     Normal = "Normal",
@@ -20,6 +21,7 @@ export interface Collection {
 
     status?: CollectionStatus;
 }
+export interface Partner extends Collection {}
 export interface Icon extends Collection {
     genre: string;
 }
