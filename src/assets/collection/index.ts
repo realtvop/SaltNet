@@ -1,5 +1,12 @@
-import { type Icon, type Plate, type Frame, type Title, CollectionKind, TitleColor } from '@/types/collection';
-import collections from './collections.json';
+import {
+    type Icon,
+    type Plate,
+    type Frame,
+    type Title,
+    CollectionKind,
+    TitleColor,
+} from "@/types/collection";
+import collections from "./collections.json";
 
 export const icons: Icon[] = collections.icons.map(icon => ({
     type: CollectionKind.Icon,

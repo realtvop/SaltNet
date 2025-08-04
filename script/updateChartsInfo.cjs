@@ -28,8 +28,7 @@ async function updateCollectionData() {
 async function updateMusicData() {
     const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
     const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
-    const aliases = await fetchLXListData("alias")
-        .then(res => res.aliases);
+    const aliases = await fetchLXListData("alias").then(res => res.aliases);
 
     for (const song of musicData) {
         const id = Number(song.id);
