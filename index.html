@@ -39,10 +39,11 @@
         <div id="app"></div>
         <script type="module" src="/src/main.ts"></script>
         <script>
-            if ([80, 443, 1443, "1443", "", "1145"].includes(location.port))
+            if ([80, 443, 1443, "1443", "", "1145"].includes(location.port) || location.hostname == "saltnet-cachedev.localhost")
                 navigator.serviceWorker
                     .register("/sw.js", { scope: "/" })
-                    .then(err => console.log("SW_Reg_Failed: ", err));
+                    .then(reg => console.log("SW_Reg_Success: ", reg.scope))
+                    .catch(err => console.log("SW_Reg_Failed: ", err));
         </script>
     </body>
 </html>
