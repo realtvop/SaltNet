@@ -183,7 +183,7 @@
 
     // 根据收藏品类型获取图片URL
     const getImageUrl = (collection: Collection) => {
-        const baseUrl = "http://192.168.50.135:8000";
+        const baseUrl = "https://collectionimg.maimai.realtvop.top";
         const id = `${"0".repeat(6 - collection.id.toString().length)}${collection.id}`;
 
         switch (collection.type) {
@@ -317,6 +317,7 @@
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
+                            crossorigin="anonymous"
                             @error="(e: any) => e.target && (e.target.style.display = 'none')"
                         />
                         <div class="collection-info">

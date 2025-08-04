@@ -13,7 +13,7 @@
             <br />
             <div class="btns-container">
                 <mdui-button variant="tonal" @click="deleteCache('Covers')">
-                    清除缓存的曲绘
+                    清除缓存图片
                 </mdui-button>
             </div>
         </mdui-card>
@@ -93,7 +93,7 @@
     };
 
     const displayName = {
-        Covers: "曲绘",
+        Covers: "图片资源",
     };
     function deleteCache(key: keyof typeof displayName) {
         confirm({

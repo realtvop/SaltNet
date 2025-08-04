@@ -1,5 +1,5 @@
 // In-Game Data
-import { CollectionKind } from "./collections";
+import { CollectionKind } from "./collection";
 
 export enum Level {
     Basic,
