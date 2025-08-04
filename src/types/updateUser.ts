@@ -1,5 +1,5 @@
 import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
-import type { UserMusic } from "./inGame";
+import type { UserMusic, UserItem } from "./inGame";
 
 export interface UpdateUserResponse {
     userName: string;
@@ -9,4 +9,5 @@ export interface UpdateUserResponse {
     divingFishData: DivingFishFullRecord[];
     b50: DivingFishB50;
     isLogin: boolean;
+    items: UserItem[];
 }

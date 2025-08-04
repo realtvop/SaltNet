@@ -5,7 +5,7 @@ import type { UpdateUserResponse } from "@/types/updateUser";
 import { convertDetailed, type User } from "@/types/user";
 
 self.onmessage = event => {
-    const { type, user } = event.data;
+    const { type, user, updateItem } = event.data;
     if (type === "updateUser") {
         let result = null;
         let status = "success";
@@ -16,7 +16,7 @@ self.onmessage = event => {
                 typeof user.inGame.id === "number" &&
                 user.inGame.id.toString().length === 8
             ) {
-                fromInGame(user).then(data => {
+                fromInGame(user, updateItem).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -77,13 +77,14 @@ async function fromDivingFish(user: User) {
         });
 }
 
-async function fromInGame(user: User) {
+async function fromInGame(user: User, updateItem: boolean) {
     info(
         `正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
     );
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
-        user.divingFish.importToken as string
+        user.divingFish.importToken as string,
+        updateItem
     );
     if (data) {
         info(
@@ -95,6 +96,7 @@ async function fromInGame(user: User) {
             b50: data.b50,
             detailed: convertDetailed(data.divingFishData),
             updateTime: Date.now(),
+            items: data.items || [],
         };
     } else {
         info(
@@ -126,11 +128,15 @@ async function fromDFLikeInGame(user: User) {
     }
 }
 
-function fetchInGameData(userId: number, importToken?: string): Promise<UpdateUserResponse | null> {
+function fetchInGameData(
+    userId: number,
+    importToken?: string,
+    updateItem: boolean = false
+): Promise<UpdateUserResponse | null> {
     return fetch(`${import.meta.env.VITE_API_URL}/updateUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, importToken }),
+        body: JSON.stringify({ userId, importToken, getItems: updateItem }),
     })
         .then(r => r.json())
         .catch(e => {

@@ -45,7 +45,7 @@
                 variant="filled"
                 style="width: 100%; max-width: 600px; margin-bottom: 24px"
                 :clickable="shared.users[0]"
-                @click="shared.users[0] && updateUser(shared.users[0])"
+                @click="shared.users[0] && updateUser(shared.users[0], true)"
             >
                 <div style="padding: 20px; text-align: center">
                     <mdui-typography variant="headline-medium" class="welcome-text">
