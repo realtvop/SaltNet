@@ -63,7 +63,20 @@ function cacheFirst(request, key) {
             return (
                 response ||
                 fetch(request).then((response) => {
-                    if (response.ok || response.type === "opaque" || response.status !== 404) cache.put(request, response.clone());
+                    if (response.ok || response.type === "opaque") cache.put(request, response.clone());
+                    return response;
+                })
+            );
+        });
+    });
+}
+function cacheFirstForCovers(request, key) {
+    return caches.open(key).then((cache) => {
+        return cache.match(request, { ignoreSearch: true, ignoreVary: true }).then((response) => {
+            return (
+                response ||
+                fetch(request).then((response) => {
+                    if (response.ok && response.type === "cors") cache.put(request, response.clone());
                     return response;
                 })
             );
@@ -116,7 +129,7 @@ self.addEventListener("fetch", async function (e) {
         ) {
             return;
         } else if (urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
-            e.respondWith(cacheFirst(e.request, cacheStorageKey + "Covers"));
+            e.respondWith(cacheFirstForCovers(e.request, cacheStorageKey + "Covers"));
             return;
         } else if (urlParsed.host == currentUrlParsed.host) {
             e.respondWith(cacheFirst(e.request, cacheStorageKey + "Main"));
