@@ -27,7 +27,6 @@
         for (const collection of users[0].data.items[10]) owned[10].push(collection.itemId);
         for (const collection of users[0].data.items[11]) owned[11].push(collection.itemId);
 
-        console.log("Owned Collections:", owned);
         return owned;
     });
 
@@ -225,6 +224,7 @@
 
     <!-- 收藏品网格 -->
     <div class="collections-container" @scroll="handleScroll">
+        {{ ownedCollections }}
         <div class="collections-grid">
             <mdui-card
                 v-for="collection in itemsToRender"
