@@ -216,6 +216,7 @@
 
     // 检查收藏品是否已拥有
     const isCollectionOwned = (collection: Collection) => {
+        if (collection.id <= 3) return true; // 默认和随机
         const owned = ownedCollections.value;
         return owned[collection.type] && owned[collection.type].includes(collection.id);
     };
