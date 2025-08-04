@@ -17,6 +17,7 @@
     const { users } = useShared();
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
+    const filter = ref<"all" | "owned" | "missing">("all");
     const ownedCollections = computed<Record<number, number[]>>(() => {
         if (!users || !users[0] || !users[0].data.items) return { 1: [], 2: [], 3: [], 4: [] };
 
@@ -60,6 +61,14 @@
                     item.description.toLowerCase().includes(lowerQuery) ||
                     item.id.toString().includes(query.value)
             );
+        }
+
+        // 根据拥有状态筛选
+        if (filter.value !== "all") {
+            result = result.filter(item => {
+                const isOwned = isCollectionOwned(item);
+                return filter.value === "owned" ? isOwned : !isOwned;
+            });
         }
 
         return result;
@@ -137,6 +146,16 @@
         visibleItemsCount.value = getLoadSize();
     });
 
+    // 监听筛选器变化，重置虚拟滚动
+    watch(filter, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector(".collections-container");
+        if (container) {
+            container.scrollTop = 0;
+        }
+    });
+
     onMounted(() => {
         visibleItemsCount.value = getLoadSize();
         window.addEventListener("resize", handleResize);
@@ -210,8 +229,18 @@
         </mdui-tab>
     </mdui-tabs>
 
-    <!-- 搜索框 -->
+    <!-- 搜索框和筛选器 -->
     <div class="filter-bar">
+        <mdui-select
+            class="filter-select"
+            :value="filter"
+            @change="(e: any) => (filter = e.target.value)"
+        >
+            <mdui-menu-item value="all">所有</mdui-menu-item>
+            <mdui-menu-item value="owned">已获得</mdui-menu-item>
+            <mdui-menu-item value="missing">未获得</mdui-menu-item>
+        </mdui-select>
+
         <mdui-text-field
             class="search-field"
             clearable
@@ -224,7 +253,6 @@
 
     <!-- 收藏品网格 -->
     <div class="collections-container" @scroll="handleScroll">
-        {{ ownedCollections }}
         <div class="collections-grid">
             <mdui-card
                 v-for="collection in itemsToRender"
@@ -333,10 +361,18 @@
 <style scoped>
     .filter-bar {
         padding: 5px 20px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .filter-select {
+        width: 120px;
+        flex-shrink: 0;
     }
 
     .search-field {
-        width: 100%;
+        flex: 1;
     }
 
     mdui-tabs {
