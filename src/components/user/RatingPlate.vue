@@ -20,12 +20,10 @@
             v-for="i in 5"
             :key="i"
             :x="`${5.2 + (i - 1) * 0.8}em`"
-            y="1.3em"
+            y="1.45em"
             text-anchor="middle"
-            font-family="Roboto"
+            font-family="Monaco, 'JetBrains Mono', Monospaced, monospace"
             font-size="0.6em"
-            font-weight="bold"
-            transform="scale(1, 1.1)"
             fill="#FCD41B"
         >
             {{ props.ra.toString()[props.ra.toString().length - (6 - i)] ?? "" }}
