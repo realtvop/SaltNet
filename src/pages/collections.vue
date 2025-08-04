@@ -107,9 +107,14 @@
         visibleItemsCount.value = Math.max(newVisibleCount, getLoadSize());
     };
 
-    // 监听分类变化，重置虚拟滚动
+    // 监听分类变化，重置虚拟滚动并滚动到顶部
     watch(category, () => {
         visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector('.collections-container');
+        if (container) {
+            container.scrollTop = 0;
+        }
     });
 
     // 监听搜索变化，重置虚拟滚动
