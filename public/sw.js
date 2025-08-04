@@ -73,13 +73,14 @@ function cacheFirst(request, key) {
 function cacheFirstForCovers(request, key) {
     return caches.open(key).then((cache) => {
         return cache.match(request, { ignoreSearch: true, ignoreVary: true }).then((response) => {
-            return (
-                response ||
-                fetch(request).then((response) => {
-                    if (response.ok && response.type === "cors") cache.put(request, response.clone());
-                    return response;
-                })
-            );
+            if (response) {
+                if (response.ok && response.type === "cors") return response;
+                else caches.delete(key);
+            }
+            return fetch(request).then((response) => {
+                if (response.ok && response.type === "cors") cache.put(request, response.clone());
+                return response;
+            });
         });
     });
 }
