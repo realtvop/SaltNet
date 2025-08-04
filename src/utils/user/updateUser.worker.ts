@@ -105,7 +105,7 @@ async function fromInGame(user: User) {
 }
 async function fromDFLikeInGame(user: User) {
     info(
-        `正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
+        `正在从水鱼获取用户详细信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
     );
     const data: UpdateUserResponse | null = await fetchDFDataLikeInGame(
         user.divingFish.name as string

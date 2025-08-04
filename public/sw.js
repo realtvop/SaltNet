@@ -63,10 +63,24 @@ function cacheFirst(request, key) {
             return (
                 response ||
                 fetch(request).then((response) => {
-                    if (response.ok || response.type === "opaque" || response.status !== 404) cache.put(request, response.clone());
+                    if (response.ok || response.type === "opaque") cache.put(request, response.clone());
                     return response;
                 })
             );
+        });
+    });
+}
+function cacheFirstForCovers(request, key) {
+    return caches.open(key).then((cache) => {
+        return cache.match(request, { ignoreSearch: true, ignoreVary: true }).then((response) => {
+            if (response) {
+                if (response.ok && response.type === "cors") return response;
+                else caches.delete(key);
+            }
+            return fetch(request).then((response) => {
+                if (response.ok && response.type === "cors") cache.put(request, response.clone());
+                return response;
+            });
         });
     });
 }
@@ -112,11 +126,11 @@ self.addEventListener("fetch", async function (e) {
     if (urlOri.startsWith("http")) {
         if (urlParsed.path.endsWith("sw.v2.js") ||
             (urlParsed.path.endsWith(".json") && !urlParsed.path.endsWith("manifest.json")) ||
-            urlOri.includes("diving-fish.com/api") || urlParsed.host == "api.salt.realtvop.top" || urlParsed.host == "salt_api_backup.realtvop.top"
+            urlOri.includes("diving-fish.com/api") || ["salt_api_backup.realtvop.top", "api.salt.realtvop.top", "www.googletagmanager.com", "vercel.live"].includes(urlParsed.host) || urlParsed.host.includes("localhost")
         ) {
             return;
         } else if (urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
-            e.respondWith(cacheFirst(e.request, cacheStorageKey + "Covers"));
+            e.respondWith(cacheFirstForCovers(e.request, cacheStorageKey + "Covers"));
             return;
         } else if (urlParsed.host == currentUrlParsed.host) {
             e.respondWith(cacheFirst(e.request, cacheStorageKey + "Main"));
