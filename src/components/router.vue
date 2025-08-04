@@ -20,7 +20,7 @@
     ];
 
     const routesNeedAddHistory = ["/settings", "/b50/:id"];
-    const routesNeedFixedPage = ["/about", "/songs"];
+    const routesNeedFixedPage = ["/about", "/songs", "/collections"];
 
     const router = createRouter({
         history: createMemoryHistory(),
