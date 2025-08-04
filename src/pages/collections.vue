@@ -111,7 +111,7 @@
     watch(category, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
-        const container = document.querySelector('.collections-container');
+        const container = document.querySelector(".collections-container");
         if (container) {
             container.scrollTop = 0;
         }
@@ -287,9 +287,6 @@
                             </div>
                             <p class="collection-description">{{ collection.description }}</p>
                             <div class="collection-meta">
-                                <span class="collection-type">
-                                    {{ getCategoryName(collection.type) }}
-                                </span>
                                 <span
                                     v-if="collection.type === CollectionKind.Icon"
                                     class="collection-id"

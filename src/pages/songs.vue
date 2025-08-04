@@ -386,7 +386,7 @@
     watch(selectedDifficulty, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
-        const container = document.querySelector('.card-container');
+        const container = document.querySelector(".card-container");
         if (container) {
             container.scrollTop = 0;
         }
