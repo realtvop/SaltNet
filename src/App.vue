@@ -12,16 +12,13 @@
     const route = useRoute();
     const router = useRouter();
 
-    // Handle songs navigation - focus search if already on songs page
     function handleSongsNavigation() {
         if (route.path === "/songs") {
-            // Already on songs page, focus the search input
             const searchInput = document.getElementById("search-input");
             if (searchInput) {
                 searchInput.focus();
             }
         } else {
-            // Navigate to songs page
             router.push("/songs");
         }
     }
@@ -52,6 +49,13 @@
             >
                 谱面
             </mdui-navigation-bar-item>
+            <mdui-navigation-bar-item
+                icon="collections"
+                value="/collections"
+                @click="router.push('/collections')"
+            >
+                藏品
+            </mdui-navigation-bar-item>
             <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">
                 用户
             </mdui-navigation-bar-item>
@@ -76,6 +80,13 @@
                 @click="handleSongsNavigation"
             >
                 谱面
+            </mdui-navigation-rail-item>
+            <mdui-navigation-rail-item
+                icon="collections"
+                value="/collections"
+                @click="router.push('/collections')"
+            >
+                藏品
             </mdui-navigation-rail-item>
             <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">
                 用户

@@ -1,4 +1,5 @@
 // In-Game Data
+import { CollectionKind } from "./collection";
 
 export enum Level {
     Basic,
@@ -42,4 +43,11 @@ export interface MusicAllResponse {
     length: number;
     nextIndex: number;
     userMusicList: UserMusic[];
+}
+
+export interface UserItem {
+    itemKind: CollectionKind;
+    itemId: number;
+    stock: 0 | 1;
+    isValid: boolean;
 }

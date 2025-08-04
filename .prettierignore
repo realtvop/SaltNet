@@ -16,3 +16,4 @@ yarn.lock
 .yarn
 src/assets/plates.json
 src/assets/music/*.json
+src/assets/collection/*.json

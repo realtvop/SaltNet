@@ -6,6 +6,7 @@
     import UsersPage from "../pages/users.vue";
     import SettingsPage from "../pages/settings.vue";
     import SongsPage from "../pages/songs.vue";
+    import CollectionsPage from "../pages/collections.vue";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -15,6 +16,7 @@
         { path: "/b50/:id", component: UserPage, props: true },
         { path: "/settings", component: SettingsPage },
         { path: "/about", component: AboutPage },
+        { path: "/collections", component: CollectionsPage },
     ];
 
     const routesNeedAddHistory = ["/settings", "/b50/:id"];

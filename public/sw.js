@@ -129,7 +129,7 @@ self.addEventListener("fetch", async function (e) {
             urlOri.includes("diving-fish.com/api") || ["salt_api_backup.realtvop.top", "api.salt.realtvop.top", "www.googletagmanager.com", "vercel.live"].includes(urlParsed.host) || urlParsed.host.includes("localhost")
         ) {
             return;
-        } else if (urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
+        } else if (urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("collectionimg.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
             e.respondWith(cacheFirstForCovers(e.request, cacheStorageKey + "Covers"));
             return;
         } else if (urlParsed.host == currentUrlParsed.host) {
