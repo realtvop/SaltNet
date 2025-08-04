@@ -119,8 +119,8 @@
     };
 
     function updateAll() {
-        shared.users.forEach(user => {
-            updateUser(user);
+        shared.users.forEach((user, index) => {
+            updateUser(user, index === 0 ? true : false);
         });
     }
 </script>
@@ -168,7 +168,7 @@
                 <mdui-button-icon
                     variant="standard"
                     icon="update"
-                    @click="updateUser(user)"
+                    @click="updateUser(user, index === 0 ? true : false)"
                 ></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon

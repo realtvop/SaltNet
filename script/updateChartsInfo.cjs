@@ -3,14 +3,32 @@ const fs = require("fs");
 
 const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_data";
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
-const LXMusicAliasAPIURL = "https://maimai.lxns.net/api/v0/maimai/alias/list";
+const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
 
-async function updateData() {
+const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
+
+async function updateCollectionData() {
+    const icons = await fetchLXListData("icon").then(res => res.icons);
+    const plates = await fetchLXListData("plate").then(res => res.plates);
+    const frames = await fetchLXListData("frame").then(res => res.frames);
+    const titles = await fetchLXListData("trophy").then(res => res.trophies);
+
+    fs.writeFileSync(
+        "src/assets/collection/collections.json",
+        JSON.stringify({
+            icons,
+            plates,
+            frames,
+            titles,
+        }),
+        "utf8"
+    );
+}
+
+async function updateMusicData() {
     const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
     const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
-    const aliases = await fetch(LXMusicAliasAPIURL)
-        .then(r => r.json())
-        .then(res => res.aliases);
+    const aliases = await fetchLXListData("alias").then(res => res.aliases);
 
     for (const song of musicData) {
         const id = Number(song.id);
@@ -51,4 +69,5 @@ async function updateData() {
     );
 }
 
-updateData();
+updateMusicData();
+updateCollectionData();
