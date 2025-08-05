@@ -19,8 +19,9 @@
         <text
             v-for="i in 5"
             :key="i"
-            :x="`${4.9 + (i - 1) * 0.8}em`"
+            :x="`${5.2 + (i - 1) * 0.8}em`"
             y="1.45em"
+            text-anchor="middle"
             font-family="Monaco, 'JetBrains Mono', Monospaced, monospace"
             font-size="0.6em"
             fill="#FCD41B"

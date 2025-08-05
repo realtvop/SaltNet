@@ -1,14 +1,14 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
-    import type { User } from "@/types/user";
-    import type { Chart } from "@/types/music";
-    import { MusicSort } from "@/assets/music";
-    import ScoreCard from "@/components/chart/ScoreCard.vue";
-    import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
-    import { getMusicInfoAsync } from "@/assets/music";
-    import { useShared } from "@/utils/shared";
+    import type { User } from "@/components/data/user/type";
+    import type { Chart } from "@/components/data/music/type";
+    import { MusicSort } from "@/components/data/music";
+    import ScoreCard from "@/components/data/chart/ScoreCard.vue";
+    import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
+    import { getMusicInfoAsync } from "@/components/data/music";
+    import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
-    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
 
     declare global {
         interface Window {
@@ -21,6 +21,7 @@
     enum Category {
         InGame = "难度",
         Favorite = "收藏夹",
+        Banquet = "宴会场",
     }
 
     const shared = useShared();
@@ -49,15 +50,9 @@
         "14",
         "14+",
         "15",
-        // 宴会場
-        "11?",
-        "12?",
-        "12+?",
-        "13?",
-        "13+?",
-        "14?",
-        "14+?",
     ];
+
+    const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref({
         open: false,
@@ -72,10 +67,12 @@
     const category = ref<Category>(Category.InGame);
     const tabs = computed(() => {
         if (category.value === Category.InGame) return difficulties;
+        if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
     });
     const selectedTab = ref({
         [Category.InGame]: "ALL",
+        [Category.Banquet]: banquetDifficulties[0],
         [Category.Favorite]: shared.favorites[0]?.name || "",
     });
 
@@ -217,6 +214,17 @@
             if (selectedDifficulty.value === "ALL") {
                 filteredCharts = shared.chartsSort.charts.filter(
                     (chart: Chart) => chart.info.grade === 3
+                );
+            } else {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.level === selectedDifficulty.value
+                );
+            }
+        } else if (category.value === Category.Banquet) {
+            // 宴会场模式
+            if (selectedDifficulty.value === "ALL") {
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) => chart.info.grade === 3 && chart.info.level.endsWith("?")
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -396,6 +404,8 @@
         // 切换分类时，重置到该分类的默认选项
         if (newCategory === Category.InGame) {
             selectedTab.value[Category.InGame] = "ALL";
+        } else if (newCategory === Category.Banquet) {
+            selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         }

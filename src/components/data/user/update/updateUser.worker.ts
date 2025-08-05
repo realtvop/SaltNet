@@ -1,8 +1,8 @@
 // src/utils/updateUserWorker.ts
-import { fetchPlayerData } from "@/divingfish";
-import type { DivingFishResponse } from "@/divingfish/type";
-import type { UpdateUserResponse } from "@/types/updateUser";
-import { convertDetailed, type User } from "@/types/user";
+import { fetchPlayerData } from "@/components/integrations/diving-fish";
+import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
+import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
+import { convertDetailed, getDisplayName, type User } from "@/components/data/user/type";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;
@@ -78,18 +78,14 @@ async function fromDivingFish(user: User) {
 }
 
 async function fromInGame(user: User, updateItem: boolean) {
-    info(
-        `正在从 InGame 获取用户信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
-    );
+    info(`正在从 InGame 获取用户信息：${getDisplayName(user)}`);
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
         user.divingFish.importToken as string,
         updateItem
     );
     if (data) {
-        info(
-            `从 InGame 获取用户信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
-        );
+        info(`从 InGame 获取用户信息成功：${getDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
@@ -99,23 +95,17 @@ async function fromInGame(user: User, updateItem: boolean) {
             items: data.items || [],
         };
     } else {
-        info(
-            `从 InGame 获取 ${user.data.name ?? user.inGame.name ?? user.divingFish.name} 信息失败`
-        );
+        info(`从 InGame 获取 ${getDisplayName(user)} 信息失败`);
         return null;
     }
 }
 async function fromDFLikeInGame(user: User) {
-    info(
-        `正在从水鱼获取用户详细信息：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
-    );
+    info(`正在从水鱼获取用户详细信息：${getDisplayName(user)}`);
     const data: UpdateUserResponse | null = await fetchDFDataLikeInGame(
         user.divingFish.name as string
     );
     if (data) {
-        info(
-            `从水鱼获取用户详细信息成功：${user.data.name ?? user.inGame.name ?? user.divingFish.name}`
-        );
+        info(`从水鱼获取用户详细信息成功：${getDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),

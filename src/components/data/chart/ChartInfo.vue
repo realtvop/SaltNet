@@ -334,17 +334,17 @@
 </template>
 
 <script setup lang="ts">
-    import type { Chart } from "@/types/music";
-    import { getDetailedRatingsByDs } from "@/utils/rating";
-    import { RANK_RATE_DISPLAY_NAMES } from "@/types/maiTypes";
+    import type { Chart } from "@/components/data/music/type";
+    import { getDetailedRatingsByDs } from "@/components/data/chart/rating";
+    import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
     import { defineProps, watch, nextTick, ref, onMounted, onUnmounted } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
-    import { useShared } from "@/utils/shared";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { useShared } from "@/components/app/shared";
     import { snackbar, prompt, dialog } from "mdui";
-    import { getChartPositionFromCache } from "@/utils/chartPosition";
-    import type { FavoriteList, FavoriteChart } from "@/types/user";
-    import type { ChartStats } from "@/divingfish/type";
-    import { getDFCoverURL } from "@/divingfish";
+    import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
+    import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
+    import type { ChartStats } from "@/components/integrations/diving-fish/type";
+    import { getDFCoverURL } from "@/components/integrations/diving-fish";
 
     const shared = useShared();
 

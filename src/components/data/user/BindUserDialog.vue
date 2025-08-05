@@ -66,8 +66,8 @@
 
 <script setup lang="ts">
     import { ref, watch, defineProps, defineEmits, nextTick, toRaw } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
-    import type { User } from "@/types/user";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import type { User } from "@/components/data/user/type";
     import { prompt, snackbar } from "mdui";
 
     const props = defineProps<{

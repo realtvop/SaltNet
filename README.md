@@ -45,6 +45,8 @@ International & Japanese ver. may be supported later.
 
 欢迎贡献！请随时提交 [Issue](https://github.com/realtvop/SaltNet/issues) 和 [Pull Request](https://github.com/realtvop/SaltNet/pulls)。
 
+本项目欢迎在 AI 的帮助下编写的代码，但在提交 AI 编写的代码前请仔细检查代码质量和可读性，在提交时请注明 AI 的使用情况，包括使用的工具和所用模型。
+
 ## [TODO](todo.md)
 
 ## ⭐ 星标历史

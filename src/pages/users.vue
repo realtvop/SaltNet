@@ -1,13 +1,13 @@
 <script setup lang="ts">
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
-    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
-    import RatingPlate from "@/components/user/RatingPlate.vue";
-    import BindUserDialog from "@/components/user/BindUserDialog.vue";
-    import type { User } from "@/types/user";
-    import { checkLogin, updateUser } from "@/utils/user";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import RatingPlate from "@/components/data/user/RatingPlate.vue";
+    import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
+    import { type User, getDisplayName } from "@/components/data/user/type";
+    import { checkLogin, updateUser } from "@/components/data/user/update";
     import { confirm } from "mdui";
-    import { useShared } from "@/utils/shared";
+    import { useShared } from "@/components/app/shared";
 
     const shared = useShared();
 
@@ -40,7 +40,7 @@
 
     const openDeleteDialog = (index: number) => {
         confirm({
-            headline: `删除绑定的用户：${shared.users[index].remark ?? shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id}？`,
+            headline: `删除绑定的用户：${getDisplayName(shared.users[index])}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
             cancelText: "取消",
@@ -112,10 +112,21 @@
     };
 
     const setAsDefault = (index: number) => {
-        if (index > 0 && index < shared.users.length) {
-            const user = shared.users.splice(index, 1)[0];
-            shared.users.unshift(user);
-        }
+        confirm({
+            headline: `将 ${getDisplayName(shared.users[index])} 设为主用户？`,
+            description: "您只应该将主用户设置为自己",
+            confirmText: "确认",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onConfirm: () => {
+                if (index > 0 && index < shared.users.length) {
+                    const user = shared.users.splice(index, 1)[0];
+                    shared.users.unshift(user);
+                }
+                return true;
+            },
+        });
     };
 
     function updateAll() {
@@ -137,13 +148,7 @@
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{
-                            user.remark ??
-                            user.data.name ??
-                            user.divingFish?.name ??
-                            user.inGame?.name ??
-                            "未知"
-                        }}
+                        {{ getDisplayName(user, "未知") }}
                     </h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>
@@ -182,7 +187,7 @@
                             <mdui-icon slot="icon" name="edit"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item @click="setAsDefault(index)" v-if="index">
-                            设为默认
+                            设为主用户
                             <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
                         </mdui-menu-item>
 

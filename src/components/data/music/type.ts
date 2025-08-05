@@ -1,4 +1,4 @@
-import type { ChartStats } from "@/divingfish/type";
+import type { ChartStats } from "@/components/integrations/diving-fish/type";
 import type {
     MusicOrigin,
     ChartType,
@@ -6,7 +6,7 @@ import type {
     ComboStatus,
     SyncStatus,
     RankRate,
-} from "./maiTypes";
+} from "../maiTypes";
 
 export interface Music {
     id: number;

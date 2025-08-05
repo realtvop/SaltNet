@@ -1,7 +1,10 @@
 // src/types/user.ts
-import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
-import type { Chart } from "./music";
-import type { Level, UserItem } from "./inGame";
+import type {
+    DivingFishB50,
+    DivingFishFullRecord,
+} from "@/components/integrations/diving-fish/type";
+import type { Chart } from "../music/type";
+import type { Level, UserItem } from "../inGame";
 
 export interface User {
     uid?: string;
@@ -50,4 +53,13 @@ export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     for (const item of data) result[`${item.song_id}-${item.level_index}`] = item;
 
     return result;
+}
+
+export function getDisplayName(user: User, fallback: string = "wmc"): string {
+    return (
+        user.remark ??
+        user.inGame.name ??
+        user.divingFish.name ??
+        (user.inGame.id ? user.inGame.id.toString() : fallback)
+    );
 }
