@@ -8,6 +8,7 @@
     import type { DivingFishFullRecord } from "@/divingfish/type";
     import { musicInfo } from "@/assets/music";
     import { useShared } from "@/utils/shared";
+    import { getDisplayName } from "@/types/user";
 
     const route = useRoute();
     const shared = useShared();
@@ -97,7 +98,7 @@
             <div class="player-header">
                 <div class="player-name-container">
                     <span class="player-name">
-                        {{ player.remark ?? player.data.name ?? "wmc" }}
+                        {{ getDisplayName(player) }}
                     </span>
                     <span
                         v-if="

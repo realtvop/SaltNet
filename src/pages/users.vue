@@ -4,7 +4,7 @@
     import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
     import RatingPlate from "@/components/user/RatingPlate.vue";
     import BindUserDialog from "@/components/user/BindUserDialog.vue";
-    import type { User } from "@/types/user";
+    import { type User, getDisplayName } from "@/types/user";
     import { checkLogin, updateUser } from "@/utils/user";
     import { confirm } from "mdui";
     import { useShared } from "@/utils/shared";
@@ -40,7 +40,7 @@
 
     const openDeleteDialog = (index: number) => {
         confirm({
-            headline: `删除绑定的用户：${shared.users[index].remark ?? shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id}？`,
+            headline: `删除绑定的用户：${getDisplayName(shared.users[index])}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
             cancelText: "取消",
@@ -113,7 +113,7 @@
 
     const setAsDefault = (index: number) => {
         confirm({
-            headline: `将 ${shared.users[index].remark ?? shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id} 设为主用户？`,
+            headline: `将 ${getDisplayName(shared.users[index])} 设为主用户？`,
             description: "您只应该将主用户设置为自己",
             confirmText: "确认",
             cancelText: "取消",
@@ -148,13 +148,7 @@
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{
-                            user.remark ??
-                            user.data.name ??
-                            user.divingFish?.name ??
-                            user.inGame?.name ??
-                            "未知"
-                        }}
+                        {{ getDisplayName(user, "未知") }}
                     </h2>
                     <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
                 </div>
