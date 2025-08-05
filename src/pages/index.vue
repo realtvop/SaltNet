@@ -1,8 +1,8 @@
 <script setup lang="ts">
-    import RatingPlate from "@/components/user/RatingPlate.vue";
+    import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import { useRouter } from "vue-router";
-    import { useShared } from "@/utils/shared";
-    import { updateUser } from "@/utils/user";
+    import { useShared } from "@/components/app/shared";
+    import { updateUser } from "@/components/data/user/update";
 
     const router = useRouter();
     const shared = useShared();

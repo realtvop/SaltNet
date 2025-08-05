@@ -1,6 +1,6 @@
 import type { Chart } from "@/types/music";
-import type { User, ChartsSortCached } from "@/types/user";
-import { MusicSort } from "@/assets/music";
+import type { User, ChartsSortCached } from "@/components/data/user/type";
+import { MusicSort } from "@/components/data/music";
 import localForage from "localforage";
 
 /**

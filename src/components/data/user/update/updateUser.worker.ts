@@ -1,8 +1,8 @@
 // src/utils/updateUserWorker.ts
-import { fetchPlayerData } from "@/divingfish";
-import type { DivingFishResponse } from "@/divingfish/type";
-import type { UpdateUserResponse } from "@/types/updateUser";
-import { convertDetailed, type User } from "@/types/user";
+import { fetchPlayerData } from "@/components/integrations/diving-fish";
+import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
+import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
+import { convertDetailed, type User } from "@/components/data/user/type";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;

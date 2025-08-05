@@ -5,7 +5,7 @@ import {
     type Title,
     CollectionKind,
     TitleColor,
-} from "@/types/collection";
+} from "@/components/data/collection/type";
 import collections from "./collections.json";
 
 export const icons: Icon[] = collections.icons.map(icon => ({
