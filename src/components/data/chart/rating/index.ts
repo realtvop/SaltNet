@@ -1,6 +1,6 @@
 import { ScoreCoefficient } from "./ScoreCoefficient";
 import { get_min_ach } from "./utils";
-import { getRankRateByAchievement, type RankRate } from "@/types/maiTypes";
+import { getRankRateByAchievement, type RankRate } from "@/components/data/maiTypes";
 
 export function getDetailedRatingsByDs(
     ds: number,

@@ -1,13 +1,13 @@
 <script setup lang="ts">
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
-    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
-    import RatingPlate from "@/components/user/RatingPlate.vue";
-    import BindUserDialog from "@/components/user/BindUserDialog.vue";
-    import type { User } from "@/types/user";
-    import { checkLogin, updateUser } from "@/utils/user";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import RatingPlate from "@/components/data/user/RatingPlate.vue";
+    import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
+    import type { User } from "@/components/data/user/type";
+    import { checkLogin, updateUser } from "@/components/data/user/update";
     import { confirm } from "mdui";
-    import { useShared } from "@/utils/shared";
+    import { useShared } from "@/components/app/shared";
 
     const shared = useShared();
 
