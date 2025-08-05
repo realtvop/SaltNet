@@ -112,10 +112,21 @@
     };
 
     const setAsDefault = (index: number) => {
-        if (index > 0 && index < shared.users.length) {
-            const user = shared.users.splice(index, 1)[0];
-            shared.users.unshift(user);
-        }
+        confirm({
+            headline: `将 ${shared.users[index].remark ?? shared.users[index].divingFish.name ?? shared.users[index].inGame.name ?? shared.users[index].inGame.id} 设为主用户？`,
+            description: "您只应该将主用户设置为自己",
+            confirmText: "确认",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onConfirm: () => {
+                if (index > 0 && index < shared.users.length) {
+                    const user = shared.users.splice(index, 1)[0];
+                    shared.users.unshift(user);
+                }
+                return true;
+            },
+        });
     };
 
     function updateAll() {
@@ -182,7 +193,7 @@
                             <mdui-icon slot="icon" name="edit"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item @click="setAsDefault(index)" v-if="index">
-                            设为默认
+                            设为主用户
                             <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
                         </mdui-menu-item>
 
