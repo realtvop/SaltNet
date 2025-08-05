@@ -334,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-    import type { Chart } from "@/types/music";
+    import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByDs } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
     import { defineProps, watch, nextTick, ref, onMounted, onUnmounted } from "vue";

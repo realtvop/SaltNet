@@ -1,4 +1,4 @@
-import type { Chart } from "@/types/music";
+import type { Chart } from "@/components/data/music/type";
 import type { User, ChartsSortCached } from "@/components/data/user/type";
 import { MusicSort } from "@/components/data/music";
 import localForage from "localforage";

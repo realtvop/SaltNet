@@ -6,7 +6,7 @@ import type {
     ComboStatus,
     SyncStatus,
     RankRate,
-} from "./maiTypes";
+} from "../maiTypes";
 
 export interface Music {
     id: number;

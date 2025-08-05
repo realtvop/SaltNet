@@ -1,12 +1,12 @@
 <script lang="ts">
     import { createRouter, createMemoryHistory } from "vue-router";
-    import IndexPage from "../pages/index.vue";
-    import UserPage from "../pages/b50.vue";
-    import AboutPage from "../pages/About.vue";
-    import UsersPage from "../pages/users.vue";
-    import SettingsPage from "../pages/settings.vue";
-    import SongsPage from "../pages/songs.vue";
-    import CollectionsPage from "../pages/collections.vue";
+    import IndexPage from "../../pages/index.vue";
+    import UserPage from "../../pages/b50.vue";
+    import AboutPage from "../../pages/About.vue";
+    import UsersPage from "../../pages/users.vue";
+    import SettingsPage from "../../pages/settings.vue";
+    import SongsPage from "../../pages/songs.vue";
+    import CollectionsPage from "../../pages/collections.vue";
 
     const routes = [
         { path: "/", component: IndexPage },

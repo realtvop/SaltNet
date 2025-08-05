@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { defineProps, defineEmits } from "vue";
-    import type { Chart } from "@/types/music";
+    import type { Chart } from "@/components/data/music/type";
     import { getDFCoverURL } from "@/components/integrations/diving-fish";
     import { useShared } from "@/components/app/shared";
 

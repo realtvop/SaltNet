@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import type { User } from "@/components/data/user/type";
-    import type { Chart } from "@/types/music";
+    import type { Chart } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";

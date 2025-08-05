@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-    import { icons, plates, frames, titles } from "@/assets/collection";
+    import { icons, plates, frames, titles } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
 
