@@ -14,7 +14,7 @@ async function updateCollectionData() {
     const titles = await fetchLXListData("trophy").then(res => res.trophies);
 
     fs.writeFileSync(
-        "src/components/data/collection/collections.json",
+        "src/assets/collection/collections.json",
         JSON.stringify({
             icons,
             plates,
@@ -60,7 +60,7 @@ async function updateMusicData() {
     }
 
     fs.writeFileSync(
-        "src/components/data/chart/charts.json",
+        "src/assets/music/charts.json",
         JSON.stringify({
             data: musicData,
             chartCount,

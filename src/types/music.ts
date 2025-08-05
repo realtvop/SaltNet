@@ -1,4 +1,4 @@
-import type { ChartStats } from "@/components/integrations/diving-fish/type";
+import type { ChartStats } from "@/divingfish/type";
 import type {
     MusicOrigin,
     ChartType,

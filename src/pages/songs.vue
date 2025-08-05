@@ -1,14 +1,14 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
-    import type { User } from "@/components/data/user/type";
+    import type { User } from "@/types/user";
     import type { Chart } from "@/types/music";
-    import { MusicSort } from "@/components/data/music";
-    import ScoreCard from "@/components/data/chart/ScoreCard.vue";
-    import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import { getMusicInfoAsync } from "@/components/data/music";
-    import { useShared } from "@/components/app/shared";
+    import { MusicSort } from "@/assets/music";
+    import ScoreCard from "@/components/chart/ScoreCard.vue";
+    import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
+    import { getMusicInfoAsync } from "@/assets/music";
+    import { useShared } from "@/utils/shared";
     import { prompt, confirm, snackbar } from "mdui";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/router.vue";
 
     declare global {
         interface Window {

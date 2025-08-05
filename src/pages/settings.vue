@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-    import { useShared } from "@/components/app/shared";
+    import { useShared } from "@/utils/shared";
     import { snackbar, confirm } from "mdui";
 
     const shared = useShared();

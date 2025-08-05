@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
-import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
+import type { ChartsSortCached, FavoriteList, User } from "@/types/user";
 import type { Chart } from "@/types/music";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");

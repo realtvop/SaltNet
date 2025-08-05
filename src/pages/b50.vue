@@ -1,13 +1,13 @@
 <script setup lang="ts">
     import { ref, computed } from "vue";
     import { useRoute } from "vue-router";
-    import ScoreSection from "@/components/data/chart/ScoreSection.vue";
-    import RatingPlate from "@/components/data/user/RatingPlate.vue";
-    import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
+    import ScoreSection from "@/components/chart/ScoreSection.vue";
+    import RatingPlate from "@/components/user/RatingPlate.vue";
+    import ChartInfoDialog from "@/components/chart/ChartInfo.vue";
     import type { Chart } from "@/types/music";
-    import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-    import { musicInfo } from "@/components/data/music";
-    import { useShared } from "@/components/app/shared";
+    import type { DivingFishFullRecord } from "@/divingfish/type";
+    import { musicInfo } from "@/assets/music";
+    import { useShared } from "@/utils/shared";
 
     const route = useRoute();
     const shared = useShared();

@@ -1,5 +1,5 @@
-import type { DivingFishB50, DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-import type { UserMusic, UserItem } from "../../inGame";
+import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
+import type { UserMusic, UserItem } from "./inGame";
 
 export interface UpdateUserResponse {
     userName: string;

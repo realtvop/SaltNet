@@ -1,8 +1,8 @@
-import type { MusicDataResponse } from "@/components/integrations/diving-fish/type";
+import type { MusicDataResponse } from "@/divingfish/type";
 import MusicSort from "./sort.json";
 import Charts from "./charts.json";
 import { type SavedMusicList } from "@/types/music";
-import { convertDFMusicList } from "@/components/integrations/diving-fish";
+import { convertDFMusicList } from "@/divingfish";
 
 export const musicInfo: SavedMusicList = convertDFMusicList(
     Charts.data as unknown as MusicDataResponse

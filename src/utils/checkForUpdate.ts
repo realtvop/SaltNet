@@ -1,5 +1,5 @@
 import { snackbar } from "mdui";
-import { useShared } from "../components/app/shared";
+import { useShared } from "./shared";
 
 declare global {
     interface Window {
