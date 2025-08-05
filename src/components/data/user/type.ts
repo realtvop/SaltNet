@@ -1,7 +1,7 @@
 // src/types/user.ts
-import type { DivingFishB50, DivingFishFullRecord } from "@/divingfish/type";
-import type { Chart } from "./music";
-import type { Level, UserItem } from "./inGame";
+import type { DivingFishB50, DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+import type { Chart } from "../../../types/music";
+import type { Level, UserItem } from "../inGame";
 
 export interface User {
     uid?: string;
