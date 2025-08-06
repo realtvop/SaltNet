@@ -58,7 +58,7 @@
     };
 
     const goToUserDetails = (index: number) => {
-        // if (index == 0) return router.push("/b50");
+        if (isEditMode.value) return;
         router.push(`/b50/${index}`);
     };
 
@@ -152,11 +152,10 @@
                 disabled: true,
                 filter: ".no-drag",
                 onEnd: event => {
-                    if (
-                        event.oldIndex !== undefined &&
-                        event.newIndex !== undefined &&
-                        event.newIndex !== 0
-                    ) {
+                    if (event.oldIndex !== undefined && event.newIndex !== undefined) {
+                        if (event.newIndex === 0) {
+                            return;
+                        }
                         const movedUser = shared.users.splice(event.oldIndex, 1)[0];
                         shared.users.splice(event.newIndex, 0, movedUser);
                     }
@@ -180,7 +179,7 @@
             v-for="(user, index) in shared.users"
             :key="index"
             :class="{ 'no-drag': index === 0 }"
-            clickable
+            :clickable="!isEditMode"
         >
             <mdui-icon
                 name="drag_indicator"
