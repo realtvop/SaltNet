@@ -59,6 +59,10 @@
         router.push(`/b50/${index}`);
     };
 
+    const goToUserSongs = (index: number) => {
+        router.push(`/songs/${index}`);
+    };
+
     interface UpdatedUserData {
         remark?: string | null;
         divingFish: { name: string | null; importToken: string | null };
@@ -150,7 +154,10 @@
                     <h2 class="primary-name">
                         {{ getDisplayName(user, "未知") }}
                     </h2>
-                    <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
+                    <RatingPlate
+                        v-if="typeof user.data?.rating === 'number'"
+                        :ra="user.data.rating"
+                    ></RatingPlate>
                 </div>
                 <div class="user-badges">
                     <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">
@@ -186,10 +193,6 @@
                             修改
                             <mdui-icon slot="icon" name="edit"></mdui-icon>
                         </mdui-menu-item>
-                        <mdui-menu-item @click="setAsDefault(index)" v-if="index">
-                            设为主用户
-                            <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
-                        </mdui-menu-item>
 
                         <mdui-divider />
 
@@ -197,9 +200,20 @@
                             视奸（查询登录状态）
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
                         </mdui-menu-item>
+                        <mdui-menu-item
+                            @click="goToUserSongs(index)"
+                            v-if="index && user.data.detailed"
+                        >
+                            查看完整成绩
+                            <mdui-icon slot="icon" name="library_music"></mdui-icon>
+                        </mdui-menu-item>
 
                         <mdui-divider />
 
+                        <mdui-menu-item @click="setAsDefault(index)" v-if="index">
+                            设为主用户
+                            <mdui-icon slot="icon" name="vertical_align_top"></mdui-icon>
+                        </mdui-menu-item>
                         <mdui-menu-item @click="openDeleteDialog(index)">
                             删除
                             <mdui-icon slot="icon" name="delete"></mdui-icon>

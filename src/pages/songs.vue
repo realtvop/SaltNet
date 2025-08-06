@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
@@ -24,7 +25,9 @@
         Banquet = "宴会场",
     }
 
+    const route = useRoute();
     const shared = useShared();
+    const userId = ref(route.params.id as string);
     const difficulties = [
         "ALL",
         "1",
@@ -323,7 +326,8 @@
     });
 
     const loadPlayerData = async () => {
-        if (shared.users[0]) loadChartsWithCache(shared.users[0]);
+        const targetUserId = userId.value ? Number(userId.value) : 0;
+        if (shared.users[targetUserId]) loadChartsWithCache(shared.users[targetUserId]);
         else loadChartsWithCache();
     };
 
@@ -411,6 +415,15 @@
         }
         visibleItemsCount.value = getLoadSize();
     });
+
+    // 监听路由参数变化，重新加载数据
+    watch(
+        () => route.params.id,
+        async newId => {
+            userId.value = newId as string;
+            await loadPlayerData();
+        }
+    );
 
     onMounted(async () => {
         await loadPlayerData();
@@ -607,116 +620,135 @@
 </script>
 
 <template>
-    <!-- [游戏排序]难度选单 -->
-    <div class="category-bar">
-        <mdui-dropdown>
-            <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
-            <mdui-menu>
-                <mdui-menu-item
-                    @click="category = item"
-                    v-for="(item, index) in Object.values(Category)"
-                    :key="index"
-                    :style="{
-                        backgroundColor:
-                            category == item ? 'rgba(var(--mdui-color-primary),12%)' : '',
-                    }"
-                    :icon="category == item ? 'check' : ''"
+    <div class="songs-page" :class="{ 'songs-page-fixed': userId }">
+        <!-- [游戏排序]难度选单 -->
+        <div class="category-bar">
+            <mdui-dropdown>
+                <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
+                <mdui-menu>
+                    <mdui-menu-item
+                        @click="category = item"
+                        v-for="(item, index) in Object.values(Category)"
+                        :key="index"
+                        :style="{
+                            backgroundColor:
+                                category == item ? 'rgba(var(--mdui-color-primary),12%)' : '',
+                        }"
+                        :icon="category == item ? 'check' : ''"
+                    >
+                        {{ item }}
+                    </mdui-menu-item>
+                </mdui-menu>
+            </mdui-dropdown>
+            <mdui-tabs :value="selectedDifficulty">
+                <mdui-tab
+                    v-for="tab in tabs"
+                    :key="tab"
+                    :value="tab"
+                    @click="selectedTab[category] = tab"
                 >
-                    {{ item }}
-                </mdui-menu-item>
-            </mdui-menu>
-        </mdui-dropdown>
-        <mdui-tabs :value="selectedDifficulty">
-            <mdui-tab
-                v-for="tab in tabs"
-                :key="tab"
-                :value="tab"
-                @click="selectedTab[category] = tab"
-            >
-                {{ tab }}
-            </mdui-tab>
-        </mdui-tabs>
-        <!-- 收藏选项 -->
-        <mdui-dropdown v-if="category == Category.Favorite">
-            <mdui-button-icon slot="trigger" icon="more_vert"></mdui-button-icon>
-            <mdui-menu>
-                <mdui-menu-item icon="add" @click="newFavList">新建收藏夹</mdui-menu-item>
-                <mdui-menu-item icon="content_paste" @click="importFavList">
-                    导入收藏夹
-                </mdui-menu-item>
-                <mdui-divider v-if="shared.favorites.length > 0" />
-                <mdui-menu-item
-                    v-if="shared.favorites.length > 0"
-                    icon="edit"
-                    @click="renameFavList"
-                >
-                    重命名
-                </mdui-menu-item>
-                <mdui-menu-item
-                    v-if="shared.favorites.length > 0"
-                    icon="content_copy"
-                    @click="exportFavList"
-                >
-                    导出
-                </mdui-menu-item>
-                <mdui-menu-item
-                    v-if="shared.favorites.length > 0"
-                    icon="delete"
-                    style="color: red"
-                    @click="deleteFavList"
-                >
-                    删除
-                </mdui-menu-item>
-            </mdui-menu>
-        </mdui-dropdown>
-    </div>
+                    {{ tab }}
+                </mdui-tab>
+            </mdui-tabs>
+            <!-- 收藏选项 -->
+            <mdui-dropdown v-if="category == Category.Favorite">
+                <mdui-button-icon slot="trigger" icon="more_vert"></mdui-button-icon>
+                <mdui-menu>
+                    <mdui-menu-item icon="add" @click="newFavList">新建收藏夹</mdui-menu-item>
+                    <mdui-menu-item icon="content_paste" @click="importFavList">
+                        导入收藏夹
+                    </mdui-menu-item>
+                    <mdui-divider v-if="shared.favorites.length > 0" />
+                    <mdui-menu-item
+                        v-if="shared.favorites.length > 0"
+                        icon="edit"
+                        @click="renameFavList"
+                    >
+                        重命名
+                    </mdui-menu-item>
+                    <mdui-menu-item
+                        v-if="shared.favorites.length > 0"
+                        icon="content_copy"
+                        @click="exportFavList"
+                    >
+                        导出
+                    </mdui-menu-item>
+                    <mdui-menu-item
+                        v-if="shared.favorites.length > 0"
+                        icon="delete"
+                        style="color: red"
+                        @click="deleteFavList"
+                    >
+                        删除
+                    </mdui-menu-item>
+                </mdui-menu>
+            </mdui-dropdown>
+        </div>
 
-    <mdui-text-field
-        id="search-input"
-        clearable
-        icon="search"
-        label="搜索"
-        placeholder="曲名 别名 id 曲师 谱师"
-        @input="query = $event.target.value"
-    ></mdui-text-field>
+        <mdui-text-field
+            id="search-input"
+            clearable
+            icon="search"
+            label="搜索"
+            placeholder="曲名 别名 id 曲师 谱师"
+            @input="query = $event.target.value"
+        ></mdui-text-field>
 
-    <div class="card-container" v-if="chartListFiltered" @scroll="handleScroll">
-        <div class="score-grid-wrapper">
-            <div class="score-grid">
-                <ScoreCard
-                    v-if="category !== Category.Favorite || shared.favorites.length > 0"
-                    cover="/icons/random.png"
-                    :data="randomChartDummy"
-                    @click="openChartInfoDialog(getRandomChart())"
-                />
-                <div
-                    v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
-                    :key="`score-cell-${index}`"
-                    class="score-cell"
-                >
+        <div
+            class="card-container"
+            :class="{ 'card-container-fixed': userId }"
+            v-if="chartListFiltered"
+            @scroll="handleScroll"
+        >
+            <div class="score-grid-wrapper">
+                <div class="score-grid">
                     <ScoreCard
-                        :data="chart"
-                        @click="openChartInfoDialog(chart)"
-                        :rating="
-                            category == Category.Favorite
-                                ? index + 1
-                                : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
-                        "
+                        v-if="category !== Category.Favorite || shared.favorites.length > 0"
+                        cover="/icons/random.png"
+                        :data="randomChartDummy"
+                        @click="openChartInfoDialog(getRandomChart())"
                     />
-                </div>
+                    <div
+                        v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
+                        :key="`score-cell-${index}`"
+                        class="score-cell"
+                    >
+                        <ScoreCard
+                            :data="chart"
+                            @click="openChartInfoDialog(chart)"
+                            :rating="
+                                category == Category.Favorite
+                                    ? index + 1
+                                    : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
+                            "
+                        />
+                    </div>
 
-                <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
-                    <div class="loading-text">正在加载更多...</div>
-                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                    <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
+                        <div class="loading-text">正在加载更多...</div>
+                        <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
+        <ChartInfoDialog
+            :open="chartInfoDialog.open"
+            :chart="chartInfoDialog.chart"
+            :targetUserId="userId"
+        />
+    </div>
 </template>
 
 <style scoped>
+    /* 固定页面模式下的全局样式重写 */
+    .songs-page-fixed {
+        @media (min-aspect-ratio: 1.001/1) {
+            margin-left: -16px;
+            padding-left: 16px;
+        }
+    }
+
     .category-bar {
         display: flex;
         align-items: center;
@@ -749,6 +781,20 @@
         }
         @media (min-aspect-ratio: 1.001/1) {
             height: calc(100vh - 76px - 6.75rem);
+        }
+    }
+
+    /* 当页面为固定页面模式时（有用户ID参数） */
+    .card-container-fixed {
+        height: calc(100vh - 11.75rem) !important;
+
+        @supports (-webkit-touch-callout: none) {
+            @media all and (display-mode: standalone) {
+                height: calc(100vh - 12.75rem) !important;
+            }
+        }
+        @media (min-aspect-ratio: 1.001/1) {
+            height: calc(100vh - 6.75rem) !important;
         }
     }
 

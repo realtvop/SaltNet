@@ -10,7 +10,11 @@
         <mdui-button-icon
             icon="arrow_back"
             variant="text"
-            v-if="['/settings'].includes(route.path) || route.path.startsWith('/b50/')"
+            v-if="
+                ['/settings'].includes(route.path) ||
+                route.path.startsWith('/b50/') ||
+                route.path.startsWith('/songs/')
+            "
             class="icon-btn"
             @click="router.back"
             style="aspect-ratio: 1"
