@@ -63,7 +63,10 @@
                 关于
             </mdui-navigation-bar-item>
         </mdui-navigation-bar>
-        <mdui-navigation-rail :value="route.path" v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')">
+        <mdui-navigation-rail
+            :value="route.path"
+            v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
+        >
             <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">
                 首页
             </mdui-navigation-rail-item>

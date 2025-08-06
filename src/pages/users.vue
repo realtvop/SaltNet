@@ -200,7 +200,10 @@
                             视奸（查询登录状态）
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
                         </mdui-menu-item>
-                        <mdui-menu-item @click="goToUserSongs(index)" v-if="index && user.data.detailed">
+                        <mdui-menu-item
+                            @click="goToUserSongs(index)"
+                            v-if="index && user.data.detailed"
+                        >
                             查看完整成绩
                             <mdui-icon slot="icon" name="library_music"></mdui-icon>
                         </mdui-menu-item>
