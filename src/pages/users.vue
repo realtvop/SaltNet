@@ -150,8 +150,17 @@
                 animation: 150,
                 handle: ".drag-handle",
                 disabled: true,
+                filter: ".no-drag",
                 onEnd: event => {
                     if (event.oldIndex !== undefined && event.newIndex !== undefined) {
+                        if (event.newIndex === 0) {
+                            // @ts-ignore
+                            event.target.insertBefore(
+                                event.item,
+                                event.target.children[event.oldIndex]
+                            );
+                            return;
+                        }
                         const movedUser = shared.users.splice(event.oldIndex, 1)[0];
                         shared.users.splice(event.newIndex, 0, movedUser);
                     }
@@ -174,9 +183,14 @@
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in shared.users"
             :key="index"
+            :class="{ 'no-drag': index === 0 }"
             clickable
         >
-            <mdui-icon name="drag_indicator" class="drag-handle" v-if="isEditMode"></mdui-icon>
+            <mdui-icon
+                name="drag_indicator"
+                class="drag-handle"
+                v-if="isEditMode && index !== 0"
+            ></mdui-icon>
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
