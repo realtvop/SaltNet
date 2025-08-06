@@ -1,6 +1,7 @@
 <script setup lang="ts">
-    import { ref, toRaw } from "vue";
+    import { ref, toRaw, onMounted, watch } from "vue";
     import { useRouter } from "vue-router";
+    import Sortable from "sortablejs";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
@@ -14,6 +15,8 @@
     const isDialogVisible = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
+    const userCardsContainer = ref<HTMLElement | null>(null);
+    const isEditMode = ref(false);
 
     const router = useRouter();
 
@@ -138,17 +141,42 @@
             updateUser(user, index === 0 ? true : false);
         });
     }
+
+    let sortable: Sortable | null = null;
+
+    onMounted(() => {
+        if (userCardsContainer.value) {
+            sortable = new Sortable(userCardsContainer.value, {
+                animation: 150,
+                handle: ".drag-handle",
+                disabled: true,
+                onEnd: event => {
+                    if (event.oldIndex !== undefined && event.newIndex !== undefined) {
+                        const movedUser = shared.users.splice(event.oldIndex, 1)[0];
+                        shared.users.splice(event.newIndex, 0, movedUser);
+                    }
+                },
+            });
+        }
+    });
+
+    watch(isEditMode, value => {
+        if (sortable) {
+            sortable.option("disabled", !value);
+        }
+    });
 </script>
 
 <template>
     <div style="height: 10px"></div>
-    <div class="user-cards-container">
+    <div class="user-cards-container" ref="userCardsContainer">
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in shared.users"
             :key="index"
             clickable
         >
+            <mdui-icon name="drag_indicator" class="drag-handle" v-if="isEditMode"></mdui-icon>
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
@@ -176,7 +204,7 @@
                     </mdui-chip>
                 </div>
             </div>
-            <div class="user-actions">
+            <div class="user-actions" v-if="!isEditMode">
                 <mdui-button-icon
                     variant="standard"
                     icon="update"
@@ -234,7 +262,17 @@
     />
 
     <div class="fab-container">
-        <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
+        <mdui-fab
+            :icon="isEditMode ? 'close' : 'edit'"
+            @click="isEditMode = !isEditMode"
+            v-if="shared.users.length"
+        ></mdui-fab>
+        <mdui-fab
+            icon="update"
+            extended
+            v-if="shared.users.length && !isEditMode"
+            @click="updateAll"
+        >
             全部更新
         </mdui-fab>
         <mdui-fab icon="add" :extended="!shared.users.length" @click="openAddDialog">
@@ -249,6 +287,15 @@
         flex-direction: column;
         gap: 10px;
         padding-bottom: calc(3.5rem + 32px);
+    }
+
+    .sortable-ghost {
+        opacity: 0.5;
+    }
+
+    .drag-handle {
+        cursor: grab;
+        margin-left: 10px;
     }
 
     mdui-card {
