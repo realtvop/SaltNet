@@ -152,15 +152,11 @@
                 disabled: true,
                 filter: ".no-drag",
                 onEnd: event => {
-                    if (event.oldIndex !== undefined && event.newIndex !== undefined) {
-                        if (event.newIndex === 0) {
-                            // @ts-ignore
-                            event.target.insertBefore(
-                                event.item,
-                                event.target.children[event.oldIndex]
-                            );
-                            return;
-                        }
+                    if (
+                        event.oldIndex !== undefined &&
+                        event.newIndex !== undefined &&
+                        event.newIndex !== 0
+                    ) {
                         const movedUser = shared.users.splice(event.oldIndex, 1)[0];
                         shared.users.splice(event.newIndex, 0, movedUser);
                     }
