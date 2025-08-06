@@ -150,7 +150,7 @@
                     <h2 class="primary-name">
                         {{ getDisplayName(user, "未知") }}
                     </h2>
-                    <RatingPlate v-if="user.data?.rating" :ra="user.data.rating"></RatingPlate>
+                    <RatingPlate v-if="typeof user.data?.rating === 'number'" :ra="user.data.rating"></RatingPlate>
                 </div>
                 <div class="user-badges">
                     <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">
