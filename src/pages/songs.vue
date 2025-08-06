@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
@@ -24,7 +25,9 @@
         Banquet = "宴会场",
     }
 
+    const route = useRoute();
     const shared = useShared();
+    const userId = ref(route.params.id as string);
     const difficulties = [
         "ALL",
         "1",
@@ -323,7 +326,8 @@
     });
 
     const loadPlayerData = async () => {
-        if (shared.users[0]) loadChartsWithCache(shared.users[0]);
+        const targetUserId = userId.value ? Number(userId.value) : 0;
+        if (shared.users[targetUserId]) loadChartsWithCache(shared.users[targetUserId]);
         else loadChartsWithCache();
     };
 
@@ -411,6 +415,15 @@
         }
         visibleItemsCount.value = getLoadSize();
     });
+
+    // 监听路由参数变化，重新加载数据
+    watch(
+        () => route.params.id,
+        async newId => {
+            userId.value = newId as string;
+            await loadPlayerData();
+        }
+    );
 
     onMounted(async () => {
         await loadPlayerData();
@@ -713,7 +726,11 @@
         </div>
     </div>
 
-    <ChartInfoDialog :open="chartInfoDialog.open" :chart="chartInfoDialog.chart" />
+    <ChartInfoDialog
+        :open="chartInfoDialog.open"
+        :chart="chartInfoDialog.chart"
+        :targetUserId="userId"
+    />
 </template>
 
 <style scoped>

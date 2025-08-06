@@ -29,7 +29,7 @@
         <component :is="TopAppBar" :playerInfo="playerInfo" />
         <mdui-navigation-bar
             :value="route.path"
-            v-if="!route.path.startsWith('/b50/')"
+            v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
             label-visibility="labeled"
         >
             <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">
@@ -63,7 +63,7 @@
                 关于
             </mdui-navigation-bar-item>
         </mdui-navigation-bar>
-        <mdui-navigation-rail :value="route.path" v-if="!route.path.startsWith('/b50/')">
+        <mdui-navigation-rail :value="route.path" v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')">
             <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">
                 首页
             </mdui-navigation-rail-item>

@@ -12,6 +12,7 @@
         { path: "/", component: IndexPage },
         { path: "/users", component: UsersPage },
         { path: "/songs", component: SongsPage },
+        { path: "/songs/:id", component: SongsPage, props: true },
         { path: "/b50", component: UserPage },
         { path: "/b50/:id", component: UserPage, props: true },
         { path: "/settings", component: SettingsPage },
@@ -19,8 +20,8 @@
         { path: "/collections", component: CollectionsPage },
     ];
 
-    const routesNeedAddHistory = ["/settings", "/b50/:id"];
-    const routesNeedFixedPage = ["/about", "/songs", "/collections"];
+    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id"];
+    const routesNeedFixedPage = ["/about", "/songs", "/songs/:id", "/collections"];
 
     const router = createRouter({
         history: createMemoryHistory(),
