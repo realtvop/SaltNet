@@ -300,6 +300,7 @@
             class="filter-select"
             :value="filter"
             @change="(e: any) => (filter = e.target.value)"
+            style="--mdui-comp-select-menu-max-height: 60vh"
         >
             <mdui-menu-item value="all">所有</mdui-menu-item>
             <mdui-menu-item value="owned">已获得</mdui-menu-item>
@@ -486,6 +487,11 @@
     .filter-select {
         width: 160px;
         flex-shrink: 0;
+    }
+
+    .filter-select::part(menu) {
+        max-height: 60vh;
+        overflow-y: auto;
     }
 
     .search-field {
