@@ -46,6 +46,8 @@
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: () => {
                 if (index !== null && index >= 0 && index < shared.users.length)
                     shared.users.splice(index, 1);
@@ -123,6 +125,8 @@
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: () => {
                 if (index > 0 && index < shared.users.length) {
                     const user = shared.users.splice(index, 1)[0];
