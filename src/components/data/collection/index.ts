@@ -3,10 +3,12 @@ import {
     type Plate,
     type Frame,
     type Title,
+    type Character,
     CollectionKind,
     TitleColor,
 } from "@/components/data/collection/type";
 import collections from "./collections.json";
+import additionalCollections from "./additionalCollections.json";
 
 export const icons: Icon[] = collections.icons.map(icon => ({
     type: CollectionKind.Icon,
@@ -33,6 +35,17 @@ export const titles: Title[] = collections.titles.map(title => ({
     type: CollectionKind.Title,
     id: title.id,
     name: title.name,
+    genre: title.genre,
     description: title.description,
     color: title.color as TitleColor,
 }));
+export const characters: Character[] = additionalCollections.characters.map(character => ({
+    id: character.id,
+    name: character.name,
+    genre: character.genre,
+    updateTime: character.updateTime,
+}));
+export const genres = {
+    ...collections.genres,
+    ...additionalCollections.genres,
+};

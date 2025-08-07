@@ -20,7 +20,7 @@
         const ratings = props.scores.map((chart: Chart) => chart.score?.deluxeRating ?? 0);
         ratings.sort((a: number, b: number) => a - b);
 
-        const avg = ratings.reduce((sum: number, score: number) => sum + score, 0) / ratings.length;
+        const total = ratings.reduce((sum: number, score: number) => sum + score, 0);
         const median =
             ratings.length % 2 === 0
                 ? (ratings[ratings.length / 2 - 1] + ratings[ratings.length / 2]) / 2
@@ -34,7 +34,8 @@
         const maxConstant = constants[constants.length - 1];
 
         return {
-            avg: avg.toFixed(2),
+            total: total,
+            avg: (total / props.scores.length).toFixed(2),
             median: median,
             range: range,
             levelRange: `${minConstant.toFixed(1)}~${maxConstant.toFixed(1)}`,
@@ -52,6 +53,7 @@
         <h2 class="section-title">
             {{ title }}
             <span class="stats-info" v-if="stats">
+                <span class="stat-item">{{ stats.total }}</span>
                 <span class="stat-item">{{ stats.levelRange }}</span>
                 <span class="stat-item">平均: {{ stats.avg }}</span>
                 <span class="stat-item">中位数: {{ stats.median }}</span>

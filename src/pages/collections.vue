@@ -1,6 +1,13 @@
 <script setup lang="ts">
     import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-    import { icons, plates, frames, titles } from "@/components/data/collection";
+    import {
+        icons,
+        plates,
+        frames,
+        titles,
+        characters,
+        genres,
+    } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
 
@@ -9,7 +16,7 @@
         Icon: "头像",
         Plate: "姓名框",
         Frame: "背景",
-        // Partner: "旅行伙伴",
+        Character: "旅行伙伴",
     } as const;
 
     type CategoryType = (typeof Category)[keyof typeof Category];
@@ -17,18 +24,40 @@
     const { users } = useShared();
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
-    const filter = ref<"all" | "owned" | "missing">("all");
+    const filter = ref<string>("all");
     const ownedCollections = computed<Record<number, number[]>>(() => {
-        if (!users || !users[0] || !users[0].data.items) return { 1: [], 2: [], 3: [], 4: [] };
+        if (!users || !users[0] || !users[0].data.items)
+            return { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
 
-        const owned: Record<number, number[]> = { 1: [], 2: [], 3: [], 10: [], 11: [] };
+        const owned: Record<number, number[]> = { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
         for (const collection of users[0].data.items[1]) owned[1].push(collection.itemId);
         for (const collection of users[0].data.items[2]) owned[2].push(collection.itemId);
         for (const collection of users[0].data.items[3]) owned[3].push(collection.itemId);
-        for (const collection of users[0].data.items[10]) owned[10].push(collection.itemId);
-        for (const collection of users[0].data.items[11]) owned[11].push(collection.itemId);
+        if (users[0].data.items[9]) {
+            for (const collection of users[0].data.items[9]) owned[9].push(collection.itemId);
+        }
+        if (users[0].data.items[10]) {
+            for (const collection of users[0].data.items[10]) owned[10].push(collection.itemId);
+        }
+        if (users[0].data.items[11]) {
+            for (const collection of users[0].data.items[11]) owned[11].push(collection.itemId);
+        }
 
         return owned;
+    });
+
+    // 获取当前分类下的可用类别
+    const genreKeyMap: Record<CategoryType, keyof typeof genres> = {
+        [Category.Title]: "titles",
+        [Category.Icon]: "icons",
+        [Category.Plate]: "plates",
+        [Category.Frame]: "frames",
+        [Category.Character]: "characters",
+    };
+
+    const availableGenres = computed<string[]>(() => {
+        const key = genreKeyMap[category.value];
+        return genres[key] || [];
     });
 
     // 获取当前分类下的所有数据
@@ -42,6 +71,21 @@
                 return plates;
             case Category.Frame:
                 return frames;
+            case Category.Character:
+                // 将characters转换为Collection格式，并添加用户数据
+                return characters.map(character => {
+                    const userCharacter = users?.[0]?.data?.characters?.find(
+                        uc => uc.characterId === character.id
+                    );
+                    return {
+                        type: CollectionKind.Character,
+                        id: character.id,
+                        name: character.name,
+                        genre: character.genre || "",
+                        description: (character as any).genre || "",
+                        userCharacter,
+                    };
+                });
             default:
                 return [];
         }
@@ -63,12 +107,21 @@
             );
         }
 
-        // 根据拥有状态筛选
+        // 根据筛选器过滤（包括拥有状态和类别）
         if (filter.value !== "all") {
-            result = result.filter(item => {
-                const isOwned = isCollectionOwned(item);
-                return filter.value === "owned" ? isOwned : !isOwned;
-            });
+            if (filter.value === "owned" || filter.value === "missing") {
+                // 拥有状态筛选
+                result = result.filter(item => {
+                    const isOwned = isCollectionOwned(item);
+                    return filter.value === "owned" ? isOwned : !isOwned;
+                });
+            } else {
+                // 类别筛选
+                result = result.filter(item => {
+                    const itemGenre = item.genre || (item as any).genre;
+                    return itemGenre === filter.value;
+                });
+            }
         }
 
         return result;
@@ -134,6 +187,7 @@
     // 监听分类变化，重置虚拟滚动并滚动到顶部
     watch(category, () => {
         visibleItemsCount.value = getLoadSize();
+        if (!["all", "owned", "missing"].includes(filter.value)) filter.value = "all"; // 重置筛选器
         // 滚动到顶部
         const container = document.querySelector(".collections-container");
         if (container) {
@@ -193,6 +247,8 @@
                 return `${baseUrl}/plate/${id}.png`;
             case CollectionKind.Frame:
                 return `${baseUrl}/frame/${id}.png`;
+            case CollectionKind.Character:
+                return `${baseUrl}/character/${id}.png`;
             default:
                 return "";
         }
@@ -209,6 +265,8 @@
                 return Category.Plate;
             case CollectionKind.Frame:
                 return Category.Frame;
+            case CollectionKind.Character:
+                return Category.Character;
             default:
                 return "";
         }
@@ -217,6 +275,12 @@
     // 检查收藏品是否已拥有
     const isCollectionOwned = (collection: Collection) => {
         if (collection.id <= 3) return true; // 默认和随机
+
+        // 对于旅行伙伴，检查用户是否拥有该角色
+        if (collection.type === CollectionKind.Character) {
+            return !!(collection as any).userCharacter;
+        }
+
         const owned = ownedCollections.value;
         return owned[collection.type] && owned[collection.type].includes(collection.id);
     };
@@ -236,10 +300,15 @@
             class="filter-select"
             :value="filter"
             @change="(e: any) => (filter = e.target.value)"
+            style="--mdui-comp-select-menu-max-height: 60vh"
         >
             <mdui-menu-item value="all">所有</mdui-menu-item>
             <mdui-menu-item value="owned">已获得</mdui-menu-item>
             <mdui-menu-item value="missing">未获得</mdui-menu-item>
+            <mdui-divider></mdui-divider>
+            <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
+                {{ genre }}
+            </mdui-menu-item>
         </mdui-select>
 
         <mdui-text-field
@@ -284,7 +353,9 @@
                         v-else
                         class="other-content"
                         :class="{
-                            'icon-layout': collection.type === CollectionKind.Icon,
+                            'icon-layout':
+                                collection.type === CollectionKind.Icon ||
+                                collection.type === CollectionKind.Character,
                             'plate-frame-layout':
                                 collection.type === CollectionKind.Plate ||
                                 collection.type === CollectionKind.Frame,
@@ -293,7 +364,9 @@
                         <div
                             class="collection-image-placeholder"
                             :class="{
-                                square: collection.type === CollectionKind.Icon,
+                                square:
+                                    collection.type === CollectionKind.Icon ||
+                                    collection.type === CollectionKind.Character,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -308,13 +381,16 @@
                             v-else-if="
                                 collection.type === CollectionKind.Icon ||
                                 collection.type === CollectionKind.Plate ||
-                                collection.type === CollectionKind.Frame
+                                collection.type === CollectionKind.Frame ||
+                                collection.type === CollectionKind.Character
                             "
                             :src="getImageUrl(collection)"
                             :alt="collection.name"
                             class="collection-image"
                             :class="{
-                                square: collection.type === CollectionKind.Icon,
+                                square:
+                                    collection.type === CollectionKind.Icon ||
+                                    collection.type === CollectionKind.Character,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -324,13 +400,18 @@
                         <div class="collection-info">
                             <div
                                 class="collection-header"
-                                :class="{ 'icon-header': collection.type === CollectionKind.Icon }"
+                                :class="{
+                                    'icon-header':
+                                        collection.type === CollectionKind.Icon ||
+                                        collection.type === CollectionKind.Character,
+                                }"
                             >
                                 <h3 class="collection-name">{{ collection.name }}</h3>
                                 <span
                                     v-if="
                                         collection.type === CollectionKind.Plate ||
-                                        collection.type === CollectionKind.Frame
+                                        collection.type === CollectionKind.Frame ||
+                                        collection.type === CollectionKind.Character
                                     "
                                     class="collection-id-inline"
                                 >
@@ -338,6 +419,7 @@
                                 </span>
                             </div>
                             <p class="collection-description">{{ collection.description }}</p>
+
                             <div class="collection-meta">
                                 <span
                                     v-if="collection.type === CollectionKind.Icon"
@@ -345,6 +427,39 @@
                                 >
                                     #{{ collection.id }}
                                 </span>
+                            </div>
+                            <!-- 旅行伙伴的特殊信息 -->
+                            <div
+                                v-if="collection.type === CollectionKind.Character"
+                                class="character-info"
+                            >
+                                <div class="character-stats">
+                                    <span
+                                        v-if="(collection as any).userCharacter"
+                                        class="character-level"
+                                    >
+                                        Lv. {{ (collection as any).userCharacter.level }}
+                                    </span>
+                                </div>
+                                <div
+                                    v-if="(collection as any).userCharacter"
+                                    class="character-awakening-row"
+                                >
+                                    <template v-for="i in 5" :key="i">
+                                        <mdui-icon
+                                            :name="
+                                                i <= (collection as any).userCharacter.awakening
+                                                    ? 'star'
+                                                    : 'star_border'
+                                            "
+                                            class="awakening-star"
+                                        ></mdui-icon>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="collection-meta">
+                                <!-- collection-meta现在为空，但保留结构 -->
                             </div>
                         </div>
                     </div>
@@ -366,15 +481,22 @@
         display: flex;
         gap: 16px;
         align-items: center;
+        flex-wrap: wrap;
     }
 
     .filter-select {
-        width: 120px;
+        width: 160px;
         flex-shrink: 0;
+    }
+
+    .filter-select::part(menu) {
+        max-height: 60vh;
+        overflow-y: auto;
     }
 
     .search-field {
         flex: 1;
+        min-width: 200px;
     }
 
     mdui-tabs {
@@ -417,6 +539,15 @@
 
     .collection-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .collection-id-corner {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
     }
 
     .collection-content {
@@ -627,6 +758,31 @@
         text-overflow: clip;
     }
 
+    .character-stats {
+        display: flex;
+        flex-wrap: wrap;
+        /* gap: 8px; */
+        align-items: center;
+    }
+
+    .character-level {
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.7);
+        font-weight: 500;
+    }
+
+    .character-awakening-row {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        /* margin-top: 4px; */
+    }
+
+    .awakening-star {
+        font-size: 16px;
+        color: #f57c00;
+    }
+
     .collection-header {
         display: flex;
         justify-content: space-between;
@@ -635,7 +791,7 @@
     }
 
     .collection-header.icon-header {
-        justify-content: flex-start;
+        justify-content: space-between;
     }
 
     .collection-id-inline {
@@ -683,8 +839,17 @@
         }
 
         .collection-id,
-        .collection-id-inline {
+        .collection-id-inline,
+        .collection-id-corner {
             color: rgba(255, 255, 255, 0.5);
+        }
+
+        .character-level {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .awakening-star {
+            color: #ffb74d;
         }
     }
 

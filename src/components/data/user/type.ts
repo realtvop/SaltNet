@@ -4,7 +4,7 @@ import type {
     DivingFishFullRecord,
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
-import type { Level, UserItem } from "../inGame";
+import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
 
 export interface User {
     uid?: string;
@@ -24,6 +24,8 @@ export interface User {
         b50?: DivingFishB50;
         detailed?: DetailedData;
         items?: UserItem[][];
+        characters?: UserCharacter[];
+        info?: UserInfo;
     };
 }
 export interface ChartsSortCached {

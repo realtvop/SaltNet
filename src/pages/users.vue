@@ -6,8 +6,9 @@
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
     import { type User, getDisplayName } from "@/components/data/user/type";
     import { checkLogin, updateUser } from "@/components/data/user/update";
-    import { confirm } from "mdui";
+    import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
+    import type { UserInfo } from "@/components/data/inGame";
 
     const shared = useShared();
 
@@ -46,6 +47,8 @@
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: () => {
                 if (index !== null && index >= 0 && index < shared.users.length)
                     shared.users.splice(index, 1);
@@ -62,6 +65,35 @@
     const goToUserSongs = (index: number) => {
         router.push(`/songs/${index}`);
     };
+
+    function showUserInfo(user: User) {
+        const info = user.data.info as UserInfo;
+
+        alert({
+            headline: `${getDisplayName(user)}`,
+            description:
+                (info
+                    ? `头像 ID: ${info.iconId ?? "未知"}\n` +
+                      `总觉醒数: ${info.totalAwake ?? "未知"}\n` +
+                      `最后游戏程序版本: ${info.lastRomVersion ?? "未知"}\n` +
+                      `最后数据版本: ${info.lastDataVersion ?? "未知"}\n` +
+                      `Rating 显示设置: ${info.dispRate ?? "未知"}\n\n`
+                    : "") +
+                `最后更新: ${new Date(Number(user.data.updateTime)).toLocaleString() ?? "未知"}`,
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: dialog => {
+                markDialogOpen(dialog);
+                // 允许 description 换行显示
+                (
+                    (dialog.shadowRoot as unknown as HTMLElement).querySelector(
+                        "div.panel.has-description > div > slot.description"
+                    ) as HTMLElement
+                ).style.whiteSpace = "pre-wrap";
+            },
+            onClose: markDialogClosed,
+        });
+    }
 
     interface UpdatedUserData {
         remark?: string | null;
@@ -123,6 +155,8 @@
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: () => {
                 if (index > 0 && index < shared.users.length) {
                     const user = shared.users.splice(index, 1)[0];
@@ -206,6 +240,10 @@
                         >
                             查看完整成绩
                             <mdui-icon slot="icon" name="library_music"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item @click="showUserInfo(user)">
+                            查看用户信息
+                            <mdui-icon slot="icon" name="info"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />
