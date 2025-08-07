@@ -438,7 +438,7 @@
                                         v-if="(collection as any).userCharacter"
                                         class="character-level"
                                     >
-                                        Lv.{{ (collection as any).userCharacter.level }}
+                                        Lv. {{ (collection as any).userCharacter.level }}
                                     </span>
                                 </div>
                                 <div
@@ -758,15 +758,10 @@
         text-overflow: clip;
     }
 
-    /* 旅行伙伴信息样式 */
-    .character-info {
-        margin-top: 8px;
-    }
-
     .character-stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        /* gap: 8px; */
         align-items: center;
     }
 
@@ -780,7 +775,7 @@
         display: flex;
         align-items: center;
         gap: 2px;
-        margin-top: 4px;
+        /* margin-top: 4px; */
     }
 
     .awakening-star {
