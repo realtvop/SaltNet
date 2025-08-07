@@ -1,5 +1,7 @@
 <script lang="ts">
     import { createRouter, createMemoryHistory } from "vue-router";
+    import { Dialog } from "mdui";
+
     import IndexPage from "../../pages/index.vue";
     import UserPage from "../../pages/b50.vue";
     import AboutPage from "../../pages/About.vue";
@@ -154,8 +156,9 @@
         }
     });
 
-    export function markDialogOpen(evtOrEle: Element | Event) {
-        const element = evtOrEle instanceof Element ? evtOrEle : (evtOrEle.target as Element);
+    export function markDialogOpen(evtOrEle: Element | Event | Dialog) {
+        const element =
+            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
         if (element.localName !== "mdui-dialog") return; // fuck mdui-select
 
         // dialogHashAdded = true;
@@ -165,8 +168,9 @@
         previousHash = newHash;
     }
 
-    export function markDialogClosed(evtOrEle: Element | Event) {
-        const element = evtOrEle instanceof Element ? evtOrEle : (evtOrEle.target as Element);
+    export function markDialogClosed(evtOrEle: Element | Event | Dialog) {
+        const element =
+            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
         if (element.localName !== "mdui-dialog") return; // fuck mdui-select
 
         const currentHash = window.location.hash;
