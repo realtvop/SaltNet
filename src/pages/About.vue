@@ -27,22 +27,45 @@
             </div>
         </mdui-card>
 
-        <a href="https://docs.salt.realtvop.top/basis/intro/" target="_blank" class="link-wrapper">
-            <mdui-card variant="outlined" clickable class="link-card">
-                <div class="link-content">
-                    <mdui-icon name="help_center"></mdui-icon>
-                    <div class="link-text">
-                        <mdui-typography variant="title-medium">SaltNet 帮助</mdui-typography>
-                        <mdui-typography
-                            variant="body-small"
-                            style="color: var(--mdui-color-on-surface-variant)"
-                        >
-                            SaltNet 使用帮助
-                        </mdui-typography>
+        <div class="links-section">
+            <a
+                href="https://docs.salt.realtvop.top/basis/intro/"
+                target="_blank"
+                class="link-wrapper"
+            >
+                <mdui-card variant="outlined" clickable class="link-card">
+                    <div class="link-content">
+                        <mdui-icon name="help_center"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">SaltNet 帮助</mdui-typography>
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
+                                SaltNet 使用帮助
+                            </mdui-typography>
+                        </div>
                     </div>
-                </div>
-            </mdui-card>
-        </a>
+                </mdui-card>
+            </a>
+
+            <a href="https://qm.qq.com/q/mwhqbv7FpQ" target="_blank" class="link-wrapper">
+                <mdui-card variant="outlined" clickable class="link-card">
+                    <div class="link-content">
+                        <mdui-icon name="chat"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">QQ 用户群</mdui-typography>
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
+                                638052667
+                            </mdui-typography>
+                        </div>
+                    </div>
+                </mdui-card>
+            </a>
+        </div>
 
         <div class="github-footer">
             <mdui-chip
@@ -132,6 +155,21 @@
     }
     mdui-card {
         text-align: center;
+    }
+
+    .links-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 24px;
+    }
+
+    @media (max-width: 460px) {
+        .links-section {
+            grid-template-columns: 1fr;
+        }
     }
 
     .link-wrapper {
