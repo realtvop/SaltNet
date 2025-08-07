@@ -44,3 +44,7 @@ export const characters: Character[] = additionalCollections.characters.map(char
     genre: character.genre,
     updateTime: character.updateTime,
 }));
+export const genres = {
+    ...collections.genres,
+    ...additionalCollections.genres,
+};

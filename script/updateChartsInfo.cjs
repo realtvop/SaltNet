@@ -13,6 +13,21 @@ async function updateCollectionData() {
     const frames = await fetchLXListData("frame").then(res => res.frames);
     const titles = await fetchLXListData("trophy").then(res => res.trophies);
 
+    const genres = {
+        icons: [],
+        plates: [],
+        frames: [],
+        titles: [],
+    };
+    for (const icon of icons)
+        if (icon.genre && !genres.icons.includes(icon.genre)) genres.icons.push(icon.genre);
+    for (const plate of plates)
+        if (plate.genre && !genres.plates.includes(plate.genre)) genres.plates.push(plate.genre);
+    for (const frame of frames)
+        if (frame.genre && !genres.frames.includes(frame.genre)) genres.frames.push(frame.genre);
+    for (const title of titles)
+        if (title.genre && !genres.titles.includes(title.genre)) genres.titles.push(title.genre);
+
     fs.writeFileSync(
         "src/components/data/collection/collections.json",
         JSON.stringify({
@@ -20,6 +35,7 @@ async function updateCollectionData() {
             plates,
             frames,
             titles,
+            genres,
         }),
         "utf8"
     );
