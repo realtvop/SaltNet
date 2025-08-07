@@ -81,10 +81,10 @@
             closeOnOverlayClick: true,
             onOpen: dialog => {
                 markDialogOpen(dialog);
-                //@ts-ignore 允许 description 换行显示
-                dialog.shadowRoot.querySelector(
+                // 允许 description 换行显示
+                ((dialog.shadowRoot as unknown as HTMLElement).querySelector(
                     "div.panel.has-description > div > slot.description"
-                ).style.whiteSpace = "pre-wrap";
+                ) as HTMLElement).style.whiteSpace = "pre-wrap";
             },
             onClose: markDialogClosed,
         });

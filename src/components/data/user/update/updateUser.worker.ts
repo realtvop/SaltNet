@@ -3,7 +3,6 @@ import { fetchPlayerData } from "@/components/integrations/diving-fish";
 import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getDisplayName, type User } from "@/components/data/user/type";
-import { characters } from "../../collection";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;

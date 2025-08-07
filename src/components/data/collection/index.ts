@@ -41,5 +41,6 @@ export const titles: Title[] = collections.titles.map(title => ({
 export const characters: Character[] = additionalCollections.characters.map(character => ({
     id: character.id,
     name: character.name,
+    genre: character.genre,
     updateTime: character.updateTime,
 }));

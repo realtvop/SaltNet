@@ -18,6 +18,7 @@ export interface Collection {
     type: CollectionKind;
     id: number;
     name: string;
+    genre?: string;
     description: string;
 
     status?: CollectionStatus;
@@ -25,6 +26,7 @@ export interface Collection {
 export interface Character {
     id: number;
     name: string;
+    genre: string;
     updateTime: number;
 }
 export interface Partner extends Collection {}
