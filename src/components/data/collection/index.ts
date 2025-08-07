@@ -39,7 +39,6 @@ export const titles: Title[] = collections.titles.map(title => ({
     color: title.color as TitleColor,
 }));
 export const characters: Character[] = additionalCollections.characters.map(character => ({
-    type: CollectionKind.Character,
     id: character.id,
     name: character.name,
     updateTime: character.updateTime,

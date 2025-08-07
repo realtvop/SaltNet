@@ -18,28 +18,27 @@ export interface Collection {
     type: CollectionKind;
     id: number;
     name: string;
+    description: string;
 
     status?: CollectionStatus;
 }
-export interface Character extends Collection {
+export interface Character {
+    id: number;
+    name: string;
     updateTime: number;
 }
 export interface Partner extends Collection {}
 export interface Icon extends Collection {
     genre: string;
-    description: string;
 }
 export interface Plate extends Collection {
     genre: string;
-    description: string;
 }
 export interface Frame extends Collection {
     genre: string;
-    description: string;
 }
 export interface Title extends Collection {
     color: TitleColor;
-    description: string;
 }
 
 export interface CollectionStatus {

@@ -60,3 +60,13 @@ export interface UserInfo {
     totalAwake: number;
     dispRate: number; // rating 显示 这什么几把命名
 }
+
+export interface UserCharacter {
+    characterId: number;
+    point: number;
+    useCount: number;
+    level: number;
+    nextAwake: number;
+    nextAwakePercent: number;
+    awakening: number;
+}
