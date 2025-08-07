@@ -2,7 +2,7 @@ import type {
     DivingFishB50,
     DivingFishFullRecord,
 } from "@/components/integrations/diving-fish/type";
-import type { UserMusic, UserItem } from "../../inGame";
+import type { UserMusic, UserItem, UserInfo } from "../../inGame";
 
 export interface UpdateUserResponse {
     userName: string;
@@ -13,4 +13,5 @@ export interface UpdateUserResponse {
     b50: DivingFishB50;
     isLogin: boolean;
     items: UserItem[][];
+    info: UserInfo;
 }

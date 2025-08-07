@@ -51,3 +51,12 @@ export interface UserItem {
     stock: 0 | 1;
     isValid: boolean;
 }
+
+export interface UserInfo {
+    lastDataVersion: string;
+    lastRomVersion: string;
+    banState: number;
+    iconId: number;
+    totalAwake: number;
+    dispRate: number; // rating 显示 这什么几把命名
+}

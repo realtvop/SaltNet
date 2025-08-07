@@ -93,6 +93,7 @@ async function fromInGame(user: User, updateItem: boolean) {
             detailed: convertDetailed(data.divingFishData),
             updateTime: Date.now(),
             items: data.items || [],
+            info: data.info,
         };
     } else {
         info(`从 InGame 获取 ${getDisplayName(user)} 信息失败`);
