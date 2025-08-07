@@ -490,8 +490,11 @@
     }
 
     .filter-select::part(menu) {
+        width: unset;
         max-height: 60vh;
         overflow-y: auto;
+        min-width: 160px;
+        max-width: 90vw;
     }
 
     .search-field {
