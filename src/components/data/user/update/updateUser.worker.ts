@@ -3,6 +3,7 @@ import { fetchPlayerData } from "@/components/integrations/diving-fish";
 import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getDisplayName, type User } from "@/components/data/user/type";
+import { characters } from "../../collection";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;
@@ -93,6 +94,7 @@ async function fromInGame(user: User, updateItem: boolean) {
             detailed: convertDetailed(data.divingFishData),
             updateTime: Date.now(),
             items: data.items || [],
+            characters: data.characters || [],
             info: data.info,
         };
     } else {
