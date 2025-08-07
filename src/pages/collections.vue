@@ -376,7 +376,6 @@
                                         collection.type === CollectionKind.Frame ||
                                         collection.type === CollectionKind.Character
                                     "
-                                    style="margin-top: -1rem;"
                                     class="collection-id-inline"
                                 >
                                     #{{ collection.id }}
