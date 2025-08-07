@@ -485,7 +485,7 @@
     }
 
     .filter-select {
-        width: 160px;
+        width: 5rem;
         flex-shrink: 0;
     }
 
