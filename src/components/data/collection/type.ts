@@ -41,6 +41,7 @@ export interface Frame extends Collection {
 }
 export interface Title extends Collection {
     color: TitleColor;
+    genre: string;
 }
 
 export interface CollectionStatus {

@@ -35,6 +35,7 @@ export const titles: Title[] = collections.titles.map(title => ({
     type: CollectionKind.Title,
     id: title.id,
     name: title.name,
+    genre: title.genre,
     description: title.description,
     color: title.color as TitleColor,
 }));
