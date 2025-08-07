@@ -1,6 +1,13 @@
 <script setup lang="ts">
     import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-    import { icons, plates, frames, titles, characters } from "@/components/data/collection";
+    import {
+        icons,
+        plates,
+        frames,
+        titles,
+        characters,
+        genres,
+    } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
 
@@ -9,7 +16,7 @@
         Icon: "头像",
         Plate: "姓名框",
         Frame: "背景",
-        Partner: "旅行伙伴",
+        Character: "旅行伙伴",
     } as const;
 
     type CategoryType = (typeof Category)[keyof typeof Category];
@@ -17,7 +24,7 @@
     const { users } = useShared();
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
-    const filter = ref<"all" | "owned" | "missing">("all");
+    const filter = ref<string>("all");
     const ownedCollections = computed<Record<number, number[]>>(() => {
         if (!users || !users[0] || !users[0].data.items)
             return { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
@@ -39,6 +46,20 @@
         return owned;
     });
 
+    // 获取当前分类下的可用类别
+    const genreKeyMap: Record<CategoryType, keyof typeof genres> = {
+        [Category.Title]: "titles",
+        [Category.Icon]: "icons",
+        [Category.Plate]: "plates",
+        [Category.Frame]: "frames",
+        [Category.Character]: "characters",
+    };
+
+    const availableGenres = computed<string[]>(() => {
+        const key = genreKeyMap[category.value];
+        return genres[key] || [];
+    });
+
     // 获取当前分类下的所有数据
     const collections = computed<Collection[]>(() => {
         switch (category.value) {
@@ -50,7 +71,7 @@
                 return plates;
             case Category.Frame:
                 return frames;
-            case Category.Partner:
+            case Category.Character:
                 // 将characters转换为Collection格式，并添加用户数据
                 return characters.map(character => {
                     const userCharacter = users?.[0]?.data?.characters?.find(
@@ -60,6 +81,7 @@
                         type: CollectionKind.Character,
                         id: character.id,
                         name: character.name,
+                        genre: character.genre || "",
                         description: (character as any).genre || "",
                         userCharacter,
                     };
@@ -85,12 +107,21 @@
             );
         }
 
-        // 根据拥有状态筛选
+        // 根据筛选器过滤（包括拥有状态和类别）
         if (filter.value !== "all") {
-            result = result.filter(item => {
-                const isOwned = isCollectionOwned(item);
-                return filter.value === "owned" ? isOwned : !isOwned;
-            });
+            if (filter.value === "owned" || filter.value === "missing") {
+                // 拥有状态筛选
+                result = result.filter(item => {
+                    const isOwned = isCollectionOwned(item);
+                    return filter.value === "owned" ? isOwned : !isOwned;
+                });
+            } else {
+                // 类别筛选
+                result = result.filter(item => {
+                    const itemGenre = item.genre || (item as any).genre;
+                    return itemGenre === filter.value;
+                });
+            }
         }
 
         return result;
@@ -156,6 +187,7 @@
     // 监听分类变化，重置虚拟滚动并滚动到顶部
     watch(category, () => {
         visibleItemsCount.value = getLoadSize();
+        if (!["all", "owned", "missing"].includes(filter.value)) filter.value = "all"; // 重置筛选器
         // 滚动到顶部
         const container = document.querySelector(".collections-container");
         if (container) {
@@ -234,7 +266,7 @@
             case CollectionKind.Frame:
                 return Category.Frame;
             case CollectionKind.Character:
-                return Category.Partner;
+                return Category.Character;
             default:
                 return "";
         }
@@ -272,6 +304,10 @@
             <mdui-menu-item value="all">所有</mdui-menu-item>
             <mdui-menu-item value="owned">已获得</mdui-menu-item>
             <mdui-menu-item value="missing">未获得</mdui-menu-item>
+            <mdui-divider></mdui-divider>
+            <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
+                {{ genre }}
+            </mdui-menu-item>
         </mdui-select>
 
         <mdui-text-field
@@ -444,15 +480,17 @@
         display: flex;
         gap: 16px;
         align-items: center;
+        flex-wrap: wrap;
     }
 
     .filter-select {
-        width: 120px;
+        width: 160px;
         flex-shrink: 0;
     }
 
     .search-field {
         flex: 1;
+        min-width: 200px;
     }
 
     mdui-tabs {
