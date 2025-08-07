@@ -82,11 +82,12 @@
             onOpen: dialog => {
                 markDialogOpen(dialog);
                 //@ts-ignore 允许 description 换行显示
-                dialog.shadowRoot.querySelector("div.panel.has-description > div > slot.description").style.whiteSpace = "pre-wrap";
+                dialog.shadowRoot.querySelector(
+                    "div.panel.has-description > div > slot.description"
+                ).style.whiteSpace = "pre-wrap";
             },
             onClose: markDialogClosed,
         });
-        
     }
 
     interface UpdatedUserData {
