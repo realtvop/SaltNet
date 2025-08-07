@@ -79,9 +79,14 @@
                 `Rating 显示设置: ${info.dispRate ?? "未知"}`,
             closeOnEsc: true,
             closeOnOverlayClick: true,
-            onOpen: markDialogOpen,
+            onOpen: dialog => {
+                markDialogOpen(dialog);
+                //@ts-ignore 允许 description 换行显示
+                dialog.shadowRoot.querySelector("div.panel.has-description > div > slot.description").style.whiteSpace = "pre-wrap";
+            },
             onClose: markDialogClosed,
         });
+        
     }
 
     interface UpdatedUserData {
