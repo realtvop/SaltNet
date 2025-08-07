@@ -6,8 +6,9 @@
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
     import { type User, getDisplayName } from "@/components/data/user/type";
     import { checkLogin, updateUser } from "@/components/data/user/update";
-    import { confirm } from "mdui";
+    import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
+    import type { UserInfo } from "@/components/data/inGame";
 
     const shared = useShared();
 
@@ -64,6 +65,24 @@
     const goToUserSongs = (index: number) => {
         router.push(`/songs/${index}`);
     };
+
+    function showUserInfo(user: User) {
+        const info = user.data.info as UserInfo;
+
+        alert({
+            headline: `${getDisplayName(user)}`,
+            description:
+                `头像 ID: ${info.iconId ?? "未知"}\n` +
+                `总觉醒数: ${info.totalAwake ?? "未知"}\n` +
+                `最后游戏程序版本: ${info.lastRomVersion ?? "未知"}\n` +
+                `最后数据版本: ${info.lastDataVersion ?? "未知"}\n` +
+                `Rating 显示设置: ${info.dispRate ?? "未知"}`,
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+        });
+    }
 
     interface UpdatedUserData {
         remark?: string | null;
@@ -210,6 +229,10 @@
                         >
                             查看完整成绩
                             <mdui-icon slot="icon" name="library_music"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item @click="showUserInfo(user)" v-if="user.data.info">
+                            查看用户信息
+                            <mdui-icon slot="icon" name="info"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />
