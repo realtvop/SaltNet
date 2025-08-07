@@ -72,11 +72,14 @@
         alert({
             headline: `${getDisplayName(user)}`,
             description:
-                `头像 ID: ${info.iconId ?? "未知"}\n` +
-                `总觉醒数: ${info.totalAwake ?? "未知"}\n` +
-                `最后游戏程序版本: ${info.lastRomVersion ?? "未知"}\n` +
-                `最后数据版本: ${info.lastDataVersion ?? "未知"}\n` +
-                `Rating 显示设置: ${info.dispRate ?? "未知"}`,
+                (info
+                    ? `头像 ID: ${info.iconId ?? "未知"}\n` +
+                      `总觉醒数: ${info.totalAwake ?? "未知"}\n` +
+                      `最后游戏程序版本: ${info.lastRomVersion ?? "未知"}\n` +
+                      `最后数据版本: ${info.lastDataVersion ?? "未知"}\n` +
+                      `Rating 显示设置: ${info.dispRate ?? "未知"}\n\n`
+                    : "") +
+                `最后更新: ${new Date(Number(user.data.updateTime)).toLocaleString() ?? "未知"}`,
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: dialog => {
@@ -238,7 +241,7 @@
                             查看完整成绩
                             <mdui-icon slot="icon" name="library_music"></mdui-icon>
                         </mdui-menu-item>
-                        <mdui-menu-item @click="showUserInfo(user)" v-if="user.data.info">
+                        <mdui-menu-item @click="showUserInfo(user)">
                             查看用户信息
                             <mdui-icon slot="icon" name="info"></mdui-icon>
                         </mdui-menu-item>
