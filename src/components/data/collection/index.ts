@@ -88,7 +88,10 @@ function platesToVersionPlates(plates: LXPlate[], type: string): VersionPlate[] 
                     fsd: SyncStatus.FullSyncDX,
                     sss: RankRate.sss,
                 }[(required?.fc || required?.fs || required?.rate) as "fc" | "ap" | "fsd" | "sss"],
-                songs: required?.songs?.map(song => song.id) ?? [],
+                songs:
+                    required?.songs?.map(song =>
+                        song.type === "dx" ? song.id + 10000 : song.id
+                    ) ?? [],
             };
         });
 }
@@ -98,3 +101,4 @@ export const versionPlates = {
     神: platesToVersionPlates(collections.plates as LXPlate[], "神"),
     舞舞: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
 };
+console.log(versionPlates);
