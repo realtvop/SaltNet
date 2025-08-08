@@ -2,7 +2,7 @@
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart, ChartScore } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
@@ -10,6 +10,9 @@
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { versionPlates } from "@/components/data/collection";
+    import { checkChartFinish } from "@/components/data/collection/versionPlate";
+    import type { VersionPlate } from "@/components/data/collection/type";
 
     declare global {
         interface Window {
@@ -24,6 +27,16 @@
         Favorite = "收藏夹",
         Banquet = "宴会场",
     }
+
+    // 牌子分类名称映射
+    const versionPlateNames = {
+        極: "極",
+        将: "将",
+        神: "神",
+        舞舞: "舞舞",
+    } as const;
+
+    type VersionPlateCategory = keyof typeof versionPlateNames;
 
     const route = useRoute();
     const shared = useShared();
@@ -67,19 +80,68 @@
         // verBuildTime: 0,
     };
 
-    const category = ref<Category>(Category.InGame);
+    const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
         if (category.value === Category.InGame) return difficulties;
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (category.value in versionPlateNames) {
+            // 牌子分类：返回该类型下的所有牌子名称的第一个字
+            const plateType = category.value as VersionPlateCategory;
+            return versionPlates[plateType]?.map(plate => plate.name.charAt(0)) || [];
+        }
+        return [];
     });
     const selectedTab = ref({
         [Category.InGame]: "ALL",
         [Category.Banquet]: banquetDifficulties[0],
         [Category.Favorite]: shared.favorites[0]?.name || "",
+        // 为每个牌子类型添加默认选择
+        ...Object.keys(versionPlateNames).reduce(
+            (acc, key) => {
+                const plateKey = key as VersionPlateCategory;
+                acc[plateKey] = versionPlates[plateKey]?.[0]?.name.charAt(0) || "";
+                return acc;
+            },
+            {} as Record<VersionPlateCategory, string>
+        ),
     });
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
+
+    const plateFinishStatus = computed(() => {
+        const plate: VersionPlate = versionPlates[
+            category.value as keyof typeof versionPlates
+        ]?.find(plate => plate.name.charAt(0) === selectedDifficulty.value) as VersionPlate;
+        const finishedItems = itemsToRender.value.filter(chart =>
+            checkChartFinish(plate, chart.score as ChartScore)
+        );
+
+        return {
+            plate,
+            finishedItems,
+            conditionText: plate.description
+                .replace("FULL COMBO", "FC")
+                .replace("FULL SYNC DX", "FSDX")
+                .replace("ALL PERFECT", "AP")
+                .replace("BASIC", "BAS")
+                .replace("Re:Master", "ReM")
+                .replace("MASTER", "MAS"),
+        };
+    });
+    const plateFinishSort = ref("condition");
+    function handlePlateSortChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) plateFinishSort.value = target.value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = plateFinishSort.value;
+            plateFinishSort.value = target.value;
+            plateFinishSort.value = previousValue;
+            // wtf
+        }
+    }
 
     function getRandomChart() {
         if (!chartListFiltered.value) return null;
@@ -248,6 +310,55 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
+        } else if (category.value in versionPlateNames) {
+            // 牌子模式
+            const plateType = category.value as VersionPlateCategory;
+            // 通过第一个字找到完整的牌子名称
+            const selectedPlate = versionPlates[plateType]?.find(
+                plate => plate.name.charAt(0) === selectedDifficulty.value
+            );
+
+            if (!selectedPlate) {
+                filteredCharts = [];
+            } else {
+                // 获取该牌子包含的所有曲目ID和需要的难度
+                const plateSongIds = new Set(selectedPlate.songs);
+                const requiredDifficulties = new Set(selectedPlate.difficulties);
+
+                // 筛选出该牌子包含的曲目，且只包含指定难度的谱面
+                filteredCharts = shared.chartsSort.charts.filter(
+                    (chart: Chart) =>
+                        plateSongIds.has(chart.music.id) &&
+                        requiredDifficulties.has(chart.info.grade)
+                );
+
+                // 按照牌子的达成条件进行排序
+                filteredCharts.sort((a, b) => {
+                    const scoreA = a.score;
+                    const scoreB = b.score;
+
+                    if (!scoreA && !scoreB) return 0;
+                    if (!scoreA) return 1;
+                    if (!scoreB) return -1;
+
+                    const completedA = checkChartFinish(selectedPlate, scoreA);
+                    const completedB = checkChartFinish(selectedPlate, scoreB);
+
+                    // 已完成的排在前面
+                    if (completedA && !completedB) return -1;
+                    if (!completedA && completedB) return 1;
+
+                    // 同样完成状态下按达成率排序
+                    if (
+                        typeof scoreA.achievements === "number" &&
+                        typeof scoreB.achievements === "number"
+                    ) {
+                        return scoreB.achievements - scoreA.achievements;
+                    }
+
+                    return 0;
+                });
+            }
         } else {
             filteredCharts = [];
         }
@@ -412,6 +523,10 @@
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
+        } else if (newCategory in versionPlateNames) {
+            // 牌子分类
+            const plateType = newCategory as VersionPlateCategory;
+            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name.charAt(0) || "";
         }
         visibleItemsCount.value = getLoadSize();
     });
@@ -638,6 +753,19 @@
                     >
                         {{ item }}
                     </mdui-menu-item>
+                    <mdui-divider />
+                    <mdui-menu-item
+                        v-for="(plateType, index) in Object.keys(versionPlateNames)"
+                        :key="`plate-${index}`"
+                        :icon="category === plateType ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === plateType ? 'rgba(var(--mdui-color-primary),12%)' : '',
+                        }"
+                        @click="category = plateType as VersionPlateCategory"
+                    >
+                        {{ plateType }}牌
+                    </mdui-menu-item>
                 </mdui-menu>
             </mdui-dropdown>
             <mdui-tabs :value="selectedDifficulty">
@@ -685,13 +813,38 @@
             </mdui-dropdown>
         </div>
 
+        <div v-if="category in versionPlateNames" class="search-input">
+            <mdui-select
+                style="width: 5rem"
+                label="排序"
+                :value="plateFinishSort"
+                @change="handlePlateSortChange"
+            >
+                <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
+                    条件
+                </mdui-menu-item>
+            </mdui-select>
+            <span>
+                {{ plateFinishStatus.conditionText }}
+            </span>
+            <div>
+                <mdui-circular-progress
+                    :value="plateFinishStatus.finishedItems.length"
+                    :max="itemsToRender.length"
+                ></mdui-circular-progress>
+                <span>
+                    {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
+                </span>
+            </div>
+        </div>
         <mdui-text-field
-            id="search-input"
+            class="search-input"
             clearable
             icon="search"
             label="搜索"
             placeholder="曲名 别名 id 曲师 谱师"
             @input="query = $event.target.value"
+            v-else
         ></mdui-text-field>
 
         <div
@@ -703,7 +856,10 @@
             <div class="score-grid-wrapper">
                 <div class="score-grid">
                     <ScoreCard
-                        v-if="category !== Category.Favorite || shared.favorites.length > 0"
+                        v-if="
+                            !(category in versionPlateNames) &&
+                            (category !== Category.Favorite || shared.favorites.length > 0)
+                        "
                         cover="/icons/random.png"
                         :data="randomChartDummy"
                         @click="openChartInfoDialog(getRandomChart())"
@@ -719,7 +875,9 @@
                             :rating="
                                 category == Category.Favorite
                                     ? index + 1
-                                    : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
+                                    : category in versionPlateNames
+                                      ? index + 1
+                                      : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
                             "
                         />
                     </div>
@@ -765,8 +923,20 @@
         overflow-y: hidden;
     }
 
-    #search-input {
+    .search-input {
         padding: 5px 20px;
+    }
+    div.search-input {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: space-between;
+        text-align: center;
+    }
+    div.search-input > div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .card-container {

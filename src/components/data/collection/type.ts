@@ -1,3 +1,5 @@
+import type { ComboStatus, SyncStatus, RankRate } from "../maiTypes";
+
 export enum CollectionKind {
     Plate = 1, // 姓名框
     Title = 2, // 称号
@@ -42,6 +44,11 @@ export interface Frame extends Collection {
 export interface Title extends Collection {
     color: TitleColor;
     genre: string;
+}
+export interface VersionPlate extends Plate {
+    difficulties: number[];
+    condition: ComboStatus | SyncStatus | RankRate;
+    songs: number[];
 }
 
 export interface CollectionStatus {

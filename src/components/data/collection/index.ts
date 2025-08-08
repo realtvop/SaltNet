@@ -6,9 +6,30 @@ import {
     type Character,
     CollectionKind,
     TitleColor,
+    type VersionPlate,
 } from "@/components/data/collection/type";
 import collections from "./collections.json";
 import additionalCollections from "./additionalCollections.json";
+import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
+
+interface LXPlate {
+    id: number;
+    name: string;
+    description: string;
+    genre: string;
+    required?: {
+        difficulties: number[];
+        fc?: "fc" | "ap";
+        fs?: "fsd";
+        rate?: "sss";
+        songs: LXSong[];
+    }[];
+}
+interface LXSong {
+    id: number;
+    title: string;
+    type: "standard" | "dx";
+}
 
 export const icons: Icon[] = collections.icons.map(icon => ({
     type: CollectionKind.Icon,
@@ -48,4 +69,32 @@ export const characters: Character[] = additionalCollections.characters.map(char
 export const genres = {
     ...collections.genres,
     ...additionalCollections.genres,
+};
+function platesToVersionPlates(plates: LXPlate[], type: string): VersionPlate[] {
+    return plates
+        .filter(plate => plate.name.endsWith(type))
+        .map(plate => {
+            const required = plate.required?.[0];
+            return {
+                type: CollectionKind.Plate,
+                id: plate.id,
+                name: plate.name,
+                description: plate.description,
+                genre: plate.genre,
+                difficulties: required?.difficulties ?? [],
+                condition: {
+                    fc: ComboStatus.FullCombo,
+                    ap: ComboStatus.AllPerfect,
+                    fsd: SyncStatus.FullSyncDX,
+                    sss: RankRate.sss,
+                }[(required?.fc || required?.fs || required?.rate) as "fc" | "ap" | "fsd" | "sss"],
+                songs: required?.songs?.map(song => song.id) ?? [],
+            };
+        });
+}
+export const versionPlates = {
+    極: platesToVersionPlates(collections.plates as LXPlate[], "極"),
+    将: platesToVersionPlates(collections.plates as LXPlate[], "将"),
+    神: platesToVersionPlates(collections.plates as LXPlate[], "神"),
+    舞舞: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
 };
