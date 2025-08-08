@@ -75,13 +75,16 @@ function platesToVersionPlates(plates: LXPlate[], type: string): VersionPlate[] 
         .filter(plate => plate.name.endsWith(type))
         .map(plate => {
             const required = plate.required?.[0];
+            const difficulties = required?.difficulties ?? [];
+            if (plate.required?.[1]) difficulties?.push(...plate.required[1].difficulties);
+
             return {
                 type: CollectionKind.Plate,
                 id: plate.id,
                 name: plate.name,
                 description: plate.description,
                 genre: plate.genre,
-                difficulties: required?.difficulties ?? [],
+                difficulties,
                 condition: {
                     fc: ComboStatus.FullCombo,
                     ap: ComboStatus.AllPerfect,
@@ -101,4 +104,3 @@ export const versionPlates = {
     神: platesToVersionPlates(collections.plates as LXPlate[], "神"),
     舞舞: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
 };
-console.log(versionPlates);
