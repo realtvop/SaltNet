@@ -1,4 +1,4 @@
-import type { ComboStatus, SyncStatus } from "../maiTypes";
+import type { ComboStatus, SyncStatus, RankRate } from "../maiTypes";
 
 export enum CollectionKind {
     Plate = 1, // 姓名框
@@ -47,7 +47,7 @@ export interface Title extends Collection {
 }
 export interface VersionPlate extends Plate {
     difficulties: number[];
-    condition: ComboStatus | SyncStatus;
+    condition: ComboStatus | SyncStatus | RankRate;
     songs: number[];
 }
 

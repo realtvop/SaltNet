@@ -10,7 +10,7 @@ import {
 } from "@/components/data/collection/type";
 import collections from "./collections.json";
 import additionalCollections from "./additionalCollections.json";
-import { ComboStatus, SyncStatus } from "../maiTypes";
+import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 
 interface LXPlate {
     id: number;
@@ -21,6 +21,7 @@ interface LXPlate {
         difficulties: number[];
         fc?: "fc" | "ap";
         fs?: "fsd";
+        rate?: "sss";
         songs: LXSong[];
     }[];
 }
@@ -85,14 +86,15 @@ function platesToVersionPlates(plates: LXPlate[], type: string): VersionPlate[] 
                     fc: ComboStatus.FullCombo,
                     ap: ComboStatus.AllPerfect,
                     fsd: SyncStatus.FullSyncDX,
-                }[(required?.fc || required?.fs) as "fc" | "ap" | "fsd"],
+                    sss: RankRate.sss,
+                }[(required?.fc || required?.fs || required?.rate) as "fc" | "ap" | "fsd" | "sss"],
                 songs: required?.songs?.map(song => song.id) ?? [],
             };
         });
 }
 export const versionPlates = {
-    gokui: platesToVersionPlates(collections.plates as LXPlate[], "極"),
-    shou: platesToVersionPlates(collections.plates as LXPlate[], "将"),
-    shin: platesToVersionPlates(collections.plates as LXPlate[], "神"),
-    maimai: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
+    極: platesToVersionPlates(collections.plates as LXPlate[], "極"),
+    将: platesToVersionPlates(collections.plates as LXPlate[], "将"),
+    神: platesToVersionPlates(collections.plates as LXPlate[], "神"),
+    舞舞: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
 };
