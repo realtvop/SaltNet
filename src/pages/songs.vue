@@ -2,7 +2,7 @@
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart, ChartScore } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
@@ -12,6 +12,7 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import { versionPlates } from "@/components/data/collection";
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
+    import type { VersionPlate } from "@/components/data/collection/type";
 
     declare global {
         interface Window {
@@ -107,6 +108,40 @@
     });
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
+
+    const plateFinishStatus = computed(() => {
+        const plate: VersionPlate = versionPlates[
+            category.value as keyof typeof versionPlates
+        ]?.find(plate => plate.name.charAt(0) === selectedDifficulty.value) as VersionPlate;
+        const finishedItems = itemsToRender.value.filter(chart =>
+            checkChartFinish(plate, chart.score as ChartScore)
+        );
+
+        return {
+            plate,
+            finishedItems,
+            conditionText: plate.description
+                .replace("FULL COMBO", "FC")
+                .replace("FULL SYNC DX", "FSDX")
+                .replace("ALL PERFECT", "AP")
+                .replace("BASIC", "BAS")
+                .replace("Re:Master", "ReM")
+                .replace("MASTER", "MAS"),
+        };
+    });
+    const plateFinishSort = ref("condition");
+    function handlePlateSortChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) plateFinishSort.value = target.value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = plateFinishSort.value;
+            plateFinishSort.value = target.value;
+            plateFinishSort.value = previousValue;
+            // wtf
+        }
+    }
 
     function getRandomChart() {
         if (!chartListFiltered.value) return null;
@@ -778,13 +813,38 @@
             </mdui-dropdown>
         </div>
 
+        <div v-if="category in versionPlateNames" class="search-input">
+            <mdui-select
+                style="width: 5rem"
+                label="排序"
+                :value="plateFinishSort"
+                @change="handlePlateSortChange"
+            >
+                <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
+                    条件
+                </mdui-menu-item>
+            </mdui-select>
+            <span>
+                {{ plateFinishStatus.conditionText }}
+            </span>
+            <div>
+                <mdui-circular-progress
+                    :value="plateFinishStatus.finishedItems.length"
+                    :max="itemsToRender.length"
+                ></mdui-circular-progress>
+                <span>
+                    {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
+                </span>
+            </div>
+        </div>
         <mdui-text-field
-            id="search-input"
+            class="search-input"
             clearable
             icon="search"
             label="搜索"
             placeholder="曲名 别名 id 曲师 谱师"
             @input="query = $event.target.value"
+            v-else
         ></mdui-text-field>
 
         <div
@@ -863,8 +923,20 @@
         overflow-y: hidden;
     }
 
-    #search-input {
+    .search-input {
         padding: 5px 20px;
+    }
+    div.search-input {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: space-between;
+        text-align: center;
+    }
+    div.search-input > div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .card-container {
