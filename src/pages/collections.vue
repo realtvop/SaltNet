@@ -284,6 +284,19 @@
         const owned = ownedCollections.value;
         return owned[collection.type] && owned[collection.type].includes(collection.id);
     };
+
+    function handleFilterChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) filter.value = target.value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = filter.value;
+            filter.value = target.value;
+            filter.value = previousValue;
+            // wtf
+        }
+    }
 </script>
 
 <template>
@@ -299,7 +312,7 @@
         <mdui-select
             class="filter-select"
             :value="filter"
-            @change="(e: any) => (filter = e.target.value)"
+            @change="handleFilterChange"
             style="--mdui-comp-select-menu-max-height: 60vh"
         >
             <mdui-menu-item value="all">所有</mdui-menu-item>
