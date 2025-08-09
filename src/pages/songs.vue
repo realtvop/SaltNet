@@ -28,46 +28,13 @@
         Banquet = "宴会场",
     }
 
-    // 牌子分类名称映射
-    const versionPlateNames = {
-        極: "極",
-        将: "将",
-        神: "神",
-        舞舞: "舞舞",
-    } as const;
-
-    type VersionPlateCategory = keyof typeof versionPlateNames;
+    type VersionPlateCategory = keyof typeof versionPlates;
 
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
-    const difficulties = [
-        "ALL",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "7+",
-        "8",
-        "8+",
-        "9",
-        "9+",
-        "10",
-        "10+",
-        "11",
-        "11+",
-        "12",
-        "12+",
-        "13",
-        "13+",
-        "14",
-        "14+",
-        "15",
-    ];
-
+    // prettier-ignore
+    const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref({
@@ -85,7 +52,7 @@
         if (category.value === Category.InGame) return difficulties;
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (category.value in versionPlateNames) {
+        if (category.value in versionPlates) {
             // 牌子分类：返回该类型下的所有牌子名称的第一个字
             const plateType = category.value as VersionPlateCategory;
             return versionPlates[plateType]?.map(plate => plate.name.charAt(0)) || [];
@@ -97,7 +64,7 @@
         [Category.Banquet]: banquetDifficulties[0],
         [Category.Favorite]: shared.favorites[0]?.name || "",
         // 为每个牌子类型添加默认选择
-        ...Object.keys(versionPlateNames).reduce(
+        ...Object.keys(versionPlates).reduce(
             (acc, key) => {
                 const plateKey = key as VersionPlateCategory;
                 acc[plateKey] = versionPlates[plateKey]?.[0]?.name.charAt(0) || "";
@@ -310,7 +277,7 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
-        } else if (category.value in versionPlateNames) {
+        } else if (category.value in versionPlates) {
             // 牌子模式
             const plateType = category.value as VersionPlateCategory;
             // 通过第一个字找到完整的牌子名称
@@ -523,7 +490,7 @@
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
-        } else if (newCategory in versionPlateNames) {
+        } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
             selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name.charAt(0) || "";
@@ -755,7 +722,7 @@
                     </mdui-menu-item>
                     <mdui-divider />
                     <mdui-menu-item
-                        v-for="(plateType, index) in Object.keys(versionPlateNames)"
+                        v-for="(plateType, index) in Object.keys(versionPlates)"
                         :key="`plate-${index}`"
                         :icon="category === plateType ? 'check' : ''"
                         :style="{
@@ -813,7 +780,7 @@
             </mdui-dropdown>
         </div>
 
-        <div v-if="category in versionPlateNames" class="search-input">
+        <div v-if="category in versionPlates" class="search-input">
             <mdui-select
                 style="width: 5rem"
                 label="排序"
@@ -857,7 +824,7 @@
                 <div class="score-grid">
                     <ScoreCard
                         v-if="
-                            !(category in versionPlateNames) &&
+                            !(category in versionPlates) &&
                             (category !== Category.Favorite || shared.favorites.length > 0)
                         "
                         cover="/icons/random.png"
@@ -875,7 +842,7 @@
                             :rating="
                                 category == Category.Favorite
                                     ? index + 1
-                                    : category in versionPlateNames
+                                    : category in versionPlates
                                       ? index + 1
                                       : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
                             "
