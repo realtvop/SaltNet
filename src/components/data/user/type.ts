@@ -58,6 +58,8 @@ export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
 }
 
 export function getUserDisplayName(user: User, fallback: string = "wmc"): string {
+    if (!user) return fallback;
+
     return (
         user.remark ??
         user.inGame.name ??
