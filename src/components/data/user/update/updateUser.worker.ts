@@ -2,7 +2,7 @@
 import { fetchPlayerData } from "@/components/integrations/diving-fish";
 import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
-import { convertDetailed, getDisplayName, type User } from "@/components/data/user/type";
+import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;
@@ -78,14 +78,14 @@ async function fromDivingFish(user: User) {
 }
 
 async function fromInGame(user: User, updateItem: boolean) {
-    info(`正在从 InGame 获取用户信息：${getDisplayName(user)}`);
+    info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
         user.divingFish.importToken as string,
         updateItem
     );
     if (data) {
-        info(`从 InGame 获取用户信息成功：${getDisplayName(user)}`);
+        info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
@@ -97,17 +97,17 @@ async function fromInGame(user: User, updateItem: boolean) {
             info: data.info,
         };
     } else {
-        info(`从 InGame 获取 ${getDisplayName(user)} 信息失败`);
+        info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败`);
         return null;
     }
 }
 async function fromDFLikeInGame(user: User) {
-    info(`正在从水鱼获取用户详细信息：${getDisplayName(user)}`);
+    info(`正在从水鱼获取用户详细信息：${getUserDisplayName(user)}`);
     const data: UpdateUserResponse | null = await fetchDFDataLikeInGame(
         user.divingFish.name as string
     );
     if (data) {
-        info(`从水鱼获取用户详细信息成功：${getDisplayName(user)}`);
+        info(`从水鱼获取用户详细信息成功：${getUserDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),

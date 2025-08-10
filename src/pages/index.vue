@@ -4,6 +4,7 @@
     import { useShared } from "@/components/app/shared";
     import { updateUser } from "@/components/data/user/update";
     import { snackbar } from "mdui";
+    import { getUserDisplayName } from "@/components/data/user/type";
 
     const router = useRouter();
     const shared = useShared();
@@ -65,13 +66,7 @@
             >
                 <div style="padding: 20px; text-align: center">
                     <mdui-typography variant="headline-medium" class="welcome-text">
-                        欢迎，{{
-                            shared.users[0]
-                                ? shared.users[0].divingFish.name ||
-                                  shared.users[0].inGame.name ||
-                                  "wmc"
-                                : "wmc"
-                        }}
+                        欢迎，{{ getUserDisplayName(shared.users[0]) }}！
                     </mdui-typography>
 
                     <div v-if="shared.users[0]" class="rating-container">
