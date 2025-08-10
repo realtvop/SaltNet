@@ -924,8 +924,7 @@
     }
 
     .rank-icon-large {
-        width: 64px;
-        height: 32px;
+        height: 2.25rem;
         object-fit: cover;
         object-position: center;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -933,8 +932,7 @@
 
     @media (max-width: 480px) {
         .rank-icon-large {
-            width: 48px;
-            height: 24px;
+            height: 1.75rem;
         }
     }
 
@@ -1013,20 +1011,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 22px;
-        min-height: 22px;
+        min-width: 2rem;
+        min-height: 2rem;
     }
 
     .badge-icon {
-        width: 22px;
-        height: 22px;
+        height: 2rem;
         object-fit: contain;
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     }
 
     .badge-placeholder {
-        width: 22px;
-        height: 22px;
+        width: 2rem;
+        height: 2rem;
         display: inline-block;
     }
 
@@ -1036,35 +1033,17 @@
         }
 
         .badge-slot {
-            min-width: 18px;
-            min-height: 18px;
+            min-width: 1.5rem;
+            min-height: 1.5rem;
         }
 
         .badge-icon {
-            width: 18px;
-            height: 18px;
+            height: 1.5rem;
         }
 
         .badge-placeholder {
-            width: 18px;
-            height: 18px;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .badge-slot {
-            min-width: 16px;
-            min-height: 16px;
-        }
-
-        .badge-icon {
-            width: 16px;
-            height: 16px;
-        }
-
-        .badge-placeholder {
-            width: 16px;
-            height: 16px;
+            width: 1.5rem;
+            height: 1.5rem;
         }
     }
 
