@@ -588,20 +588,20 @@
 
     // 指定难度的 Rating 阶段表
     const chartRatingTables = computed(() => {
-        if (!props.chart)
+        if (!currentChart.value)
             return {
                 all: [],
                 filtered: [],
                 current: [],
             };
 
-        const all = getDetailedRatingsByConstant(props.chart.info.constant);
+        const all = getDetailedRatingsByConstant(currentChart.value.info.constant);
         // 当前的和能吃分的
         const filtered =
-            props.chart.score && props.chart.score.achievements
+            currentChartScore.value && currentChartScore.value.achievements
                 ? getDetailedRatingsByConstant(
-                      props.chart.info.constant,
-                      props.chart.score.achievements
+                      currentChart.value.info.constant,
+                      currentChartScore.value.achievements
                   )
                 : all;
 
