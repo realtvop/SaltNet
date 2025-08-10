@@ -255,11 +255,15 @@
                                 </div>
                                 <span
                                     v-if="
-                                        getCurrentChartRa(chartInfo) !== null &&
-                                        i.rating > (getCurrentChartRa(chartInfo) || 0)
+                                        getCurrentUserLowestRaInChartOrSection(chartInfo) &&
+                                        i.rating >
+                                            (getCurrentUserLowestRaInChartOrSection(chartInfo) || 0)
                                     "
                                 >
-                                    +{{ i.rating - (getCurrentChartRa(chartInfo) || 0) }}
+                                    +{{
+                                        i.rating -
+                                        (getCurrentUserLowestRaInChartOrSection(chartInfo) || 0)
+                                    }}
                                 </span>
                                 {{ i.rating }}
                             </div>
@@ -345,6 +349,7 @@
     import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
     import { getDFCoverURL } from "@/components/integrations/diving-fish";
+    import type { User } from "@/components/data/user/type";
 
     const shared = useShared();
 
@@ -367,6 +372,7 @@
         }[]
     >([]);
     const selfName = ref("");
+    const currentUser = ref<User | null>(null);
     const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
@@ -405,6 +411,7 @@
             }
             friendsScores.value = [];
             selfName.value = "";
+            currentUser.value = null;
             ratingDisplayMode.value = "简洁";
             chartFriendsScoresMap.value.clear();
 
@@ -418,6 +425,7 @@
                     const targetUserIndex = parseInt(props.targetUserId);
                     const targetUser = shared.users[targetUserIndex];
                     if (targetUser) {
+                        currentUser.value = targetUser;
                         selfName.value = String(
                             targetUser.remark ||
                                 targetUser.divingFish?.name ||
@@ -426,9 +434,11 @@
                                 ""
                         );
                     } else {
+                        currentUser.value = shared.users[0] || null;
                         selfName.value = String(shared.users[0].data.name || "");
                     }
                 } else {
+                    currentUser.value = shared.users[0] || null;
                     selfName.value = String(shared.users[0].data.name || "");
                 }
             }
@@ -575,6 +585,21 @@
         const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
         const currentUserScores = chartScores.find(f => f.name === selfName.value);
         return currentUserScores?.ra ?? null;
+    }
+    // 获取当前用户在指定类别的最低rating
+    function getCurrentUserLowestRaInSection(chartInfo: Chart): number | null {
+        if (!currentUser.value) return null;
+        const section = chartInfo.music.info.isNew
+            ? currentUser.value.data.b50?.dx
+            : currentUser.value.data.b50?.sd;
+        if (!section) return null;
+        return section[section.length - 1].ra;
+    }
+    function getCurrentUserLowestRaInChartOrSection(chartInfo: Chart): number | null {
+        const chart = getCurrentChartRa(chartInfo);
+        const section = getCurrentUserLowestRaInSection(chartInfo);
+        if (!chart || !section) return chart || section;
+        return Math.max(chart, section);
     }
 
     // 获取当前用户在指定难度的达成率
