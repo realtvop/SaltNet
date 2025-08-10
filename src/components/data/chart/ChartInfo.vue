@@ -678,6 +678,7 @@
                     name: value,
                     charts: [],
                 });
+                toggleFavorite(shared.favorites[shared.favorites.length - 1], props.chart!);
             },
         });
     }
