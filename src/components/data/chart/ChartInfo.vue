@@ -32,7 +32,7 @@
 
         <img
             class="song-cover"
-            :src="chart?.music ? getDFCoverURL(chart.music.id) : ''"
+            :src="chart?.music ? getCoverURL(chart.music.id) : ''"
             crossorigin="anonymous"
         />
 
@@ -330,8 +330,9 @@
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
-    import { chartScoreFromDF, getDFCoverURL } from "@/components/integrations/diving-fish";
+    import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
+    import { getCoverURL } from "@/components/integrations/assets";
 
     const shared = useShared();
 

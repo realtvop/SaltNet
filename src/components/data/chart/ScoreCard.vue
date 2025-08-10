@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { defineProps, defineEmits } from "vue";
     import type { Chart } from "@/components/data/music/type";
-    import { getDFCoverURL } from "@/components/integrations/diving-fish";
+    import { getCoverURL } from "@/components/integrations/assets";
     import { useShared } from "@/components/app/shared";
 
     const { data, rating, cover } = defineProps<{
@@ -25,7 +25,7 @@
             <div class="song-jacket-section">
                 <img
                     class="song-jacket-image"
-                    :src="cover || getDFCoverURL(data.music.info.id)"
+                    :src="cover || getCoverURL(data.music.info.id)"
                     :alt="data.music.info.title"
                     crossorigin="anonymous"
                 />
