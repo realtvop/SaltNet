@@ -192,11 +192,10 @@
     .player-header {
         display: flex;
         align-items: center;
-        align-items: flex-start;
-        flex-direction: column;
+        flex-wrap: wrap;
+        flex-direction: row;
         margin-bottom: 24px;
-        gap: 16px;
-        width: 100%;
+        gap: 1.5rem;
         padding: 0 20px;
     }
 
