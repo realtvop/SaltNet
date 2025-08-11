@@ -12,6 +12,7 @@
         "pret:fix": "prettier --write ."
     },
     "dependencies": {
+        "@vitejs/plugin-legacy": "^7.2.1",
         "localforage": "^1.10.0",
         "mdui": "^2.1.3",
         "path": "^0.12.7",
