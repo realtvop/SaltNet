@@ -10,6 +10,7 @@
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
+    import { copyTextToClipboard } from "@/components/app/utils";
 
     const Category = {
         Title: "称号",
@@ -352,12 +353,27 @@
                                     class="title-color-indicator"
                                     :class="getTitleColorClass((collection as any).color)"
                                 ></div>
-                                <h3 class="title-name">{{ collection.name }}</h3>
+                                <h3
+                                    class="title-name"
+                                    @click="copyTextToClipboard(collection.name)"
+                                >
+                                    {{ collection.name }}
+                                </h3>
                             </div>
                         </div>
                         <div class="title-info">
-                            <p class="collection-description">{{ collection.description }}</p>
-                            <span class="collection-id">#{{ collection.id }}</span>
+                            <p
+                                class="collection-description"
+                                @click="copyTextToClipboard(collection.description)"
+                            >
+                                {{ collection.description }}
+                            </p>
+                            <span
+                                class="collection-id"
+                                @click="copyTextToClipboard(collection.id.toString())"
+                            >
+                                #{{ collection.id }}
+                            </span>
                         </div>
                     </div>
 
@@ -419,7 +435,12 @@
                                         collection.type === CollectionKind.Character,
                                 }"
                             >
-                                <h3 class="collection-name">{{ collection.name }}</h3>
+                                <h3
+                                    class="collection-name"
+                                    @click="copyTextToClipboard(collection.name)"
+                                >
+                                    {{ collection.name }}
+                                </h3>
                                 <span
                                     v-if="
                                         collection.type === CollectionKind.Plate ||
@@ -427,16 +448,23 @@
                                         collection.type === CollectionKind.Character
                                     "
                                     class="collection-id-inline"
+                                    @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>
                             </div>
-                            <p class="collection-description">{{ collection.description }}</p>
+                            <p
+                                class="collection-description"
+                                @click="copyTextToClipboard(collection.description)"
+                            >
+                                {{ collection.description }}
+                            </p>
 
                             <div class="collection-meta">
                                 <span
                                     v-if="collection.type === CollectionKind.Icon"
                                     class="collection-id"
+                                    @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>

@@ -23,7 +23,7 @@
                 <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
             </mdui-button>
             <mdui-top-app-bar-title
-                @click="copyToClipboard(chart?.music?.info.title || '')"
+                @click="copyTextToClipboard(chart?.music?.info.title || '')"
                 style="cursor: pointer"
             >
                 {{ chart?.music?.info.title || "" }}
@@ -39,14 +39,14 @@
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
                 icon="music_note"
-                @click="copyToClipboard(chart.music.info.id.toString() || '?')"
+                @click="copyTextToClipboard(chart.music.info.id.toString() || '?')"
                 style="cursor: pointer"
             >
                 id{{ chart.music.info.id || "?" }}
             </mdui-chip>
             <mdui-chip
                 icon="music_note"
-                @click="copyToClipboard(chart.music.info.artist || '未知')"
+                @click="copyTextToClipboard(chart.music.info.artist || '未知')"
                 style="cursor: pointer"
             >
                 {{ chart.music.info.artist || "未知" }}
@@ -179,7 +179,7 @@
                     <span class="info-label">谱师</span>
                     <span
                         class="info-value"
-                        @click="copyToClipboard(currentChart.info.charter)"
+                        @click="copyTextToClipboard(currentChart.info.charter)"
                         style="cursor: pointer"
                     >
                         {{ currentChart.info.charter }}
@@ -358,7 +358,7 @@
             <mdui-chip
                 v-for="alias in chart.music.info.aliases"
                 :key="alias"
-                @click="copyToClipboard(alias)"
+                @click="copyTextToClipboard(alias)"
                 style="cursor: pointer"
             >
                 {{ alias }}
@@ -374,7 +374,8 @@
     import { defineProps, watch, nextTick, ref, onMounted, onUnmounted, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import { useShared } from "@/components/app/shared";
-    import { snackbar, prompt, dialog } from "mdui";
+    import { prompt, dialog } from "mdui";
+    import { copyTextToClipboard } from "@/components/app/utils";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
@@ -560,11 +561,6 @@
                 return `#${playedCount}`;
             }
         });
-    }
-
-    function copyToClipboard(text: string) {
-        navigator.clipboard.writeText(text);
-        snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
     }
 
     // 从缓存中加载项目位置
