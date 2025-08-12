@@ -364,7 +364,7 @@
                                     :class="getTitleColorClass((collection as any).color)"
                                 ></div>
                                 <h3
-                                    class="title-name"
+                                    class="title-name clickable"
                                     @click="copyTextToClipboard(collection.name)"
                                 >
                                     {{ collection.name }}
@@ -373,13 +373,13 @@
                         </div>
                         <div class="title-info">
                             <p
-                                class="collection-description"
+                                class="collection-description clickable"
                                 @click="copyTextToClipboard(collection.description)"
                             >
                                 {{ collection.description }}
                             </p>
                             <span
-                                class="collection-id"
+                                class="collection-id clickable"
                                 @click="copyTextToClipboard(collection.id.toString())"
                             >
                                 #{{ collection.id }}
@@ -451,7 +451,7 @@
                                 }"
                             >
                                 <h3
-                                    class="collection-name"
+                                    class="collection-name clickable"
                                     @click="copyTextToClipboard(collection.name)"
                                 >
                                     {{ collection.name }}
@@ -462,7 +462,7 @@
                                         collection.type === CollectionKind.Frame ||
                                         collection.type === CollectionKind.Character
                                     "
-                                    class="collection-id-inline"
+                                    class="collection-id-inline clickable"
                                     @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
@@ -470,7 +470,7 @@
                             </div>
                             <p
                                 v-if="collection.type !== CollectionKind.Partner"
-                                class="collection-description"
+                                class="collection-description clickable"
                                 @click="copyTextToClipboard(collection.description)"
                             >
                                 {{ collection.description }}
@@ -482,7 +482,7 @@
                                         collection.type === CollectionKind.Icon ||
                                         collection.type === CollectionKind.Partner
                                     "
-                                    class="collection-id"
+                                    class="collection-id clickable"
                                     @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
@@ -536,6 +536,10 @@
 </template>
 
 <style scoped>
+    .clickable {
+        cursor: pointer;
+    }
+
     .filter-bar {
         padding: 5px 20px;
         display: flex;
@@ -598,10 +602,6 @@
         padding: 16px;
         transition: box-shadow 0.2s ease;
         min-width: 0;
-    }
-
-    .collection-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .collection-id-corner {
