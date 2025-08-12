@@ -117,57 +117,24 @@
                             <span v-else class="badge-placeholder"></span>
                         </span>
                     </div>
-                    <div
-                        class="dx-score-display"
-                        v-if="currentChartScore.deluxeScore !== undefined"
-                    >
-                        <div class="dx-score-value">
-                            {{ currentChartScore.deluxeScore }} /
-                            {{ currentChart.info.deluxeScoreMax }}
+                    <div class="rating-display" v-if="currentChartScore.deluxeRating">
+                        <div class="rating-score-display">
+                            <div class="dx-score-value">
+                                {{ currentChartScore.deluxeRating }}
+                            </div>
+                            <div class="dx-score-value">
+                                {{ currentChartScore.deluxeScore }} /
+                                {{ currentChart.info.deluxeScoreMax }}
+                            </div>
                         </div>
                         <div class="dx-score-stars">
-                            <mdui-icon
-                                name="star"
-                                v-if="1 <= dxScoreStarsCount"
-                                :count="dxScoreStarsCount"
-                                class="dx-star"
-                            ></mdui-icon>
-                            <mdui-icon
-                                name="star"
-                                v-if="2 <= dxScoreStarsCount"
-                                :count="dxScoreStarsCount"
-                                class="dx-star"
-                            ></mdui-icon>
-                            <mdui-icon
-                                name="star"
-                                v-if="3 <= dxScoreStarsCount"
-                                :count="dxScoreStarsCount"
-                                class="dx-star"
-                            ></mdui-icon>
-                            <mdui-icon
-                                name="star"
-                                v-if="4 <= dxScoreStarsCount"
-                                :count="dxScoreStarsCount"
-                                class="dx-star"
-                            ></mdui-icon>
-                            <mdui-icon
-                                name="star"
-                                v-if="5 <= dxScoreStarsCount"
-                                :count="dxScoreStarsCount"
-                                class="dx-star"
-                            ></mdui-icon>
-                            <mdui-icon
-                                name="star"
-                                v-if="6 <= dxScoreStarsCount"
-                                class="dx-star"
-                                additional
-                                :count="dxScoreStarsCount"
-                            ></mdui-icon>
-                        </div>
-                    </div>
-                    <div class="rating-display" v-if="currentChartScore.deluxeRating">
-                        <div class="rating-value">
-                            {{ currentChartScore.deluxeRating }}
+                            <img
+                                v-if="dxScoreStarsCount > 0"
+                                :src="dxScoreStarsImg"
+                                class="dx-stars-img"
+                                v-for="i in dxScoreStarsCount"
+                                :key="i"
+                            />
                         </div>
                     </div>
                 </div>
@@ -772,6 +739,12 @@
         else if (percentage >= 85) return 1;
         return 0;
     });
+
+    const dxScoreStarsImg = computed(() => {
+        if (dxScoreStarsCount.value < 3) return "/icons/star1.png";
+        if (dxScoreStarsCount.value < 5) return "/icons/star2.png";
+        return "/icons/star3.png";
+    });
 </script>
 
 <style scoped>
@@ -1023,8 +996,17 @@
 
     .rating-display {
         display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .rating-score-display {
+        display: flex;
         align-items: center;
         justify-content: flex-end;
+        gap: 0.5rem;
     }
 
     .rating-display .rating-value {
@@ -1049,7 +1031,7 @@
     .dx-score-display {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-end;
         justify-content: center;
         gap: 0.25rem;
         flex: 1;
@@ -1071,23 +1053,14 @@
     .dx-score-stars {
         display: flex;
         align-items: center;
-        gap: 1px;
+        justify-content: center;
+        margin-right: 0.05rem;
     }
 
-    .dx-star {
-        font-size: 0.9rem;
-        color: #4fa00c;
-    }
-    .dx-star[count="3"],
-    .dx-star[count="4"] {
-        color: #f99412;
-    }
-    .dx-star[count="5"],
-    .dx-star[count="6"] {
-        color: #fef88c;
-    }
-    .dx-star[additional] {
-        color: #bf7af4;
+    .dx-stars-img {
+        height: 1rem;
+        width: auto;
+        object-fit: contain;
     }
 
     @media (max-width: 480px) {
@@ -1101,8 +1074,8 @@
             padding: 0.1rem 0.3rem;
         }
 
-        .dx-star {
-            font-size: 0.8rem;
+        .dx-stars-img {
+            height: 1.2rem;
         }
     }
 

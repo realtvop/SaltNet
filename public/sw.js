@@ -32,6 +32,9 @@ const CORE = [
     "/icons/ssplus.png",
     "/icons/sss.png",
     "/icons/sssplus.png",
+    "/icons/star1.png",
+    "/icons/star2.png",
+    "/icons/star3.png",
     "/MaterialIcons/regular.css",
     "/MaterialIcons/regular.woff2",
 ];
