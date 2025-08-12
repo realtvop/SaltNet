@@ -334,31 +334,48 @@
                 );
 
                 // 按照牌子的达成条件进行排序
-                filteredCharts.sort((a, b) => {
-                    const scoreA = a.score;
-                    const scoreB = b.score;
+                if (plateFinishSort.value === "constant-desc") {
+                    // 按定数排序（从高到低）
+                    filteredCharts.sort((a, b) => {
+                        const constantA = a.info.constant || 0;
+                        const constantB = b.info.constant || 0;
+                        return constantB - constantA;
+                    });
+                } else if (plateFinishSort.value === "constant-asc") {
+                    // 按定数排序（从低到高）
+                    filteredCharts.sort((a, b) => {
+                        const constantA = a.info.constant || 0;
+                        const constantB = b.info.constant || 0;
+                        return constantA - constantB;
+                    });
+                } else {
+                    // 按条件排序（原有逻辑）
+                    filteredCharts.sort((a, b) => {
+                        const scoreA = a.score;
+                        const scoreB = b.score;
 
-                    if (!scoreA && !scoreB) return 0;
-                    if (!scoreA) return 1;
-                    if (!scoreB) return -1;
+                        if (!scoreA && !scoreB) return 0;
+                        if (!scoreA) return 1;
+                        if (!scoreB) return -1;
 
-                    const completedA = checkChartFinish(selectedPlate, scoreA);
-                    const completedB = checkChartFinish(selectedPlate, scoreB);
+                        const completedA = checkChartFinish(selectedPlate, scoreA);
+                        const completedB = checkChartFinish(selectedPlate, scoreB);
 
-                    // 已完成的排在前面
-                    if (completedA && !completedB) return -1;
-                    if (!completedA && completedB) return 1;
+                        // 已完成的排在前面
+                        if (completedA && !completedB) return -1;
+                        if (!completedA && completedB) return 1;
 
-                    // 同样完成状态下按达成率排序
-                    if (
-                        typeof scoreA.achievements === "number" &&
-                        typeof scoreB.achievements === "number"
-                    ) {
-                        return scoreB.achievements - scoreA.achievements;
-                    }
+                        // 同样完成状态下按达成率排序
+                        if (
+                            typeof scoreA.achievements === "number" &&
+                            typeof scoreB.achievements === "number"
+                        ) {
+                            return scoreB.achievements - scoreA.achievements;
+                        }
 
-                    return 0;
-                });
+                        return 0;
+                    });
+                }
             }
         } else {
             filteredCharts = [];
@@ -542,6 +559,16 @@
             await loadPlayerData();
         }
     );
+
+    // 监听排序方式变化，重新计算可视项目数
+    watch(plateFinishSort, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector(".card-container");
+        if (container) {
+            container.scrollTop = 0;
+        }
+    });
 
     onMounted(async () => {
         await loadPlayerData();
@@ -825,6 +852,15 @@
             >
                 <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
                     条件
+                </mdui-menu-item>
+                <mdui-menu-item
+                    value="constant-desc"
+                    :selected="plateFinishSort === 'constant-desc'"
+                >
+                    定数↓
+                </mdui-menu-item>
+                <mdui-menu-item value="constant-asc" :selected="plateFinishSort === 'constant-asc'">
+                    定数↑
                 </mdui-menu-item>
             </mdui-select>
             <span>
