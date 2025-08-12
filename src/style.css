@@ -69,3 +69,8 @@ mdui-snackbar {
         }
     }
 }
+
+/* 中文过长换行 patch */
+mdui-tabs {
+    white-space: nowrap;
+}

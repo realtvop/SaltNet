@@ -53,9 +53,8 @@
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
         if (category.value in versionPlates) {
-            // 牌子分类：返回该类型下的所有牌子名称的第一个字
             const plateType = category.value as VersionPlateCategory;
-            return versionPlates[plateType]?.map(plate => plate.name.charAt(0)) || [];
+            return versionPlates[plateType]?.map(plate => plate.name) || [];
         }
         return [];
     });
@@ -67,7 +66,7 @@
         ...Object.keys(versionPlates).reduce(
             (acc, key) => {
                 const plateKey = key as VersionPlateCategory;
-                acc[plateKey] = versionPlates[plateKey]?.[0]?.name.charAt(0) || "";
+                acc[plateKey] = versionPlates[plateKey]?.[0]?.name || "";
                 return acc;
             },
             {} as Record<VersionPlateCategory, string>
@@ -79,7 +78,7 @@
     const plateFinishStatus = computed(() => {
         const plate: VersionPlate = versionPlates[
             category.value as keyof typeof versionPlates
-        ]?.find(plate => plate.name.charAt(0) === selectedDifficulty.value) as VersionPlate;
+        ]?.find(plate => plate.name === selectedDifficulty.value) as VersionPlate;
         const finishedItems = itemsToRender.value.filter(chart =>
             checkChartFinish(plate, chart.score as ChartScore)
         );
@@ -282,7 +281,7 @@
             const plateType = category.value as VersionPlateCategory;
             // 通过第一个字找到完整的牌子名称
             const selectedPlate = versionPlates[plateType]?.find(
-                plate => plate.name.charAt(0) === selectedDifficulty.value
+                plate => plate.name === selectedDifficulty.value
             );
 
             if (!selectedPlate) {
@@ -493,7 +492,7 @@
         } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
-            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name.charAt(0) || "";
+            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
         visibleItemsCount.value = getLoadSize();
     });
