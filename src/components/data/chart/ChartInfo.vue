@@ -80,7 +80,7 @@
 
         <div class="tab-content" v-if="currentChart">
             <!-- 当前用户成绩信息 -->
-            <div class="score-summary" v-if="currentChartScore">
+            <div class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
                 <!-- 第一行：rank图标和achievement百分比 -->
                 <div class="score-row-main">
                     <div class="rank-section">
