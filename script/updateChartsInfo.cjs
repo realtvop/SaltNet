@@ -4,6 +4,7 @@ const fs = require("fs");
 const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_data";
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
 const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
+const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
 
 const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
 
@@ -45,12 +46,22 @@ async function updateMusicData() {
     const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
     const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
+    const yzcAliases = await fetch(YzcAliasDataAPIURL).then(r => r.json());
 
     for (const song of musicData) {
         const id = Number(song.id);
         const ids = 10000 < id < 100000 ? [id, id - 10000] : [id];
         const aliasList = aliases.find(a => ids.includes(a.song_id));
-        if (aliasList) song.aliases = aliasList.aliases;
+        const yzcAliasList = yzcAliases.content.find(a => ids.includes(a.SongID));
+        const finalAliasList = [];
+        if (yzcAliasList && yzcAliasList.Alias)
+            for (const alias of yzcAliasList.Alias)
+                if (!finalAliasList.includes(alias)) finalAliasList.push(alias);
+        if (aliasList)
+            for (const alias of aliasList.aliases)
+                if (!finalAliasList.includes(alias)) finalAliasList.push(alias);
+
+        if (aliasList) song.aliases = finalAliasList;
 
         const stats = chartStats.charts[song.id];
         if (!stats) continue;
