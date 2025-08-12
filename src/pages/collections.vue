@@ -7,6 +7,7 @@
         titles,
         characters,
         genres,
+        partners,
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
@@ -18,6 +19,7 @@
         Plate: "姓名框",
         Frame: "背景",
         Character: "旅行伙伴",
+        Partner: "搭档",
     } as const;
 
     type CategoryType = (typeof Category)[keyof typeof Category];
@@ -48,16 +50,18 @@
     });
 
     // 获取当前分类下的可用类别
-    const genreKeyMap: Record<CategoryType, keyof typeof genres> = {
+    const genreKeyMap: Record<CategoryType, keyof typeof genres | "partners"> = {
         [Category.Title]: "titles",
         [Category.Icon]: "icons",
         [Category.Plate]: "plates",
         [Category.Frame]: "frames",
         [Category.Character]: "characters",
+        [Category.Partner]: "partners",
     };
 
     const availableGenres = computed<string[]>(() => {
         const key = genreKeyMap[category.value];
+        if (key === "partners") return [];
         return genres[key] || [];
     });
 
@@ -87,6 +91,8 @@
                         userCharacter,
                     };
                 });
+            case Category.Partner:
+                return partners;
             default:
                 return [];
         }
@@ -250,6 +256,8 @@
                 return `${baseUrl}/frame/${id}.png`;
             case CollectionKind.Character:
                 return `${baseUrl}/character/${id}.png`;
+            case CollectionKind.Partner:
+                return `${baseUrl}/partner/${id}.png`;
             default:
                 return "";
         }
@@ -268,6 +276,8 @@
                 return Category.Frame;
             case CollectionKind.Character:
                 return Category.Character;
+            case CollectionKind.Partner:
+                return Category.Partner;
             default:
                 return "";
         }
@@ -319,7 +329,7 @@
             <mdui-menu-item value="all">所有</mdui-menu-item>
             <mdui-menu-item value="owned">已获得</mdui-menu-item>
             <mdui-menu-item value="missing">未获得</mdui-menu-item>
-            <mdui-divider></mdui-divider>
+            <mdui-divider v-if="availableGenres.length"></mdui-divider>
             <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
                 {{ genre }}
             </mdui-menu-item>
@@ -384,7 +394,8 @@
                         :class="{
                             'icon-layout':
                                 collection.type === CollectionKind.Icon ||
-                                collection.type === CollectionKind.Character,
+                                collection.type === CollectionKind.Character ||
+                                collection.type === CollectionKind.Partner,
                             'plate-frame-layout':
                                 collection.type === CollectionKind.Plate ||
                                 collection.type === CollectionKind.Frame,
@@ -395,7 +406,8 @@
                             :class="{
                                 square:
                                     collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character,
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -411,7 +423,8 @@
                                 collection.type === CollectionKind.Icon ||
                                 collection.type === CollectionKind.Plate ||
                                 collection.type === CollectionKind.Frame ||
-                                collection.type === CollectionKind.Character
+                                collection.type === CollectionKind.Character ||
+                                collection.type === CollectionKind.Partner
                             "
                             :src="getImageUrl(collection)"
                             :alt="collection.name"
@@ -419,7 +432,8 @@
                             :class="{
                                 square:
                                     collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character,
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -432,7 +446,8 @@
                                 :class="{
                                     'icon-header':
                                         collection.type === CollectionKind.Icon ||
-                                        collection.type === CollectionKind.Character,
+                                        collection.type === CollectionKind.Character ||
+                                        collection.type === CollectionKind.Partner,
                                 }"
                             >
                                 <h3
@@ -454,6 +469,7 @@
                                 </span>
                             </div>
                             <p
+                                v-if="collection.type !== CollectionKind.Partner"
                                 class="collection-description"
                                 @click="copyTextToClipboard(collection.description)"
                             >
@@ -462,7 +478,10 @@
 
                             <div class="collection-meta">
                                 <span
-                                    v-if="collection.type === CollectionKind.Icon"
+                                    v-if="
+                                        collection.type === CollectionKind.Icon ||
+                                        collection.type === CollectionKind.Partner
+                                    "
                                     class="collection-id"
                                     @click="copyTextToClipboard(collection.id.toString())"
                                 >
