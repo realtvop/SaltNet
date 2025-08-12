@@ -909,7 +909,7 @@
             class="search-input"
         >
             <mdui-select
-                style="width: 6rem"
+                style="width: 4.1rem"
                 label="难度"
                 :value="difficultyFilter + 1"
                 @change="handleDifficultyFilterChange"
