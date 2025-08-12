@@ -112,6 +112,21 @@
         }
     }
 
+    const difficultyFilter = ref("MASTER");
+    const difficultyOptions = ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"];
+
+    function handleDifficultyFilterChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) difficultyFilter.value = target.value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = difficultyFilter.value;
+            difficultyFilter.value = target.value;
+            difficultyFilter.value = previousValue;
+        }
+    }
+
     function getRandomChart() {
         if (!chartListFiltered.value) return null;
         const charts = chartListFiltered.value[selectedDifficulty.value] || [];
@@ -246,8 +261,17 @@
         if (category.value === Category.InGame) {
             // 游戏内难度模式
             if (selectedDifficulty.value === "ALL") {
+                // 获取难度映射
+                const gradeMap: Record<string, number> = {
+                    BASIC: 0,
+                    ADVANCED: 1,
+                    EXPERT: 2,
+                    MASTER: 3,
+                    "Re:MASTER": 4,
+                };
+
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === 3
+                    (chart: Chart) => chart.info.grade === gradeMap[difficultyFilter.value]
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -290,12 +314,20 @@
                 "舞萌DX 2025": "舞萌DX 2025",
             };
 
+            const gradeMap: Record<string, number> = {
+                BASIC: 0,
+                ADVANCED: 1,
+                EXPERT: 2,
+                MASTER: 3,
+                "Re:MASTER": 4,
+            };
+
             const targetVersion =
                 versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
             filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) =>
                     (chart.music.info.from as unknown as string) === targetVersion &&
-                    chart.info.grade === 3
+                    chart.info.grade === gradeMap[difficultyFilter.value]
             );
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
@@ -303,9 +335,17 @@
             if (!currentFavorite) {
                 filteredCharts = [];
             } else {
-                // 根据收藏夹中的曲目ID和难度筛选
+                const gradeMap: Record<string, number> = {
+                    BASIC: 0,
+                    ADVANCED: 1,
+                    EXPERT: 2,
+                    MASTER: 3,
+                    "Re:MASTER": 4,
+                };
+
+                // 根据收藏夹中的曲目ID和指定难度筛选
                 const favoriteChartIds = new Set(
-                    currentFavorite.charts.map(fc => `${fc.i}-${fc.d}`)
+                    currentFavorite.charts.map(fc => `${fc.i}-${gradeMap[difficultyFilter.value]}`)
                 );
                 filteredCharts = shared.chartsSort.charts.filter((chart: Chart) =>
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
@@ -562,6 +602,16 @@
 
     // 监听排序方式变化，重新计算可视项目数
     watch(plateFinishSort, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector(".card-container");
+        if (container) {
+            container.scrollTop = 0;
+        }
+    });
+
+    // 监听难度筛选变化，重新计算可视项目数
+    watch(difficultyFilter, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
         const container = document.querySelector(".card-container");
@@ -876,6 +926,38 @@
                 </span>
             </div>
         </div>
+        <div
+            v-else-if="
+                (category === Category.InGame && selectedDifficulty === 'ALL') ||
+                category === Category.Version ||
+                category === Category.Favorite
+            "
+            class="search-input"
+        >
+            <mdui-select
+                style="width: 6rem"
+                label="难度"
+                :value="difficultyFilter"
+                @change="handleDifficultyFilterChange"
+            >
+                <mdui-menu-item
+                    v-for="diff in difficultyOptions"
+                    :key="diff"
+                    :value="diff"
+                    :selected="difficultyFilter === diff"
+                >
+                    {{ diff }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+            ></mdui-text-field>
+        </div>
         <mdui-text-field
             class="search-input"
             clearable
@@ -944,6 +1026,15 @@
             margin-left: -16px;
             padding-left: 16px;
         }
+    }
+
+    mdui-select::part(menu) {
+        width: unset;
+        max-height: 60vh;
+        overflow-y: auto;
+        min-width: 160px;
+        max-width: 90vw;
+        text-align: left;
     }
 
     .category-bar {
