@@ -5,6 +5,8 @@ const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
 const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
 const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
+const CKMusicListURL =
+    "https://raw.githubusercontent.com/CrazyKidCN/maimaiDX-CN-songs-database/refs/heads/main/maidata.json";
 
 const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
 
@@ -44,6 +46,7 @@ async function updateCollectionData() {
 
 async function updateMusicData() {
     const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
+    const ckMusicData = await fetch(CKMusicListURL).then(r => r.json());
     const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
     const yzcAliases = await fetch(YzcAliasDataAPIURL).then(r => r.json());
@@ -62,6 +65,15 @@ async function updateMusicData() {
                 if (!finalAliasList.includes(alias)) finalAliasList.push(alias);
 
         if (aliasList) song.aliases = finalAliasList;
+
+        song.basic_info.from =
+            ckMusicData.find(c => {
+                if (c.title != song.title) return false;
+                if (!c.version.startsWith("舞萌")) return false;
+                if (song.type == "SD" && c.lev_bas) return true;
+                if (song.type == "DX" && c.dx_lev_bas) return true;
+                return false;
+            })?.version || song.basic_info.from;
 
         const stats = chartStats.charts[song.id];
         if (!stats) continue;
