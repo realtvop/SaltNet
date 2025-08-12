@@ -112,17 +112,16 @@
         }
     }
 
-    const difficultyFilter = ref("MASTER");
-    const difficultyOptions = ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"];
+    const difficultyFilter = ref(3);
 
     function handleDifficultyFilterChange(event: Event) {
         const target = event.target as HTMLSelectElement;
 
-        if (target.value) difficultyFilter.value = target.value;
+        if (target.value) difficultyFilter.value = Number(target.value) - 1;
         else {
             // 阻止点击已经选择的项目时清空项目
             const previousValue = difficultyFilter.value;
-            difficultyFilter.value = target.value;
+            difficultyFilter.value = Number(target.value) - 1;
             difficultyFilter.value = previousValue;
         }
     }
@@ -261,17 +260,8 @@
         if (category.value === Category.InGame) {
             // 游戏内难度模式
             if (selectedDifficulty.value === "ALL") {
-                // 获取难度映射
-                const gradeMap: Record<string, number> = {
-                    BASIC: 0,
-                    ADVANCED: 1,
-                    EXPERT: 2,
-                    MASTER: 3,
-                    "Re:MASTER": 4,
-                };
-
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === gradeMap[difficultyFilter.value]
+                    (chart: Chart) => chart.info.grade === difficultyFilter.value
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -314,20 +304,12 @@
                 "舞萌DX 2025": "舞萌DX 2025",
             };
 
-            const gradeMap: Record<string, number> = {
-                BASIC: 0,
-                ADVANCED: 1,
-                EXPERT: 2,
-                MASTER: 3,
-                "Re:MASTER": 4,
-            };
-
             const targetVersion =
                 versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
             filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) =>
                     (chart.music.info.from as unknown as string) === targetVersion &&
-                    chart.info.grade === gradeMap[difficultyFilter.value]
+                    chart.info.grade === difficultyFilter.value
             );
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
@@ -335,17 +317,9 @@
             if (!currentFavorite) {
                 filteredCharts = [];
             } else {
-                const gradeMap: Record<string, number> = {
-                    BASIC: 0,
-                    ADVANCED: 1,
-                    EXPERT: 2,
-                    MASTER: 3,
-                    "Re:MASTER": 4,
-                };
-
                 // 根据收藏夹中的曲目ID和指定难度筛选
                 const favoriteChartIds = new Set(
-                    currentFavorite.charts.map(fc => `${fc.i}-${gradeMap[difficultyFilter.value]}`)
+                    currentFavorite.charts.map(fc => `${fc.i}-${difficultyFilter.value}`)
                 );
                 filteredCharts = shared.chartsSort.charts.filter((chart: Chart) =>
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
@@ -937,16 +911,11 @@
             <mdui-select
                 style="width: 6rem"
                 label="难度"
-                :value="difficultyFilter"
+                :value="difficultyFilter + 1"
                 @change="handleDifficultyFilterChange"
             >
-                <mdui-menu-item
-                    v-for="diff in difficultyOptions"
-                    :key="diff"
-                    :value="diff"
-                    :selected="difficultyFilter === diff"
-                >
-                    {{ diff }}
+                <mdui-menu-item v-for="index in 5" :key="index" :value="index">
+                    {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
                 </mdui-menu-item>
             </mdui-select>
             <mdui-text-field
