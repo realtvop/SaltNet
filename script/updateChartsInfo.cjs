@@ -74,6 +74,8 @@ async function updateMusicData() {
                 if (song.type == "DX" && c.dx_lev_bas) return true;
                 return false;
             })?.version || song.basic_info.from;
+        if (!song.basic_info.from.startsWith("舞萌") && !song.basic_info.from.startsWith("maimai"))
+            song.basic_info.from = `maimai ${song.basic_info.from}`;
 
         const stats = chartStats.charts[song.id];
         if (!stats) continue;

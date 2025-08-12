@@ -6,7 +6,7 @@
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import { getMusicInfoAsync } from "@/components/data/music";
+    import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
@@ -24,6 +24,7 @@
 
     enum Category {
         InGame = "难度",
+        Version = "版本",
         Favorite = "收藏夹",
         Banquet = "宴会场",
     }
@@ -52,6 +53,7 @@
         if (category.value === Category.InGame) return difficulties;
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (category.value === Category.Version) return maimaiVersionsCN;
         if (category.value in versionPlates) {
             const plateType = category.value as VersionPlateCategory;
             return versionPlates[plateType]?.map(plate => plate.name) || [];
@@ -62,6 +64,7 @@
         [Category.InGame]: "ALL",
         [Category.Banquet]: banquetDifficulties[0],
         [Category.Favorite]: shared.favorites[0]?.name || "",
+        [Category.Version]: maimaiVersionsCN[0] || "",
         // 为每个牌子类型添加默认选择
         ...Object.keys(versionPlates).reduce(
             (acc, key) => {
@@ -262,6 +265,38 @@
                     (chart: Chart) => chart.info.level === selectedDifficulty.value
                 );
             }
+        } else if (category.value === Category.Version) {
+            // 版本模式
+            // 创建版本名称映射
+            const versionMapping: Record<string, string> = {
+                Maimai: "maimai",
+                "Maimai PLUS": "maimai PLUS",
+                "Maimai GreeN": "maimai GreeN",
+                "Maimai GreeN PLUS": "maimai GreeN PLUS",
+                "Maimai ORANGE": "maimai ORANGE",
+                "Maimai ORANGE PLUS": "maimai ORANGE PLUS",
+                "Maimai PiNK": "maimai PiNK",
+                "Maimai PiNK PLUS": "maimai PiNK PLUS",
+                "Maimai MURASAKi": "maimai MURASAKi",
+                "Maimai MURASAKi PLUS": "maimai MURASAKi PLUS",
+                "Maimai MiLK": "maimai MiLK",
+                "Maimai MiLK PLUS": "MiLK PLUS",
+                "Maimai FiNALE": "maimai FiNALE",
+                舞萌DX: "maimai でらっくす",
+                "舞萌DX 2021": "舞萌DX 2021",
+                "舞萌DX 2022": "舞萌DX 2022",
+                "舞萌DX 2023": "舞萌DX 2023",
+                "舞萌DX 2024": "舞萌DX 2024",
+                "舞萌DX 2025": "舞萌DX 2025",
+            };
+
+            const targetVersion =
+                versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
+            filteredCharts = shared.chartsSort.charts.filter(
+                (chart: Chart) =>
+                    (chart.music.info.from as unknown as string) === targetVersion &&
+                    chart.info.grade === 3
+            );
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
             const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
@@ -489,6 +524,8 @@
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
+        } else if (newCategory === Category.Version) {
+            selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
         } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
