@@ -3,12 +3,27 @@
     import { useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
     import { updateUser } from "@/components/data/user/update";
+    import { snackbar } from "mdui";
+    import { getUserDisplayName } from "@/components/data/user/type";
 
     const router = useRouter();
     const shared = useShared();
 
     function reloadPage() {
         window.location.reload();
+    }
+
+    let lastSaltClick = -114514;
+    function meow() {
+        console.log("meow");
+        const now = performance.now();
+        if (now - lastSaltClick < 500) {
+            snackbar({
+                message: "喵喵，咕噜咕噜～",
+                closeOnOutsideClick: true,
+            });
+        }
+        lastSaltClick = now;
     }
 </script>
 
@@ -37,7 +52,9 @@
     </mdui-list>
     <div class="page-content">
         <div class="header-content">
-            <img src="/favicon.png" alt="Favicon" class="favicon-image favicon" />
+            <div @click="meow">
+                <img src="/favicon.png" alt="Favicon" class="favicon-image favicon" />
+            </div>
             <h1 variant="display-large" class="project-title">SaltNet</h1>
         </div>
         <mdui-tooltip content="点击更新成绩" placement="bottom">
@@ -49,13 +66,7 @@
             >
                 <div style="padding: 20px; text-align: center">
                     <mdui-typography variant="headline-medium" class="welcome-text">
-                        欢迎，{{
-                            shared.users[0]
-                                ? shared.users[0].divingFish.name ||
-                                  shared.users[0].inGame.name ||
-                                  "wmc"
-                                : "wmc"
-                        }}
+                        欢迎，{{ getUserDisplayName(shared.users[0]) }}！
                     </mdui-typography>
 
                     <div v-if="shared.users[0]" class="rating-container">

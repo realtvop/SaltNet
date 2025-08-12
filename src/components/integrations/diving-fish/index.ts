@@ -1,5 +1,5 @@
-import type { Music, MusicInfo, Chart, ChartInfo } from "@/components/data/music/type";
-import type { DivingFishResponse, MusicDataResponse } from "./type";
+import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@/components/data/music/type";
+import type { DivingFishMusicChart, DivingFishResponse, MusicDataResponse } from "./type";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
@@ -87,7 +87,15 @@ export function convertDFMusicList(data: MusicDataResponse) {
     };
 }
 
-export function getDFCoverURL(id: number): string {
-    if (10000 < id) id -= Math.floor(id / 10000) * 10000;
-    return `https://jacket.maimai.realtvop.top/${"0".repeat(Math.max(5 - id.toString().length, 0))}${id}.png`;
+export function chartScoreFromDF(chart: DivingFishMusicChart): ChartScore {
+    return {
+        rankRate: chart.rate,
+        achievements: chart.achievements,
+
+        comboStatus: chart.fc,
+        syncStatus: chart.fs,
+
+        deluxeRating: chart.ra,
+        deluxeScore: chart.dxScore,
+    };
 }

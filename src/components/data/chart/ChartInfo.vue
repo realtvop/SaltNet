@@ -23,7 +23,7 @@
                 <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
             </mdui-button>
             <mdui-top-app-bar-title
-                @click="copyToClipboard(chart?.music?.info.title || '')"
+                @click="copyTextToClipboard(chart?.music?.info.title || '')"
                 style="cursor: pointer"
             >
                 {{ chart?.music?.info.title || "" }}
@@ -32,21 +32,21 @@
 
         <img
             class="song-cover"
-            :src="chart?.music ? getDFCoverURL(chart.music.id) : ''"
+            :src="chart?.music ? getCoverURL(chart.music.id) : ''"
             crossorigin="anonymous"
         />
 
         <div class="chip-container" v-if="chart?.music" center>
             <mdui-chip
                 icon="music_note"
-                @click="copyToClipboard(chart.music.info.id.toString() || '?')"
+                @click="copyTextToClipboard(chart.music.info.id.toString() || '?')"
                 style="cursor: pointer"
             >
                 id{{ chart.music.info.id || "?" }}
             </mdui-chip>
             <mdui-chip
                 icon="music_note"
-                @click="copyToClipboard(chart.music.info.artist || '未知')"
+                @click="copyTextToClipboard(chart.music.info.artist || '未知')"
                 style="cursor: pointer"
             >
                 {{ chart.music.info.artist || "未知" }}
@@ -76,243 +76,255 @@
                     </span>
                 </div>
             </mdui-tab>
+        </mdui-tabs>
 
-            <mdui-tab-panel
-                v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
-                :key="`panel-${chartInfo.info.grade}`"
-                :value="chartInfo.info.grade.toString()"
-                slot="panel"
-            >
-                <div class="tab-content">
-                    <!-- 当前用户成绩信息 -->
-                    <div class="score-summary" v-if="getCurrentChartScore(chartInfo)">
-                        <!-- 第一行：rank图标和achievement百分比 -->
-                        <div class="score-row-main">
-                            <div class="rank-section">
-                                <img
-                                    v-if="getCurrentChartScore(chartInfo).rate"
-                                    :src="`/icons/${getCurrentChartScore(chartInfo).rate.replace('p', 'plus')}.png`"
-                                    class="rank-icon-large"
-                                />
-                            </div>
-                            <div class="achievement-section">
-                                <div class="achievement-percentage">
-                                    {{ getCurrentChartScore(chartInfo).achievements?.toFixed(4) }}%
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 第二行：fc/fs图标和rating -->
-                        <div class="score-row-secondary">
-                            <div class="score-badges">
-                                <span class="badge-slot">
-                                    <img
-                                        v-if="getCurrentChartScore(chartInfo).fc"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fc}.png`"
-                                        class="badge-icon"
-                                    />
-                                    <span v-else class="badge-placeholder"></span>
-                                </span>
-                                <span class="badge-slot">
-                                    <img
-                                        v-if="getCurrentChartScore(chartInfo).fs"
-                                        :src="`/icons/music_icon_${getCurrentChartScore(chartInfo).fs.replace('sd', 'dx')}.png`"
-                                        class="badge-icon"
-                                    />
-                                    <span v-else class="badge-placeholder"></span>
-                                </span>
-                            </div>
-                            <div class="rating-display" v-if="getCurrentChartScore(chartInfo).ra">
-                                <div class="rating-value">
-                                    {{ getCurrentChartScore(chartInfo).ra }}
-                                </div>
-                            </div>
-                        </div>
+        <div class="tab-content" v-if="currentChart">
+            <!-- 当前用户成绩信息 -->
+            <div class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
+                <!-- 第一行：rank图标和achievement百分比 -->
+                <div class="score-row-main">
+                    <div class="rank-section">
+                        <img
+                            v-if="currentChartScore.rankRate"
+                            :src="`/icons/${currentChartScore.rankRate.replace('p', 'plus')}.png`"
+                            class="rank-icon-large"
+                        />
                     </div>
-
-                    <!-- 谱面基本信息 -->
-                    <div class="chart-basic-info">
-                        <div class="info-row">
-                            <span class="info-label">谱师</span>
-                            <span
-                                class="info-value"
-                                @click="copyToClipboard(chartInfo.info.charter)"
-                                style="cursor: pointer"
-                            >
-                                {{ chartInfo.info.charter }}
-                            </span>
+                    <div class="achievement-section">
+                        <div class="achievement-percentage">
+                            {{ currentChartScore.achievements?.toFixed(4) }}%
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">拟合定数</span>
-                            <span
-                                class="info-value"
-                                @click="chartInfo.info.stat && showChartStats(chartInfo.info.stat)"
-                                style="cursor: pointer"
-                            >
-                                {{
-                                    chartInfo.info.stat
-                                        ? chartInfo.info.stat.fit_diff.toFixed(4)
-                                        : "蛤 怎么没数据"
-                                }}
-                            </span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">项目位置</span>
-                            <span class="info-value">{{ getCurrentChartPosition(chartInfo) }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">
-                                Note 统计
-                                <br />
-                                <br />
-                                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                                    <mdui-button slot="trigger" variant="text" icon="playlist_add">
-                                        收藏
-                                    </mdui-button>
-                                    <mdui-menu>
-                                        <mdui-menu-item
-                                            v-for="fav in shared.favorites"
-                                            :key="fav.name"
-                                            :value="fav.name"
-                                            @click="toggleFavorite(fav, chartInfo)"
-                                            :style="{
-                                                backgroundColor: fav.charts.some(
-                                                    ({ i, d }) =>
-                                                        i === chartInfo.music.id &&
-                                                        d === expandedValue
-                                                )
-                                                    ? 'rgba(var(--mdui-color-primary),12%)'
-                                                    : '',
-                                            }"
-                                            :icon="
-                                                fav.charts.some(
-                                                    ({ i, d }) =>
-                                                        i === chartInfo.music.id &&
-                                                        d === expandedValue
-                                                )
-                                                    ? 'check'
-                                                    : ''
-                                            "
-                                        >
-                                            {{ fav.name }}
-                                        </mdui-menu-item>
-                                        <mdui-menu-item icon="add" @click="newFavList">
-                                            新增
-                                        </mdui-menu-item>
-                                    </mdui-menu>
-                                </mdui-dropdown>
-                            </span>
-                            <span class="info-value notes-breakdown">
-                                <span class="note-type">TAP: {{ chartInfo.info.notes[0] }}</span>
-                                <span class="note-type">HOLD: {{ chartInfo.info.notes[1] }}</span>
-                                <span class="note-type">SLIDE: {{ chartInfo.info.notes[2] }}</span>
-                                <span class="note-type">BREAK: {{ chartInfo.info.notes[3] }}</span>
-                                <span class="note-total">
-                                    总计: {{ chartInfo.info.notes.reduce((a, b) => a + b, 0) }}
-                                </span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Rating 阶段 -->
-                    <div
-                        style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 0;
-                            margin-top: 1rem;
-                        "
-                    >
-                        <h3 style="margin-bottom: 0">Rating 阶段</h3>
-                        <mdui-select
-                            v-model="ratingDisplayMode"
-                            style="width: 5em; --mdui-comp-select-menu-container-shape: 8px"
-                            @click="ratingDisplayMode = $event.target.value"
-                        >
-                            <mdui-menu-item value="简洁">简洁</mdui-menu-item>
-                            <mdui-menu-item
-                                value="吃分"
-                                v-if="getChartRaTable(chartInfo).length > 3"
-                            >
-                                吃分
-                            </mdui-menu-item>
-                            <mdui-menu-item value="完整">全部</mdui-menu-item>
-                        </mdui-select>
-                    </div>
-                    <mdui-list>
-                        <mdui-list-item
-                            v-for="i of getDisplayedChartRaTable(chartInfo)"
-                            :key="i.achievements"
-                            nonclickable
-                        >
-                            <div class="list-container">
-                                <div class="list-title">
-                                    {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
-                                    <span class="description">
-                                        {{ i.achievements.toFixed(4) }}%
-                                    </span>
-                                </div>
-                                <span
-                                    v-if="
-                                        getCurrentChartRa(chartInfo) !== null &&
-                                        i.rating > (getCurrentChartRa(chartInfo) || 0)
-                                    "
-                                >
-                                    +{{ i.rating - (getCurrentChartRa(chartInfo) || 0) }}
-                                </span>
-                                {{ i.rating }}
-                            </div>
-                        </mdui-list-item>
-                    </mdui-list>
-
-                    <div v-if="getChartFriendsScores(chartInfo).length > 1" class="friends-section">
-                        <h3>好友排名</h3>
-                        <mdui-list>
-                            <mdui-list-item
-                                v-for="(f, idx) in getChartFriendsScores(chartInfo)"
-                                :key="f.name"
-                                nonclickable
-                                :active="f.name === selfName"
-                                rounded
-                            >
-                                <div class="friend-score-row">
-                                    <span class="friend-rank">
-                                        {{ getRanks(getChartFriendsScores(chartInfo))[idx] }}
-                                    </span>
-                                    <span class="friend-name">{{ f.name }}</span>
-                                    <span class="friend-achievement">
-                                        {{
-                                            typeof f.achievements === "number"
-                                                ? `${f.achievements.toFixed(4)}%`
-                                                : f.played
-                                                  ? "0.0000%"
-                                                  : "-"
-                                        }}
-                                    </span>
-                                    <span class="friend-fc">
-                                        <img
-                                            v-if="f.fc"
-                                            :src="`/icons/music_icon_${f.fc}.png`"
-                                            class="icon"
-                                        />
-                                        <span v-else class="icon-placeholder"></span>
-                                    </span>
-                                    <span class="friend-fs">
-                                        <img
-                                            v-if="f.fs"
-                                            :src="`/icons/music_icon_${f.fs.replace('sd', 'dx')}.png`"
-                                            class="icon"
-                                        />
-                                        <span v-else class="icon-placeholder"></span>
-                                    </span>
-                                </div>
-                            </mdui-list-item>
-                        </mdui-list>
                     </div>
                 </div>
-            </mdui-tab-panel>
-        </mdui-tabs>
+
+                <!-- 第二行：fc/fs图标和rating -->
+                <div class="score-row-secondary">
+                    <div class="score-badges">
+                        <span class="badge-slot">
+                            <img
+                                v-if="currentChartScore.comboStatus"
+                                :src="`/icons/music_icon_${currentChartScore.comboStatus}.png`"
+                                class="badge-icon"
+                            />
+                            <span v-else class="badge-placeholder"></span>
+                        </span>
+                        <span class="badge-slot">
+                            <img
+                                v-if="currentChartScore.syncStatus"
+                                :src="`/icons/music_icon_${currentChartScore.syncStatus.replace('sd', 'dx')}.png`"
+                                class="badge-icon"
+                            />
+                            <span v-else class="badge-placeholder"></span>
+                        </span>
+                    </div>
+                    <div class="rating-display" v-if="currentChartScore.deluxeRating">
+                        <div class="rating-score-display">
+                            <div class="dx-score-value">
+                                {{ currentChartScore.deluxeRating }}
+                            </div>
+                            <div class="dx-score-value">
+                                {{ currentChartScore.deluxeScore }} /
+                                {{ currentChart.info.deluxeScoreMax }}
+                            </div>
+                        </div>
+                        <div class="dx-score-stars">
+                            <img
+                                v-if="dxScoreStarsCount > 0"
+                                :src="dxScoreStarsImg"
+                                class="dx-stars-img"
+                                v-for="i in dxScoreStarsCount"
+                                :key="i"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-search-urls">
+                <mdui-chip
+                    v-for="site in getChartSearchUrls(currentChart)"
+                    :href="site.url"
+                    target="_blank"
+                    :icon="site.icon"
+                >
+                    {{ site.name }}
+                </mdui-chip>
+            </div>
+
+            <!-- 谱面基本信息 -->
+            <div class="chart-basic-info">
+                <div class="info-row">
+                    <span class="info-label">谱师</span>
+                    <span
+                        class="info-value"
+                        @click="copyTextToClipboard(currentChart.info.charter)"
+                        style="cursor: pointer"
+                    >
+                        {{ currentChart.info.charter }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">拟合定数</span>
+                    <span
+                        class="info-value"
+                        @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
+                        style="cursor: pointer"
+                    >
+                        {{
+                            currentChart.info.stat
+                                ? currentChart.info.stat.fit_diff.toFixed(4)
+                                : "蛤 怎么没数据"
+                        }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">项目位置</span>
+                    <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">
+                        Note 统计
+                        <br />
+                        <br />
+                        <mdui-dropdown stay-open-on-click @open.stop @close.stop>
+                            <mdui-button slot="trigger" variant="text" icon="playlist_add">
+                                收藏
+                            </mdui-button>
+                            <mdui-menu>
+                                <mdui-menu-item
+                                    v-for="fav in shared.favorites"
+                                    :key="fav.name"
+                                    :value="fav.name"
+                                    @click="toggleFavorite(fav, currentChart)"
+                                    :style="{
+                                        backgroundColor: fav.charts.some(
+                                            ({ i, d }) =>
+                                                i === currentChart.music.id && d === expandedValue
+                                        )
+                                            ? 'rgba(var(--mdui-color-primary),12%)'
+                                            : '',
+                                    }"
+                                    :icon="
+                                        fav.charts.some(
+                                            ({ i, d }) =>
+                                                i === currentChart.music.id && d === expandedValue
+                                        )
+                                            ? 'check'
+                                            : ''
+                                    "
+                                >
+                                    {{ fav.name }}
+                                </mdui-menu-item>
+                                <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
+                            </mdui-menu>
+                        </mdui-dropdown>
+                    </span>
+                    <span class="info-value notes-breakdown">
+                        <span class="note-type">TAP: {{ currentChart.info.notes[0] }}</span>
+                        <span class="note-type">HOLD: {{ currentChart.info.notes[1] }}</span>
+                        <span class="note-type">SLIDE: {{ currentChart.info.notes[2] }}</span>
+                        <span class="note-type">BREAK: {{ currentChart.info.notes[3] }}</span>
+                        <span class="note-total">
+                            总计: {{ currentChart.info.notes.reduce((a, b) => a + b, 0) }}
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Rating 阶段 -->
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0;
+                    margin-top: 1rem;
+                "
+            >
+                <h3 style="margin-bottom: 0">Rating 阶段</h3>
+                <mdui-select
+                    v-model="ratingDisplayMode"
+                    style="width: 5em; --mdui-comp-select-menu-container-shape: 8px"
+                    @change="handleDisplayModeChange"
+                >
+                    <mdui-menu-item value="简洁">简洁</mdui-menu-item>
+                    <mdui-menu-item value="吃分" v-if="chartRatingTables.filtered.length > 3">
+                        吃分
+                    </mdui-menu-item>
+                    <mdui-menu-item value="完整">全部</mdui-menu-item>
+                </mdui-select>
+            </div>
+            <mdui-list>
+                <mdui-list-item
+                    v-for="i of getDisplayedChartRaTable()"
+                    :key="i.achievements"
+                    nonclickable
+                >
+                    <div class="list-container">
+                        <div class="list-title">
+                            {{ RANK_RATE_DISPLAY_NAMES[i.rank] }}
+                            <span class="description">{{ i.achievements.toFixed(4) }}%</span>
+                        </div>
+                        <span
+                            v-if="
+                                currentUserLowestRaInChartOrSection &&
+                                i.rating > (currentUserLowestRaInChartOrSection || 0)
+                            "
+                        >
+                            +{{ i.rating - (currentUserLowestRaInChartOrSection || 0) }}
+                        </span>
+                        {{ i.rating }}
+                    </div>
+                </mdui-list-item>
+            </mdui-list>
+
+            <div v-if="chartFriendsScores.length > 1" class="friends-section">
+                <h3>好友排名</h3>
+                <mdui-list>
+                    <mdui-list-item
+                        v-for="(f, idx) in chartFriendsScores"
+                        :key="f.name"
+                        nonclickable
+                        :active="f.user === currentUser"
+                        rounded
+                    >
+                        <div class="friend-score-row">
+                            <span class="friend-rank">
+                                {{ getRanks(chartFriendsScores)[idx] }}
+                            </span>
+                            <span class="friend-name">
+                                {{ getUserDisplayName(f.user) }}
+                            </span>
+                            <span class="friend-achievement">
+                                {{
+                                    typeof f.achievements === "number"
+                                        ? `${f.achievements.toFixed(4)}%`
+                                        : f.played
+                                          ? "0.0000%"
+                                          : "-"
+                                }}
+                            </span>
+                            <span class="friend-fc">
+                                <img
+                                    v-if="f.fc"
+                                    :src="`/icons/music_icon_${f.fc}.png`"
+                                    class="icon"
+                                />
+                                <span v-else class="icon-placeholder"></span>
+                            </span>
+                            <span class="friend-fs">
+                                <img
+                                    v-if="f.fs"
+                                    :src="`/icons/music_icon_${f.fs.replace('sd', 'dx')}.png`"
+                                    class="icon"
+                                />
+                                <span v-else class="icon-placeholder"></span>
+                            </span>
+                        </div>
+                    </mdui-list-item>
+                </mdui-list>
+            </div>
+        </div>
 
         <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
             别名
@@ -324,7 +336,7 @@
             <mdui-chip
                 v-for="alias in chart.music.info.aliases"
                 :key="alias"
-                @click="copyToClipboard(alias)"
+                @click="copyTextToClipboard(alias)"
                 style="cursor: pointer"
             >
                 {{ alias }}
@@ -335,16 +347,20 @@
 
 <script setup lang="ts">
     import type { Chart } from "@/components/data/music/type";
-    import { getDetailedRatingsByDs } from "@/components/data/chart/rating";
+    import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
-    import { defineProps, watch, nextTick, ref, onMounted, onUnmounted } from "vue";
+    import { defineProps, watch, nextTick, ref, onMounted, onUnmounted, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import { useShared } from "@/components/app/shared";
-    import { snackbar, prompt, dialog } from "mdui";
+    import { prompt, dialog } from "mdui";
+    import { copyTextToClipboard } from "@/components/app/utils";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
-    import { getDFCoverURL } from "@/components/integrations/diving-fish";
+    import { chartScoreFromDF } from "@/components/integrations/diving-fish";
+    import { type User, getUserDisplayName } from "@/components/data/user/type";
+    import { getCoverURL } from "@/components/integrations/assets";
+    import { getChartSearchUrls } from "./getSearchUrls";
 
     const shared = useShared();
 
@@ -366,7 +382,7 @@
             played: boolean;
         }[]
     >([]);
-    const selfName = ref("");
+    const currentUser = ref<User | null>(null);
     const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
@@ -404,7 +420,7 @@
                 dialogRef.value.open = true;
             }
             friendsScores.value = [];
-            selfName.value = "";
+            currentUser.value = null;
             ratingDisplayMode.value = "简洁";
             chartFriendsScoresMap.value.clear();
 
@@ -418,18 +434,12 @@
                     const targetUserIndex = parseInt(props.targetUserId);
                     const targetUser = shared.users[targetUserIndex];
                     if (targetUser) {
-                        selfName.value = String(
-                            targetUser.remark ||
-                                targetUser.divingFish?.name ||
-                                targetUser.inGame?.name ||
-                                targetUser.data?.name ||
-                                ""
-                        );
+                        currentUser.value = targetUser;
                     } else {
-                        selfName.value = String(shared.users[0].data.name || "");
+                        currentUser.value = shared.users[0] || null;
                     }
                 } else {
-                    selfName.value = String(shared.users[0].data.name || "");
+                    currentUser.value = shared.users[0] || null;
                 }
             }
 
@@ -456,6 +466,7 @@
                     if (detail) {
                         chartFriends.push({
                             name: uname,
+                            user,
                             achievements: detail.achievements,
                             ra: detail.ra,
                             rate: detail.rate,
@@ -466,6 +477,7 @@
                     } else {
                         chartFriends.push({
                             name: uname,
+                            user,
                             achievements: undefined,
                             ra: undefined,
                             rate: undefined,
@@ -494,7 +506,24 @@
         }
     );
 
-    // 计算排名，处理并列
+    const currentChart = computed(() => {
+        if (!props.chart) return null as unknown as Chart;
+        if (props.chart.info.grade === expandedValue.value) return props.chart;
+        return props.chart.music.charts.find(
+            chart => chart.info.grade === expandedValue.value
+        ) as Chart;
+    });
+    const currentChartScore = computed(() => {
+        if (!props.chart) return null;
+        if (props.chart.info.grade === expandedValue.value && props.chart.score)
+            return props.chart.score;
+        if (!currentUser.value || !currentUser.value.data.detailed) return null;
+        const score =
+            currentUser.value.data.detailed[`${props.chart.music.id}-${expandedValue.value}`];
+        return chartScoreFromDF(score);
+    });
+
+    // 计算排名
     function getRanks(scores: { achievements?: number; played: boolean }[]) {
         let lastScore: number | undefined = undefined;
         let lastRank = 1;
@@ -511,11 +540,6 @@
                 return `#${playedCount}`;
             }
         });
-    }
-
-    function copyToClipboard(text: string) {
-        navigator.clipboard.writeText(text);
-        snackbar({ message: `已复制：${text}`, autoCloseDelay: 1000 });
     }
 
     // 从缓存中加载项目位置
@@ -537,23 +561,35 @@
         }
     }
 
-    // 获取指定难度的 Rating 阶段表
-    function getChartRaTable(chartInfo: Chart) {
-        if (!props.chart) return [];
-        const achievements = getCurrentChartAchievements(chartInfo);
+    // 指定难度的 Rating 阶段表
+    const chartRatingTables = computed(() => {
+        if (!currentChart.value)
+            return {
+                all: [],
+                filtered: [],
+                current: [],
+            };
 
-        if (ratingDisplayMode.value === "完整") {
-            // 完整模式：显示从0开始的所有成绩阶段
-            return getDetailedRatingsByDs(chartInfo.info.constant);
-        } else {
-            // 简洁和吃分模式：根据当前成绩过滤
-            return getDetailedRatingsByDs(chartInfo.info.constant, achievements);
-        }
-    }
+        const all = getDetailedRatingsByConstant(currentChart.value.info.constant);
+        // 当前的和能吃分的
+        const filtered =
+            currentChartScore.value && currentChartScore.value.achievements
+                ? getDetailedRatingsByConstant(
+                      currentChart.value.info.constant,
+                      currentChartScore.value.achievements
+                  )
+                : all;
+
+        return {
+            all,
+            filtered,
+            current: ratingDisplayMode.value === "完整" ? all : filtered,
+        };
+    });
 
     // 获取指定难度的显示 Rating 阶段表
-    function getDisplayedChartRaTable(chartInfo: Chart) {
-        const raTable = getChartRaTable(chartInfo);
+    function getDisplayedChartRaTable() {
+        const raTable = chartRatingTables.value.current;
 
         if (ratingDisplayMode.value === "简洁") {
             // 简洁模式：只显示第一个和最后两个
@@ -567,36 +603,31 @@
         }
     }
 
-    // 移除旧的切换难度展开状态函数，不再需要
+    // 当前用户在指定类别的最低rating
+    const currentUserLowestRaInSection = computed(() => {
+        if (!currentUser.value || !props.chart) return null;
+        const section = props.chart.music.info.isNew
+            ? currentUser.value.data.b50?.dx
+            : currentUser.value.data.b50?.sd;
+        if (!section) return null;
+        return section[section.length - 1].ra;
+    });
 
-    // 获取当前用户在指定难度的Ra值
-    function getCurrentChartRa(chartInfo: Chart): number | null {
+    const currentUserLowestRaInChartOrSection = computed(() => {
         if (!props.chart) return null;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
-        const currentUserScores = chartScores.find(f => f.name === selfName.value);
-        return currentUserScores?.ra ?? null;
-    }
 
-    // 获取当前用户在指定难度的达成率
-    function getCurrentChartAchievements(chartInfo: Chart): number {
-        if (!props.chart) return 0;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
-        const currentUserScores = chartScores.find(f => f.name === selfName.value);
-        return currentUserScores?.achievements ?? 0;
-    }
+        const chart = props.chart.score ? props.chart.score.deluxeScore : null;
+        const section = currentUserLowestRaInSection.value;
 
-    // 获取指定难度的好友成绩
-    function getChartFriendsScores(chartInfo: Chart) {
-        return chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
-    }
+        if (!chart || !section) return chart || section;
+        return Math.max(chart, section);
+    });
 
-    // 获取当前用户在指定难度的成绩信息
-    function getCurrentChartScore(chartInfo: Chart) {
-        if (!props.chart) return null;
-        const chartScores = chartFriendsScoresMap.value.get(chartInfo.info.grade) || [];
-        const currentUserScores = chartScores.find(f => f.name === selfName.value);
-        return currentUserScores && currentUserScores.played ? currentUserScores : null;
-    }
+    // 指定难度的好友成绩
+    const chartFriendsScores = computed(() => {
+        if (!props.chart) return [];
+        return chartFriendsScoresMap.value.get(currentChart.value.info.grade) || [];
+    });
 
     // 获取当前谱面在对应难度的项目位置
     function getCurrentChartPosition(chartInfo: Chart): string {
@@ -653,6 +684,7 @@
                     name: value,
                     charts: [],
                 });
+                toggleFavorite(shared.favorites[shared.favorites.length - 1], props.chart!);
             },
         });
     }
@@ -673,6 +705,46 @@
             onClose: markDialogClosed,
         });
     }
+
+    function handleDisplayModeChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        const value = target.value as typeof ratingDisplayMode.value;
+
+        if (value) ratingDisplayMode.value = value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = ratingDisplayMode.value;
+            ratingDisplayMode.value = value;
+            ratingDisplayMode.value = previousValue;
+            // wtf
+        }
+    }
+
+    // 计算DX Score星星显示
+    const dxScoreStarsCount = computed(() => {
+        if (!currentChartScore.value || !currentChart.value) return 0;
+
+        const currentScore = currentChartScore.value.deluxeScore;
+        const maxScore = currentChart.value.info.deluxeScoreMax;
+
+        if (!currentScore || !maxScore) return 0;
+
+        const percentage = (currentScore / maxScore) * 100;
+
+        if (percentage >= 99) return 6;
+        else if (percentage >= 97) return 5;
+        else if (percentage >= 95) return 4;
+        else if (percentage >= 93) return 3;
+        else if (percentage >= 90) return 2;
+        else if (percentage >= 85) return 1;
+        return 0;
+    });
+
+    const dxScoreStarsImg = computed(() => {
+        if (dxScoreStarsCount.value < 3) return "/icons/star1.png";
+        if (dxScoreStarsCount.value < 5) return "/icons/star2.png";
+        return "/icons/star3.png";
+    });
 </script>
 
 <style scoped>
@@ -901,8 +973,7 @@
     }
 
     .rank-icon-large {
-        width: 64px;
-        height: 32px;
+        height: 2.25rem;
         object-fit: cover;
         object-position: center;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -910,8 +981,7 @@
 
     @media (max-width: 480px) {
         .rank-icon-large {
-            width: 48px;
-            height: 24px;
+            height: 1.75rem;
         }
     }
 
@@ -926,8 +996,17 @@
 
     .rating-display {
         display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .rating-score-display {
+        display: flex;
         align-items: center;
         justify-content: flex-end;
+        gap: 0.5rem;
     }
 
     .rating-display .rating-value {
@@ -946,6 +1025,57 @@
         .rating-display .rating-value {
             font-size: 0.8rem;
             padding: 0.15rem 0.4rem;
+        }
+    }
+
+    .dx-score-display {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 0.25rem;
+        flex: 1;
+        margin: 0 0.5rem;
+    }
+
+    .dx-score-value {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgb(var(--mdui-color-secondary));
+        background: rgba(var(--mdui-color-secondary), 0.1);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        border: 1px solid rgba(var(--mdui-color-secondary), 0.2);
+        line-height: 1;
+        font-family: monospace;
+    }
+
+    .dx-score-stars {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.05rem;
+    }
+
+    .dx-stars-img {
+        height: 1rem;
+        width: auto;
+        object-fit: contain;
+    }
+
+    @media (max-width: 480px) {
+        .dx-score-display {
+            margin: 0 0.25rem;
+            gap: 0.15rem;
+        }
+
+        .dx-score-value {
+            font-size: 0.7rem;
+            padding: 0.1rem 0.3rem;
+        }
+
+        .dx-stars-img {
+            height: 1.2rem;
         }
     }
 
@@ -990,20 +1120,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-width: 22px;
-        min-height: 22px;
+        min-width: 2rem;
+        min-height: 2rem;
     }
 
     .badge-icon {
-        width: 22px;
-        height: 22px;
+        height: 2rem;
         object-fit: contain;
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     }
 
     .badge-placeholder {
-        width: 22px;
-        height: 22px;
+        width: 2rem;
+        height: 2rem;
         display: inline-block;
     }
 
@@ -1013,35 +1142,17 @@
         }
 
         .badge-slot {
-            min-width: 18px;
-            min-height: 18px;
+            min-width: 1.5rem;
+            min-height: 1.5rem;
         }
 
         .badge-icon {
-            width: 18px;
-            height: 18px;
+            height: 1.5rem;
         }
 
         .badge-placeholder {
-            width: 18px;
-            height: 18px;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .badge-slot {
-            min-width: 16px;
-            min-height: 16px;
-        }
-
-        .badge-icon {
-            width: 16px;
-            height: 16px;
-        }
-
-        .badge-placeholder {
-            width: 16px;
-            height: 16px;
+            width: 1.5rem;
+            height: 1.5rem;
         }
     }
 
@@ -1108,6 +1219,15 @@
         font-size: 0.875rem;
         color: rgb(var(--mdui-color-on-surface-variant));
         margin-left: auto;
+    }
+
+    .chart-search-urls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        align-content: center;
+        gap: 0.5rem;
     }
 
     /* 谱面基本信息样式 */

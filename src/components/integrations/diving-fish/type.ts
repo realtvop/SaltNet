@@ -142,13 +142,13 @@ export interface DivingFishMusicChart {
     achievements: number;
     ds: number;
     dxScore: number;
-    fc: string;
-    fs: string;
+    fc: ComboStatus;
+    fs: SyncStatus;
     level: string;
     level_index: number;
     level_label: string;
     ra: number;
-    rate: string;
+    rate: RankRate;
     song_id: number;
     title: string;
     type: "DX" | "SD";

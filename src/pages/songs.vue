@@ -6,7 +6,7 @@
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import { getMusicInfoAsync } from "@/components/data/music";
+    import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
@@ -24,50 +24,18 @@
 
     enum Category {
         InGame = "难度",
+        Version = "版本",
         Favorite = "收藏夹",
         Banquet = "宴会场",
     }
 
-    // 牌子分类名称映射
-    const versionPlateNames = {
-        極: "極",
-        将: "将",
-        神: "神",
-        舞舞: "舞舞",
-    } as const;
-
-    type VersionPlateCategory = keyof typeof versionPlateNames;
+    type VersionPlateCategory = keyof typeof versionPlates;
 
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
-    const difficulties = [
-        "ALL",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "7+",
-        "8",
-        "8+",
-        "9",
-        "9+",
-        "10",
-        "10+",
-        "11",
-        "11+",
-        "12",
-        "12+",
-        "13",
-        "13+",
-        "14",
-        "14+",
-        "15",
-    ];
-
+    // prettier-ignore
+    const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref({
@@ -85,10 +53,10 @@
         if (category.value === Category.InGame) return difficulties;
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (category.value in versionPlateNames) {
-            // 牌子分类：返回该类型下的所有牌子名称的第一个字
+        if (category.value === Category.Version) return maimaiVersionsCN;
+        if (category.value in versionPlates) {
             const plateType = category.value as VersionPlateCategory;
-            return versionPlates[plateType]?.map(plate => plate.name.charAt(0)) || [];
+            return versionPlates[plateType]?.map(plate => plate.name) || [];
         }
         return [];
     });
@@ -96,11 +64,12 @@
         [Category.InGame]: "ALL",
         [Category.Banquet]: banquetDifficulties[0],
         [Category.Favorite]: shared.favorites[0]?.name || "",
+        [Category.Version]: maimaiVersionsCN[0] || "",
         // 为每个牌子类型添加默认选择
-        ...Object.keys(versionPlateNames).reduce(
+        ...Object.keys(versionPlates).reduce(
             (acc, key) => {
                 const plateKey = key as VersionPlateCategory;
-                acc[plateKey] = versionPlates[plateKey]?.[0]?.name.charAt(0) || "";
+                acc[plateKey] = versionPlates[plateKey]?.[0]?.name || "";
                 return acc;
             },
             {} as Record<VersionPlateCategory, string>
@@ -112,7 +81,7 @@
     const plateFinishStatus = computed(() => {
         const plate: VersionPlate = versionPlates[
             category.value as keyof typeof versionPlates
-        ]?.find(plate => plate.name.charAt(0) === selectedDifficulty.value) as VersionPlate;
+        ]?.find(plate => plate.name === selectedDifficulty.value) as VersionPlate;
         const finishedItems = itemsToRender.value.filter(chart =>
             checkChartFinish(plate, chart.score as ChartScore)
         );
@@ -296,6 +265,38 @@
                     (chart: Chart) => chart.info.level === selectedDifficulty.value
                 );
             }
+        } else if (category.value === Category.Version) {
+            // 版本模式
+            // 创建版本名称映射
+            const versionMapping: Record<string, string> = {
+                Maimai: "maimai",
+                "Maimai PLUS": "maimai PLUS",
+                "Maimai GreeN": "maimai GreeN",
+                "Maimai GreeN PLUS": "maimai GreeN PLUS",
+                "Maimai ORANGE": "maimai ORANGE",
+                "Maimai ORANGE PLUS": "maimai ORANGE PLUS",
+                "Maimai PiNK": "maimai PiNK",
+                "Maimai PiNK PLUS": "maimai PiNK PLUS",
+                "Maimai MURASAKi": "maimai MURASAKi",
+                "Maimai MURASAKi PLUS": "maimai MURASAKi PLUS",
+                "Maimai MiLK": "maimai MiLK",
+                "Maimai MiLK PLUS": "MiLK PLUS",
+                "Maimai FiNALE": "maimai FiNALE",
+                舞萌DX: "maimai でらっくす",
+                "舞萌DX 2021": "舞萌DX 2021",
+                "舞萌DX 2022": "舞萌DX 2022",
+                "舞萌DX 2023": "舞萌DX 2023",
+                "舞萌DX 2024": "舞萌DX 2024",
+                "舞萌DX 2025": "舞萌DX 2025",
+            };
+
+            const targetVersion =
+                versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
+            filteredCharts = shared.chartsSort.charts.filter(
+                (chart: Chart) =>
+                    (chart.music.info.from as unknown as string) === targetVersion &&
+                    chart.info.grade === 3
+            );
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
             const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
@@ -310,12 +311,12 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
-        } else if (category.value in versionPlateNames) {
+        } else if (category.value in versionPlates) {
             // 牌子模式
             const plateType = category.value as VersionPlateCategory;
             // 通过第一个字找到完整的牌子名称
             const selectedPlate = versionPlates[plateType]?.find(
-                plate => plate.name.charAt(0) === selectedDifficulty.value
+                plate => plate.name === selectedDifficulty.value
             );
 
             if (!selectedPlate) {
@@ -523,10 +524,12 @@
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
-        } else if (newCategory in versionPlateNames) {
+        } else if (newCategory === Category.Version) {
+            selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
+        } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
-            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name.charAt(0) || "";
+            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
         visibleItemsCount.value = getLoadSize();
     });
@@ -755,7 +758,7 @@
                     </mdui-menu-item>
                     <mdui-divider />
                     <mdui-menu-item
-                        v-for="(plateType, index) in Object.keys(versionPlateNames)"
+                        v-for="(plateType, index) in Object.keys(versionPlates)"
                         :key="`plate-${index}`"
                         :icon="category === plateType ? 'check' : ''"
                         :style="{
@@ -813,7 +816,7 @@
             </mdui-dropdown>
         </div>
 
-        <div v-if="category in versionPlateNames" class="search-input">
+        <div v-if="category in versionPlates" class="search-input">
             <mdui-select
                 style="width: 5rem"
                 label="排序"
@@ -857,7 +860,7 @@
                 <div class="score-grid">
                     <ScoreCard
                         v-if="
-                            !(category in versionPlateNames) &&
+                            !(category in versionPlates) &&
                             (category !== Category.Favorite || shared.favorites.length > 0)
                         "
                         cover="/icons/random.png"
@@ -875,7 +878,7 @@
                             :rating="
                                 category == Category.Favorite
                                     ? index + 1
-                                    : category in versionPlateNames
+                                    : category in versionPlates
                                       ? index + 1
                                       : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
                             "

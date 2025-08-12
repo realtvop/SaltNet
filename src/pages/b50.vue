@@ -5,7 +5,7 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import type { Chart } from "@/components/data/music/type";
-    import { getDisplayName } from "@/components/data/user/type";
+    import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
     import { musicInfo } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
@@ -98,7 +98,7 @@
             <div class="player-header">
                 <div class="player-name-container">
                     <span class="player-name">
-                        {{ getDisplayName(player) }}
+                        {{ getUserDisplayName(player) }}
                     </span>
                     <span
                         v-if="
@@ -192,11 +192,10 @@
     .player-header {
         display: flex;
         align-items: center;
-        align-items: flex-start;
-        flex-direction: column;
+        flex-wrap: wrap;
+        flex-direction: row;
         margin-bottom: 24px;
-        gap: 16px;
-        width: 100%;
+        gap: 1.5rem;
         padding: 0 20px;
     }
 

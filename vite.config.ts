@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import path from "path"; // Import path module
+import legacy from "@vitejs/plugin-legacy";
+import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,11 @@ export default defineConfig({
                     isCustomElement: tag => tag.startsWith("mdui-"),
                 },
             },
+        }),
+        legacy({
+            targets: ["defaults", "not IE 11"],
+            additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+            modernPolyfills: true,
         }),
     ],
     resolve: {

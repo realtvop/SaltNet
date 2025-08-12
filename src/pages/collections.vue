@@ -7,9 +7,11 @@
         titles,
         characters,
         genres,
+        partners,
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
+    import { copyTextToClipboard } from "@/components/app/utils";
 
     const Category = {
         Title: "称号",
@@ -17,6 +19,7 @@
         Plate: "姓名框",
         Frame: "背景",
         Character: "旅行伙伴",
+        Partner: "搭档",
     } as const;
 
     type CategoryType = (typeof Category)[keyof typeof Category];
@@ -47,16 +50,18 @@
     });
 
     // 获取当前分类下的可用类别
-    const genreKeyMap: Record<CategoryType, keyof typeof genres> = {
+    const genreKeyMap: Record<CategoryType, keyof typeof genres | "partners"> = {
         [Category.Title]: "titles",
         [Category.Icon]: "icons",
         [Category.Plate]: "plates",
         [Category.Frame]: "frames",
         [Category.Character]: "characters",
+        [Category.Partner]: "partners",
     };
 
     const availableGenres = computed<string[]>(() => {
         const key = genreKeyMap[category.value];
+        if (key === "partners") return [];
         return genres[key] || [];
     });
 
@@ -86,6 +91,8 @@
                         userCharacter,
                     };
                 });
+            case Category.Partner:
+                return partners;
             default:
                 return [];
         }
@@ -249,6 +256,8 @@
                 return `${baseUrl}/frame/${id}.png`;
             case CollectionKind.Character:
                 return `${baseUrl}/character/${id}.png`;
+            case CollectionKind.Partner:
+                return `${baseUrl}/partner/${id}.png`;
             default:
                 return "";
         }
@@ -267,6 +276,8 @@
                 return Category.Frame;
             case CollectionKind.Character:
                 return Category.Character;
+            case CollectionKind.Partner:
+                return Category.Partner;
             default:
                 return "";
         }
@@ -284,6 +295,19 @@
         const owned = ownedCollections.value;
         return owned[collection.type] && owned[collection.type].includes(collection.id);
     };
+
+    function handleFilterChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) filter.value = target.value;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = filter.value;
+            filter.value = target.value;
+            filter.value = previousValue;
+            // wtf
+        }
+    }
 </script>
 
 <template>
@@ -299,13 +323,13 @@
         <mdui-select
             class="filter-select"
             :value="filter"
-            @change="(e: any) => (filter = e.target.value)"
+            @change="handleFilterChange"
             style="--mdui-comp-select-menu-max-height: 60vh"
         >
             <mdui-menu-item value="all">所有</mdui-menu-item>
             <mdui-menu-item value="owned">已获得</mdui-menu-item>
             <mdui-menu-item value="missing">未获得</mdui-menu-item>
-            <mdui-divider></mdui-divider>
+            <mdui-divider v-if="availableGenres.length"></mdui-divider>
             <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
                 {{ genre }}
             </mdui-menu-item>
@@ -339,12 +363,27 @@
                                     class="title-color-indicator"
                                     :class="getTitleColorClass((collection as any).color)"
                                 ></div>
-                                <h3 class="title-name">{{ collection.name }}</h3>
+                                <h3
+                                    class="title-name clickable"
+                                    @click="copyTextToClipboard(collection.name)"
+                                >
+                                    {{ collection.name }}
+                                </h3>
                             </div>
                         </div>
                         <div class="title-info">
-                            <p class="collection-description">{{ collection.description }}</p>
-                            <span class="collection-id">#{{ collection.id }}</span>
+                            <p
+                                class="collection-description clickable"
+                                @click="copyTextToClipboard(collection.description)"
+                            >
+                                {{ collection.description }}
+                            </p>
+                            <span
+                                class="collection-id clickable"
+                                @click="copyTextToClipboard(collection.id.toString())"
+                            >
+                                #{{ collection.id }}
+                            </span>
                         </div>
                     </div>
 
@@ -355,7 +394,8 @@
                         :class="{
                             'icon-layout':
                                 collection.type === CollectionKind.Icon ||
-                                collection.type === CollectionKind.Character,
+                                collection.type === CollectionKind.Character ||
+                                collection.type === CollectionKind.Partner,
                             'plate-frame-layout':
                                 collection.type === CollectionKind.Plate ||
                                 collection.type === CollectionKind.Frame,
@@ -366,7 +406,8 @@
                             :class="{
                                 square:
                                     collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character,
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -382,7 +423,8 @@
                                 collection.type === CollectionKind.Icon ||
                                 collection.type === CollectionKind.Plate ||
                                 collection.type === CollectionKind.Frame ||
-                                collection.type === CollectionKind.Character
+                                collection.type === CollectionKind.Character ||
+                                collection.type === CollectionKind.Partner
                             "
                             :src="getImageUrl(collection)"
                             :alt="collection.name"
@@ -390,7 +432,8 @@
                             :class="{
                                 square:
                                     collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character,
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner,
                                 plate: collection.type === CollectionKind.Plate,
                                 frame: collection.type === CollectionKind.Frame,
                             }"
@@ -403,27 +446,44 @@
                                 :class="{
                                     'icon-header':
                                         collection.type === CollectionKind.Icon ||
-                                        collection.type === CollectionKind.Character,
+                                        collection.type === CollectionKind.Character ||
+                                        collection.type === CollectionKind.Partner,
                                 }"
                             >
-                                <h3 class="collection-name">{{ collection.name }}</h3>
+                                <h3
+                                    class="collection-name clickable"
+                                    @click="copyTextToClipboard(collection.name)"
+                                >
+                                    {{ collection.name }}
+                                </h3>
                                 <span
                                     v-if="
                                         collection.type === CollectionKind.Plate ||
                                         collection.type === CollectionKind.Frame ||
                                         collection.type === CollectionKind.Character
                                     "
-                                    class="collection-id-inline"
+                                    class="collection-id-inline clickable"
+                                    @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>
                             </div>
-                            <p class="collection-description">{{ collection.description }}</p>
+                            <p
+                                v-if="collection.type !== CollectionKind.Partner"
+                                class="collection-description clickable"
+                                @click="copyTextToClipboard(collection.description)"
+                            >
+                                {{ collection.description }}
+                            </p>
 
                             <div class="collection-meta">
                                 <span
-                                    v-if="collection.type === CollectionKind.Icon"
-                                    class="collection-id"
+                                    v-if="
+                                        collection.type === CollectionKind.Icon ||
+                                        collection.type === CollectionKind.Partner
+                                    "
+                                    class="collection-id clickable"
+                                    @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>
@@ -476,6 +536,10 @@
 </template>
 
 <style scoped>
+    .clickable {
+        cursor: pointer;
+    }
+
     .filter-bar {
         padding: 5px 20px;
         display: flex;
@@ -538,10 +602,6 @@
         padding: 16px;
         transition: box-shadow 0.2s ease;
         min-width: 0;
-    }
-
-    .collection-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .collection-id-corner {

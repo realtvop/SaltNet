@@ -16,3 +16,5 @@ yarn.lock
 src/assets/plates.json
 src/components/data/music/*.json
 src/components/data/collection/*.json
+
+.pnpm-store

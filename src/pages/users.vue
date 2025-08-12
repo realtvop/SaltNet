@@ -4,7 +4,7 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
-    import { type User, getDisplayName } from "@/components/data/user/type";
+    import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { checkLogin, updateUser } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
@@ -41,7 +41,7 @@
 
     const openDeleteDialog = (index: number) => {
         confirm({
-            headline: `删除绑定的用户：${getDisplayName(shared.users[index])}？`,
+            headline: `删除绑定的用户：${getUserDisplayName(shared.users[index])}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
             cancelText: "取消",
@@ -70,7 +70,7 @@
         const info = user.data.info as UserInfo;
 
         alert({
-            headline: `${getDisplayName(user)}`,
+            headline: `${getUserDisplayName(user)}`,
             description:
                 (info
                     ? `头像 ID: ${info.iconId ?? "未知"}\n` +
@@ -149,7 +149,7 @@
 
     const setAsDefault = (index: number) => {
         confirm({
-            headline: `将 ${getDisplayName(shared.users[index])} 设为主用户？`,
+            headline: `将 ${getUserDisplayName(shared.users[index])} 设为主用户？`,
             description: "您只应该将主用户设置为自己",
             confirmText: "确认",
             cancelText: "取消",
@@ -186,7 +186,7 @@
             <div class="user-name" @click="goToUserDetails(index)">
                 <div class="user-badges">
                     <h2 class="primary-name">
-                        {{ getDisplayName(user, "未知") }}
+                        {{ getUserDisplayName(user, "未知") }}
                     </h2>
                     <RatingPlate
                         v-if="typeof user.data?.rating === 'number'"

@@ -32,8 +32,8 @@ jobs:
               run: |
                   git config --local user.email "realtvop@realtvop.top"
                   git config --local user.name "realtvop by Actions"
-                  git add src/assets/music/charts.json
-                  git commit -m "ci: 更新曲目数据"
+                  git add .
+                  git commit -m "ci: 更新曲目及收藏品数据"
                   git push
 
             - name: No changes detected

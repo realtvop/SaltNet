@@ -143,8 +143,11 @@
                     // 如果存在，则尝试删除
                     const success = await caches.delete(cacheName);
                     if (success) {
-                        updateStatus(`修复成功！缓存 "${cacheName}" 已清除。`, 'green');
+                        updateStatus(`修复成功！缓存 "${cacheName}" 已清除。即将跳转回首页...`, 'green');
                         console.log(`Cache "${cacheName}" deleted successfully.`);
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
                     } else {
                         updateStatus(`修复失败：未能删除缓存 "${cacheName}"。`, 'red');
                         console.error(`Failed to delete cache "${cacheName}".`);
