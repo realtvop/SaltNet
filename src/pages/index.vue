@@ -219,12 +219,12 @@
         gap: 16px;
         width: 100%;
         max-width: 600px;
-        margin-top: 24px;
     }
 
     @media (max-width: 460px) {
         .links-section {
             grid-template-columns: 1fr;
+            gap: unset;
         }
     }
 
