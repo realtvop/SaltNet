@@ -173,6 +173,17 @@
                 </div>
             </div>
 
+            <div class="chart-search-urls">
+                <mdui-chip
+                    v-for="site in getChartSearchUrls(currentChart)"
+                    :href="site.url"
+                    target="_blank"
+                    :icon="site.icon"
+                >
+                    {{ site.name }}
+                </mdui-chip>
+            </div>
+
             <!-- 谱面基本信息 -->
             <div class="chart-basic-info">
                 <div class="info-row">
@@ -382,6 +393,7 @@
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { getCoverURL } from "@/components/integrations/assets";
+    import { getChartSearchUrls } from "./getSearchUrls";
 
     const shared = useShared();
 
@@ -1234,6 +1246,15 @@
         font-size: 0.875rem;
         color: rgb(var(--mdui-color-on-surface-variant));
         margin-left: auto;
+    }
+
+    .chart-search-urls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        align-content: center;
+        gap: 0.5rem;
     }
 
     /* 谱面基本信息样式 */
