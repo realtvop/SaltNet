@@ -1,7 +1,10 @@
 // src/utils/updateUserWorker.ts
 import { fetchPlayerData } from "@/components/integrations/diving-fish";
 import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
-import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
+import type {
+    RivalPreview,
+    UpdateUserResponse,
+} from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 
 self.onmessage = event => {
@@ -56,6 +59,13 @@ self.onmessage = event => {
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`检查登录状态失败：${errorMsg}`, errorMsg);
+        }
+    } else if (type === "previewRivals") {
+        try {
+            getRivalsInfo(user);
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            info(`获取对战好友信息失败：${errorMsg}`, errorMsg);
         }
     }
 };
@@ -174,6 +184,41 @@ function checkLogin(user: User) {
         })
         .catch(e => {
             info(`获取 InGame 数据失败：${userName} - ${e.toString()}`, e.toString());
+        });
+}
+function getRivalsInfo(user: User) {
+    info(`正在获取 ${getUserDisplayName(user)} 的对战好友信息`);
+    return fetch(`${import.meta.env.VITE_API_URL}/previewRivals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.inGame.id }),
+    })
+        .then(r => r.json())
+        .then((data: RivalPreview[] | null) => {
+            if (data) {
+                let description = data
+                    .map(rival => `${toHalfWidth(rival.name)} ${rival.rating}`)
+                    .join("\n");
+                self.postMessage({
+                    type: "alert",
+                    data: {
+                        headline: `${getUserDisplayName(user)} 的对战好友`,
+                        description,
+                        closeOnOverlayClick: true,
+                        closeOnEsc: true,
+                    },
+                });
+            } else {
+                info(`获取 ${getUserDisplayName(user)} 的对战好友信息失败`);
+                return [];
+            }
+        })
+        .catch(e => {
+            info(
+                `获取 ${getUserDisplayName(user)} 的对战好友信息失败：${e.toString()}`,
+                e.toString()
+            );
+            return [];
         });
 }
 

@@ -5,7 +5,7 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { checkLogin, updateUser } from "@/components/data/user/update";
+    import { checkLogin, updateUser, previewRivals } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
@@ -230,9 +230,16 @@
 
                         <mdui-divider />
 
-                        <mdui-menu-item @click="checkLogin(user)">
+                        <mdui-menu-item @click="checkLogin(user)" v-if="user.inGame?.id">
                             视奸（查询登录状态）
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item
+                            @click="previewRivals(user)"
+                            v-if="!index && user.inGame?.id"
+                        >
+                            查询对战好友
+                            <mdui-icon slot="icon" name="list_alt"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
                             @click="goToUserSongs(index)"
