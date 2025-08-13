@@ -242,11 +242,10 @@
             });
         }
 
-        if (userData)
-            shared.chartsSort = {
-                identifier: currentIdentifier,
-                charts: charts,
-            };
+        shared.chartsSort = {
+            identifier: currentIdentifier,
+            charts: charts,
+        };
     }
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
