@@ -32,7 +32,15 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
     } else if (type === "alert") {
         alert({
             ...event.data.data,
-            onOpen: markDialogOpen,
+            onOpen: dialog => {
+                markDialogOpen(dialog);
+                // 允许 description 换行显示
+                (
+                    (dialog.shadowRoot as unknown as HTMLElement).querySelector(
+                        "div.panel.has-description > div > slot.description"
+                    ) as HTMLElement
+                ).style.whiteSpace = "pre-wrap";
+            },
             onClose: markDialogClosed,
         });
     } else console.log(type, event.data);
@@ -55,4 +63,10 @@ export function checkLoginWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
 
     updateUserWorker.postMessage({ type: "checkLogin", user: plainUser, updateItem: false });
+}
+
+export function previewRivalsWithWorker(user: User) {
+    const plainUser: User = JSON.parse(JSON.stringify(user));
+
+    updateUserWorker.postMessage({ type: "previewRivals", user: plainUser });
 }

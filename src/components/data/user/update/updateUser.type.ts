@@ -16,3 +16,8 @@ export interface UpdateUserResponse {
     characters: UserCharacter[];
     info: UserInfo;
 }
+
+export interface RivalPreview {
+    name: string;
+    rating: number;
+}

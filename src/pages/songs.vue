@@ -112,6 +112,20 @@
         }
     }
 
+    const difficultyFilter = ref(3);
+
+    function handleDifficultyFilterChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+
+        if (target.value) difficultyFilter.value = Number(target.value) - 1;
+        else {
+            // 阻止点击已经选择的项目时清空项目
+            const previousValue = difficultyFilter.value;
+            difficultyFilter.value = Number(target.value) - 1;
+            difficultyFilter.value = previousValue;
+        }
+    }
+
     function getRandomChart() {
         if (!chartListFiltered.value) return null;
         const charts = chartListFiltered.value[selectedDifficulty.value] || [];
@@ -228,11 +242,10 @@
             });
         }
 
-        if (userData)
-            shared.chartsSort = {
-                identifier: currentIdentifier,
-                charts: charts,
-            };
+        shared.chartsSort = {
+            identifier: currentIdentifier,
+            charts: charts,
+        };
     }
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
@@ -247,7 +260,7 @@
             // 游戏内难度模式
             if (selectedDifficulty.value === "ALL") {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === 3
+                    (chart: Chart) => chart.info.grade === difficultyFilter.value
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -295,7 +308,7 @@
             filteredCharts = shared.chartsSort.charts.filter(
                 (chart: Chart) =>
                     (chart.music.info.from as unknown as string) === targetVersion &&
-                    chart.info.grade === 3
+                    chart.info.grade === difficultyFilter.value
             );
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
@@ -303,9 +316,9 @@
             if (!currentFavorite) {
                 filteredCharts = [];
             } else {
-                // 根据收藏夹中的曲目ID和难度筛选
+                // 根据收藏夹中的曲目ID和指定难度筛选
                 const favoriteChartIds = new Set(
-                    currentFavorite.charts.map(fc => `${fc.i}-${fc.d}`)
+                    currentFavorite.charts.map(fc => `${fc.i}-${difficultyFilter.value}`)
                 );
                 filteredCharts = shared.chartsSort.charts.filter((chart: Chart) =>
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
@@ -334,31 +347,48 @@
                 );
 
                 // 按照牌子的达成条件进行排序
-                filteredCharts.sort((a, b) => {
-                    const scoreA = a.score;
-                    const scoreB = b.score;
+                if (plateFinishSort.value === "constant-desc") {
+                    // 按定数排序（从高到低）
+                    filteredCharts.sort((a, b) => {
+                        const constantA = a.info.constant || 0;
+                        const constantB = b.info.constant || 0;
+                        return constantB - constantA;
+                    });
+                } else if (plateFinishSort.value === "constant-asc") {
+                    // 按定数排序（从低到高）
+                    filteredCharts.sort((a, b) => {
+                        const constantA = a.info.constant || 0;
+                        const constantB = b.info.constant || 0;
+                        return constantA - constantB;
+                    });
+                } else {
+                    // 按条件排序（原有逻辑）
+                    filteredCharts.sort((a, b) => {
+                        const scoreA = a.score;
+                        const scoreB = b.score;
 
-                    if (!scoreA && !scoreB) return 0;
-                    if (!scoreA) return 1;
-                    if (!scoreB) return -1;
+                        if (!scoreA && !scoreB) return 0;
+                        if (!scoreA) return 1;
+                        if (!scoreB) return -1;
 
-                    const completedA = checkChartFinish(selectedPlate, scoreA);
-                    const completedB = checkChartFinish(selectedPlate, scoreB);
+                        const completedA = checkChartFinish(selectedPlate, scoreA);
+                        const completedB = checkChartFinish(selectedPlate, scoreB);
 
-                    // 已完成的排在前面
-                    if (completedA && !completedB) return -1;
-                    if (!completedA && completedB) return 1;
+                        // 已完成的排在前面
+                        if (completedA && !completedB) return -1;
+                        if (!completedA && completedB) return 1;
 
-                    // 同样完成状态下按达成率排序
-                    if (
-                        typeof scoreA.achievements === "number" &&
-                        typeof scoreB.achievements === "number"
-                    ) {
-                        return scoreB.achievements - scoreA.achievements;
-                    }
+                        // 同样完成状态下按达成率排序
+                        if (
+                            typeof scoreA.achievements === "number" &&
+                            typeof scoreB.achievements === "number"
+                        ) {
+                            return scoreB.achievements - scoreA.achievements;
+                        }
 
-                    return 0;
-                });
+                        return 0;
+                    });
+                }
             }
         } else {
             filteredCharts = [];
@@ -542,6 +572,26 @@
             await loadPlayerData();
         }
     );
+
+    // 监听排序方式变化，重新计算可视项目数
+    watch(plateFinishSort, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector(".card-container");
+        if (container) {
+            container.scrollTop = 0;
+        }
+    });
+
+    // 监听难度筛选变化，重新计算可视项目数
+    watch(difficultyFilter, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        const container = document.querySelector(".card-container");
+        if (container) {
+            container.scrollTop = 0;
+        }
+    });
 
     onMounted(async () => {
         await loadPlayerData();
@@ -826,6 +876,15 @@
                 <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
                     条件
                 </mdui-menu-item>
+                <mdui-menu-item
+                    value="constant-desc"
+                    :selected="plateFinishSort === 'constant-desc'"
+                >
+                    定数↓
+                </mdui-menu-item>
+                <mdui-menu-item value="constant-asc" :selected="plateFinishSort === 'constant-asc'">
+                    定数↑
+                </mdui-menu-item>
             </mdui-select>
             <span>
                 {{ plateFinishStatus.conditionText }}
@@ -839,6 +898,33 @@
                     {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
                 </span>
             </div>
+        </div>
+        <div
+            v-else-if="
+                (category === Category.InGame && selectedDifficulty === 'ALL') ||
+                category === Category.Version ||
+                category === Category.Favorite
+            "
+            class="search-input"
+        >
+            <mdui-select
+                style="width: 4.1rem"
+                label="难度"
+                :value="difficultyFilter + 1"
+                @change="handleDifficultyFilterChange"
+            >
+                <mdui-menu-item v-for="index in 5" :key="index" :value="index">
+                    {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+            ></mdui-text-field>
         </div>
         <mdui-text-field
             class="search-input"
@@ -908,6 +994,15 @@
             margin-left: -16px;
             padding-left: 16px;
         }
+    }
+
+    mdui-select::part(menu) {
+        width: unset;
+        max-height: 60vh;
+        overflow-y: auto;
+        min-width: 160px;
+        max-width: 90vw;
+        text-align: left;
     }
 
     .category-bar {
