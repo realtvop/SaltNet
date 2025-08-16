@@ -6,6 +6,7 @@ import type {
     UpdateUserResponse,
 } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
+import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 
 self.onmessage = event => {
     const { type, user, updateItem } = event.data;
@@ -135,11 +136,7 @@ function fetchInGameData(
     importToken?: string,
     updateItem: boolean = false
 ): Promise<UpdateUserResponse | null> {
-    return fetch(`${import.meta.env.VITE_API_URL}/updateUser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, importToken, getItems: updateItem }),
-    })
+    return postAPI(SaltAPIEndpoints.UpdateUser, { userId, importToken, getItems: updateItem })
         .then(r => r.json())
         .catch(e => {
             info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
@@ -147,11 +144,7 @@ function fetchInGameData(
         });
 }
 function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | null> {
-    return fetch(`${import.meta.env.VITE_API_URL}/updateUserFromDF`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userName }),
-    })
+    return postAPI(SaltAPIEndpoints.UpdateUserFromDivingFish, { userName })
         .then(r => r.json())
         .catch(e => {
             info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
@@ -161,11 +154,7 @@ function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | n
 
 function checkLogin(user: User) {
     const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
-    return fetch(`${import.meta.env.VITE_API_URL}/checkLogin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.inGame.id }),
-    })
+    return postAPI(SaltAPIEndpoints.CheckLogin, { userId: user.inGame.id })
         .then(r => r.json())
         .then((data: { isLogin: string } | null) => {
             if (data) {
@@ -188,11 +177,7 @@ function checkLogin(user: User) {
 }
 function getRivalsInfo(user: User) {
     info(`正在获取 ${getUserDisplayName(user)} 的对战好友信息`);
-    return fetch(`${import.meta.env.VITE_API_URL}/previewRivals`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.inGame.id }),
-    })
+    return postAPI(SaltAPIEndpoints.PreviewRivals, { userId: user.inGame.id })
         .then(r => r.json())
         .then((data: RivalPreview[] | null) => {
             if (data) {

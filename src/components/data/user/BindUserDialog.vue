@@ -69,6 +69,7 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import type { User } from "@/components/data/user/type";
     import { prompt, snackbar } from "mdui";
+    import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 
     const props = defineProps<{
         modelValue: boolean;
@@ -171,13 +172,7 @@
     function getUserIdFromQRCode(qrCode: string) {
         qrCode = qrCode.slice(-64);
         //@ts-ignore
-        return fetch(`${import.meta.env.VITE_API_URL}/getQRInfo`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ qrCode }),
-        })
+        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode })
             .then(r => r.json())
             .then(data => {
                 if (data.errorID === 0) {

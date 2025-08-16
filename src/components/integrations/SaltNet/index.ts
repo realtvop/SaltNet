@@ -1,0 +1,25 @@
+export function postAPI(endpoint: APIEndpoints, body: Object) {
+    return fetch(`${import.meta.env.VITE_API_URL}/${endpoint}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+    }).catch(() =>
+        fetch(`${import.meta.env.VITE_API_FALLBACK_URL}/${endpoint}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        })
+    );
+}
+
+export enum SaltAPIEndpoints {
+    GetQRInfo = "getQRInfo",
+    UpdateUser = "updateUser",
+    UpdateUserFromDivingFish = "updateUserFromDF",
+    CheckLogin = "checkLogin",
+    PreviewRivals = "previewRivals",
+}
