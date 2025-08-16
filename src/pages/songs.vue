@@ -569,6 +569,7 @@
 
     watch(selectedDifficulty, () => {
         visibleItemsCount.value = getLoadSize();
+        query.value = "";
         // 滚动到顶部
         const container = document.querySelector(".card-container");
         if (container) {
@@ -591,6 +592,7 @@
             const plateType = newCategory as VersionPlateCategory;
             selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
+        query.value = "";
         visibleItemsCount.value = getLoadSize();
     });
 
