@@ -64,6 +64,9 @@
                 :style="{ height: compact === 'rankRate' ? '30%' : '50%' }"
                 :src="`/icons/${showScoreInMinimized}.png`"
             />
+            <div class="constant-pill" v-if="data.info.constant" :difficulty="data.info.grade">
+                {{ data.info.constant.toFixed(1) }}
+            </div>
         </mdui-card>
         <mdui-card
             :variant="isDarkMode ? 'filled' : 'elevated'"
@@ -172,6 +175,60 @@
         /* height: 30%; */
         object-fit: contain;
         z-index: 1;
+    }
+
+    .constant-pill {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        color: white;
+        padding: 1px 7px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: bold;
+        backdrop-filter: blur(4px);
+        z-index: 2;
+        min-width: 24px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .constant-pill[difficulty="0"] {
+        background: #96d767;
+    }
+    .constant-pill[difficulty="1"] {
+        background: #eeba41;
+    }
+    .constant-pill[difficulty="2"] {
+        background: #ef888f;
+    }
+    .constant-pill[difficulty="3"] {
+        background: #b54fdf;
+    }
+    .constant-pill[difficulty="4"] {
+        background: #d3acf9;
+    }
+    .constant-pill[difficulty="5"] {
+        background: #ee78f6;
+    }
+    @media (prefers-color-scheme: dark) {
+        .constant-pill[difficulty="0"] {
+            background: #45c124;
+        }
+        .constant-pill[difficulty="1"] {
+            background: #ffba01;
+        }
+        .constant-pill[difficulty="2"] {
+            background: #ff7b7b;
+        }
+        .constant-pill[difficulty="3"] {
+            background: #9f51dc;
+        }
+        .constant-pill[difficulty="4"] {
+            background: #dbaaff;
+        }
+        .constant-pill[difficulty="5"] {
+            background: #ff6ffd;
+        }
     }
 
     .song-jacket-section {
