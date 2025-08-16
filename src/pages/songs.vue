@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted, version } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -504,17 +504,32 @@
     // 根据屏幕宽度计算每次加载的项目数
     const getLoadSize = () => {
         const width = window.innerWidth;
+        const isCompact = category.value in versionPlates;
 
-        // 根据屏幕宽度确定列数
+        // 根据屏幕宽度和是否为compact模式确定列数
         let columns = 1;
-        if (width >= 1254) columns = 5;
-        else if (width >= 1000) columns = 4;
-        else if (width >= 768) columns = 3;
-        else if (width >= 500) columns = 2;
-        else if (width >= 350) columns = 2;
+        if (isCompact) {
+            // compact模式下的列数计算（100px卡片）
+            if (width >= 1254) columns = 9;
+            else if (width >= 1000) columns = 8;
+            else if (width >= 768) columns = 7;
+            else if (width >= 500) columns = 5;
+            else if (width >= 350) columns = 3;
+            else columns = 3;
+        } else {
+            // 普通模式下的列数计算（210px卡片）
+            if (width >= 1254) columns = 5;
+            else if (width >= 1000) columns = 4;
+            else if (width >= 768) columns = 3;
+            else if (width >= 500) columns = 2;
+            else if (width >= 350) columns = 2;
+            else columns = 1;
+        }
 
         // 计算行数和总加载数量
-        const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
+        // compact模式下卡片高度更小，可以显示更多行
+        const cardHeight = isCompact ? 120 : 200;
+        const rowsPerPage = Math.max(Math.floor(window.innerHeight / cardHeight), 2);
         return columns * rowsPerPage * 3; // 一次加载3页的量
     };
 
