@@ -13,6 +13,7 @@
     import { versionPlates } from "@/components/data/collection";
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
+    import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
 
     declare global {
         interface Window {
@@ -467,6 +468,20 @@
         return { [selectedDifficulty.value]: chartsWithIndex };
     });
 
+    const compactMode = computed<"rankRate" | "comboStatus" | "syncStatus" | undefined>(() => {
+        if (category.value === "極" || category.value === "神") return "comboStatus";
+        if (category.value === "将") return "rankRate";
+        if (category.value === "舞舞") return "syncStatus";
+        return undefined;
+    });
+    const compactFilter = computed<ComboStatus | RankRate | SyncStatus | undefined>(() => {
+        if (category.value === "極") return ComboStatus.FullCombo;
+        if (category.value === "将") return RankRate.sss;
+        if (category.value === "神") return ComboStatus.AllPerfect;
+        if (category.value === "舞舞") return SyncStatus.FullSyncDX;
+        return undefined;
+    });
+
     const loadPlayerData = async () => {
         const targetUserId = userId.value ? Number(userId.value) : 0;
         if (shared.users[targetUserId]) loadChartsWithCache(shared.users[targetUserId]);
@@ -489,17 +504,32 @@
     // 根据屏幕宽度计算每次加载的项目数
     const getLoadSize = () => {
         const width = window.innerWidth;
+        const isCompact = category.value in versionPlates;
 
-        // 根据屏幕宽度确定列数
+        // 根据屏幕宽度和是否为compact模式确定列数
         let columns = 1;
-        if (width >= 1254) columns = 5;
-        else if (width >= 1000) columns = 4;
-        else if (width >= 768) columns = 3;
-        else if (width >= 500) columns = 2;
-        else if (width >= 350) columns = 2;
+        if (isCompact) {
+            // compact模式下的列数计算（100px卡片）
+            if (width >= 1254) columns = 9;
+            else if (width >= 1000) columns = 8;
+            else if (width >= 768) columns = 7;
+            else if (width >= 500) columns = 5;
+            else if (width >= 350) columns = 3;
+            else columns = 3;
+        } else {
+            // 普通模式下的列数计算（210px卡片）
+            if (width >= 1254) columns = 5;
+            else if (width >= 1000) columns = 4;
+            else if (width >= 768) columns = 3;
+            else if (width >= 500) columns = 2;
+            else if (width >= 350) columns = 2;
+            else columns = 1;
+        }
 
         // 计算行数和总加载数量
-        const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
+        // compact模式下卡片高度更小，可以显示更多行
+        const cardHeight = isCompact ? 120 : 200;
+        const rowsPerPage = Math.max(Math.floor(window.innerHeight / cardHeight), 2);
         return columns * rowsPerPage * 3; // 一次加载3页的量
     };
 
@@ -539,6 +569,7 @@
 
     watch(selectedDifficulty, () => {
         visibleItemsCount.value = getLoadSize();
+        query.value = "";
         // 滚动到顶部
         const container = document.querySelector(".card-container");
         if (container) {
@@ -561,6 +592,7 @@
             const plateType = newCategory as VersionPlateCategory;
             selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
+        query.value = "";
         visibleItemsCount.value = getLoadSize();
     });
 
@@ -957,17 +989,13 @@
                         v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
                         :key="`score-cell-${index}`"
                         class="score-cell"
+                        :class="{ 'score-cell-compact': category in versionPlates }"
                     >
                         <ScoreCard
                             :data="chart"
                             @click="openChartInfoDialog(chart)"
-                            :rating="
-                                category == Category.Favorite
-                                    ? index + 1
-                                    : category in versionPlates
-                                      ? index + 1
-                                      : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
-                            "
+                            :compact="compactMode"
+                            :compact-filter="compactFilter"
                         />
                     </div>
 
@@ -1081,6 +1109,12 @@
         box-sizing: border-box;
     }
 
+    /* 牌子分类使用紧凑布局 */
+    .score-grid:has(.score-cell-compact) {
+        grid-template-columns: repeat(auto-fill, 100px);
+        gap: 10px;
+    }
+
     .score-cell {
         display: flex;
         justify-content: center;
@@ -1090,10 +1124,17 @@
         height: auto;
     }
 
+    .score-cell-compact {
+        width: 100px;
+    }
+
     @media (min-width: 1254px) {
         .score-grid {
             grid-template-columns: repeat(5, 210px);
             justify-content: center;
+        }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(9, 100px);
         }
     }
 
@@ -1102,6 +1143,9 @@
             grid-template-columns: repeat(4, 210px);
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(8, 100px);
+        }
     }
 
     @media (max-width: 999px) and (min-width: 768px) {
@@ -1109,12 +1153,18 @@
             grid-template-columns: repeat(3, 210px);
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(7, 100px);
+        }
     }
 
     @media (max-width: 767px) and (min-width: 500px) {
         .score-grid {
             grid-template-columns: repeat(2, 210px);
             justify-content: center;
+        }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(5, 100px);
         }
     }
 
@@ -1134,11 +1184,17 @@
             margin: 0;
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(3, 100px);
+        }
         .score-cell {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
             padding: 0;
+        }
+        .score-cell-compact {
+            width: 100px;
         }
     }
 
@@ -1147,8 +1203,14 @@
             grid-template-columns: 210px;
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(3, 100px);
+        }
         .score-cell {
             width: 210px;
+        }
+        .score-cell-compact {
+            width: 100px;
         }
     }
 

@@ -8,10 +8,11 @@ export enum ComboStatus {
 
 export enum SyncStatus {
     None = "",
+    Sync = "sync",
     FullSync = "fs",
     FullSyncPlus = "fsp",
-    FullSyncDX = "fsdx",
-    FullSyncDXPlus = "fspdx",
+    FullSyncDX = "fsd",
+    FullSyncDXPlus = "fsdp",
 }
 
 export enum RankRate {

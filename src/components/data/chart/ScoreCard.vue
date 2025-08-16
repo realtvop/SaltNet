@@ -1,15 +1,43 @@
 <script setup lang="ts">
-    import { defineProps, defineEmits } from "vue";
+    import { defineProps, defineEmits, computed } from "vue";
     import type { Chart } from "@/components/data/music/type";
     import { getCoverURL } from "@/components/integrations/assets";
     import { useShared } from "@/components/app/shared";
+    import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 
-    const { data, rating, cover } = defineProps<{
+    const { data, rating, cover, compact, compactFilter } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
+        compact?: "rankRate" | "comboStatus" | "syncStatus";
+        compactFilter?: RankRate | ComboStatus | SyncStatus;
     }>();
     const { isDarkMode } = useShared();
+
+    const showScoreInMinimized = computed<string | null>(() => {
+        if (!data.score) return null;
+        if (compact === "rankRate") {
+            return Object.values(RankRate).indexOf(data.score.rankRate) >=
+                Object.values(RankRate).indexOf((compactFilter as RankRate) || RankRate.sss)
+                ? data.score.rankRate.replace("p", "plus")
+                : null;
+        } else if (compact === "comboStatus") {
+            return Object.values(ComboStatus).indexOf(data.score.comboStatus) >=
+                Object.values(ComboStatus).indexOf(
+                    (compactFilter as ComboStatus) || ComboStatus.FullCombo
+                )
+                ? `music_icon_${data.score.comboStatus}`
+                : null;
+        } else if (compact === "syncStatus") {
+            return Object.values(SyncStatus).indexOf(data.score.syncStatus) >=
+                Object.values(SyncStatus).indexOf(
+                    (compactFilter as SyncStatus) || SyncStatus.FullSyncDX
+                )
+                ? `music_icon_${data.score.syncStatus.replace("sd", "dx")}`
+                : null;
+        }
+        return null;
+    });
 
     const emit = defineEmits(["click"]);
 </script>
@@ -18,9 +46,34 @@
     <div class="maimai-card-wrapper">
         <mdui-card
             :variant="isDarkMode ? 'filled' : 'elevated'"
+            class="maimai-result-card-minimized"
+            clickable
+            @click="emit('click')"
+            v-if="compact"
+        >
+            <img
+                class="song-jacket-image"
+                :src="cover || getCoverURL(data.music.info.id)"
+                :alt="data.music.info.title"
+                crossorigin="anonymous"
+            />
+            <div class="song-jacket-filter" v-if="showScoreInMinimized" />
+            <img
+                class="info-icon"
+                v-if="showScoreInMinimized"
+                :style="{ height: compact === 'rankRate' ? '30%' : '50%' }"
+                :src="`/icons/${showScoreInMinimized}.png`"
+            />
+            <div class="constant-pill" v-if="data.info.constant" :difficulty="data.info.grade">
+                {{ data.info.constant.toFixed(1) }}
+            </div>
+        </mdui-card>
+        <mdui-card
+            :variant="isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card"
             clickable
             @click="emit('click')"
+            v-else
         >
             <div class="song-jacket-section">
                 <img
@@ -105,6 +158,78 @@
         min-height: 85px;
         text-align: left;
     }
+    .maimai-result-card-minimized {
+        overflow: hidden;
+        aspect-ratio: 1;
+        width: 100%;
+        height: auto;
+        min-height: 85px;
+        text-align: left;
+        position: relative;
+    }
+    .maimai-result-card-minimized > .info-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        /* height: 30%; */
+        object-fit: contain;
+        z-index: 1;
+    }
+
+    .constant-pill {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        color: white;
+        padding: 1px 7px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: bold;
+        backdrop-filter: blur(4px);
+        z-index: 2;
+        min-width: 24px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .constant-pill[difficulty="0"] {
+        background: #96d767;
+    }
+    .constant-pill[difficulty="1"] {
+        background: #eeba41;
+    }
+    .constant-pill[difficulty="2"] {
+        background: #ef888f;
+    }
+    .constant-pill[difficulty="3"] {
+        background: #b54fdf;
+    }
+    .constant-pill[difficulty="4"] {
+        background: #d3acf9;
+    }
+    .constant-pill[difficulty="5"] {
+        background: #ee78f6;
+    }
+    @media (prefers-color-scheme: dark) {
+        .constant-pill[difficulty="0"] {
+            background: #45c124;
+        }
+        .constant-pill[difficulty="1"] {
+            background: #ffba01;
+        }
+        .constant-pill[difficulty="2"] {
+            background: #ff7b7b;
+        }
+        .constant-pill[difficulty="3"] {
+            background: #9f51dc;
+        }
+        .constant-pill[difficulty="4"] {
+            background: #dbaaff;
+        }
+        .constant-pill[difficulty="5"] {
+            background: #ff6ffd;
+        }
+    }
 
     .song-jacket-section {
         flex: 0 0 40%;
@@ -116,6 +241,17 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
+    }
+    .song-jacket-filter {
+        background-color: black;
+        opacity: 0.25;
+        object-fit: cover;
+        object-position: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
     }
 
     .result-details-section {
