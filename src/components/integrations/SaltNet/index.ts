@@ -1,4 +1,4 @@
-export function postAPI(endpoint: APIEndpoints, body: Object) {
+export function postAPI(endpoint: SaltAPIEndpoints, body: Object) {
     return fetch(`${import.meta.env.VITE_API_URL}/${endpoint}`, {
         method: "POST",
         headers: {
