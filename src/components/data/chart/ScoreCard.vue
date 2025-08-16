@@ -1,15 +1,43 @@
 <script setup lang="ts">
-    import { defineProps, defineEmits } from "vue";
+    import { defineProps, defineEmits, computed } from "vue";
     import type { Chart } from "@/components/data/music/type";
     import { getCoverURL } from "@/components/integrations/assets";
     import { useShared } from "@/components/app/shared";
+    import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 
-    const { data, rating, cover } = defineProps<{
+    const { data, rating, cover, minimized, minimizedFilter } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
+        minimized?: "rankRate" | "comboStatus" | "syncStatus";
+        minimizedFilter?: RankRate | ComboStatus | SyncStatus;
     }>();
     const { isDarkMode } = useShared();
+
+    const showScoreInMinimized = computed<boolean>(() => {
+        if (!data.score) return false;
+        if (minimized === "rankRate") {
+            return (
+                Object.values(RankRate).indexOf(data.score.rankRate) >=
+                Object.values(RankRate).indexOf((minimizedFilter as RankRate) || RankRate.sss)
+            );
+        } else if (minimized === "comboStatus") {
+            return (
+                Object.values(ComboStatus).indexOf(data.score.comboStatus) >=
+                Object.values(ComboStatus).indexOf(
+                    (minimizedFilter as ComboStatus) || ComboStatus.FullCombo
+                )
+            );
+        } else if (minimized === "syncStatus") {
+            return (
+                Object.values(SyncStatus).indexOf(data.score.syncStatus) >=
+                Object.values(SyncStatus).indexOf(
+                    (minimizedFilter as SyncStatus) || SyncStatus.FullSyncDX
+                )
+            );
+        }
+        return false;
+    });
 
     const emit = defineEmits(["click"]);
 </script>
@@ -18,9 +46,30 @@
     <div class="maimai-card-wrapper">
         <mdui-card
             :variant="isDarkMode ? 'filled' : 'elevated'"
+            class="maimai-result-card-minimized"
+            clickable
+            @click="emit('click')"
+            v-if="minimized"
+        >
+            <img
+                class="song-jacket-image"
+                :src="cover || getCoverURL(data.music.info.id)"
+                :alt="data.music.info.title"
+                crossorigin="anonymous"
+            />
+            <div class="song-jacket-filter" v-if="showScoreInMinimized" />
+            <img
+                class="info-icon"
+                v-if="showScoreInMinimized"
+                :src="`/icons/${data.score?.[minimized ?? '']?.replace('sd', 'dx').replace('p', 'plus')}.png`"
+            />
+        </mdui-card>
+        <mdui-card
+            :variant="isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card"
             clickable
             @click="emit('click')"
+            v-else
         >
             <div class="song-jacket-section">
                 <img
@@ -105,6 +154,24 @@
         min-height: 85px;
         text-align: left;
     }
+    .maimai-result-card-minimized {
+        overflow: hidden;
+        aspect-ratio: 1;
+        width: 100%;
+        height: auto;
+        min-height: 85px;
+        text-align: left;
+        position: relative;
+    }
+    .maimai-result-card-minimized > .info-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        height: 30%;
+        object-fit: contain;
+        z-index: 1;
+    }
 
     .song-jacket-section {
         flex: 0 0 40%;
@@ -116,6 +183,17 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
+    }
+    .song-jacket-filter {
+        background-color: black;
+        opacity: 0.25;
+        object-fit: cover;
+        object-position: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
     }
 
     .result-details-section {
