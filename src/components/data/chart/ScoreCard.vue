@@ -5,38 +5,38 @@
     import { useShared } from "@/components/app/shared";
     import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 
-    const { data, rating, cover, minimized, minimizedFilter } = defineProps<{
+    const { data, rating, cover, compact, compactFilter } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
-        minimized?: "rankRate" | "comboStatus" | "syncStatus";
-        minimizedFilter?: RankRate | ComboStatus | SyncStatus;
+        compact?: "rankRate" | "comboStatus" | "syncStatus";
+        compactFilter?: RankRate | ComboStatus | SyncStatus;
     }>();
     const { isDarkMode } = useShared();
 
-    const showScoreInMinimized = computed<boolean>(() => {
-        if (!data.score) return false;
-        if (minimized === "rankRate") {
-            return (
-                Object.values(RankRate).indexOf(data.score.rankRate) >=
-                Object.values(RankRate).indexOf((minimizedFilter as RankRate) || RankRate.sss)
-            );
-        } else if (minimized === "comboStatus") {
-            return (
-                Object.values(ComboStatus).indexOf(data.score.comboStatus) >=
+    const showScoreInMinimized = computed<string | null>(() => {
+        if (!data.score) return null;
+        if (compact === "rankRate") {
+            return Object.values(RankRate).indexOf(data.score.rankRate) >=
+                Object.values(RankRate).indexOf((compactFilter as RankRate) || RankRate.sss)
+                ? data.score.rankRate.replace("p", "plus")
+                : null;
+        } else if (compact === "comboStatus") {
+            return Object.values(ComboStatus).indexOf(data.score.comboStatus) >=
                 Object.values(ComboStatus).indexOf(
-                    (minimizedFilter as ComboStatus) || ComboStatus.FullCombo
+                    (compactFilter as ComboStatus) || ComboStatus.FullCombo
                 )
-            );
-        } else if (minimized === "syncStatus") {
-            return (
-                Object.values(SyncStatus).indexOf(data.score.syncStatus) >=
+                ? `music_icon_${data.score.comboStatus}`
+                : null;
+        } else if (compact === "syncStatus") {
+            return Object.values(SyncStatus).indexOf(data.score.syncStatus) >=
                 Object.values(SyncStatus).indexOf(
-                    (minimizedFilter as SyncStatus) || SyncStatus.FullSyncDX
+                    (compactFilter as SyncStatus) || SyncStatus.FullSyncDX
                 )
-            );
+                ? `music_icon_${data.score.syncStatus.replace("sd", "dx")}`
+                : null;
         }
-        return false;
+        return null;
     });
 
     const emit = defineEmits(["click"]);
@@ -49,7 +49,7 @@
             class="maimai-result-card-minimized"
             clickable
             @click="emit('click')"
-            v-if="minimized"
+            v-if="compact"
         >
             <img
                 class="song-jacket-image"
@@ -61,7 +61,7 @@
             <img
                 class="info-icon"
                 v-if="showScoreInMinimized"
-                :src="`/icons/${data.score?.[minimized ?? '']?.replace('sd', 'dx').replace('p', 'plus')}.png`"
+                :src="`/icons/${showScoreInMinimized}.png`"
             />
         </mdui-card>
         <mdui-card
