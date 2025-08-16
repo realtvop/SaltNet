@@ -61,6 +61,7 @@
             <img
                 class="info-icon"
                 v-if="showScoreInMinimized"
+                :style="{ height: compact === 'rankRate' ? '30%' : '50%' }"
                 :src="`/icons/${showScoreInMinimized}.png`"
             />
         </mdui-card>
@@ -168,7 +169,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        height: 30%;
+        /* height: 30%; */
         object-fit: contain;
         z-index: 1;
     }

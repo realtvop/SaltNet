@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted, version } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -13,6 +13,7 @@
     import { versionPlates } from "@/components/data/collection";
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
+    import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
 
     declare global {
         interface Window {
@@ -465,6 +466,20 @@
         });
 
         return { [selectedDifficulty.value]: chartsWithIndex };
+    });
+
+    const compactMode = computed<"rankRate" | "comboStatus" | "syncStatus" | undefined>(() => {
+        if (category.value === "極" || category.value === "神") return "comboStatus";
+        if (category.value === "将") return "rankRate";
+        if (category.value === "舞舞") return "syncStatus";
+        return undefined;
+    });
+    const compactFilter = computed<ComboStatus | RankRate | SyncStatus | undefined>(() => {
+        if (category.value === "極") return ComboStatus.FullCombo;
+        if (category.value === "将") return RankRate.sss;
+        if (category.value === "神") return ComboStatus.AllPerfect;
+        if (category.value === "舞舞") return SyncStatus.FullSyncDX;
+        return undefined;
     });
 
     const loadPlayerData = async () => {
@@ -957,17 +972,13 @@
                         v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
                         :key="`score-cell-${index}`"
                         class="score-cell"
+                        :class="{ 'score-cell-compact': category in versionPlates }"
                     >
                         <ScoreCard
                             :data="chart"
                             @click="openChartInfoDialog(chart)"
-                            :rating="
-                                category == Category.Favorite
-                                    ? index + 1
-                                    : category in versionPlates
-                                      ? index + 1
-                                      : `${(selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.index}/${((selectedDifficulty === 'ALL' ? chart.score?.index?.all : chart.score?.index?.difficult)?.total || 0) + 1}`
-                            "
+                            :compact="compactMode"
+                            :compact-filter="compactFilter"
                         />
                     </div>
 
@@ -1081,6 +1092,12 @@
         box-sizing: border-box;
     }
 
+    /* 牌子分类使用紧凑布局 */
+    .score-grid:has(.score-cell-compact) {
+        grid-template-columns: repeat(auto-fill, 100px);
+        gap: 10px;
+    }
+
     .score-cell {
         display: flex;
         justify-content: center;
@@ -1090,10 +1107,17 @@
         height: auto;
     }
 
+    .score-cell-compact {
+        width: 100px;
+    }
+
     @media (min-width: 1254px) {
         .score-grid {
             grid-template-columns: repeat(5, 210px);
             justify-content: center;
+        }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(9, 100px);
         }
     }
 
@@ -1102,6 +1126,9 @@
             grid-template-columns: repeat(4, 210px);
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(8, 100px);
+        }
     }
 
     @media (max-width: 999px) and (min-width: 768px) {
@@ -1109,12 +1136,18 @@
             grid-template-columns: repeat(3, 210px);
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(7, 100px);
+        }
     }
 
     @media (max-width: 767px) and (min-width: 500px) {
         .score-grid {
             grid-template-columns: repeat(2, 210px);
             justify-content: center;
+        }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(5, 100px);
         }
     }
 
@@ -1134,11 +1167,17 @@
             margin: 0;
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(3, 100px);
+        }
         .score-cell {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
             padding: 0;
+        }
+        .score-cell-compact {
+            width: 100px;
         }
     }
 
@@ -1147,8 +1186,14 @@
             grid-template-columns: 210px;
             justify-content: center;
         }
+        .score-grid:has(.score-cell-compact) {
+            grid-template-columns: repeat(3, 100px);
+        }
         .score-cell {
             width: 210px;
+        }
+        .score-cell-compact {
+            width: 100px;
         }
     }
 
