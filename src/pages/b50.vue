@@ -9,6 +9,10 @@
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
     import { musicInfo } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
+    import B50ToRender from "@/components/rendering/b50.vue";
+    import domtoimage from "dom-to-image-more";
+    import { dialog, snackbar } from "mdui";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
 
     const route = useRoute();
     const shared = useShared();
@@ -79,6 +83,78 @@
             score: chartScore,
         };
     }
+
+    function getB50Png() {
+        return domtoimage.toPng(document.getElementById("player-b50-for-rendering"), {
+            scale: 2,
+            width: 1175,
+            height: 1365,
+        });
+    }
+
+    function downloadB50Png() {
+        dialog({
+            headline: "生成 B50 图片",
+            description: "选择保存方式",
+            actions: [
+                {
+                    text: "取消",
+                },
+                {
+                    text: "复制",
+                    onClick: () =>
+                        getB50Png()
+                            .then((dataUrl: string) => {
+                                return fetch(dataUrl)
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error("获取图片数据失败");
+                                        }
+                                        return response.blob();
+                                    })
+                                    .then(blob => {
+                                        const clipboardItem = new ClipboardItem({
+                                            "image/png": blob,
+                                        });
+                                        return navigator.clipboard.write([clipboardItem]);
+                                    });
+                            })
+                            .then(() => {
+                                snackbar({
+                                    message: "B50 图片已成功复制到剪贴板!",
+                                });
+                            })
+                            .catch(() => {
+                                snackbar({
+                                    message: "复制失败，请检查浏览器权限或稍后重试。",
+                                });
+                            }),
+                },
+                {
+                    text: "下载",
+                    onClick: () =>
+                        getB50Png().then((dataUrl: string) => {
+                            const link = document.createElement("a");
+                            link.href = dataUrl;
+                            const formattedTime = new Date().toLocaleString("zh-CN", {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: false,
+                            });
+                            link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                            link.click();
+                        }),
+                },
+            ],
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+        });
+    }
 </script>
 
 <template>
@@ -96,21 +172,24 @@
 
         <div v-else-if="player && player.data" class="player-b50">
             <div class="player-header">
-                <div class="player-name-container">
-                    <span class="player-name">
-                        {{ getUserDisplayName(player) }}
-                    </span>
-                    <span
-                        v-if="
-                            player.remark &&
-                            (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
-                        "
-                        class="player-original-name"
-                    >
-                        {{ player.data.name ?? player.divingFish?.name ?? player.inGame?.name }}
-                    </span>
+                <div class="player-info">
+                    <div class="player-name-container">
+                        <span class="player-name">
+                            {{ getUserDisplayName(player) }}
+                        </span>
+                        <span
+                            v-if="
+                                player.remark &&
+                                (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                            "
+                            class="player-original-name"
+                        >
+                            {{ player.data.name ?? player.divingFish?.name ?? player.inGame?.name }}
+                        </span>
+                    </div>
+                    <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
                 </div>
-                <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
+                <mdui-button-icon icon="download" @click="downloadB50Png"></mdui-button-icon>
             </div>
             <ScoreSection
                 v-if="b50SdCharts.length"
@@ -131,6 +210,14 @@
                 未更新成绩或成绩更新失败，请到“用户”更新成绩
             </p>
         </div>
+
+        <B50ToRender
+            v-if="player && player.data"
+            :b50SdCharts="b50SdCharts"
+            :b50DxCharts="b50DxCharts"
+            :player="player"
+            style="display: none"
+        />
 
         <div v-else class="error-message">
             <h2>无法加载玩家数据</h2>
@@ -197,6 +284,13 @@
         margin-bottom: 24px;
         gap: 1.5rem;
         padding: 0 20px;
+        justify-content: space-between;
+    }
+
+    .player-info {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
     }
 
     .player-name-container {

@@ -37,6 +37,7 @@ const CORE = [
     "/icons/star3.png",
     "/MaterialIcons/regular.css",
     "/MaterialIcons/regular.woff2",
+    "/b50_background.png",
 ];
 
 function parseURL(url) {
