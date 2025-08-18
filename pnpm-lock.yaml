@@ -20,6 +20,9 @@ importers:
       pinia:
         specifier: ^3.0.3
         version: 3.0.3(typescript@5.7.3)(vue@3.5.18(typescript@5.7.3))
+      sober:
+        specifier: ^1.1.9
+        version: 1.1.9
       vue:
         specifier: ^3.5.13
         version: 3.5.18(typescript@5.7.3)
@@ -1330,6 +1333,9 @@ packages:
   side-channel@1.1.0:
     resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
     engines: {node: '>= 0.4'}
+
+  sober@1.1.9:
+    resolution: {integrity: sha512-0TPbuWGE6JL7SqCRcbKaxPTWNKOwC2K1fvhJdJ+8abgYdpHE9mK6HXxhwTt2OExaWeSpIAFDk4J2eaWfJixGjw==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -2857,6 +2863,8 @@ snapshots:
       side-channel-list: 1.0.0
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
+
+  sober@1.1.9: {}
 
   source-map-js@1.2.1: {}
 

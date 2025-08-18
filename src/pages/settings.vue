@@ -1,30 +1,61 @@
 <template>
     <div class="settings">
-        <mdui-card variant="filled" class="settings-item">
+        <s-card type="filled" class="settings-item">
             <h2>数据</h2>
             <br />
             <div class="btns-container">
-                <mdui-button variant="tonal" @click="userData.import">导入</mdui-button>
-                <mdui-button variant="tonal" @click="userData.export">导出</mdui-button>
+                <s-button type="filled-tonal" @click="userData.import">导入</s-button>
+                <s-button type="filled-tonal" @click="userData.export">导出</s-button>
             </div>
-        </mdui-card>
-        <mdui-card variant="filled" class="settings-item">
+        </s-card>
+        <s-card type="filled" class="settings-item">
             <h2>缓存</h2>
             <br />
             <div class="btns-container">
-                <mdui-button variant="tonal" @click="deleteCache('Covers')">
-                    清除缓存图片
-                </mdui-button>
+                <s-button type="filled-tonal" @click="deleteCache('Covers')">清除缓存图片</s-button>
             </div>
-        </mdui-card>
+        </s-card>
     </div>
 </template>
 
 <script setup lang="ts">
     import { useShared } from "@/components/app/shared";
-    import { snackbar, confirm } from "mdui";
+    import { showSnackbar } from "@/components/app/utils";
 
     const shared = useShared();
+
+    // Create a simple confirm dialog using Sober
+    function showConfirm(message: string): Promise<boolean> {
+        return new Promise(resolve => {
+            const dialog = document.createElement("s-dialog");
+            dialog.innerHTML = `
+                <div slot="header">确认</div>
+                <div>${message}</div>
+                <div slot="action">
+                    <s-button id="confirm-cancel" type="text">取消</s-button>
+                    <s-button id="confirm-ok" type="filled">确认</s-button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+
+            const cancelBtn = dialog.querySelector("#confirm-cancel");
+            const okBtn = dialog.querySelector("#confirm-ok");
+
+            cancelBtn?.addEventListener("click", () => {
+                (dialog as any).close();
+                document.body.removeChild(dialog);
+                resolve(false);
+            });
+
+            okBtn?.addEventListener("click", () => {
+                (dialog as any).close();
+                document.body.removeChild(dialog);
+                resolve(true);
+            });
+
+            (dialog as any).show();
+        });
+    }
 
     const userData = {
         import: () => {
@@ -39,23 +70,23 @@
                     const data = JSON.parse(text);
                     const decoded = userData.dataDecoder[0](data);
                     shared.users = decoded.users;
-                    snackbar({
+                    showSnackbar({
                         message: "导入成功，正在同步曲目数据...",
-                        autoCloseDelay: 500,
+                        duration: 500,
                     });
                 } catch (err) {
-                    snackbar({
+                    showSnackbar({
                         message: "导入失败，文件格式错误或数据损坏",
-                        autoCloseDelay: 1000,
+                        duration: 1000,
                     });
                 }
             };
             input.click();
         },
         export: () => {
-            snackbar({
+            showSnackbar({
                 message: "正在导出",
-                autoCloseDelay: 500,
+                duration: 500,
             });
             if (shared.users) {
                 const data = {
@@ -71,14 +102,14 @@
                 a.click();
                 URL.revokeObjectURL(url);
 
-                snackbar({
+                showSnackbar({
                     message: "已导出",
-                    autoCloseDelay: 500,
+                    duration: 500,
                 });
             } else {
-                snackbar({
+                showSnackbar({
                     message: "没有数据可导出",
-                    autoCloseDelay: 500,
+                    duration: 500,
                 });
             }
         },
@@ -95,28 +126,24 @@
     const displayName = {
         Covers: "图片资源",
     };
-    function deleteCache(key: keyof typeof displayName) {
-        confirm({
-            headline: `清除缓存的${displayName[key]}？`,
-            description: "数据删除后将无法恢复",
-            closeOnEsc: true,
-            closeOnOverlayClick: true,
-            onConfirm: () =>
-                caches
-                    .delete(`SaltNetv0-${key}`)
-                    .then(() => {
-                        snackbar({
-                            message: `已清除缓存的${displayName[key]}`,
-                            autoCloseDelay: 500,
-                        });
-                    })
-                    .catch(() => {
-                        snackbar({
-                            message: `清除缓存的${displayName[key]}失败`,
-                            autoCloseDelay: 500,
-                        });
-                    }),
-        });
+    async function deleteCache(key: keyof typeof displayName) {
+        const confirmed = await showConfirm(
+            `清除缓存的${displayName[key]}？\n数据删除后将无法恢复`
+        );
+        if (confirmed) {
+            try {
+                await caches.delete(`SaltNetv0-${key}`);
+                showSnackbar({
+                    message: `已清除缓存的${displayName[key]}`,
+                    duration: 500,
+                });
+            } catch {
+                showSnackbar({
+                    message: `清除缓存的${displayName[key]}失败`,
+                    duration: 500,
+                });
+            }
+        }
     }
 </script>
 

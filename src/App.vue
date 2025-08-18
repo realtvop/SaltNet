@@ -22,125 +22,138 @@
             router.push("/songs");
         }
     }
+
+    function handleNavigationChange(event: Event) {
+        const target = event.target as any;
+        const value = target?.value;
+        if (value === "/songs") {
+            handleSongsNavigation();
+        } else if (value) {
+            router.push(value);
+        }
+    }
 </script>
 
 <template>
-    <mdui-layout>
+    <div class="app-layout">
         <component :is="TopAppBar" :playerInfo="playerInfo" />
-        <mdui-navigation-bar
+        <s-navigation
+            mode="bottom"
             :value="route.path"
             v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
-            label-visibility="labeled"
+            @change="handleNavigationChange"
         >
-            <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">
+            <s-navigation-item value="/">
+                <s-icon>home</s-icon>
                 首页
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="data_thresholding"
-                value="/b50"
-                @click="router.push('/b50')"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/b50">
+                <s-icon>data_thresholding</s-icon>
                 B50
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="library_music"
-                value="/songs"
-                @click="handleSongsNavigation"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/songs">
+                <s-icon>library_music</s-icon>
                 谱面
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="collections"
-                value="/collections"
-                @click="router.push('/collections')"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/collections">
+                <s-icon>collections</s-icon>
                 藏品
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">
+            </s-navigation-item>
+            <s-navigation-item value="/users">
+                <s-icon>people</s-icon>
                 用户
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item icon="info" value="/about" @click="router.push('/about')">
+            </s-navigation-item>
+            <s-navigation-item value="/about">
+                <s-icon>info</s-icon>
                 关于
-            </mdui-navigation-bar-item>
-        </mdui-navigation-bar>
-        <mdui-navigation-rail
+            </s-navigation-item>
+        </s-navigation>
+        <s-navigation
+            mode="rail"
             :value="route.path"
             v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
+            @change="handleNavigationChange"
         >
-            <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">
+            <s-navigation-item value="/">
+                <s-icon>home</s-icon>
                 首页
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="data_thresholding"
-                value="/b50"
-                @click="router.push('/b50')"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/b50">
+                <s-icon>data_thresholding</s-icon>
                 B50
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="library_music"
-                value="/songs"
-                @click="handleSongsNavigation"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/songs">
+                <s-icon>library_music</s-icon>
                 谱面
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="collections"
-                value="/collections"
-                @click="router.push('/collections')"
-            >
+            </s-navigation-item>
+            <s-navigation-item value="/collections">
+                <s-icon>collections</s-icon>
                 藏品
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">
+            </s-navigation-item>
+            <s-navigation-item value="/users">
+                <s-icon>people</s-icon>
                 用户
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item icon="info" value="/about" @click="router.push('/about')">
+            </s-navigation-item>
+            <s-navigation-item value="/about">
+                <s-icon>info</s-icon>
                 关于
-            </mdui-navigation-rail-item>
-        </mdui-navigation-rail>
+            </s-navigation-item>
+        </s-navigation>
 
-        <mdui-layout-main class="app-container">
+        <main class="app-container">
             <router-view v-slot="{ Component }">
                 <component :is="Component" :key="route.path" />
             </router-view>
-        </mdui-layout-main>
-    </mdui-layout>
+        </main>
+    </div>
 </template>
 
 <style scoped>
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
     .app-container {
         padding: 16px;
         box-sizing: border-box;
-        height: 100%;
+        flex: 1;
         overflow-y: auto;
     }
 
-    mdui-navigation-bar,
-    mdui-navigation-rail {
+    s-navigation {
         position: fixed !important;
         -webkit-tap-highlight-color: transparent;
-    }
-    mdui-navigation-bar {
-        height: var(--nav-bar-height);
-        padding-bottom: var(--nav-bar-padding-bottom);
+        z-index: 1000;
     }
 
-    mdui-navigation-rail-item {
-        overflow: hidden;
-    }
-    mdui-navigation-bar-item {
-        overflow: hidden;
+    s-navigation[mode="bottom"] {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--nav-bar-height, 80px);
+        padding-bottom: var(--nav-bar-padding-bottom, env(safe-area-inset-bottom));
     }
 
-    mdui-navigation-rail {
+    s-navigation[mode="rail"] {
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--nav-rail-width, 80px);
         display: none;
     }
+
+    /* Show rail navigation on desktop */
     @media (min-aspect-ratio: 1.001/1) {
-        mdui-navigation-bar {
+        s-navigation[mode="bottom"] {
             display: none;
         }
-        mdui-navigation-rail {
+        s-navigation[mode="rail"] {
             display: block !important;
+        }
+        .app-container {
+            margin-left: var(--nav-rail-width, 80px);
         }
     }
 

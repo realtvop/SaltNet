@@ -4,8 +4,8 @@ import { createPinia } from "pinia";
 import "./style.css";
 import App from "./App.vue";
 import router from "./components/app/router.vue";
-import "mdui/mdui.css";
-import { setColorScheme } from "mdui";
+// Import Sober components
+import "sober";
 import { checkForUpdate } from "./components/app/checkForUpdate";
 
 const pinia = createPinia();
@@ -16,8 +16,10 @@ app.use(router);
 
 app.mount("#app");
 
-setColorScheme("#8E92E1"); // #5EEAC7
-
-document.body.removeChild(document.getElementById("rescue") as HTMLElement);
+// Remove rescue element if it exists
+const rescueElement = document.getElementById("rescue");
+if (rescueElement) {
+    document.body.removeChild(rescueElement);
+}
 
 checkForUpdate();
