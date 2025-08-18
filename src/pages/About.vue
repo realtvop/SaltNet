@@ -1,16 +1,20 @@
 <script setup lang="ts">
     const buildTime = window.spec?.currentVersionBuildTime;
+
+    function openGitHub() {
+        window.open("https://github.com/realtvop/SaltNet", "_blank");
+    }
 </script>
 
 <template>
     <div class="page-content">
         <div class="header-content">
             <img src="/favicon.png" alt="Favicon" class="favicon-image favicon" />
-            <h1 variant="display-large" class="project-title">SaltNet</h1>
+            <h1 class="project-title">SaltNet</h1>
         </div>
-        <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px">
+        <s-card type="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px">
             <div style="padding: 20px; text-align: center">
-                <mdui-typography variant="headline-medium" class="welcome-text">
+                <h2 class="welcome-text">
                     舞萌 DX 查分器
                     <br />
                     <div class="build-time-text">
@@ -23,9 +27,9 @@
                     </div>
                     <br />
                     Made with ❤️ by realtvop
-                </mdui-typography>
+                </h2>
             </div>
-        </mdui-card>
+        </s-card>
 
         <div class="links-section">
             <a
@@ -33,49 +37,35 @@
                 target="_blank"
                 class="link-wrapper"
             >
-                <mdui-card variant="outlined" clickable class="link-card">
+                <s-card type="outlined" clickable class="link-card">
                     <div class="link-content">
-                        <mdui-icon name="help_center"></mdui-icon>
+                        <s-icon>help_center</s-icon>
                         <div class="link-text">
-                            <mdui-typography variant="title-medium">SaltNet 帮助</mdui-typography>
-                            <mdui-typography
-                                variant="body-small"
-                                style="color: var(--mdui-color-on-surface-variant)"
-                            >
-                                SaltNet 使用帮助
-                            </mdui-typography>
+                            <h4 class="link-title">SaltNet 帮助</h4>
+                            <p class="link-description">SaltNet 使用帮助</p>
                         </div>
                     </div>
-                </mdui-card>
+                </s-card>
             </a>
 
             <a href="https://qm.qq.com/q/mwhqbv7FpQ" target="_blank" class="link-wrapper">
-                <mdui-card variant="outlined" clickable class="link-card">
+                <s-card type="outlined" clickable class="link-card">
                     <div class="link-content">
-                        <mdui-icon name="chat"></mdui-icon>
+                        <s-icon>chat</s-icon>
                         <div class="link-text">
-                            <mdui-typography variant="title-medium">QQ 用户群</mdui-typography>
-                            <mdui-typography
-                                variant="body-small"
-                                style="color: var(--mdui-color-on-surface-variant)"
-                            >
-                                638052667
-                            </mdui-typography>
+                            <h4 class="link-title">QQ 用户群</h4>
+                            <p class="link-description">638052667</p>
                         </div>
                     </div>
-                </mdui-card>
+                </s-card>
             </a>
         </div>
 
         <div class="github-footer">
-            <mdui-chip
-                variant="outlined"
-                icon="code"
-                href="https://github.com/realtvop/SaltNet"
-                target="_blank"
-            >
+            <s-chip variant="outlined" @click="openGitHub">
+                <s-icon>code</s-icon>
                 realtvop/SaltNet
-            </mdui-chip>
+            </s-chip>
         </div>
     </div>
 </template>
@@ -114,46 +104,49 @@
 
     .welcome-text {
         margin-bottom: 16px;
+        font-size: 1.5rem;
+        font-weight: 500;
+    }
+
+    .build-time-text {
+        font-size: 1rem;
+        font-weight: normal;
+        opacity: 0.8;
     }
 
     .rating-container {
         display: flex;
         justify-content: center;
-        margin: 25px 0; /* Restore margin */
+        margin: 25px 0;
     }
 
     .large-rating {
-        transform: scale(1.5); /* Restore scale */
+        transform: scale(1.5);
     }
 
     .loading-text {
-        margin: 25px 0; /* Restore margin */
+        margin: 25px 0;
         font-size: 1.1rem;
     }
 
     .loading-text a {
-        color: var(--mdui-color-primary);
+        color: var(--primary-color, #1976d2);
         text-decoration: underline;
     }
     .loading-text a:hover {
-        color: var(--mdui-color-primary-hover);
+        color: var(--primary-color-hover, #1565c0);
     }
 
     .github-footer {
         margin-top: 10px;
         text-align: center;
         width: 100%;
-        /* Optional: Re-add fixed positioning if desired */
-        /* position: fixed; */
-        /* bottom: 20px; */
-        /* left: 0; */
     }
 
-    /* Ensure MDUI components fit well */
-    mdui-button {
-        margin: 0; /* Remove default browser margins if any */
+    s-button {
+        margin: 0;
     }
-    mdui-card {
+    s-card {
         text-align: center;
     }
 
@@ -192,7 +185,7 @@
         gap: 16px;
     }
 
-    .link-content mdui-icon {
+    .link-content s-icon {
         font-size: 24px;
         flex-shrink: 0;
     }
@@ -204,14 +197,17 @@
         text-align: left;
     }
 
-    .link-text mdui-typography[variant="title-medium"] {
+    .link-title {
         font-size: 14px;
         font-weight: 500;
         line-height: 1.2;
+        margin: 0;
     }
 
-    .link-text mdui-typography[variant="body-small"] {
+    .link-description {
         font-size: 12px;
         line-height: 1.2;
+        margin: 0;
+        color: var(--text-secondary, #666);
     }
 </style>
