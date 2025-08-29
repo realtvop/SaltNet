@@ -616,9 +616,10 @@
     const currentUserLowestRaInChartOrSection = computed(() => {
         if (!props.chart) return null;
 
-        const chart = props.chart.score ? props.chart.score.deluxeScore : null;
+        const chart = props.chart.score ? props.chart.score.deluxeRating : null;
         const section = currentUserLowestRaInSection.value;
 
+        console.log(chart, section);
         if (!chart || !section) return chart || section;
         return Math.max(chart, section);
     });
