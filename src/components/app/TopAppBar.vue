@@ -6,10 +6,8 @@
 </script>
 
 <template>
-    <mdui-top-app-bar class="custom-app-bar" scroll-behavior="elevate">
-        <mdui-button-icon
-            icon="arrow_back"
-            variant="text"
+    <s-appbar class="custom-app-bar">
+        <s-icon-button
             v-if="
                 ['/settings'].includes(route.path) ||
                 route.path.startsWith('/b50/') ||
@@ -17,25 +15,24 @@
             "
             class="icon-btn"
             @click="router.back"
-            style="aspect-ratio: 1"
-        ></mdui-button-icon>
-        <mdui-button
-            variant="text"
-            class="icon-btn"
-            @click="router.push('/')"
-            style="aspect-ratio: 1"
         >
+            <s-icon>arrow_back</s-icon>
+        </s-icon-button>
+        <s-button type="text" class="icon-btn" @click="router.push('/')" style="aspect-ratio: 1">
             <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
-        </mdui-button>
-        <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
+        </s-button>
+        <h1 class="app-title">SaltNet</h1>
+        <div class="spacer"></div>
         <template v-if="route.path === '/' || route.path === '/index'">
-            <mdui-button-icon icon="settings" @click="router.push('/settings')"></mdui-button-icon>
+            <s-icon-button @click="router.push('/settings')">
+                <s-icon>settings</s-icon>
+            </s-icon-button>
         </template>
-    </mdui-top-app-bar>
+    </s-appbar>
 </template>
 
 <style scoped>
-    mdui-top-app-bar {
+    s-appbar {
         position: fixed !important;
     }
 
@@ -47,20 +44,14 @@
         padding: 0 8px;
         box-sizing: border-box;
         position: relative;
+        width: 100%;
+        z-index: 1000;
     }
-    .icon-btn {
-        height: 40px;
-        min-width: 40px;
-        padding: 0 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+
+    .spacer {
+        flex: 1;
     }
-    .favicon-icon {
-        width: 24px;
-        height: 24px;
-        display: block;
-    }
+
     .app-title {
         font-weight: bold;
         font-size: 1.1rem;
@@ -70,6 +61,22 @@
         text-overflow: ellipsis;
         line-height: 56px;
     }
+
+    .icon-btn {
+        height: 40px;
+        min-width: 40px;
+        padding: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .favicon-icon {
+        width: 24px;
+        height: 24px;
+        display: block;
+    }
+
     .player-title {
         max-width: 120px;
         display: inline-block;
