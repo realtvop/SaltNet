@@ -95,7 +95,7 @@
     function downloadB50Png() {
         dialog({
             headline: "生成 B50 图片",
-            description: "选择保存方式",
+            description: "[开发阶段 近保证桌面端Chrome效果] 选择保存方式",
             actions: [
                 {
                     text: "取消",
