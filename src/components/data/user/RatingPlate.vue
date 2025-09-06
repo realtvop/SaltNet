@@ -9,12 +9,12 @@
 </script>
 
 <template>
-    <svg xmlns="http://www.w3.org/2000/svg" width="100px" height="20px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="125px" height="25px">
         <image
             :href="plates[getPlateId(props.ra) as keyof typeof plates]"
             x="0"
             y="0"
-            height="1.2em"
+            height="1.5em"
         />
         <text
             v-for="i in 5"
@@ -23,7 +23,7 @@
             y="1.45em"
             text-anchor="middle"
             font-family="Monaco, 'JetBrains Mono', Monospaced, monospace"
-            font-size="0.6em"
+            font-size="0.75em"
             fill="#FCD41B"
         >
             {{ props.ra.toString()[props.ra.toString().length - (6 - i)] ?? "" }}
@@ -49,7 +49,5 @@
 <style scoped>
     svg {
         margin-left: 5px;
-        transform: scale(1.25);
-        transform-origin: left left;
     }
 </style>

@@ -7,10 +7,11 @@
     const props = defineProps<{
         title: string;
         scores: Chart[];
-        chartInfoDialog: {
+        chartInfoDialog?: {
             open: boolean;
             chart: Chart | null;
         };
+        rendering?: boolean;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -43,16 +44,17 @@
     });
 
     function openDialog(chart: Chart) {
+        if (!props.chartInfoDialog) return;
         props.chartInfoDialog.open = !props.chartInfoDialog.open;
         props.chartInfoDialog.chart = chart;
     }
 </script>
 
 <template>
-    <div class="score-section">
-        <h2 class="section-title">
+    <div :class="{ 'score-section': true, rendering: props.rendering }">
+        <h2 :class="{ 'section-title': true, rendering: props.rendering }">
             {{ title }}
-            <span class="stats-info" v-if="stats">
+            <span :class="{ 'stats-info': true, rendering: props.rendering }" v-if="stats">
                 <span class="stat-item">{{ stats.total }}</span>
                 <span class="stat-item">{{ stats.levelRange }}</span>
                 <span class="stat-item">平均: {{ stats.avg }}</span>
@@ -60,8 +62,8 @@
                 <span class="stat-item">极差: {{ stats.range }}</span>
             </span>
         </h2>
-        <div class="score-grid-wrapper">
-            <div class="score-grid">
+        <div :class="{ 'score-grid-wrapper': true, rendering: props.rendering }">
+            <div :class="{ 'score-grid': true, rendering: props.rendering }">
                 <div
                     v-for="(score, index) in scores"
                     :key="`score-cell-${index}`"
@@ -71,6 +73,7 @@
                         @click="openDialog(score)"
                         :data="score"
                         :rating="score.score?.deluxeRating"
+                        :rendering="props.rendering"
                     />
                 </div>
             </div>
@@ -111,6 +114,11 @@
         flex-wrap: wrap;
         gap: 10px;
     }
+    .stats-info.rendering {
+        color: unset !important;
+        font-size: 0.9rem;
+        margin-left: unset;
+    }
 
     .stat-item {
         white-space: nowrap;
@@ -138,6 +146,34 @@
         box-sizing: border-box;
         padding: 0;
         height: auto;
+    }
+
+    .score-grid.rendering {
+        grid-template-columns: repeat(5, 210px) !important;
+        justify-content: center !important;
+        gap: 15px !important;
+        margin-top: 20px !important;
+    }
+    .section-title.rendering {
+        flex-direction: unset !important;
+        align-items: baseline !important;
+        gap: 15px !important;
+    }
+    .score-grid-wrapper.rendering {
+        display: unset !important;
+        justify-content: unset !important;
+        align-items: unset !important;
+        height: unset !important;
+        overflow: visible;
+    }
+    .score-cell.rendering {
+        width: 210px !important;
+        min-width: 210px !important;
+        box-sizing: border-box;
+        padding: 0;
+    }
+    .score-section.rendering {
+        padding: 0 30px !important;
     }
 
     @media (min-width: 1254px) {

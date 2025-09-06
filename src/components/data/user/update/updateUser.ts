@@ -70,3 +70,14 @@ export function previewRivalsWithWorker(user: User) {
 
     updateUserWorker.postMessage({ type: "previewRivals", user: plainUser });
 }
+
+export function clearIllegalTicketsWithWorker(user: User) {
+    const plainUser: User = JSON.parse(JSON.stringify(user));
+
+    updateUserWorker.postMessage({ type: "clearIllegalTickets", user: plainUser });
+}
+export function previewStockedTicketsWithWorker(user: User) {
+    const plainUser: User = JSON.parse(JSON.stringify(user));
+
+    updateUserWorker.postMessage({ type: "previewStockedTickets", user: plainUser });
+}
