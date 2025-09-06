@@ -5,7 +5,7 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { checkLogin, updateUser, previewRivals } from "@/components/data/user/update";
+    import { checkLogin, updateUser, previewRivals, clearIllegalTickets } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
@@ -92,6 +92,22 @@
                 ).style.whiteSpace = "pre-wrap";
             },
             onClose: markDialogClosed,
+        });
+    }
+    function clearIllegalTicketsPrompt(user: User) {
+        confirm({
+            headline: `清除 ${getUserDisplayName(user)} 的补偿倍券？`,
+            description: "[请先点击获取登录二维码] 仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
+            confirmText: "确认",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: () => {
+                clearIllegalTickets(user);
+                return true;
+            },
         });
     }
 
@@ -251,6 +267,10 @@
                         <mdui-menu-item @click="showUserInfo(user)">
                             查看用户信息
                             <mdui-icon slot="icon" name="info"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item @click="clearIllegalTicketsPrompt(user)" v-if="user.inGame?.id">
+                            清理补偿倍券
+                            <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />

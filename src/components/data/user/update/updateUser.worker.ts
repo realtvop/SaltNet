@@ -68,6 +68,13 @@ self.onmessage = event => {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`获取对战好友信息失败：${errorMsg}`, errorMsg);
         }
+    } else if (type === "clearIllegalTickets") {
+        try {
+            clearIllegalTickets(user);
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            info(`清理非法倍券失败：${errorMsg}`, errorMsg);
+        }
     }
 };
 
@@ -204,6 +211,17 @@ function getRivalsInfo(user: User) {
                 e.toString()
             );
             return [];
+        });
+}
+function clearIllegalTickets(user: User) {
+    const userName = getUserDisplayName(user);
+    info(`正在清理 ${userName} 的非法倍券`);
+    return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { userId: user.inGame?.id })
+        .then(() => {
+            info(`已清理 ${userName} 的非法倍券`);
+        })
+        .catch(e => {
+            info(`清理 ${userName} 的非法倍券失败: ${e.toString()}`, e.toString());
         });
 }
 
