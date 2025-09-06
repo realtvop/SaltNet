@@ -13,6 +13,8 @@
                 <mdui-typography variant="headline-medium" class="welcome-text">
                     舞萌 DX 查分器
                     <br />
+                    特别感谢 青叶团子 授权使用的图标
+                    <br />
                     <div class="build-time-text">
                         当前版本构建时间:
                         {{
@@ -163,12 +165,13 @@
         gap: 16px;
         width: 100%;
         max-width: 600px;
-        margin-top: 24px;
+        /* margin-top: 24px; */
     }
 
     @media (max-width: 460px) {
         .links-section {
             grid-template-columns: 1fr;
+            gap: 0;
         }
     }
 
