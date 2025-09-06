@@ -616,7 +616,7 @@
     const currentUserLowestRaInChartOrSection = computed(() => {
         if (!props.chart) return null;
 
-        const chart = props.chart.score ? props.chart.score.deluxeScore : null;
+        const chart = props.chart.score ? props.chart.score.deluxeRating : null;
         const section = currentUserLowestRaInSection.value;
 
         if (!chart || !section) return chart || section;
