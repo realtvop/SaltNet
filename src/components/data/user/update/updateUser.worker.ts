@@ -75,6 +75,13 @@ self.onmessage = event => {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`清理非法倍券失败：${errorMsg}`, errorMsg);
         }
+    } else if (type === "previewStockedTickets") {
+        try {
+            previewStockedTickets(user);
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            info(`获取倍券失败：${errorMsg}`, errorMsg);
+        }
     }
 };
 
@@ -222,6 +229,50 @@ function clearIllegalTickets(user: User) {
         })
         .catch(e => {
             info(`清理 ${userName} 的非法倍券失败: ${e.toString()}`, e.toString());
+        });
+}
+function previewStockedTickets(user: User) {
+    const userName = getUserDisplayName(user);
+    info(`正在获取 ${userName} 的倍券`);
+    return postAPI(SaltAPIEndpoints.GetStockedTickets, { userId: user.inGame?.id })
+        .then(r => r.json())
+        .then(
+            (
+                data:
+                    | {
+                          chargeId: number;
+                          stock: number;
+                          purchaseDate: string;
+                          validDate: string;
+                          extNum1: number;
+                      }[]
+                    | null
+            ) => {
+                if (data) {
+                    let description = "";
+                    for (const ticket of data) {
+                        description += `${ticket.chargeId} 倍券：${ticket.stock} 张\n    购买日期： ${ticket.purchaseDate}\n    有效期至： ${ticket.validDate}\n\n`;
+                    }
+                    if (description === "") description = "没有倍券";
+                    if (description.endsWith("\n\n")) description = description.slice(0, -2);
+                    self.postMessage({
+                        type: "alert",
+                        data: {
+                            headline: `${userName} 的倍券`,
+                            description,
+                            closeOnOverlayClick: true,
+                            closeOnEsc: true,
+                        },
+                    });
+                } else {
+                    info(`获取 ${userName} 的倍券失败`);
+                    return [];
+                }
+            }
+        )
+        .catch(e => {
+            info(`获取 ${userName} 的倍券失败：${e.toString()}`, e.toString());
+            return [];
         });
 }
 

@@ -35,4 +35,5 @@ export enum SaltAPIEndpoints {
     CheckLogin = "checkLogin",
     PreviewRivals = "previewRivals",
     ClearIllegalTickets = "clearIllegalTickets",
+    GetStockedTickets = "getStockedTickets",
 }

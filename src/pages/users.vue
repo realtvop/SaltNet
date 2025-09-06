@@ -10,6 +10,7 @@
         updateUser,
         previewRivals,
         clearIllegalTickets,
+        previewStockedTickets,
     } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
@@ -273,6 +274,11 @@
                         <mdui-menu-item @click="showUserInfo(user)">
                             查看用户信息
                             <mdui-icon slot="icon" name="info"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-menu-item @click="previewStockedTickets(user)" v-if="user.inGame?.id">
+                            预览倍券
+                            <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
                             @click="clearIllegalTicketsPrompt(user)"
