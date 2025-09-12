@@ -99,23 +99,3 @@ export function chartScoreFromDF(chart: DivingFishMusicChart): ChartScore {
         deluxeScore: chart.dxScore,
     };
 }
-
-// 将 DivingFishFullRecord 转换为 Chart 类型
-export function convertDFRecordToChart(record: DivingFishFullRecord): Chart | null {
-    const baseChart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
-    if (!baseChart) return null;
-
-    const chartScore: Chart["score"] = {
-        achievements: record.achievements,
-        comboStatus: record.fc,
-        syncStatus: record.fs,
-        rankRate: record.rate,
-        deluxeRating: record.ra,
-        deluxeScore: record.dxScore,
-    };
-
-    return {
-        ...baseChart,
-        score: chartScore,
-    };
-}

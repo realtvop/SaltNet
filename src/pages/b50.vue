@@ -216,7 +216,12 @@
             :b50SdCharts="b50SdCharts"
             :b50DxCharts="b50DxCharts"
             :playerName="getUserDisplayName(player)"
-            :playerSecondaryName="player.remark && (player.data.name ?? player.divingFish?.name ?? player.inGame?.name) ? (player.data.name ?? player.divingFish?.name ?? player.inGame?.name) : ''"
+            :playerSecondaryName="
+                player.remark &&
+                (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                    ? (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                    : ''
+            "
             :playerRating="player.data.rating"
             style="display: none"
         />

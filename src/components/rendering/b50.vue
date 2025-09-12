@@ -4,13 +4,14 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import type { Chart } from "@/components/data/music/type";
 
-    const { b50SdCharts, b50DxCharts, playerName, playerSecondaryName, playerRating } = defineProps<{
-        b50SdCharts: Chart[];
-        b50DxCharts: Chart[];
-        playerName: string;
-        playerSecondaryName?: string | null;
-        playerRating?: number | null;
-    }>();
+    const { b50SdCharts, b50DxCharts, playerName, playerSecondaryName, playerRating } =
+        defineProps<{
+            b50SdCharts: Chart[];
+            b50DxCharts: Chart[];
+            playerName: string;
+            playerSecondaryName?: string | null;
+            playerRating?: number | null;
+        }>();
 </script>
 
 <template>
@@ -23,10 +24,7 @@
                             <span class="player-name">
                                 {{ playerName }}
                             </span>
-                            <span
-                                v-if="playerSecondaryName"
-                                class="player-original-name"
-                            >
+                            <span v-if="playerSecondaryName" class="player-original-name">
                                 {{ playerSecondaryName }}
                             </span>
                         </div>
