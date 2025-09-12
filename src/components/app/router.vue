@@ -9,6 +9,7 @@
     import SettingsPage from "../../pages/settings.vue";
     import SongsPage from "../../pages/songs.vue";
     import CollectionsPage from "../../pages/collections.vue";
+    import RenderingPage from "../../pages/b50ToRender.vue";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -16,6 +17,8 @@
         { path: "/songs", component: SongsPage },
         { path: "/songs/:id", component: SongsPage, props: true },
         { path: "/b50", component: UserPage },
+        { path: "/b50/render", component: RenderingPage, props: true },
+        // { path: "/", component: RenderingPage, props: true },
         { path: "/b50/:id", component: UserPage, props: true },
         { path: "/settings", component: SettingsPage },
         { path: "/about", component: AboutPage },
