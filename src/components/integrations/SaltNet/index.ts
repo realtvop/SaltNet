@@ -34,4 +34,6 @@ export enum SaltAPIEndpoints {
     UpdateUserFromDivingFish = "updateUserFromDF",
     CheckLogin = "checkLogin",
     PreviewRivals = "previewRivals",
+    ClearIllegalTickets = "clearIllegalTickets",
+    GetStockedTickets = "getStockedTickets",
 }

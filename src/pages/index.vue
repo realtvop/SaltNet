@@ -186,11 +186,11 @@
     .rating-container {
         display: flex;
         justify-content: center;
-        margin: 25px 0; /* Restore margin */
+        margin: 25px 0;
     }
 
     .large-rating {
-        transform: scale(1.5); /* Restore scale */
+        transform: scale(1.2);
     }
 
     .loading-text {

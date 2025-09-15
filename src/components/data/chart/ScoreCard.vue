@@ -5,12 +5,13 @@
     import { useShared } from "@/components/app/shared";
     import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 
-    const { data, rating, cover, compact, compactFilter } = defineProps<{
+    const { data, rating, cover, compact, compactFilter, rendering } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
         compact?: "rankRate" | "comboStatus" | "syncStatus";
         compactFilter?: RankRate | ComboStatus | SyncStatus;
+        rendering?: boolean;
     }>();
     const { isDarkMode } = useShared();
 
@@ -43,9 +44,9 @@
 </script>
 
 <template>
-    <div class="maimai-card-wrapper">
+    <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering }">
         <mdui-card
-            :variant="isDarkMode ? 'filled' : 'elevated'"
+            :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card-minimized"
             clickable
             @click="emit('click')"
@@ -69,7 +70,7 @@
             </div>
         </mdui-card>
         <mdui-card
-            :variant="isDarkMode ? 'filled' : 'elevated'"
+            :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card"
             clickable
             @click="emit('click')"
@@ -147,6 +148,7 @@
         max-width: none;
         padding: 5px;
         box-sizing: border-box;
+        background-color: #00000000;
     }
 
     .maimai-result-card {
@@ -451,5 +453,51 @@
             --card-hover-color: white;
             --badge-bg-color: #666;
         }
+    }
+
+    .mdui-theme-light {
+        --card-bg-color: #f0f0f0;
+        --card-border-color: #ccc;
+        --card-text-color: #333;
+        --card-hover-color: #666;
+        --badge-bg-color: #ddd;
+    }
+
+    .mdui-theme-light .constant-pill[difficulty="0"] {
+        background: #96d767 !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="1"] {
+        background: #eeba41 !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="2"] {
+        background: #ef888f !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="3"] {
+        background: #b54fdf !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="4"] {
+        background: #d3acf9 !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="5"] {
+        background: #ee78f6 !important;
+    }
+
+    .mdui-theme-light .pill-section.level[difficulty="0"] {
+        background: #96d767 !important;
+    }
+    .mdui-theme-light .pill-section.level[difficulty="1"] {
+        background: #eeba41 !important;
+    }
+    .mdui-theme-light .pill-section.level[difficulty="2"] {
+        background: #ef888f !important;
+    }
+    .mdui-theme-light .pill-section.level[difficulty="3"] {
+        background: #b54fdf !important;
+    }
+    .mdui-theme-light .pill-section.level[difficulty="4"] {
+        background: #d3acf9 !important;
+    }
+    .mdui-theme-light .pill-section.level[difficulty="5"] {
+        background: #ee78f6 !important;
     }
 </style>

@@ -18,4 +18,6 @@ app.mount("#app");
 
 setColorScheme("#8E92E1"); // #5EEAC7
 
+document.body.removeChild(document.getElementById("rescue") as HTMLElement);
+
 checkForUpdate();
