@@ -250,32 +250,34 @@
     }
 
     const rangeMax = computed(() => {
-        if(Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6) return 9
+        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
+            return 9;
         else {
-            if(selectedDifficulty.value.endsWith('+')) return 9
-            else return 6
+            if (selectedDifficulty.value.endsWith("+")) return 9;
+            else return 6;
         }
-    })
+    });
 
     const rangeMin = computed(() => {
-        if(Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 5) return 0
+        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 5)
+            return 0;
         else {
-            if(selectedDifficulty.value.endsWith('+')) return 5
-            else return 0
+            if (selectedDifficulty.value.endsWith("+")) return 5;
+            else return 0;
         }
-    })
+    });
 
-    const rangeUpperValue = ref(rangeMax.value)
-    const rangeLowerValue = ref(rangeMin.value)
+    const rangeUpperValue = ref(rangeMax.value);
+    const rangeLowerValue = ref(rangeMin.value);
 
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
-        
+
         let filteredCharts: Chart[];
         const allCharts: Chart[] = shared.chartsSort.charts.filter(
             (chart: Chart) => chart.info.grade === 3
         );
-        
+
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
             // 游戏内难度模式
@@ -285,9 +287,10 @@
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => ((chart.info.level === selectedDifficulty.value) 
-                    && (Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value) 
-                    && (Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value)) 
+                    (chart: Chart) =>
+                        chart.info.level === selectedDifficulty.value &&
+                        Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value &&
+                        Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value
                 );
             }
         } else if (category.value === Category.Banquet) {
@@ -893,10 +896,12 @@
                     v-for="tab in tabs"
                     :key="tab"
                     :value="tab"
-                    @click="() => {
-                        selectedTab[category] = tab
-                        resetSlider()
-                    }"
+                    @click="
+                        () => {
+                            selectedTab[category] = tab;
+                            resetSlider();
+                        }
+                    "
                 >
                     {{ tab }}
                 </mdui-tab>
@@ -935,9 +940,14 @@
                 </mdui-menu>
             </mdui-dropdown>
         </div>
-        
-        <div v-if="category === Category.InGame && selectedDifficulty != 'ALL'" class="detailed-filter">
-            <mdui-card class="detailed-filter-card" variant="outlined" disabled>细分定数筛选:</mdui-card>
+
+        <div
+            v-if="category === Category.InGame && selectedDifficulty != 'ALL'"
+            class="detailed-filter"
+        >
+            <mdui-card class="detailed-filter-card" variant="outlined" disabled>
+                细分定数筛选:
+            </mdui-card>
             <mdui-range-slider
                 :min="rangeMin"
                 :max="rangeMax"
@@ -1154,16 +1164,15 @@
         align-items: center;
         width: 8rem;
     }
-    
+
     mdui-range-slider {
         flex: 1 1 0%;
         padding: 0 25px;
     }
 
     mdui-range-slider::part(label)::before {
-        content: '.';
+        content: ".";
     }
-
 
     .score-grid-wrapper {
         width: 100%;
