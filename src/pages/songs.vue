@@ -248,14 +248,34 @@
             charts: charts,
         };
     }
+
+    const rangeMax = computed(() => {
+        if(Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6) return 9
+        else {
+            if(selectedDifficulty.value.endsWith('+')) return 9
+            else return 6
+        }
+    })
+
+    const rangeMin = computed(() => {
+        if(Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 5) return 0
+        else {
+            if(selectedDifficulty.value.endsWith('+')) return 5
+            else return 0
+        }
+    })
+
+    const rangeUpperValue = ref(rangeMax.value)
+    const rangeLowerValue = ref(rangeMin.value)
+
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
-
+        
         let filteredCharts: Chart[];
         const allCharts: Chart[] = shared.chartsSort.charts.filter(
             (chart: Chart) => chart.info.grade === 3
         );
-
+        
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
             // 游戏内难度模式
@@ -265,7 +285,9 @@
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.level === selectedDifficulty.value
+                    (chart: Chart) => ((chart.info.level === selectedDifficulty.value) 
+                    && (Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value) 
+                    && (Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value)) 
                 );
             }
         } else if (category.value === Category.Banquet) {
@@ -817,6 +839,19 @@
             },
         });
     }
+
+    function rangeChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const value = target.value;
+        console.log(value);
+        rangeLowerValue.value = Number(value[0]);
+        rangeUpperValue.value = Number(value[1]);
+    }
+
+    async function resetSlider() {
+        rangeLowerValue.value = await Promise.resolve(rangeMin.value);
+        rangeUpperValue.value = await Promise.resolve(rangeMax.value);
+    }
 </script>
 
 <template>
@@ -858,7 +893,10 @@
                     v-for="tab in tabs"
                     :key="tab"
                     :value="tab"
-                    @click="selectedTab[category] = tab"
+                    @click="() => {
+                        selectedTab[category] = tab
+                        resetSlider()
+                    }"
                 >
                     {{ tab }}
                 </mdui-tab>
@@ -896,6 +934,16 @@
                     </mdui-menu-item>
                 </mdui-menu>
             </mdui-dropdown>
+        </div>
+        
+        <div v-if="category === Category.InGame && selectedDifficulty != 'ALL'" class="detailed-filter">
+            <mdui-card class="detailed-filter-card" variant="outlined" disabled>细分定数筛选:</mdui-card>
+            <mdui-range-slider
+                :min="rangeMin"
+                :max="rangeMax"
+                :step="1"
+                @input="rangeChange"
+            ></mdui-range-slider>
         </div>
 
         <div v-if="category in versionPlates" class="search-input">
@@ -940,7 +988,7 @@
             class="search-input"
         >
             <mdui-select
-                style="width: 4.1rem"
+                style="width: 7.62rem"
                 label="难度"
                 :value="difficultyFilter + 1"
                 @change="handleDifficultyFilterChange"
@@ -1093,6 +1141,29 @@
             height: calc(100vh - 6.75rem) !important;
         }
     }
+
+    .detailed-filter {
+        display: flex;
+        justify-content: center;
+        padding: 5px 20px;
+    }
+
+    .detailed-filter-card {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        width: 8rem;
+    }
+    
+    mdui-range-slider {
+        flex: 1 1 0%;
+        padding: 0 25px;
+    }
+
+    mdui-range-slider::part(label)::before {
+        content: '.';
+    }
+
 
     .score-grid-wrapper {
         width: 100%;
