@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -254,15 +254,15 @@
             return 9;
         else {
             if (selectedDifficulty.value.endsWith("+")) return 9;
-            else return 6;
+            else return 5;
         }
     });
 
     const rangeMin = computed(() => {
-        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 5)
+        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
             return 0;
         else {
-            if (selectedDifficulty.value.endsWith("+")) return 5;
+            if (selectedDifficulty.value.endsWith("+")) return 6;
             else return 0;
         }
     });
@@ -846,14 +846,23 @@
     function rangeChange(event: Event) {
         const target = event.target as HTMLInputElement;
         const value = target.value;
-        console.log(value);
+        // console.log(value);
         rangeLowerValue.value = Number(value[0]);
         rangeUpperValue.value = Number(value[1]);
     }
 
     async function resetSlider() {
-        rangeLowerValue.value = await Promise.resolve(rangeMin.value);
-        rangeUpperValue.value = await Promise.resolve(rangeMax.value);
+        // 等待 rangeMin 和 rangeMax 改变并更新到 DOM
+        await nextTick();
+        // 先更新 rangeLowerValue 和 rangeUpperValue 的值
+        rangeLowerValue.value = rangeMin.value;
+        rangeUpperValue.value = rangeMax.value;
+        // 然后更新滑块的值
+        const slider = document.querySelector(".rangeSlider");
+        if (slider) {
+            //@ts-ignore
+            slider.value = [rangeMin.value, rangeMax.value];
+        }
     }
 </script>
 
@@ -953,6 +962,7 @@
                 :max="rangeMax"
                 :step="1"
                 @input="rangeChange"
+                class="rangeSlider"
             ></mdui-range-slider>
         </div>
 
@@ -1165,12 +1175,12 @@
         width: 8rem;
     }
 
-    mdui-range-slider {
+    .rangeSlider {
         flex: 1 1 0%;
         padding: 0 25px;
     }
 
-    mdui-range-slider::part(label)::before {
+    .rangeSlider::part(label)::before {
         content: ".";
     }
 
