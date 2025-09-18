@@ -40,9 +40,9 @@ export interface Chart {
 export interface ChartInfo {
     notes: [number, number, number, number];
     charter: string;
-    level: string;
-    grade: number;
-    constant: number;
+    level: string; // 难度(..., 13+, 14, ...)
+    grade: number; // 难度对应index(0/1/2/3/4/10, 对应绿黄红紫白宴)
+    constant: number; // 定数(小数点后的一位, 0, 1, ..., 9)
     deluxeScoreMax: number;
     stat?: ChartStats;
 }
