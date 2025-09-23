@@ -20,6 +20,8 @@ setColorScheme("#8E92E1"); // #5EEAC7
 
 document.body.removeChild(document.getElementById("rescue") as HTMLElement);
 
+document.title = `${import.meta.env.DEV ? "[DEV] " : ""}SaltNet${window.location.hostname === "alpha.realtvop.top" ? " α" : ""}`;
+
 checkForUpdate();
 
 if (window.location.search.startsWith("?genb50")) {
