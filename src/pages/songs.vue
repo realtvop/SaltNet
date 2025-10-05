@@ -100,16 +100,6 @@
         };
     });
     const plateFinishSort = ref("condition");
-    function handlePlateSortChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-
-        if (target.value) plateFinishSort.value = target.value;
-        else {
-            const previousValue = plateFinishSort.value;
-            plateFinishSort.value = target.value;
-            plateFinishSort.value = previousValue;
-        }
-    }
 
     const difficultyFilter = ref(3);
 
@@ -809,101 +799,95 @@
     <div class="songs-page" :class="{ 'songs-page-fixed': userId }">
         <!-- [游戏排序]难度选单 -->
         <div class="category-bar">
-            <mdui-dropdown>
-                <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
-                <mdui-menu>
-                    <mdui-menu-item
-                        @click="category = item"
-                        v-for="(item, index) in Object.values(Category)"
-                        :key="index"
-                        :style="{
-                            backgroundColor:
-                                category == item ? 'rgba(var(--mdui-color-primary),12%)' : '',
-                        }"
-                        :icon="category == item ? 'check' : ''"
-                    >
-                        {{ item }}
-                    </mdui-menu-item>
-                    <mdui-divider />
-                    <mdui-menu-item
-                        v-for="(plateType, index) in Object.keys(versionPlates)"
-                        :key="`plate-${index}`"
-                        :icon="category === plateType ? 'check' : ''"
-                        :style="{
-                            backgroundColor:
-                                category === plateType ? 'rgba(var(--mdui-color-primary),12%)' : '',
-                        }"
-                        @click="category = plateType as VersionPlateCategory"
-                    >
-                        {{ plateType }}牌
-                    </mdui-menu-item>
-                </mdui-menu>
-            </mdui-dropdown>
-            <mdui-tabs :value="selectedDifficulty">
-                <mdui-tab
+            <s-picker
+                :value="category"
+                @change="(e: Event) => (category = (e.target as any).value)"
+                type="outlined"
+            >
+                <s-chip slot="trigger">
+                    {{ category }}
+                    <mdui-icon
+                        slot="end"
+                        name="keyboard_arrow_down"
+                        style="margin-right: -6px"
+                    ></mdui-icon>
+                </s-chip>
+                <s-picker-item
+                    v-for="(item, index) in Object.values(Category)"
+                    :key="index"
+                    :value="item"
+                >
+                    {{ item }}
+                </s-picker-item>
+                <s-divider></s-divider>
+                <s-picker-item
+                    v-for="(plateType, index) in Object.keys(versionPlates)"
+                    :key="`plate-${index}`"
+                    :value="plateType"
+                >
+                    {{ plateType }}牌
+                </s-picker-item>
+            </s-picker>
+            <s-tab :value="selectedDifficulty">
+                <s-tab-item
                     v-for="tab in tabs"
                     :key="tab"
                     :value="tab"
                     @click="selectedTab[category] = tab"
                 >
-                    {{ tab }}
-                </mdui-tab>
-            </mdui-tabs>
+                    <div slot="text">{{ tab }}</div>
+                </s-tab-item>
+            </s-tab>
             <!-- 收藏选项 -->
-            <mdui-dropdown v-if="category == Category.Favorite">
+            <s-picker
+                v-if="category == Category.Favorite"
+                @change="
+                    (e: Event) => {
+                        const action = (e.target as any).value;
+                        if (action === 'new') newFavList();
+                        else if (action === 'import') importFavList();
+                        else if (action === 'rename') renameFavList();
+                        else if (action === 'export') exportFavList();
+                        else if (action === 'delete') deleteFavList();
+                        (e.target as any).value = '';
+                    }
+                "
+            >
                 <mdui-button-icon slot="trigger" icon="more_vert"></mdui-button-icon>
-                <mdui-menu>
-                    <mdui-menu-item icon="add" @click="newFavList">新建收藏夹</mdui-menu-item>
-                    <mdui-menu-item icon="content_paste" @click="importFavList">
-                        导入收藏夹
-                    </mdui-menu-item>
-                    <mdui-divider v-if="shared.favorites.length > 0" />
-                    <mdui-menu-item
-                        v-if="shared.favorites.length > 0"
-                        icon="edit"
-                        @click="renameFavList"
-                    >
-                        重命名
-                    </mdui-menu-item>
-                    <mdui-menu-item
-                        v-if="shared.favorites.length > 0"
-                        icon="content_copy"
-                        @click="exportFavList"
-                    >
-                        导出
-                    </mdui-menu-item>
-                    <mdui-menu-item
-                        v-if="shared.favorites.length > 0"
-                        icon="delete"
-                        style="color: red"
-                        @click="deleteFavList"
-                    >
-                        删除
-                    </mdui-menu-item>
-                </mdui-menu>
-            </mdui-dropdown>
+                <s-picker-item value="new">
+                    <mdui-icon slot="start" name="add"></mdui-icon>
+                    新建收藏夹
+                </s-picker-item>
+                <s-picker-item value="import">
+                    <mdui-icon slot="start" name="content_paste"></mdui-icon>
+                    导入收藏夹
+                </s-picker-item>
+                <s-picker-item v-if="shared.favorites.length > 0" value="rename">
+                    <mdui-icon slot="start" name="edit"></mdui-icon>
+                    重命名
+                </s-picker-item>
+                <s-picker-item v-if="shared.favorites.length > 0" value="export">
+                    <mdui-icon slot="start" name="content_copy"></mdui-icon>
+                    导出
+                </s-picker-item>
+                <s-picker-item v-if="shared.favorites.length > 0" value="delete">
+                    <mdui-icon slot="start" name="delete" style="color: red"></mdui-icon>
+                    <span style="color: red">删除</span>
+                </s-picker-item>
+            </s-picker>
         </div>
 
         <div v-if="category in versionPlates" class="search-input">
-            <mdui-select
+            <s-picker
                 style="width: 5rem"
                 label="排序"
                 :value="plateFinishSort"
-                @change="handlePlateSortChange"
+                @change="(e: Event) => (plateFinishSort = (e.target as any).value)"
             >
-                <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
-                    条件
-                </mdui-menu-item>
-                <mdui-menu-item
-                    value="constant-desc"
-                    :selected="plateFinishSort === 'constant-desc'"
-                >
-                    定数↓
-                </mdui-menu-item>
-                <mdui-menu-item value="constant-asc" :selected="plateFinishSort === 'constant-asc'">
-                    定数↑
-                </mdui-menu-item>
-            </mdui-select>
+                <s-picker-item value="condition">条件</s-picker-item>
+                <s-picker-item value="constant-desc">定数↓</s-picker-item>
+                <s-picker-item value="constant-asc">定数↑</s-picker-item>
+            </s-picker>
             <span>
                 {{ plateFinishStatus.conditionText }}
             </span>
@@ -930,7 +914,7 @@
                 :value="difficultyFilter.toString()"
                 @change="(e: Event) => (difficultyFilter = Number((e.target as any).value))"
             >
-                <s-field slot="trigger" style="width: 4.1rem">
+                <s-field slot="trigger" style="width: 4.1rem; height: 48px">
                     <div slot="label">难度</div>
                     <div>{{ ["BAS", "ADV", "EXP", "MAS", "Re:M"][difficultyFilter] }}</div>
                 </s-field>
@@ -942,14 +926,17 @@
                     {{ label }}
                 </s-picker-item>
             </s-picker>
-            <mdui-text-field
+            <!-- <mdui-text-field
                 clearable
                 icon="search"
                 label="搜索"
                 placeholder="曲名 别名 id 曲师 谱师"
                 @input="query = $event.target.value"
                 style="flex: 1"
-            ></mdui-text-field>
+            ></mdui-text-field> -->
+            <s-text-field v-model="query" placeholder="搜索: 曲名 别名 id 曲师 谱师">
+                <s-icon slot="start" name="search"></s-icon>
+            </s-text-field>
         </div>
         <mdui-text-field
             class="search-input"
@@ -1017,15 +1004,6 @@
         }
     }
 
-    mdui-select::part(menu) {
-        width: unset;
-        max-height: 60vh;
-        overflow-y: auto;
-        min-width: 160px;
-        max-width: 90vw;
-        text-align: left;
-    }
-
     .category-bar {
         display: flex;
         align-items: center;
@@ -1035,7 +1013,7 @@
         overflow: hidden;
     }
 
-    mdui-tabs {
+    s-tab {
         flex: 1;
         min-width: 0;
         overflow-x: auto;
@@ -1223,5 +1201,9 @@
     .loading-text {
         color: #666;
         margin-bottom: 10px;
+    }
+
+    s-text-field {
+        width: 100%;
     }
 </style>
