@@ -105,27 +105,13 @@
 
         if (target.value) plateFinishSort.value = target.value;
         else {
-            // 阻止点击已经选择的项目时清空项目
             const previousValue = plateFinishSort.value;
             plateFinishSort.value = target.value;
             plateFinishSort.value = previousValue;
-            // wtf
         }
     }
 
     const difficultyFilter = ref(3);
-
-    function handleDifficultyFilterChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-
-        if (target.value) difficultyFilter.value = Number(target.value) - 1;
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = difficultyFilter.value;
-            difficultyFilter.value = Number(target.value) - 1;
-            difficultyFilter.value = previousValue;
-        }
-    }
 
     function getRandomChart() {
         if (!chartListFiltered.value) return null;
@@ -939,16 +925,23 @@
             "
             class="search-input"
         >
-            <mdui-select
+            <s-picker
                 style="width: 4.1rem"
-                label="难度"
-                :value="difficultyFilter + 1"
-                @change="handleDifficultyFilterChange"
+                :value="difficultyFilter.toString()"
+                @change="(e: Event) => (difficultyFilter = Number((e.target as any).value))"
             >
-                <mdui-menu-item v-for="index in 5" :key="index" :value="index">
-                    {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
-                </mdui-menu-item>
-            </mdui-select>
+                <s-field slot="trigger" style="width: 4.1rem">
+                    <div slot="label">难度</div>
+                    <div>{{ ["BAS", "ADV", "EXP", "MAS", "Re:M"][difficultyFilter] }}</div>
+                </s-field>
+                <s-picker-item
+                    v-for="(label, index) in ['BASIC', 'ADVANCED', 'EXPERT', 'MASTER', 'Re:MASTER']"
+                    :key="index"
+                    :value="index.toString()"
+                >
+                    {{ label }}
+                </s-picker-item>
+            </s-picker>
             <mdui-text-field
                 clearable
                 icon="search"
