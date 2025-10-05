@@ -377,7 +377,10 @@
         width: 100%;
         max-width: 1200px;
         box-sizing: border-box;
-        padding-bottom: 5vh;
+        padding-bottom: 80px;
+        @media (min-aspect-ratio: 1.001/1) {
+            padding-bottom: 16px;
+        }
     }
 
     .player-header {

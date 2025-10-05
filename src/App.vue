@@ -25,156 +25,125 @@
 </script>
 
 <template>
-    <mdui-layout>
-        <component :is="TopAppBar" :playerInfo="playerInfo" v-if="route.path !== '/b50/render'" />
-        <mdui-navigation-bar
-            :value="route.path"
-            v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
-            label-visibility="labeled"
-        >
-            <mdui-navigation-bar-item icon="home" value="/" @click="router.push('/')">
-                首页
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="data_thresholding"
-                value="/b50"
-                @click="router.push('/b50')"
-            >
-                B50
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="library_music"
-                value="/songs"
-                @click="handleSongsNavigation"
-            >
-                谱面
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item
-                icon="collections"
-                value="/collections"
-                @click="router.push('/collections')"
-            >
-                藏品
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">
-                用户
-            </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item icon="info" value="/about" @click="router.push('/about')">
-                关于
-            </mdui-navigation-bar-item>
-        </mdui-navigation-bar>
-        <mdui-navigation-rail
-            :value="route.path"
-            v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
-        >
-            <mdui-navigation-rail-item icon="home" value="/" @click="router.push('/')">
-                首页
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="data_thresholding"
-                value="/b50"
-                @click="router.push('/b50')"
-            >
-                B50
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="library_music"
-                value="/songs"
-                @click="handleSongsNavigation"
-            >
-                谱面
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item
-                icon="collections"
-                value="/collections"
-                @click="router.push('/collections')"
-            >
-                藏品
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">
-                用户
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item icon="info" value="/about" @click="router.push('/about')">
-                关于
-            </mdui-navigation-rail-item>
-        </mdui-navigation-rail>
-
-        <mdui-layout-main class="app-container">
-            <router-view v-slot="{ Component }">
-                <component :is="Component" :key="route.path" />
-            </router-view>
-        </mdui-layout-main>
-    </mdui-layout>
+    <component
+        :is="TopAppBar"
+        class="appbar"
+        :playerInfo="playerInfo"
+        v-if="route.path !== '/b50/render'"
+    />
+    <s-navigation
+        v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
+        :value="route.path"
+        mode="bottom"
+    >
+        <s-navigation-item value="/" @click="router.push('/')">
+            <mdui-icon name="home" slot="icon"></mdui-icon>
+            <div slot="text">首页</div>
+        </s-navigation-item>
+        <s-navigation-item value="/b50" @click="router.push('/b50')">
+            <mdui-icon name="data_thresholding" slot="icon"></mdui-icon>
+            <div slot="text">B50</div>
+        </s-navigation-item>
+        <s-navigation-item value="/songs" @click="handleSongsNavigation">
+            <mdui-icon name="library_music" slot="icon"></mdui-icon>
+            <div slot="text">谱面</div>
+        </s-navigation-item>
+        <s-navigation-item value="/collections" @click="router.push('/collections')">
+            <mdui-icon name="collections" slot="icon"></mdui-icon>
+            <div slot="text">藏品</div>
+        </s-navigation-item>
+        <s-navigation-item value="/users" @click="router.push('/users')">
+            <mdui-icon name="people" slot="icon"></mdui-icon>
+            <div slot="text">用户</div>
+        </s-navigation-item>
+        <s-navigation-item value="/about" @click="router.push('/about')">
+            <mdui-icon name="info" slot="icon"></mdui-icon>
+            <div slot="text">关于</div>
+        </s-navigation-item>
+    </s-navigation>
+    <s-navigation
+        v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"
+        :value="route.path"
+        mode="rail"
+    >
+        <s-navigation-item value="/" @click="router.push('/')">
+            <mdui-icon name="home" slot="icon"></mdui-icon>
+            <div slot="text">首页</div>
+        </s-navigation-item>
+        <s-navigation-item value="/b50" @click="router.push('/b50')">
+            <mdui-icon name="data_thresholding" slot="icon"></mdui-icon>
+            <div slot="text">B50</div>
+        </s-navigation-item>
+        <s-navigation-item value="/songs" @click="handleSongsNavigation">
+            <mdui-icon name="library_music" slot="icon"></mdui-icon>
+            <div slot="text">谱面</div>
+        </s-navigation-item>
+        <s-navigation-item value="/collections" @click="router.push('/collections')">
+            <mdui-icon name="collections" slot="icon"></mdui-icon>
+            <div slot="text">藏品</div>
+        </s-navigation-item>
+        <s-navigation-item value="/users" @click="router.push('/users')">
+            <mdui-icon name="people" slot="icon"></mdui-icon>
+            <div slot="text">用户</div>
+        </s-navigation-item>
+        <s-navigation-item value="/about" @click="router.push('/about')">
+            <mdui-icon name="info" slot="icon"></mdui-icon>
+            <div slot="text">关于</div>
+        </s-navigation-item>
+    </s-navigation>
+    <div class="app-container">
+        <router-view v-slot="{ Component }">
+            <component :is="Component" :key="route.path" />
+        </router-view>
+    </div>
 </template>
 
 <style scoped>
     .app-container {
-        padding: 16px;
+        /* padding-left: 16px; */
+        padding-top: 80px; /* 64+16 */
+        @media (max-width: 1024px) {
+            padding-top: 72px; /* 56+16 */
+        }
         box-sizing: border-box;
         height: 100%;
         overflow-y: auto;
     }
 
-    mdui-navigation-bar,
-    mdui-navigation-rail {
-        position: fixed !important;
-        -webkit-tap-highlight-color: transparent;
-    }
-    mdui-navigation-bar {
-        height: var(--nav-bar-height);
-        padding-bottom: var(--nav-bar-padding-bottom);
+    .appbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
     }
 
-    mdui-navigation-rail-item {
-        overflow: hidden;
+    s-navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 114514;
     }
-    mdui-navigation-bar-item {
-        overflow: hidden;
-    }
-
-    mdui-navigation-rail {
+    s-navigation[mode="rail"] {
         display: none;
+        top: 64px;
+        bottom: 0;
     }
+
+    s-navigation-item {
+        overflow: hidden;
+    }
+
     @media (min-aspect-ratio: 1.001/1) {
-        mdui-navigation-bar {
+        s-navigation {
             display: none;
         }
-        mdui-navigation-rail {
+        s-navigation[mode="rail"] {
             display: block !important;
         }
-    }
-
-    .player-info-bar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .player-rating-chip {
-        margin-left: 4px;
-        transform: scale(0.9);
-    }
-
-    .favorite-icon-button {
-        margin-left: 4px;
-    }
-
-    .search-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .search-field {
-        min-width: 150px;
-    }
-
-    @media (max-width: 600px) {
-        .search-field {
-            min-width: 120px;
-        }
-        .player-info-bar {
-            gap: 4px;
+        .app-container {
+            margin-left: 64px;
         }
     }
 </style>

@@ -5,7 +5,9 @@ import "./style.css";
 import App from "./App.vue";
 import router from "./components/app/router.vue";
 import "mdui/mdui.css";
-import { setColorScheme } from "mdui";
+import "sober";
+import { createScheme } from "sober-theme";
+// import { setColorScheme } from "mdui";
 import { checkForUpdate } from "./components/app/checkForUpdate";
 
 const pinia = createPinia();
@@ -16,7 +18,8 @@ app.use(router);
 
 app.mount("#app");
 
-setColorScheme("#8E92E1"); // #5EEAC7
+// setColorScheme("#8E92E1"); // #5EEAC7
+createScheme("#e6dbec", { page: document.querySelector("s-page")! });
 
 document.body.removeChild(document.getElementById("rescue") as HTMLElement);
 
