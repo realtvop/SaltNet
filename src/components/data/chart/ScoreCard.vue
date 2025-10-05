@@ -54,12 +54,15 @@
 
 <template>
     <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering }">
-        <mdui-card
-            :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
+        <s-card
+            type="filled"
             class="maimai-result-card-minimized"
-            clickable
             @click="emit('click')"
             v-if="compact"
+            clickable
+            :style="{
+                background: isDarkMode ? '' : 'var(--s-color-surface-container-low, #E1E3E4)',
+            }"
         >
             <img
                 class="song-jacket-image"
@@ -81,13 +84,16 @@
             >
                 {{ constantToDisplay.toFixed(1) }}
             </div>
-        </mdui-card>
-        <mdui-card
-            :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
+        </s-card>
+        <s-card
+            type="filled"
             class="maimai-result-card"
-            clickable
             @click="emit('click')"
             v-else
+            clickable
+            :style="{
+                background: isDarkMode ? '' : 'var(--s-color-surface-container-low, #E1E3E4)',
+            }"
         >
             <div class="song-jacket-section">
                 <img
@@ -151,7 +157,7 @@
                     </div>
                 </div>
             </div>
-        </mdui-card>
+        </s-card>
     </div>
 </template>
 
