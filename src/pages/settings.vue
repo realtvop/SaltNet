@@ -1,19 +1,37 @@
 <template>
     <div class="settings">
         <mdui-card variant="filled" class="settings-item">
-            <h2>数据</h2>
+            <h2>{{ $t("settings.language") }}</h2>
+            <br />
+            <mdui-select v-model="currentLocale">
+                <mdui-menu-item
+                    v-for="locale in availableLocales"
+                    :key="locale.code"
+                    :value="locale.code"
+                    @click="handleLocaleChange(locale.code)"
+                >
+                    {{ locale.name }}
+                </mdui-menu-item>
+            </mdui-select>
+        </mdui-card>
+        <mdui-card variant="filled" class="settings-item">
+            <h2>{{ $t("settings.data") }}</h2>
             <br />
             <div class="btns-container">
-                <mdui-button variant="tonal" @click="userData.import">导入</mdui-button>
-                <mdui-button variant="tonal" @click="userData.export">导出</mdui-button>
+                <mdui-button variant="tonal" @click="userData.import">
+                    {{ $t("settings.import") }}
+                </mdui-button>
+                <mdui-button variant="tonal" @click="userData.export">
+                    {{ $t("settings.export") }}
+                </mdui-button>
             </div>
         </mdui-card>
         <mdui-card variant="filled" class="settings-item">
-            <h2>缓存</h2>
+            <h2>{{ $t("settings.cache") }}</h2>
             <br />
             <div class="btns-container">
                 <mdui-button variant="tonal" @click="deleteCache('Covers')">
-                    清除缓存图片
+                    {{ $t("settings.clearCacheImages") }}
                 </mdui-button>
             </div>
         </mdui-card>
@@ -21,10 +39,20 @@
 </template>
 
 <script setup lang="ts">
+    import { ref } from "vue";
+    import { useI18n } from "vue-i18n";
     import { useShared } from "@/components/app/shared";
     import { snackbar, confirm } from "mdui";
+    import { setLocale, getLocale, availableLocales } from "@/i18n";
 
     const shared = useShared();
+    const { t } = useI18n();
+    const currentLocale = ref(getLocale());
+
+    function handleLocaleChange(locale: string) {
+        setLocale(locale);
+        currentLocale.value = locale;
+    }
 
     const userData = {
         import: () => {
@@ -40,12 +68,12 @@
                     const decoded = userData.dataDecoder[0](data);
                     shared.users = decoded.users;
                     snackbar({
-                        message: "导入成功，正在同步曲目数据...",
+                        message: t("settings.importSuccess"),
                         autoCloseDelay: 500,
                     });
                 } catch (err) {
                     snackbar({
-                        message: "导入失败，文件格式错误或数据损坏",
+                        message: t("settings.importFailed"),
                         autoCloseDelay: 1000,
                     });
                 }
@@ -54,7 +82,7 @@
         },
         export: () => {
             snackbar({
-                message: "正在导出",
+                message: t("settings.exporting"),
                 autoCloseDelay: 500,
             });
             if (shared.users) {
@@ -72,12 +100,12 @@
                 URL.revokeObjectURL(url);
 
                 snackbar({
-                    message: "已导出",
+                    message: t("settings.exported"),
                     autoCloseDelay: 500,
                 });
             } else {
                 snackbar({
-                    message: "没有数据可导出",
+                    message: t("settings.noDataToExport"),
                     autoCloseDelay: 500,
                 });
             }
@@ -93,11 +121,12 @@
     };
 
     const displayName = {
-        Covers: "图片资源",
+        Covers: "imageResources",
     };
     function deleteCache(key: keyof typeof displayName) {
+        const cacheName = t(`settings.${displayName[key]}`);
         confirm({
-            headline: `清除缓存的${displayName[key]}？`,
+            headline: t("settings.confirmClearCache", { name: cacheName }),
             description: "数据删除后将无法恢复",
             closeOnEsc: true,
             closeOnOverlayClick: true,
@@ -106,13 +135,13 @@
                     .delete(`SaltNetv0-${key}`)
                     .then(() => {
                         snackbar({
-                            message: `已清除缓存的${displayName[key]}`,
+                            message: t("settings.cacheCleared", { name: cacheName }),
                             autoCloseDelay: 500,
                         });
                     })
                     .catch(() => {
                         snackbar({
-                            message: `清除缓存的${displayName[key]}失败`,
+                            message: `清除缓存的${cacheName}失败`,
                             autoCloseDelay: 500,
                         });
                     }),

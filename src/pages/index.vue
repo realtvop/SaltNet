@@ -14,12 +14,16 @@
     }
 
     let lastSaltClick = -114514;
+    import { useI18n } from "vue-i18n";
+
+    const { t } = useI18n();
+
     function meow() {
         console.log("meow");
         const now = performance.now();
         if (now - lastSaltClick < 500) {
             snackbar({
-                message: "喵喵，咕噜咕噜～",
+                message: t("index.meow"),
                 closeOnOutsideClick: true,
             });
         }
@@ -30,14 +34,14 @@
 <template>
     <mdui-list class="announcement-list">
         <mdui-list-item nonclickable rounded active icon="update" v-if="shared.isUpdated">
-            更新完成！刷新生效
+            {{ $t("index.updateComplete") }}
             <mdui-button
                 slot="end-icon"
                 variant="text"
                 style="margin-right: -1rem"
                 @click="reloadPage"
             >
-                立即刷新
+                {{ $t("index.refreshNow") }}
             </mdui-button>
         </mdui-list-item>
         <mdui-list-item
@@ -47,7 +51,7 @@
             href="https://docs.salt.realtvop.top/basis/pwa/"
             target="_blank"
         >
-            想将 SaltNet 安装为应用吗？点击查看教程
+            {{ $t("index.pwaInstallPrompt") }}
         </mdui-list-item>
     </mdui-list>
     <div class="page-content">

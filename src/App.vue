@@ -38,27 +38,27 @@
     >
         <s-navigation-item value="/" @click="router.push('/')">
             <mdui-icon name="home" slot="icon"></mdui-icon>
-            <div slot="text">首页</div>
+            <div slot="text">{{ $t("navigation.home") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/b50" @click="router.push('/b50')">
             <mdui-icon name="data_thresholding" slot="icon"></mdui-icon>
-            <div slot="text">B50</div>
+            <div slot="text">{{ $t("navigation.b50") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/songs" @click="handleSongsNavigation">
             <mdui-icon name="library_music" slot="icon"></mdui-icon>
-            <div slot="text">谱面</div>
+            <div slot="text">{{ $t("navigation.songs") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/collections" @click="router.push('/collections')">
             <mdui-icon name="collections" slot="icon"></mdui-icon>
-            <div slot="text">藏品</div>
+            <div slot="text">{{ $t("navigation.collections") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/users" @click="router.push('/users')">
             <mdui-icon name="people" slot="icon"></mdui-icon>
-            <div slot="text">用户</div>
+            <div slot="text">{{ $t("navigation.users") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/about" @click="router.push('/about')">
             <mdui-icon name="info" slot="icon"></mdui-icon>
-            <div slot="text">关于</div>
+            <div slot="text">{{ $t("navigation.about") }}</div>
         </s-navigation-item>
     </s-navigation>
     <s-navigation
@@ -68,27 +68,27 @@
     >
         <s-navigation-item value="/" @click="router.push('/')">
             <mdui-icon name="home" slot="icon"></mdui-icon>
-            <div slot="text">首页</div>
+            <div slot="text">{{ $t("navigation.home") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/b50" @click="router.push('/b50')">
             <mdui-icon name="data_thresholding" slot="icon"></mdui-icon>
-            <div slot="text">B50</div>
+            <div slot="text">{{ $t("navigation.b50") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/songs" @click="handleSongsNavigation">
             <mdui-icon name="library_music" slot="icon"></mdui-icon>
-            <div slot="text">谱面</div>
+            <div slot="text">{{ $t("navigation.songs") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/collections" @click="router.push('/collections')">
             <mdui-icon name="collections" slot="icon"></mdui-icon>
-            <div slot="text">藏品</div>
+            <div slot="text">{{ $t("navigation.collections") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/users" @click="router.push('/users')">
             <mdui-icon name="people" slot="icon"></mdui-icon>
-            <div slot="text">用户</div>
+            <div slot="text">{{ $t("navigation.users") }}</div>
         </s-navigation-item>
         <s-navigation-item value="/about" @click="router.push('/about')">
             <mdui-icon name="info" slot="icon"></mdui-icon>
-            <div slot="text">关于</div>
+            <div slot="text">{{ $t("navigation.about") }}</div>
         </s-navigation-item>
     </s-navigation>
     <div class="app-container">

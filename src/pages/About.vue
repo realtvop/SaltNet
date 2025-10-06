@@ -11,15 +11,15 @@
         <mdui-card variant="filled" style="width: 100%; max-width: 600px; margin-bottom: 24px">
             <div style="padding: 20px; text-align: center">
                 <mdui-typography variant="headline-medium" class="welcome-text">
-                    舞萌 DX 查分器
+                    {{ $t("about.subtitle") }}
                     <br />
-                    特别感谢 青叶团子 授权使用的图标
+                    {{ $t("about.thanks") }}
                     <br />
                     <div class="build-time-text">
-                        当前版本构建时间:
+                        {{ $t("about.buildTime") }}
                         {{
                             buildTime === "%buildTime%"
-                                ? "开发版本"
+                                ? $t("about.devVersion")
                                 : new Date(Number(buildTime)).toLocaleString()
                         }}
                     </div>

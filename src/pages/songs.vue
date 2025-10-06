@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import { useRoute } from "vue-router";
+    import { useI18n } from "vue-i18n";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
@@ -24,10 +25,10 @@
     }
 
     enum Category {
-        InGame = "难度",
-        Version = "版本",
-        Favorite = "收藏夹",
-        Banquet = "宴会场",
+        InGame = "InGame",
+        Version = "Version",
+        Favorite = "Favorite",
+        Banquet = "Banquet",
     }
 
     type VersionPlateCategory = keyof typeof versionPlates;
@@ -35,6 +36,12 @@
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
+    const { t } = useI18n();
+
+    const categoryDisplayName = computed(() => (cat: Category) => {
+        const key = cat.toLowerCase() as "ingame" | "version" | "favorite" | "banquet";
+        return t(`songs.categories.${key}`);
+    });
     // prettier-ignore
     const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
@@ -805,7 +812,11 @@
                 type="outlined"
             >
                 <s-chip slot="trigger">
-                    {{ category }}
+                    {{
+                        Object.values(Category).includes(category as Category)
+                            ? categoryDisplayName(category as Category)
+                            : category + $t("songs.plateSuffix")
+                    }}
                     <mdui-icon
                         slot="end"
                         name="keyboard_arrow_down"
@@ -817,7 +828,7 @@
                     :key="index"
                     :value="item"
                 >
-                    {{ item }}
+                    {{ categoryDisplayName(item) }}
                 </s-picker-item>
                 <s-divider></s-divider>
                 <s-picker-item
@@ -825,7 +836,7 @@
                     :key="`plate-${index}`"
                     :value="plateType"
                 >
-                    {{ plateType }}牌
+                    {{ plateType }}{{ $t("songs.plateSuffix") }}
                 </s-picker-item>
             </s-picker>
             <s-tab :value="selectedDifficulty">
