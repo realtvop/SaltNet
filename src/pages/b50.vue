@@ -13,6 +13,7 @@
     import domtoimage from "dom-to-image-more";
     import { dialog, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
 
     const route = useRoute();
     const shared = useShared();
@@ -37,6 +38,14 @@
         return shared.users[Number(userId.value ?? "0")] ?? null;
     });
 
+    const isFitDiffMode = computed(() => {
+        const queryValue = route.query.fit_diff;
+        if (typeof queryValue === "string") return queryValue.toLowerCase() === "y";
+        if (Array.isArray(queryValue))
+            return queryValue.some(item => typeof item === "string" && item.toLowerCase() === "y");
+        return false;
+    });
+
     const errorMessage = computed(() => {
         if (!error.value) return "";
         const msg =
@@ -46,17 +55,38 @@
         return msg;
     });
 
-    const b50SdCharts = computed(() => {
-        if (!player.value?.data?.b50?.sd) return [];
-        return player.value.data.b50.sd
-            .map(convertDFRecordToChart)
+    const chartsByNewness = computed(() => {
+        if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
+
+        const useFitDiff = isFitDiffMode.value;
+        const records = getSourceRecords(useFitDiff);
+        const charts = records
+            .map(record => convertDFRecordToChart(record, useFitDiff))
             .filter((chart): chart is Chart => chart !== null);
+
+        const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
+        const newCharts = charts.filter(chart => chart.music.info.isNew === true);
+
+        if (useFitDiff) {
+            return {
+                old: sortCharts(oldCharts, 35),
+                newer: sortCharts(newCharts, 15),
+            };
+        }
+
+        return {
+            old: oldCharts.slice(0, 35),
+            newer: newCharts.slice(0, 15),
+        };
     });
-    const b50DxCharts = computed(() => {
-        if (!player.value?.data?.b50?.dx) return [];
-        return player.value.data.b50.dx
-            .map(convertDFRecordToChart)
-            .filter((chart): chart is Chart => chart !== null);
+
+    const b50SdCharts = computed(() => chartsByNewness.value.old);
+    const b50DxCharts = computed(() => chartsByNewness.value.newer);
+
+    const displayedRating = computed(() => {
+        const sumRatings = (charts: Chart[]) =>
+            charts.reduce((sum, chart) => sum + (chart.score?.deluxeRating ?? 0), 0);
+        return sumRatings(b50SdCharts.value) + sumRatings(b50DxCharts.value);
     });
 
     const chartInfoDialog = ref<{ open: boolean; chart: Chart | null }>({
@@ -65,23 +95,91 @@
     });
 
     // 将 DivingFishFullRecord 转换为 Chart 类型
-    function convertDFRecordToChart(record: DivingFishFullRecord): Chart | null {
+    function convertDFRecordToChart(
+        record: DivingFishFullRecord,
+        useFitDiff: boolean = false
+    ): Chart | null {
         const baseChart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
         if (!baseChart) return null;
+
+        let rating = record.ra;
+        let fitConstant: number | undefined;
+
+        if (useFitDiff) {
+            const rawFitConstant =
+                baseChart.info.stat?.fit_diff ??
+                (Number.isFinite(record.ds) ? record.ds : undefined) ??
+                baseChart.info.constant;
+            const normalizedConstant = normalizeConstant(rawFitConstant);
+            fitConstant = normalizedConstant ?? baseChart.info.constant;
+            rating = calculateRating(record.achievements, fitConstant);
+        }
 
         const chartScore: Chart["score"] = {
             achievements: record.achievements,
             comboStatus: record.fc,
             syncStatus: record.fs,
             rankRate: record.rate,
-            deluxeRating: record.ra,
+            deluxeRating: rating,
             deluxeScore: record.dxScore,
+            playCount: record.play_count,
         };
+
+        if (typeof fitConstant === "number") {
+            (chartScore as unknown as Record<string, unknown>).fitConstant = fitConstant;
+        }
 
         return {
             ...baseChart,
             score: chartScore,
         };
+    }
+
+    function getSourceRecords(useFitDiff: boolean): DivingFishFullRecord[] {
+        const detailedRecords = player.value?.data?.detailed
+            ? Object.values(player.value.data.detailed)
+            : [];
+
+        if (useFitDiff && detailedRecords.length) return detailedRecords;
+
+        const b50Records = player.value?.data?.b50;
+        if (!b50Records) return [];
+
+        return [...(b50Records.sd ?? []), ...(b50Records.dx ?? [])];
+    }
+
+    function sortCharts(charts: Chart[], limit: number): Chart[] {
+        const sorted = [...charts].sort((a, b) => {
+            const ratingA = a.score?.deluxeRating ?? 0;
+            const ratingB = b.score?.deluxeRating ?? 0;
+            if (ratingA !== ratingB) return ratingB - ratingA;
+
+            const achA = a.score?.achievements ?? 0;
+            const achB = b.score?.achievements ?? 0;
+            if (achA !== achB) return achB - achA;
+
+            const fitA = (a.score as Record<string, unknown> | undefined)?.fitConstant;
+            const fitB = (b.score as Record<string, unknown> | undefined)?.fitConstant;
+            const constantA =
+                typeof fitA === "number" && !Number.isNaN(fitA) ? fitA : (a.info.constant ?? 0);
+            const constantB =
+                typeof fitB === "number" && !Number.isNaN(fitB) ? fitB : (b.info.constant ?? 0);
+            return constantB - constantA;
+        });
+
+        return sorted.slice(0, limit);
+    }
+
+    function calculateRating(achievements: number | null, constant?: number): number {
+        if (typeof achievements !== "number") return 0;
+        if (typeof constant !== "number" || Number.isNaN(constant)) return 0;
+
+        return new ScoreCoefficient(achievements).ra(constant);
+    }
+
+    function normalizeConstant(value?: number | null): number | undefined {
+        if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+        return Math.round(value * 10) / 10;
     }
 
     function getB50Png() {
@@ -187,7 +285,7 @@
                             {{ player.data.name ?? player.divingFish?.name ?? player.inGame?.name }}
                         </span>
                     </div>
-                    <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
+                    <RatingPlate v-if="displayedRating" :ra="displayedRating" />
                 </div>
                 <mdui-button-icon icon="download" @click="downloadB50Png"></mdui-button-icon>
             </div>
@@ -215,7 +313,14 @@
             v-if="player && player.data"
             :b50SdCharts="b50SdCharts"
             :b50DxCharts="b50DxCharts"
-            :player="player"
+            :playerName="getUserDisplayName(player)"
+            :playerSecondaryName="
+                player.remark &&
+                (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                    ? (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
+                    : ''
+            "
+            :playerRating="displayedRating"
             style="display: none"
         />
 

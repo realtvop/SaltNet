@@ -22,7 +22,7 @@ International & Japanese ver. may be supported later.
 - 查询朋友分数
 - 获取成绩并更新到水鱼
 
-## 🐱 图标来源
+## 🥖 图标来源
 
 SaltNet 的图标由 青葉もち / 青叶团子 ([X](https://x.com/AlicitruSalt) [Pixiv](https://www.pixiv.net/users/123349)) 绘制并授权使用，特此致以诚挚谢意。
 

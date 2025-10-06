@@ -26,7 +26,7 @@
 
 <template>
     <mdui-layout>
-        <component :is="TopAppBar" :playerInfo="playerInfo" />
+        <component :is="TopAppBar" :playerInfo="playerInfo" v-if="route.path !== '/b50/render'" />
         <mdui-navigation-bar
             :value="route.path"
             v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"

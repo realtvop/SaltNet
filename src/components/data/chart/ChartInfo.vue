@@ -119,6 +119,7 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
+                            <div class="dx-score-value">{{ currentChartScore.playCount }} 次</div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
@@ -177,6 +178,10 @@
                         }}
                     </span>
                 </div>
+                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
+                    <span class="info-label">游玩次数</span>
+                    <span class="info-value">{{ currentChart.score.playCount }}</span>
+                </div> -->
                 <div class="info-row">
                     <span class="info-label">项目位置</span>
                     <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
@@ -928,14 +933,14 @@
         border: 1px solid rgba(var(--mdui-color-outline), 0.1);
         border-radius: 16px;
         padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 480px) {
         .score-summary {
             padding: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             border-radius: 12px;
         }
     }
@@ -1228,6 +1233,7 @@
         flex-wrap: wrap;
         align-content: center;
         gap: 0.5rem;
+        padding-bottom: 0.5rem;
     }
 
     /* 谱面基本信息样式 */

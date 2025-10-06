@@ -15,6 +15,15 @@
     }>();
     const { isDarkMode } = useShared();
 
+    const constantToDisplay = computed(() => {
+        const fitConstant = (data.score as Record<string, unknown> | undefined)?.["fitConstant"];
+        const value =
+            typeof fitConstant === "number" && !Number.isNaN(fitConstant)
+                ? fitConstant
+                : data.info.constant;
+        return typeof value === "number" && !Number.isNaN(value) ? value : null;
+    });
+
     const showScoreInMinimized = computed<string | null>(() => {
         if (!data.score) return null;
         if (compact === "rankRate") {
@@ -65,8 +74,12 @@
                 :style="{ height: compact === 'rankRate' ? '30%' : '50%' }"
                 :src="`/icons/${showScoreInMinimized}.png`"
             />
-            <div class="constant-pill" v-if="data.info.constant" :difficulty="data.info.grade">
-                {{ data.info.constant.toFixed(1) }}
+            <div
+                class="constant-pill"
+                v-if="constantToDisplay !== null"
+                :difficulty="data.info.grade"
+            >
+                {{ constantToDisplay.toFixed(1) }}
             </div>
         </mdui-card>
         <mdui-card
@@ -93,7 +106,7 @@
                             </span>
                         </div>
                         <div class="pill-section level" :difficulty="data.info.grade">
-                            {{ data.info.constant ? data.info.constant.toFixed(1) : "" }}
+                            {{ constantToDisplay !== null ? constantToDisplay.toFixed(1) : "" }}
                         </div>
                         <div class="pill-section points">
                             {{ rating }}

@@ -35,6 +35,7 @@
             remark: null,
             divingFish: { name: null, importToken: null },
             inGame: { name: null, id: null },
+            settings: { manuallyUpdate: false },
             data: {
                 updateTime: null,
                 name: null,
@@ -66,6 +67,10 @@
     const goToUserDetails = (index: number) => {
         // if (index == 0) return router.push("/b50");
         router.push(`/b50/${index}`);
+    };
+    const goToUserFittedDetails = (index: number) => {
+        // if (index == 0) return router.push("/b50");
+        router.push(`/b50/${index}?fit_diff=y`);
     };
 
     const goToUserSongs = (index: number) => {
@@ -133,6 +138,7 @@
                     importToken: updatedUserData.divingFish.importToken,
                 },
                 inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
+                settings: { manuallyUpdate: false },
                 data: {
                     updateTime: null,
                     name: null,
@@ -192,9 +198,22 @@
 
     function updateAll() {
         shared.users.forEach((user, index) => {
-            updateUser(user, index === 0 ? true : false);
+            if (!user.settings || !user.settings.manuallyUpdate) {
+                updateUser(user, index === 0 ? true : false);
+            }
         });
     }
+
+    const toggleManualUpdate = (index: number) => {
+        if (index >= 0 && index < shared.users.length) {
+            const user = shared.users[index];
+            // Ensure settings object exists
+            if (!user.settings) {
+                user.settings = { manuallyUpdate: false };
+            }
+            user.settings.manuallyUpdate = !user.settings.manuallyUpdate;
+        }
+    };
 </script>
 
 <template>
@@ -231,6 +250,13 @@
                     >
                         {{ user.inGame?.name ?? user.inGame?.id ?? "未绑定游戏" }}
                     </mdui-chip>
+                    <!-- <mdui-chip
+                        v-if="user.settings?.manuallyUpdate"
+                        icon="sync_disabled"
+                        variant="assist"
+                    >
+                        手动更新
+                    </mdui-chip> -->
                 </div>
             </div>
             <div class="user-actions">
@@ -265,6 +291,13 @@
                             <mdui-icon slot="icon" name="list_alt"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
+                            @click="goToUserFittedDetails(index)"
+                            v-if="user.data.detailed"
+                        >
+                            查看拟合 B50
+                            <mdui-icon slot="icon" name="stacked_bar_chart"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item
                             @click="goToUserSongs(index)"
                             v-if="index && user.data.detailed"
                         >
@@ -289,6 +322,14 @@
                         </mdui-menu-item>
 
                         <mdui-divider />
+
+                        <mdui-menu-item @click="toggleManualUpdate(index)" v-if="index">
+                            手动更新模式
+                            <mdui-icon
+                                slot="icon"
+                                :name="user.settings?.manuallyUpdate ? 'check' : ''"
+                            ></mdui-icon>
+                        </mdui-menu-item>
 
                         <mdui-menu-item @click="setAsDefault(index)" v-if="index">
                             设为主用户

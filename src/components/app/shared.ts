@@ -24,7 +24,19 @@ export const useShared = defineStore("shared", () => {
 
     darkModeMediaQuery.addEventListener("change", event => (isDarkMode.value = !!event.matches));
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
-        if (Array.isArray(v)) users.value = v;
+        if (Array.isArray(v)) {
+            // Migrate users without settings property
+            const migratedUsers = v.map(user => {
+                if (!user.settings) {
+                    return {
+                        ...user,
+                        settings: { manuallyUpdate: false },
+                    };
+                }
+                return user;
+            });
+            users.value = migratedUsers;
+        }
     });
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;

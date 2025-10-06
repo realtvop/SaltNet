@@ -3,13 +3,15 @@
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import type { Chart } from "@/components/data/music/type";
-    import { getUserDisplayName, type User } from "@/components/data/user/type";
 
-    const { b50SdCharts, b50DxCharts, player } = defineProps<{
-        b50SdCharts: Chart[];
-        b50DxCharts: Chart[];
-        player: User;
-    }>();
+    const { b50SdCharts, b50DxCharts, playerName, playerSecondaryName, playerRating } =
+        defineProps<{
+            b50SdCharts: Chart[];
+            b50DxCharts: Chart[];
+            playerName: string;
+            playerSecondaryName?: string | null;
+            playerRating?: number | null;
+        }>();
 </script>
 
 <template>
@@ -20,25 +22,13 @@
                     <div class="player-info">
                         <div class="player-name-container">
                             <span class="player-name">
-                                {{ getUserDisplayName(player) }}
+                                {{ playerName }}
                             </span>
-                            <span
-                                v-if="
-                                    player.remark &&
-                                    (player.data.name ??
-                                        player.divingFish?.name ??
-                                        player.inGame?.name)
-                                "
-                                class="player-original-name"
-                            >
-                                {{
-                                    player.data.name ??
-                                    player.divingFish?.name ??
-                                    player.inGame?.name
-                                }}
+                            <span v-if="playerSecondaryName" class="player-original-name">
+                                {{ playerSecondaryName }}
                             </span>
                         </div>
-                        <RatingPlate v-if="player.data.rating != null" :ra="player.data.rating" />
+                        <RatingPlate v-if="playerRating != null" :ra="playerRating" />
                     </div>
                     <div class="saltnet-info">
                         <div>
