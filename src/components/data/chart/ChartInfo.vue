@@ -119,6 +119,7 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
+                            <div class="dx-score-value">{{ currentChartScore.playCount }} 次</div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
@@ -177,10 +178,10 @@
                         }}
                     </span>
                 </div>
-                <div class="info-row" v-if="currentChart.score?.playCount">
+                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
                     <span class="info-label">游玩次数</span>
                     <span class="info-value">{{ currentChart.score.playCount }}</span>
-                </div>
+                </div> -->
                 <div class="info-row">
                     <span class="info-label">项目位置</span>
                     <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
