@@ -122,6 +122,7 @@
             rankRate: record.rate,
             deluxeRating: rating,
             deluxeScore: record.dxScore,
+            playCount: record.play_count,
         };
 
         if (typeof fitConstant === "number") {

@@ -213,6 +213,7 @@
                         rankRate: d.rate,
                         deluxeRating: d.ra,
                         deluxeScore: d.dxScore,
+                        playCount: d.play_count,
                     };
                 }
             }
