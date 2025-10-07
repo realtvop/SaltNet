@@ -252,7 +252,7 @@
                 >
                     {{ game.name }}
                     <span slot="description">
-                        [{{ game.cost }}] {{ game.version }} x {{ game.quantity }}
+                        <span>[{{ game.cost }}] {{ game.version }} x {{ game.quantity }}</span>
                     </span>
                     <div class="distance-badge" slot="end-icon">
                         <span>{{ getArcadeAttendanceCount(game.gameId) }} 卡</span>
@@ -268,7 +268,11 @@
                 <div @click="loadShopByID(shop.shop.id)" style="width: 100%; text-align: left">
                     {{ shop.shop.name }}
                 </div>
-                <span slot="description">
+                <span
+                    slot="description"
+                    @click="loadShopByID(shop.shop.id)"
+                    style="width: 100%; text-align: left"
+                >
                     [{{ shop.shop.address.general[shop.shop.address.general.length - 1] }}]
                     {{ shop.attendance.total }} 人在勤
                     <br />
