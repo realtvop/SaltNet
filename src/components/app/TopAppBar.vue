@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { useRouter } from "vue-router";
+    import { setAPIKey } from "../integrations/nearcade/setAPIKey";
 
     const router = useRouter();
     const route = router.currentRoute;
@@ -31,6 +32,10 @@
         <template v-if="route.path === '/' || route.path === '/index'">
             <mdui-button-icon icon="settings" @click="router.push('/settings')"></mdui-button-icon>
         </template>
+
+        <mdui-tooltip v-if="route.path === '/nearcade'" content="设置 nearcade API Key">
+            <mdui-button-icon @click="setAPIKey" icon="key"></mdui-button-icon>
+        </mdui-tooltip>
         <mdui-tooltip v-if="route.path === '/nearcade'" content="打开 nearcade 网站">
             <mdui-button-icon
                 icon="open_in_new"

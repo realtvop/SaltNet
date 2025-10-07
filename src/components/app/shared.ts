@@ -12,7 +12,11 @@ const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
     const favorites = ref<FavoriteList[]>([]);
-    const nearcadeData = ref<NearcadeData>({ currentShopId: null, favoriteShopIds: [] });
+    const nearcadeData = ref<NearcadeData>({
+        currentShopId: null,
+        favoriteShopIds: [],
+        APIKey: null,
+    });
     const chartsSort = ref<ChartsSortCached>({
         identifier: {
             name: null as unknown as string,

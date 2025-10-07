@@ -4,6 +4,8 @@
     import { ref, computed, onMounted, watch } from "vue";
     import { useShared } from "@/components/app/shared";
     import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
+    import { markDialogClosed, markDialogOpen } from "@/components/app/router.vue";
+    import { setAPIKey } from "@/components/integrations/nearcade/setAPIKey";
 
     const { nearcadeData } = useShared();
     const nearShops = ref<Shop[] | null>(null);
@@ -118,6 +120,10 @@
     }
 
     function updateAtendance(game: Game) {
+        if (!nearcadeData.APIKey) {
+            snackbar({ message: "请先设置 nearcade API Key" });
+            return setAPIKey();
+        }
         prompt({
             headline: `更新 ${game.name} 的卡数`,
             description: "请输入当前的卡数",
@@ -126,6 +132,10 @@
             },
             confirmText: "更新",
             cancelText: "取消",
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
             onConfirm: (value: string) => {
                 const currentAttendances = parseInt(value);
                 return fetch(
@@ -133,7 +143,7 @@
                     {
                         method: "POST",
                         headers: {
-                            Authorization: `Bearer nk_1ZVnnsjuVFjvphnauVlF7MxanZIwPe4kuRb1DNtZ0g`,
+                            Authorization: `Bearer ${nearcadeData.APIKey}`,
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
