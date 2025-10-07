@@ -16,6 +16,7 @@ export interface DivingFishFullRecord {
     level: string;
     level_index: number;
     level_label: string; // Basic, Advanced, Expert, Master, Re:Master
+    play_count?: number; // Added in SaltNet for convenience
     ra: number;
     rate: RankRate;
     song_id: number;
@@ -147,6 +148,7 @@ export interface DivingFishMusicChart {
     level: string;
     level_index: number;
     level_label: string;
+    play_count?: number; // Added in SaltNet for convenience
     ra: number;
     rate: RankRate;
     song_id: number;

@@ -17,6 +17,9 @@ export interface User {
         name?: string | null;
         id: number | null;
     };
+    settings: {
+        manuallyUpdate: boolean;
+    };
     data: {
         updateTime: number | null;
         name: string | null;

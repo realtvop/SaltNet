@@ -57,6 +57,8 @@ export interface ChartScore {
 
     deluxeRating: number; // 单曲rating
 
+    playCount?: number; // 游玩次数
+
     index?: {
         all: ChartIndex;
         difficult: ChartIndex;

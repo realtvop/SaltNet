@@ -97,5 +97,7 @@ export function chartScoreFromDF(chart: DivingFishMusicChart): ChartScore {
 
         deluxeRating: chart.ra,
         deluxeScore: chart.dxScore,
+
+        playCount: chart.play_count,
     };
 }

@@ -37,7 +37,12 @@
     </head>
     <body>
         <div id="rescue" style="height: 0">
-            <a href="/rescue">救砖</a>
+            <a
+                href="javascript:void(0)"
+                onclick="event.preventDefault();(async()=>{if('caches' in window){const cacheName='SaltNetv0-Main';try{const hasCache=await caches.has(cacheName);if(hasCache){await caches.delete(cacheName);console.log(`Cache &quot;${cacheName}&quot; cleared.`);}}catch(e){console.error('Rescue error:',e);}}location.reload();})()"
+            >
+                救砖
+            </a>
         </div>
         <div id="app"></div>
         <script type="module" src="/src/main.ts"></script>
