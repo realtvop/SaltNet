@@ -205,6 +205,17 @@
             },
         });
     }
+
+    function checkOpeningHours(shop: Shop, textWhileOpen: string = "营业中"): [boolean, string] {
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        if (currentHour < shop.openingHours[0][0])
+            return [false, `${shop.openingHours[0][0]}:00 开门`];
+        if (currentHour >= shop.openingHours[0][1])
+            return [false, `已打烊，明日 ${shop.openingHours[0][0]}:00 开门`];
+        return [true, textWhileOpen];
+    }
 </script>
 
 <template>
@@ -234,8 +245,20 @@
         <mdui-tab-panel slot="panel" value="view" v-if="selectedShop">
             <mdui-list style="white-space: break-spaces">
                 <mdui-list-item nonclickable>
-                    {{ selectedShop.address.detailed }}
                     <mdui-icon slot="icon" name="location_on"></mdui-icon>
+                    <span>{{ selectedShop.address.detailed }}</span>
+                    <span slot="description">
+                        <span>
+                            [{{
+                                checkOpeningHours(
+                                    selectedShop,
+                                    `营业至 ${selectedShop.openingHours[0][1]}:00`
+                                )[1]
+                            }}]
+                        </span>
+                        {{ selectedShop.openingHours[0][0] }}:00 -
+                        {{ selectedShop.openingHours[0][1] }}:00
+                    </span>
                 </mdui-list-item>
                 <mdui-list-item nonclickable>
                     <div slot="description">{{ selectedShop.comment }}</div>
@@ -274,7 +297,7 @@
                     style="width: 100%; text-align: left"
                 >
                     [{{ shop.shop.address.general[shop.shop.address.general.length - 1] }}]
-                    {{ shop.attendance.total }} 人在勤
+                    {{ checkOpeningHours(shop.shop, `${shop.attendance.total} 人在勤`)[1] }}
                     <br />
                     <span v-for="(game, index) in shop.shop.games" :key="index">
                         {{ game.quantity }}{{ ArcadeShortenNames[game.name] || game.name }}&nbsp;
@@ -327,6 +350,7 @@
                     <span slot="description">
                         [{{ shop.address.general[shop.address.general.length - 1] }}]
                         {{ shop.address.detailed }}
+                        ({{ shop.openingHours[0][0] }}:00 - {{ shop.openingHours[0][1] }}:00)
                     </span>
                 </mdui-list-item>
             </mdui-list>
