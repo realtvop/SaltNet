@@ -9,6 +9,7 @@
     const distanceSliderValues = [1, 5, 10, 15, 20, 25, 30];
     const maxDistanceIndex = ref(2);
     const sliderRef = ref<HTMLElement | null>(null);
+    const tabsRef = ref<HTMLElement | null>(null);
     const selectedShop = ref<Shop | null>(null);
     const currentMode = ref<"all" | "nearby">("all");
     const searchQuery = ref("");
@@ -39,6 +40,7 @@
             .then(response => response.json())
             .then(result => {
                 selectedShop.value = result.shop;
+                (tabsRef.value as any).value = "view";
             });
     }
     function searchAllShops() {
@@ -122,9 +124,34 @@
         </div>
     </mdui-list-item>
 
-    <mdui-tabs value="find" full-width>
+    <mdui-tabs ref="tabsRef" value="find" full-width>
         <mdui-tab value="view">店铺</mdui-tab>
-        <mdui-tab-panel slot="panel" value="view">Panel 1</mdui-tab-panel>
+        <mdui-tab-panel slot="panel" value="view" v-if="selectedShop">
+            <mdui-list style="white-space: break-spaces">
+                <mdui-list-item nonclickable>
+                    {{ selectedShop.address.detailed }}
+                    <mdui-icon slot="icon" name="location_on"></mdui-icon>
+                </mdui-list-item>
+                <mdui-list-item nonclickable>
+                    <div slot="description">{{ selectedShop.comment }}</div>
+                    <mdui-icon slot="icon" name="description"></mdui-icon>
+                </mdui-list-item>
+                <mdui-list-item nonclickable>
+                    <mdui-divider />
+                </mdui-list-item>
+                <mdui-list-item
+                    v-for="(game, index) in selectedShop.games"
+                    :key="index"
+                    nonclickable
+                >
+                    {{ game.name }}
+                    <span slot="description">
+                        [{{ game.cost }}] {{ game.version }} x {{ game.quantity }}
+                    </span>
+                    <mdui-icon slot="icon" name="videogame_asset"></mdui-icon>
+                </mdui-list-item>
+            </mdui-list>
+        </mdui-tab-panel>
 
         <mdui-tab value="fav">收藏</mdui-tab>
         <mdui-tab-panel slot="panel" value="fav">Panel 1</mdui-tab-panel>
