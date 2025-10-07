@@ -165,7 +165,7 @@
                         [{{ game.cost }}] {{ game.version }} x {{ game.quantity }}
                     </span>
                     <div class="distance-badge" slot="end-icon">
-                        {{ getArcadeAttendanceCount(game.gameId) }} 卡
+                        <span>{{ getArcadeAttendanceCount(game.gameId) }} 卡</span>
                     </div>
                     <mdui-icon slot="icon" name="videogame_asset"></mdui-icon>
                 </mdui-list-item>
