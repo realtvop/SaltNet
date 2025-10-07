@@ -18,6 +18,14 @@
     const currentMode = ref<"all" | "nearby">("all");
     const searchQuery = ref("");
 
+    const ArcadeShortenNames: { [key: string]: string } = {
+        "maimai DX": "mai",
+        CHUNITHM: "chuni",
+        "SOUND VOLTEX": "sdvx",
+        太鼓之达人: "taiko",
+        WACCA: "wacca",
+    };
+
     const filteredShops = computed(() => {
         if (currentMode.value === "all") return nearShops.value;
         if (!nearShops.value) return null;
@@ -37,8 +45,29 @@
                 return `${km} km`;
             };
         }
-        if (nearcadeData.currentShopId) loadShopByID(nearcadeData.currentShopId);
+        if (nearcadeData.currentShopId) {
+            loadShopByID(nearcadeData.currentShopId);
+            loadFavShops();
+        }
     });
+    const favoriteShops = ref<{ shop: Shop; attendance: AttendanceApiResponse }[]>([]);
+    async function loadFavShops() {
+        const shops: { shop: Shop; attendance: AttendanceApiResponse }[] = [];
+        for (const id of nearcadeData.favoriteShopIds) {
+            const shop = await fetch(`https://nearcade.phizone.cn/api/shops/bemanicn/${id}`).then(
+                response => response.json()
+            );
+            const attendance = await fetch(
+                `https://nearcade.phizone.cn/api/shops/bemanicn/${id}/attendance`
+            ).then(response => response.json());
+            if (shop && shop.shop)
+                shops.push({
+                    shop: shop.shop,
+                    attendance: attendance,
+                });
+        }
+        favoriteShops.value = shops;
+    }
     function loadShopByID(id: number) {
         fetch(`https://nearcade.phizone.cn/api/shops/bemanicn/${id}`)
             .then(response => response.json())
@@ -111,12 +140,13 @@
             snackbar({
                 message: `已从收藏中移除 ${shop.name}`,
             });
-            return;
+        } else {
+            nearcadeData.favoriteShopIds.push(shop.id);
+            snackbar({
+                message: `已添加 ${shop.name} 到收藏`,
+            });
         }
-        nearcadeData.favoriteShopIds.push(shop.id);
-        snackbar({
-            message: `已添加 ${shop.name} 到收藏`,
-        });
+        loadFavShops();
     }
 
     function updateAtendance(game: Game) {
@@ -233,7 +263,27 @@
         </mdui-tab-panel>
 
         <mdui-tab value="fav">收藏</mdui-tab>
-        <mdui-tab-panel slot="panel" value="fav">还没做先别急（</mdui-tab-panel>
+        <mdui-tab-panel slot="panel" value="fav">
+            <mdui-list-item v-for="shop in favoriteShops" :key="shop.shop.id">
+                <div @click="loadShopByID(shop.shop.id)" style="width: 100%; text-align: left">
+                    {{ shop.shop.name }}
+                </div>
+                <span slot="description">
+                    [{{ shop.shop.address.general[shop.shop.address.general.length - 1] }}]
+                    {{ shop.attendance.total }} 人在勤
+                    <br />
+                    <span v-for="(game, index) in shop.shop.games" :key="index">
+                        {{ game.quantity }}{{ ArcadeShortenNames[game.name] || game.name }}&nbsp;
+                    </span>
+                </span>
+
+                <mdui-button-icon
+                    slot="end-icon"
+                    icon="delete"
+                    @click="switchFavorites({ id: shop.shop.id, name: '' } as Shop)"
+                ></mdui-button-icon>
+            </mdui-list-item>
+        </mdui-tab-panel>
 
         <mdui-tab value="find">发现</mdui-tab>
         <mdui-tab-panel slot="panel" value="find">
@@ -298,5 +348,8 @@
     mdui-text-field {
         margin-top: 0.5rem;
         padding: 0 1rem;
+    }
+    mdui-tabs {
+        overflow-x: hidden;
     }
 </style>
