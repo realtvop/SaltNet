@@ -133,7 +133,7 @@ import type { AttendanceApiResponse } from "@/components/integrations/nearcade/t
                     v-if="selectedShop"
                 ></mdui-button-icon>
             </div>
-            <div>
+            <div style="display: flex;">
                 <mdui-button-icon @click="currentMode = 'all'" icon="search"></mdui-button-icon>
                 <mdui-button-icon @click="getNearcades" icon="edit_location_alt"></mdui-button-icon>
             </div>
