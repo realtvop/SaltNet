@@ -3,6 +3,7 @@
     import { snackbar } from "mdui";
     import { ref, computed, onMounted, watch } from "vue";
     import { useShared } from "@/components/app/shared";
+import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
 
     const { nearcadeData } = useShared();
     const nearShops = ref<Shop[] | null>(null);
@@ -11,6 +12,7 @@
     const sliderRef = ref<HTMLElement | null>(null);
     const tabsRef = ref<HTMLElement | null>(null);
     const selectedShop = ref<Shop | null>(null);
+    const selectShopAttendance = ref<AttendanceApiResponse | null>(null);
     const currentMode = ref<"all" | "nearby">("all");
     const searchQuery = ref("");
 
@@ -41,7 +43,21 @@
             .then(result => {
                 selectedShop.value = result.shop;
                 (tabsRef.value as any).value = "view";
+                loadAttendance();
             });
+    }
+    function loadAttendance() {
+        if (!selectedShop.value) return;
+        fetch(`https://nearcade.phizone.cn/api/shops/bemanicn/${selectedShop.value.id}/attendance`)
+            .then(response => response.json())
+            .then(result => {
+                selectShopAttendance.value = result;
+            });
+    }
+    function getArcadeAttendanceCount(gameId: number) {
+        if (!selectShopAttendance.value) return 0;
+        const record = selectShopAttendance.value.reported.find(a => a.gameId === gameId);
+        return record ? record.currentAttendances : 0;
     }
     function searchAllShops() {
         if (currentMode.value !== "all") return;
@@ -148,13 +164,14 @@
                     <span slot="description">
                         [{{ game.cost }}] {{ game.version }} x {{ game.quantity }}
                     </span>
+                    <div class="distance-badge" slot="end-icon">{{ getArcadeAttendanceCount(game.gameId) }} 卡</div>
                     <mdui-icon slot="icon" name="videogame_asset"></mdui-icon>
                 </mdui-list-item>
             </mdui-list>
         </mdui-tab-panel>
 
         <mdui-tab value="fav">收藏</mdui-tab>
-        <mdui-tab-panel slot="panel" value="fav">Panel 1</mdui-tab-panel>
+        <mdui-tab-panel slot="panel" value="fav">还没做先别急（</mdui-tab-panel>
 
         <mdui-tab value="find">发现</mdui-tab>
         <mdui-tab-panel slot="panel" value="find">
