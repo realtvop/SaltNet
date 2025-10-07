@@ -525,6 +525,7 @@
         if (!currentUser.value || !currentUser.value.data.detailed) return null;
         const score =
             currentUser.value.data.detailed[`${props.chart.music.id}-${expandedValue.value}`];
+        if (!score) return null;
         return chartScoreFromDF(score);
     });
 

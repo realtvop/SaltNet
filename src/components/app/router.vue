@@ -10,6 +10,7 @@
     import SongsPage from "../../pages/songs.vue";
     import CollectionsPage from "../../pages/collections.vue";
     import RenderingPage from "../../pages/b50ToRender.vue";
+    import ShopPage from "../../pages/Shop.vue";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -22,9 +23,10 @@
         { path: "/settings", component: SettingsPage },
         { path: "/about", component: AboutPage },
         { path: "/collections", component: CollectionsPage },
+        { path: "/nearcade", component: ShopPage },
     ];
 
-    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id"];
+    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade"];
     const routesNeedFixedPage = ["/", "/about", "/songs", "/songs/:id", "/collections"];
 
     const router = createRouter({
