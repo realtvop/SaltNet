@@ -98,7 +98,14 @@
                 nearShops.value = result.shops;
             });
     }
+    function doSearch() {
+        //@ts-ignore
+        tabsRef.value.value = "find";
+        currentMode.value = "all";
+    }
     function getNearcades() {
+        //@ts-ignore
+        tabsRef.value.value = "find";
         if (!navigator.geolocation) {
             snackbar({
                 message: "获取定位失败: 浏览器不支持定位功能",
@@ -234,7 +241,7 @@
                 ></mdui-button-icon>
             </div>
             <div style="display: flex">
-                <mdui-button-icon @click="currentMode = 'all'" icon="search"></mdui-button-icon>
+                <mdui-button-icon @click="doSearch" icon="search"></mdui-button-icon>
                 <mdui-button-icon @click="getNearcades" icon="edit_location_alt"></mdui-button-icon>
             </div>
         </div>
