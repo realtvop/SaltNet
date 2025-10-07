@@ -110,7 +110,7 @@
                 </mdui-card>
             </a>
 
-            <a href="https://nearcade.phi.zone/" target="_blank" class="link-wrapper">
+            <a href="javascript:void(0)" class="link-wrapper" @click="router.push('/nearcade')">
                 <mdui-card variant="outlined" clickable class="link-card">
                     <div class="link-content">
                         <mdui-icon name="map"></mdui-icon>

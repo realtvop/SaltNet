@@ -11,7 +11,7 @@
             icon="arrow_back"
             variant="text"
             v-if="
-                ['/settings'].includes(route.path) ||
+                ['/settings', '/nearcade'].includes(route.path) ||
                 route.path.startsWith('/b50/') ||
                 route.path.startsWith('/songs/')
             "
