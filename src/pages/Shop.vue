@@ -124,6 +124,13 @@
             snackbar({ message: "请先设置 nearcade API Key" });
             return setAPIKey();
         }
+        const evtListener = function (event: KeyboardEvent) {
+            if (event.key === "Enter") {
+                //@ts-ignore
+                document.querySelector("body > mdui-dialog > mdui-button:nth-child(3)").click();
+            }
+        };
+        window.addEventListener("keydown", evtListener);
         prompt({
             headline: `更新 ${game.name} 的卡数`,
             description: "请输入当前的卡数",
@@ -137,6 +144,7 @@
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onConfirm: (value: string) => {
+                window.removeEventListener("keydown", evtListener);
                 const currentAttendances = parseInt(value);
                 return fetch(
                     `https://nearcade.phizone.cn/api/shops/bemanicn/${selectedShop.value?.id}/attendance`,
