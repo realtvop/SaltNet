@@ -72,12 +72,18 @@
     ></mdui-slider>
 
     <mdui-list>
-        <mdui-list-item v-for="shop in filteredShops" :key="shop.id">
-            <mdui-list-item-content>
-                <mdui-list-item-title>{{ shop.name }}</mdui-list-item-title>
-                <mdui-list-item-text>{{ shop.address }}</mdui-list-item-text>
-                <mdui-list-item-text>{{ shop.distance }}</mdui-list-item-text>
-            </mdui-list-item-content>
+        <mdui-list-item
+            v-for="shop in filteredShops"
+            :key="shop.id"
+            @click="selectedShop = shop"
+            :active="shop.id === selectedShop?.id"
+        >
+            {{ shop.name }}
+            <div class="distance-badge" slot="end-icon">{{ shop.distance?.toFixed(2) }} km</div>
+            <span slot="description">
+                [{{ shop.address.general[shop.address.general.length - 1] }}]
+                {{ shop.address.detailed }}
+            </span>
         </mdui-list-item>
     </mdui-list>
 </template>
@@ -88,5 +94,10 @@
         width: 100%;
         justify-content: space-between;
         align-items: center;
+    }
+    .distance-badge {
+        border-radius: 1rem;
+        background-color: rgb(var(--mdui-color-surface-container-highest));
+        padding: 0.5rem;
     }
 </style>
