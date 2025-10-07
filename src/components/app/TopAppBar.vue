@@ -31,6 +31,13 @@
         <template v-if="route.path === '/' || route.path === '/index'">
             <mdui-button-icon icon="settings" @click="router.push('/settings')"></mdui-button-icon>
         </template>
+        <mdui-tooltip v-if="route.path === '/nearcade'" content="打开 nearcade 网站">
+            <mdui-button-icon
+                icon="open_in_new"
+                href="https://nearcade.phizone.cn/"
+                target="_blank"
+            ></mdui-button-icon>
+        </mdui-tooltip>
     </mdui-top-app-bar>
 </template>
 

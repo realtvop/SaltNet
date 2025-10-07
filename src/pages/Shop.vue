@@ -3,7 +3,7 @@
     import { snackbar } from "mdui";
     import { ref, computed, onMounted, watch } from "vue";
     import { useShared } from "@/components/app/shared";
-import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
+    import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
 
     const { nearcadeData } = useShared();
     const nearShops = ref<Shop[] | null>(null);
@@ -133,7 +133,7 @@ import type { AttendanceApiResponse } from "@/components/integrations/nearcade/t
                     v-if="selectedShop"
                 ></mdui-button-icon>
             </div>
-            <div style="display: flex;">
+            <div style="display: flex">
                 <mdui-button-icon @click="currentMode = 'all'" icon="search"></mdui-button-icon>
                 <mdui-button-icon @click="getNearcades" icon="edit_location_alt"></mdui-button-icon>
             </div>
@@ -164,7 +164,9 @@ import type { AttendanceApiResponse } from "@/components/integrations/nearcade/t
                     <span slot="description">
                         [{{ game.cost }}] {{ game.version }} x {{ game.quantity }}
                     </span>
-                    <div class="distance-badge" slot="end-icon">{{ getArcadeAttendanceCount(game.gameId) }} 卡</div>
+                    <div class="distance-badge" slot="end-icon">
+                        {{ getArcadeAttendanceCount(game.gameId) }} 卡
+                    </div>
                     <mdui-icon slot="icon" name="videogame_asset"></mdui-icon>
                 </mdui-list-item>
             </mdui-list>
