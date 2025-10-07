@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-    import type { Shop } from "@/components/integrations/nearcade/type";
-    import { snackbar } from "mdui";
+    import type { Game, Shop } from "@/components/integrations/nearcade/type";
+    import { snackbar, prompt } from "mdui";
     import { ref, computed, onMounted, watch } from "vue";
     import { useShared } from "@/components/app/shared";
     import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
@@ -116,6 +116,47 @@
             message: `已添加 ${shop.name} 到收藏`,
         });
     }
+
+    function updateAtendance(game: Game) {
+        prompt({
+            headline: `更新 ${game.name} 的卡数`,
+            description: "请输入当前的卡数",
+            textFieldOptions: {
+                type: "number",
+            },
+            confirmText: "更新",
+            cancelText: "取消",
+            onConfirm: (value: string) => {
+                const currentAttendances = parseInt(value);
+                return fetch(
+                    `https://nearcade.phizone.cn/api/shops/bemanicn/${selectedShop.value?.id}/attendance`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer nk_1ZVnnsjuVFjvphnauVlF7MxanZIwPe4kuRb1DNtZ0g`,
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            games: [
+                                {
+                                    id: game.gameId,
+                                    currentAttendances,
+                                },
+                            ],
+                        }),
+                    }
+                )
+                    .then(() => {
+                        snackbar({ message: "已更新卡数" });
+                        loadAttendance();
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        snackbar({ message: `更新卡数失败: ${error.message}` });
+                    });
+            },
+        });
+    }
 </script>
 
 <template>
@@ -158,7 +199,8 @@
                 <mdui-list-item
                     v-for="(game, index) in selectedShop.games"
                     :key="index"
-                    nonclickable
+                    rounded
+                    @click="updateAtendance(game)"
                 >
                     {{ game.name }}
                     <span slot="description">

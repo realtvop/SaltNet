@@ -1,7 +1,7 @@
 /**
  * 店铺游戏机台信息
  */
-interface Game {
+export interface Game {
     /**
      * 游戏（版本）ID
      * BEMANICN 数据源等同于机台 ID
