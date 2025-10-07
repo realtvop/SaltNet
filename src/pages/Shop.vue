@@ -122,7 +122,7 @@ import type { AttendanceApiResponse } from "@/components/integrations/nearcade/t
     <mdui-list-item nonclickable>
         <div class="current-shop">
             <div style="display: flex; align-items: center">
-                <div>当前店铺: {{ selectedShop ? selectedShop.name : "无" }}</div>
+                <div>{{ selectedShop ? selectedShop.name : "未选择店铺" }}</div>
                 <mdui-button-icon
                     @click="switchFavorites(selectedShop)"
                     :icon="
