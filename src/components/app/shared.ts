@@ -4,6 +4,7 @@ import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
 import type { Chart } from "@/components/data/music/type";
+import type { NearcadeData } from "../integrations/nearcade/type";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -11,6 +12,7 @@ const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
     const favorites = ref<FavoriteList[]>([]);
+    const nearcadeData = ref<NearcadeData>({ currentShopId: null, favoriteShopIds: [] });
     const chartsSort = ref<ChartsSortCached>({
         identifier: {
             name: null as unknown as string,
@@ -44,6 +46,9 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<ChartsSortCached>("chartsSortCached").then((v: ChartsSortCached | null) => {
         if (v) chartsSort.value = v;
     });
+    localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
+        if (v) nearcadeData.value = v;
+    });
 
     watch(
         users,
@@ -71,6 +76,16 @@ export const useShared = defineStore("shared", () => {
             console.error("Failed to save charts sort:", err);
         });
     });
+    watch(
+        nearcadeData,
+        (newNearcadeData: NearcadeData) => {
+            if (!newNearcadeData) return;
+            localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: any) => {
+                console.error("Failed to save nearcade data:", err);
+            });
+        },
+        { deep: true }
+    );
 
-    return { users, chartsSort, favorites, isUpdated, isDarkMode };
+    return { users, chartsSort, favorites, isUpdated, isDarkMode, nearcadeData };
 });

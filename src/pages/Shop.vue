@@ -1,8 +1,10 @@
 <script lang="ts" setup>
     import type { Shop } from "@/components/integrations/nearcade/type";
     import { snackbar } from "mdui";
-    import { ref, computed, onMounted } from "vue";
+    import { ref, computed, onMounted, watch } from "vue";
+    import { useShared } from "@/components/app/shared";
 
+    const { nearcadeData } = useShared();
     const nearShops = ref<Shop[] | null>(null);
     const distanceSliderValues = [1, 5, 10, 15, 20, 25, 30];
     const maxDistanceIndex = ref(2);
@@ -30,7 +32,15 @@
                 return `${km} km`;
             };
         }
+        if (nearcadeData.currentShopId) loadShopByID(nearcadeData.currentShopId);
     });
+    function loadShopByID(id: number) {
+        fetch(`https://nearcade.phizone.cn/api/shops/bemanicn/${id}`)
+            .then(response => response.json())
+            .then(result => {
+                selectedShop.value = result.shop;
+            });
+    }
     function searchAllShops() {
         if (currentMode.value !== "all") return;
         fetch(`https://nearcade.phizone.cn/api/shops?q=${searchQuery.value}&limit=114514`)
@@ -67,12 +77,44 @@
             }
         );
     }
+
+    watch(selectedShop, (newShop: Shop | null) => {
+        if (!newShop) return;
+        nearcadeData.currentShopId = newShop.id;
+    });
+
+    function switchFavorites(shop: Shop) {
+        if (nearcadeData.favoriteShopIds.includes(shop.id)) {
+            nearcadeData.favoriteShopIds = nearcadeData.favoriteShopIds.filter(
+                id => id !== shop.id
+            );
+            snackbar({
+                message: `已从收藏中移除 ${shop.name}`,
+            });
+            return;
+        }
+        nearcadeData.favoriteShopIds.push(shop.id);
+        snackbar({
+            message: `已添加 ${shop.name} 到收藏`,
+        });
+    }
 </script>
 
 <template>
     <mdui-list-item nonclickable>
         <div class="current-shop">
-            <div>当前店铺: {{ selectedShop ? selectedShop.name : "无" }}</div>
+            <div style="display: flex; align-items: center">
+                <div>当前店铺: {{ selectedShop ? selectedShop.name : "无" }}</div>
+                <mdui-button-icon
+                    @click="switchFavorites(selectedShop)"
+                    :icon="
+                        nearcadeData.favoriteShopIds.includes(selectedShop.id)
+                            ? 'favorite'
+                            : 'favorite_outline'
+                    "
+                    v-if="selectedShop"
+                ></mdui-button-icon>
+            </div>
             <div>
                 <mdui-button-icon @click="currentMode = 'all'" icon="search"></mdui-button-icon>
                 <mdui-button-icon @click="getNearcades" icon="edit_location_alt"></mdui-button-icon>
@@ -83,6 +125,9 @@
     <mdui-tabs value="find" full-width>
         <mdui-tab value="view">店铺</mdui-tab>
         <mdui-tab-panel slot="panel" value="view">Panel 1</mdui-tab-panel>
+
+        <mdui-tab value="fav">收藏</mdui-tab>
+        <mdui-tab-panel slot="panel" value="fav">Panel 1</mdui-tab-panel>
 
         <mdui-tab value="find">发现</mdui-tab>
         <mdui-tab-panel slot="panel" value="find">
