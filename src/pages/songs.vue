@@ -952,12 +952,12 @@
         </div>
 
         <div
-            v-if="category === Category.InGame && selectedDifficulty != 'ALL'"
+            v-if="category === Category.InGame && selectedDifficulty != 'ALL' && !(Number(selectedDifficulty) < 6)"
             class="detailed-filter"
         >
-            <mdui-card class="detailed-filter-card" variant="outlined" disabled>
-                细分定数筛选:
-            </mdui-card>
+            <div class="detailed-filter-card">
+                定数筛选:
+            </div>
             <mdui-range-slider
                 :min="rangeMin"
                 :max="rangeMax"
@@ -1009,7 +1009,7 @@
             class="search-input"
         >
             <mdui-select
-                style="width: 7.62rem"
+                style="width: 4.1rem"
                 label="难度"
                 :value="difficultyFilter + 1"
                 @change="handleDifficultyFilterChange"
