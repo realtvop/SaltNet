@@ -26,7 +26,7 @@
         { path: "/nearcade", component: ShopPage },
     ];
 
-    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id"];
+    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade"];
     const routesNeedFixedPage = ["/", "/about", "/songs", "/songs/:id", "/collections"];
 
     const router = createRouter({
