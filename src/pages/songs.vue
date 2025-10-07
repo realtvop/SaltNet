@@ -48,6 +48,7 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
+    const constantFilterEnabled = ref(false);
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
@@ -951,22 +952,6 @@
             </mdui-dropdown>
         </div>
 
-        <div
-            v-if="category === Category.InGame && selectedDifficulty != 'ALL' && !(Number(selectedDifficulty) < 6)"
-            class="detailed-filter"
-        >
-            <div class="detailed-filter-card">
-                定数筛选:
-            </div>
-            <mdui-range-slider
-                :min="rangeMin"
-                :max="rangeMax"
-                :step="1"
-                @input="rangeChange"
-                class="rangeSlider"
-            ></mdui-range-slider>
-        </div>
-
         <div v-if="category in versionPlates" class="search-input">
             <mdui-select
                 style="width: 5rem"
@@ -1027,15 +1012,37 @@
                 style="flex: 1"
             ></mdui-text-field>
         </div>
-        <mdui-text-field
-            class="search-input"
-            clearable
-            icon="search"
-            label="搜索"
-            placeholder="曲名 别名 id 曲师 谱师"
-            @input="query = $event.target.value"
-            v-else
-        ></mdui-text-field>
+        <div v-else class="search-input">
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+            ></mdui-text-field>
+            <mdui-button-icon
+                :icon="constantFilterEnabled ? 'keyboard_arrow_down' : 'keyboard_arrow_left'"
+                @click="constantFilterEnabled = !constantFilterEnabled"
+            ></mdui-button-icon>
+        </div>
+        <div
+            v-if="
+                constantFilterEnabled &&
+                category === Category.InGame &&
+                selectedDifficulty != 'ALL' &&
+                !(Number(selectedDifficulty) < 6)
+            "
+            class="detailed-filter"
+        >
+            <div class="detailed-filter-card">定数筛选:</div>
+            <mdui-range-slider
+                :min="rangeMin"
+                :max="rangeMax"
+                :step="1"
+                @input="rangeChange"
+                class="rangeSlider"
+            ></mdui-range-slider>
+        </div>
 
         <div
             class="card-container"
