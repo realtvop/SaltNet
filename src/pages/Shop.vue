@@ -246,7 +246,7 @@
             <mdui-list style="white-space: break-spaces">
                 <mdui-list-item nonclickable>
                     <mdui-icon slot="icon" name="location_on"></mdui-icon>
-                    <span>{{ selectedShop.address.detailed }}</span>
+                    {{ selectedShop.address.detailed }}
                     <span slot="description">
                         <span>
                             [{{
