@@ -148,7 +148,7 @@
             grade: 3,
             level: "ALL",
             charter: "系统",
-            constant: 0,
+            constant: "",
         },
         score: {
             achievements: "-",
