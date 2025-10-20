@@ -73,38 +73,6 @@
         height: 24px;
         display: block;
     }
-    .app-title {
-        font-weight: bold;
-        font-size: 1.1rem;
-        margin: 0 12px 0 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 56px;
-    }
-    .player-title {
-        max-width: 120px;
-        display: inline-block;
-        vertical-align: middle;
-    }
-    .search-box {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .search-box-right {
-        margin-left: auto;
-    }
-    .search-input {
-        height: 40px;
-        min-width: 120px;
-        font-size: 1rem;
-    }
-    .search-btn {
-        height: 40px;
-        min-width: 48px;
-        font-size: 1rem;
-    }
 
     mdui-top-app-bar-title {
         font-weight: 750;

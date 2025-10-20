@@ -382,6 +382,7 @@
     }
 
     .user-name {
+        max-width: calc(97.5vw - 37.5px - 5rem);
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -407,9 +408,9 @@
         height: 28px;
     }
 
-    svg {
+    /* svg {
         padding-left: 15px;
-    }
+    } */
 
     .user-actions {
         display: flex;
@@ -417,7 +418,7 @@
         justify-content: center;
         gap: 2.5px;
 
-        padding-right: 10px;
+        /* padding-right: 10px; */
     }
 
     .fab-container {
