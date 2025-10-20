@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -48,6 +48,7 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
+    const constantFilterEnabled = ref(false);
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
@@ -147,7 +148,7 @@
             grade: 3,
             level: "ALL",
             charter: "系统",
-            constant: 0,
+            constant: "",
         },
         score: {
             achievements: "-",
@@ -249,6 +250,28 @@
             charts: charts,
         };
     }
+
+    const rangeMax = computed(() => {
+        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
+            return 9;
+        else {
+            if (selectedDifficulty.value.endsWith("+")) return 9;
+            else return 5;
+        }
+    });
+
+    const rangeMin = computed(() => {
+        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
+            return 0;
+        else {
+            if (selectedDifficulty.value.endsWith("+")) return 6;
+            else return 0;
+        }
+    });
+
+    const rangeUpperValue = ref(rangeMax.value);
+    const rangeLowerValue = ref(rangeMin.value);
+
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
@@ -266,7 +289,10 @@
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.level === selectedDifficulty.value
+                    (chart: Chart) =>
+                        chart.info.level === selectedDifficulty.value &&
+                        Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value &&
+                        Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value
                 );
             }
         } else if (category.value === Category.Banquet) {
@@ -818,6 +844,28 @@
             },
         });
     }
+
+    function rangeChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const value = target.value;
+        // console.log(value);
+        rangeLowerValue.value = Number(value[0]);
+        rangeUpperValue.value = Number(value[1]);
+    }
+
+    async function resetSlider() {
+        // 等待 rangeMin 和 rangeMax 改变并更新到 DOM
+        await nextTick();
+        // 先更新 rangeLowerValue 和 rangeUpperValue 的值
+        rangeLowerValue.value = rangeMin.value;
+        rangeUpperValue.value = rangeMax.value;
+        // 然后更新滑块的值
+        const slider = document.querySelector(".rangeSlider");
+        if (slider) {
+            //@ts-ignore
+            slider.value = [rangeMin.value, rangeMax.value];
+        }
+    }
 </script>
 
 <template>
@@ -859,7 +907,12 @@
                     v-for="tab in tabs"
                     :key="tab"
                     :value="tab"
-                    @click="selectedTab[category] = tab"
+                    @click="
+                        () => {
+                            selectedTab[category] = tab;
+                            resetSlider();
+                        }
+                    "
                 >
                     {{ tab }}
                 </mdui-tab>
@@ -959,15 +1012,37 @@
                 style="flex: 1"
             ></mdui-text-field>
         </div>
-        <mdui-text-field
-            class="search-input"
-            clearable
-            icon="search"
-            label="搜索"
-            placeholder="曲名 别名 id 曲师 谱师"
-            @input="query = $event.target.value"
-            v-else
-        ></mdui-text-field>
+        <div v-else class="search-input">
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+            ></mdui-text-field>
+            <mdui-button-icon
+                :icon="constantFilterEnabled ? 'keyboard_arrow_down' : 'keyboard_arrow_left'"
+                @click="constantFilterEnabled = !constantFilterEnabled"
+            ></mdui-button-icon>
+        </div>
+        <div
+            v-if="
+                constantFilterEnabled &&
+                category === Category.InGame &&
+                selectedDifficulty != 'ALL' &&
+                !(Number(selectedDifficulty) < 6)
+            "
+            class="detailed-filter"
+        >
+            <div class="detailed-filter-card">定数筛选:</div>
+            <mdui-range-slider
+                :min="rangeMin"
+                :max="rangeMax"
+                :step="1"
+                @input="rangeChange"
+                class="rangeSlider"
+            ></mdui-range-slider>
+        </div>
 
         <div
             class="card-container"
@@ -1093,6 +1168,28 @@
         @media (min-aspect-ratio: 1.001/1) {
             height: calc(100vh - 6.75rem) !important;
         }
+    }
+
+    .detailed-filter {
+        display: flex;
+        justify-content: center;
+        padding: 5px 20px;
+    }
+
+    .detailed-filter-card {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        width: 8rem;
+    }
+
+    .rangeSlider {
+        flex: 1 1 0%;
+        padding: 0 25px;
+    }
+
+    .rangeSlider::part(label)::before {
+        content: ".";
     }
 
     .score-grid-wrapper {

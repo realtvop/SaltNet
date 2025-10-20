@@ -54,5 +54,6 @@
         :player-name="playerName"
         :player-secondary-name="playerSecondaryName"
         :player-rating="playerRating"
+        style="margin-left: -80px;"
     />
 </template>
