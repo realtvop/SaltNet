@@ -1,5 +1,4 @@
 :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
 
@@ -12,6 +11,7 @@
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
+    text-rendering: optimizeLegibility;
 
     /* 一堆变量 */
 
@@ -47,6 +47,7 @@ html {
 }
 
 body {
+    font-family: "Roboto", "Noto Sans SC" !important;
     margin: 0;
     overscroll-behavior-y: contain;
     overscroll-behavior-x: none;
