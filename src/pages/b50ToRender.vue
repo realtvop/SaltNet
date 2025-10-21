@@ -14,7 +14,7 @@
     const playerRating = ref<number | null>(
         route.query.r ? parseInt(route.query.r as string) : null
     );
-    const isLoading = ref<boolean>(false);
+    const isLoading = ref<boolean>(true);
 
     function dfToSimpChart(ori: DivingFishMusicChart): Chart {
         return {
@@ -103,6 +103,8 @@
                     sd.value.push(dfToSimpChart(chart));
                 }
             }
+
+            isLoading.value = false;
         }
     });
 </script>
