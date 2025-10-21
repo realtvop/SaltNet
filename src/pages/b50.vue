@@ -240,7 +240,7 @@
             params.append("r", displayedRating.value.toString());
         }
 
-        return `${endpoint}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Falpha.salt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
+        return `${endpoint}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Fsalt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
     }
 
     function isDesktopChrome(): boolean {
