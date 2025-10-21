@@ -43,6 +43,7 @@ broadcast.onmessage = () => {
 };
 
 function showSnackBar(message: string) {
+    if (window.location.search.startsWith("?genb50")) return;
     return snackbar({
         message,
         placement: "bottom",

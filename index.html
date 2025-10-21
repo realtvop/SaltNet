@@ -53,8 +53,7 @@
         <script>
             if (
                 [80, 443, 1443, "1443", "", "1145"].includes(location.port) ||
-                location.hostname == "saltnet-cachedev.localhost" &&
-                !window.location.search.startsWith("?genb50")
+                location.hostname == "saltnet-cachedev.localhost"
             )
                 navigator.serviceWorker
                     .register("/sw.js", { scope: "/" })
