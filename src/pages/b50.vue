@@ -243,70 +243,87 @@
         return `${import.meta.env.VITE_puppeteer_renderer_improved_URL}/screenshot?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Falpha.salt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
     }
 
+    function isDesktopChrome(): boolean {
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isMobile = /Mobile|Android|iPhone|iPad|iPod/.test(ua);
+        return isChrome && !isMobile;
+    }
+
     function downloadB50Png() {
+        const isSupported = isDesktopChrome();
+
+        const baseActions = [
+            {
+                text: "取消",
+            },
+        ];
+
+        const copyAndDownloadActions = isSupported
+            ? [
+                  {
+                      text: "复制图片",
+                      onClick: () =>
+                          getB50Png()
+                              .then((dataUrl: string) => {
+                                  return fetch(dataUrl)
+                                      .then(response => {
+                                          if (!response.ok) {
+                                              throw new Error("获取图片数据失败");
+                                          }
+                                          return response.blob();
+                                      })
+                                      .then(blob => {
+                                          const clipboardItem = new ClipboardItem({
+                                              "image/png": blob,
+                                          });
+                                          return navigator.clipboard.write([clipboardItem]);
+                                      });
+                              })
+                              .then(() => {
+                                  snackbar({
+                                      message: "B50 图片已成功复制到剪贴板!",
+                                  });
+                              })
+                              .catch(() => {
+                                  snackbar({
+                                      message: "复制失败，请检查浏览器权限或稍后重试。",
+                                  });
+                              }),
+                  },
+                  {
+                      text: "下载图片",
+                      onClick: () =>
+                          getB50Png().then((dataUrl: string) => {
+                              const link = document.createElement("a");
+                              link.href = dataUrl;
+                              const formattedTime = new Date().toLocaleString("zh-CN", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                              });
+                              link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                              link.click();
+                          }),
+                  },
+              ]
+            : [];
+
+        const onlineRenderAction = {
+            text: "在线渲染",
+            onClick: () => {
+                const renderUrl = generateRenderUrl();
+                window.open(renderUrl, "_blank");
+            },
+        };
+
         dialog({
             headline: "生成 B50 图片",
-            description: "[开发阶段 仅保证桌面端 Chrome 体验] 选择保存方式",
-            actions: [
-                {
-                    text: "取消",
-                },
-                {
-                    text: "复制图片",
-                    onClick: () =>
-                        getB50Png()
-                            .then((dataUrl: string) => {
-                                return fetch(dataUrl)
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error("获取图片数据失败");
-                                        }
-                                        return response.blob();
-                                    })
-                                    .then(blob => {
-                                        const clipboardItem = new ClipboardItem({
-                                            "image/png": blob,
-                                        });
-                                        return navigator.clipboard.write([clipboardItem]);
-                                    });
-                            })
-                            .then(() => {
-                                snackbar({
-                                    message: "B50 图片已成功复制到剪贴板!",
-                                });
-                            })
-                            .catch(() => {
-                                snackbar({
-                                    message: "复制失败，请检查浏览器权限或稍后重试。",
-                                });
-                            }),
-                },
-                {
-                    text: "下载图片",
-                    onClick: () =>
-                        getB50Png().then((dataUrl: string) => {
-                            const link = document.createElement("a");
-                            link.href = dataUrl;
-                            const formattedTime = new Date().toLocaleString("zh-CN", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                            });
-                            link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
-                            link.click();
-                        }),
-                },
-                {
-                    text: "在线渲染",
-                    onClick: () => {
-                        const renderUrl = generateRenderUrl();
-                        window.open(renderUrl, "_blank");
-                    },
-                },
-            ],
+            description: isSupported ? "选择保存方式" : "仅 Chrome 桌面端支持本地渲染",
+            actions: [...baseActions, ...copyAndDownloadActions, onlineRenderAction],
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
