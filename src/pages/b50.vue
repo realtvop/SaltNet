@@ -257,7 +257,9 @@
 
     function downloadB50Png() {
         async function onlineRenderAndDownload() {
-            const renderOriginUrl = generateRenderUrl(import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL);
+            const renderOriginUrl = generateRenderUrl(
+                import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL
+            );
             const isMobile = isMobileDevice();
 
             if (isMobile) {
@@ -268,7 +270,9 @@
             try {
                 snackbar({ message: "正在生成图片，请稍候..." });
 
-                const response = await fetch(generateRenderUrl(import.meta.env.VITE_puppeteer_renderer_improved_PROXIED_URL));
+                const response = await fetch(
+                    generateRenderUrl(import.meta.env.VITE_puppeteer_renderer_improved_PROXIED_URL)
+                );
                 if (!response.ok) {
                     throw new Error("获取图片失败");
                 }
