@@ -190,6 +190,59 @@
         });
     }
 
+    function generateRenderUrl(): string {
+        const params = new URLSearchParams();
+
+        const sdData = b50SdCharts.value.map(chart => ({
+            song_id: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            level_index: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements,
+            fc: chart.score?.comboStatus,
+            fs: chart.score?.syncStatus,
+            rate: chart.score?.rankRate,
+            ra: chart.score?.deluxeRating,
+        }));
+
+        const dxData = b50DxCharts.value.map(chart => ({
+            song_id: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            level_index: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements,
+            fc: chart.score?.comboStatus,
+            fs: chart.score?.syncStatus,
+            rate: chart.score?.rankRate,
+            ra: chart.score?.deluxeRating,
+        }));
+
+        params.append("s", JSON.stringify(sdData));
+        params.append("d", JSON.stringify(dxData));
+        params.append("n", getUserDisplayName(player.value));
+
+        const secondaryName =
+            player.value?.remark &&
+            (player.value?.data?.name ??
+                player.value?.divingFish?.name ??
+                player.value?.inGame?.name)
+                ? (player.value.data?.name ??
+                  player.value.divingFish?.name ??
+                  player.value.inGame?.name)
+                : "";
+        if (secondaryName) {
+            params.append("o", secondaryName);
+        }
+
+        if (displayedRating.value) {
+            params.append("r", displayedRating.value.toString());
+        }
+
+        return `${import.meta.env.VITE_puppeteer_renderer_improved_URL}/screenshot?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Falpha.salt.realtvop.top%2F%3Fgenb50%26${params.toString().replaceAll("&", "%26")}`;
+    }
+
     function downloadB50Png() {
         dialog({
             headline: "生成 B50 图片",
@@ -199,7 +252,7 @@
                     text: "取消",
                 },
                 {
-                    text: "复制",
+                    text: "复制图片",
                     onClick: () =>
                         getB50Png()
                             .then((dataUrl: string) => {
@@ -229,7 +282,7 @@
                             }),
                 },
                 {
-                    text: "下载",
+                    text: "下载图片",
                     onClick: () =>
                         getB50Png().then((dataUrl: string) => {
                             const link = document.createElement("a");
@@ -245,6 +298,13 @@
                             link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                             link.click();
                         }),
+                },
+                {
+                    text: "在线渲染",
+                    onClick: () => {
+                        const renderUrl = generateRenderUrl();
+                        window.open(renderUrl, "_blank");
+                    },
                 },
             ],
             closeOnEsc: true,
