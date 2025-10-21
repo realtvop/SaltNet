@@ -240,7 +240,7 @@
             params.append("r", displayedRating.value.toString());
         }
 
-        return `${import.meta.env.VITE_puppeteer_renderer_improved_URL}/screenshot?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Falpha.salt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
+        return `${import.meta.env.VITE_puppeteer_renderer_improved_URL}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Falpha.salt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
     }
 
     function isDesktopChrome(): boolean {
