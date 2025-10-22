@@ -190,63 +190,186 @@
         });
     }
 
+    function generateRenderUrl(endpoint: string): string {
+        const params = new URLSearchParams();
+
+        const sdData = b50SdCharts.value.map(chart => ({
+            song_id: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            level_index: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements,
+            fc: chart.score?.comboStatus,
+            fs: chart.score?.syncStatus,
+            rate: chart.score?.rankRate,
+            ra: chart.score?.deluxeRating,
+        }));
+
+        const dxData = b50DxCharts.value.map(chart => ({
+            song_id: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            level_index: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements,
+            fc: chart.score?.comboStatus,
+            fs: chart.score?.syncStatus,
+            rate: chart.score?.rankRate,
+            ra: chart.score?.deluxeRating,
+        }));
+
+        params.append("s", JSON.stringify(sdData));
+        params.append("d", JSON.stringify(dxData));
+        params.append("n", getUserDisplayName(player.value));
+
+        const secondaryName =
+            player.value?.remark &&
+            (player.value?.data?.name ??
+                player.value?.divingFish?.name ??
+                player.value?.inGame?.name)
+                ? (player.value.data?.name ??
+                  player.value.divingFish?.name ??
+                  player.value.inGame?.name)
+                : "";
+        if (secondaryName) {
+            params.append("o", secondaryName);
+        }
+
+        if (displayedRating.value) {
+            params.append("r", displayedRating.value.toString());
+        }
+
+        return `${endpoint}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Fsalt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
+    }
+
+    function isDesktopChrome(): boolean {
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isMobile = /Mobile|Android|iPhone|iPad|iPod/.test(ua);
+        return isChrome && !isMobile;
+    }
+
+    // function isMobileDevice(): boolean {
+    //     const ua = navigator.userAgent;
+    //     return /Mobile|Android|iPhone|iPad|iPod/.test(ua);
+    // }
+
     function downloadB50Png() {
+        async function onlineRenderAndDownload() {
+            const renderOriginUrl = generateRenderUrl(
+                import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL
+            );
+            // const isMobile = isMobileDevice();
+
+            // if (isMobile) {
+            window.open(renderOriginUrl, "_blank");
+            // return;
+            // }
+
+            // try {
+            //     snackbar({ message: "正在生成图片，请稍候..." });
+
+            //     const response = await fetch(
+            //         generateRenderUrl(import.meta.env.VITE_puppeteer_renderer_improved_PROXIED_URL)
+            //     );
+            //     if (!response.ok) {
+            //         throw new Error("获取图片失败");
+            //     }
+
+            //     const blob = await response.blob();
+            //     const blobUrl = URL.createObjectURL(blob);
+
+            //     const link = document.createElement("a");
+            //     link.href = blobUrl;
+            //     const formattedTime = new Date().toLocaleString("zh-CN", {
+            //         year: "numeric",
+            //         month: "2-digit",
+            //         day: "2-digit",
+            //         hour: "2-digit",
+            //         minute: "2-digit",
+            //         hour12: false,
+            //     });
+            //     link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+            //     link.click();
+            //     snackbar({ message: "图片下载成功" });
+            //     URL.revokeObjectURL(blobUrl);
+            // } catch (error) {
+            //     snackbar({ message: "下载失败，正在打开渲染页面..." });
+            //     window.open(renderOriginUrl, "_blank");
+            // }
+        }
+
+        const isSupported = isDesktopChrome();
+
+        const baseActions = [
+            {
+                text: "取消",
+            },
+        ];
+
+        const copyAndDownloadActions = isSupported
+            ? [
+                  {
+                      text: "复制图片",
+                      onClick: () =>
+                          getB50Png()
+                              .then((dataUrl: string) => {
+                                  return fetch(dataUrl)
+                                      .then(response => {
+                                          if (!response.ok) {
+                                              throw new Error("获取图片数据失败");
+                                          }
+                                          return response.blob();
+                                      })
+                                      .then(blob => {
+                                          const clipboardItem = new ClipboardItem({
+                                              "image/png": blob,
+                                          });
+                                          return navigator.clipboard.write([clipboardItem]);
+                                      });
+                              })
+                              .then(() => {
+                                  snackbar({
+                                      message: "B50 图片已成功复制到剪贴板!",
+                                  });
+                              })
+                              .catch(() => {
+                                  snackbar({
+                                      message: "复制失败，请检查浏览器权限或稍后重试。",
+                                  });
+                              }),
+                  },
+                  {
+                      text: "下载图片",
+                      onClick: () =>
+                          getB50Png().then((dataUrl: string) => {
+                              const link = document.createElement("a");
+                              link.href = dataUrl;
+                              const formattedTime = new Date().toLocaleString("zh-CN", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: false,
+                              });
+                              link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                              link.click();
+                          }),
+                  },
+              ]
+            : [];
+
+        const onlineRenderAction = {
+            text: "在线渲染",
+            onClick: () => onlineRenderAndDownload(),
+        };
+
         dialog({
             headline: "生成 B50 图片",
-            description: "[开发阶段 仅保证桌面端 Chrome 体验] 选择保存方式",
-            actions: [
-                {
-                    text: "取消",
-                },
-                {
-                    text: "复制",
-                    onClick: () =>
-                        getB50Png()
-                            .then((dataUrl: string) => {
-                                return fetch(dataUrl)
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error("获取图片数据失败");
-                                        }
-                                        return response.blob();
-                                    })
-                                    .then(blob => {
-                                        const clipboardItem = new ClipboardItem({
-                                            "image/png": blob,
-                                        });
-                                        return navigator.clipboard.write([clipboardItem]);
-                                    });
-                            })
-                            .then(() => {
-                                snackbar({
-                                    message: "B50 图片已成功复制到剪贴板!",
-                                });
-                            })
-                            .catch(() => {
-                                snackbar({
-                                    message: "复制失败，请检查浏览器权限或稍后重试。",
-                                });
-                            }),
-                },
-                {
-                    text: "下载",
-                    onClick: () =>
-                        getB50Png().then((dataUrl: string) => {
-                            const link = document.createElement("a");
-                            link.href = dataUrl;
-                            const formattedTime = new Date().toLocaleString("zh-CN", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                            });
-                            link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
-                            link.click();
-                        }),
-                },
-            ],
+            description: isSupported ? "选择保存方式" : "仅 Chrome 桌面端支持本地渲染",
+            actions: [...baseActions, ...copyAndDownloadActions, onlineRenderAction],
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
