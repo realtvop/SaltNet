@@ -98,9 +98,7 @@
         const currentHash = window.location.hash;
         const openDialogs = document.querySelectorAll("mdui-dialog[open]");
 
-        // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
         if (previousHash.endsWith("#dialog")) {
-            // if (openDialogs.length <= 1) dialogHashAdded = false;
             const dialogHashLength = (previousHash.match(/#dialog/g) || []).length;
             if (openDialogs.length >= dialogHashLength) {
                 const topDialog =

@@ -65,11 +65,9 @@
     };
 
     const goToUserDetails = (index: number) => {
-        // if (index == 0) return router.push("/b50");
         router.push(`/b50/${index}`);
     };
     const goToUserFittedDetails = (index: number) => {
-        // if (index == 0) return router.push("/b50");
         router.push(`/b50/${index}?fit_diff=y`);
     };
 
