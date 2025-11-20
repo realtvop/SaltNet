@@ -318,70 +318,92 @@
             },
         ];
 
-        const copyAndDownloadActions = isSupported
-            ? [
-                  {
-                      text: "复制图片",
-                      onClick: () =>
-                          getB50Png()
-                              .then((dataUrl: string) => {
-                                  return fetch(dataUrl)
-                                      .then(response => {
-                                          if (!response.ok) {
-                                              throw new Error("获取图片数据失败");
-                                          }
-                                          return response.blob();
-                                      })
-                                      .then(blob => {
-                                          const clipboardItem = new ClipboardItem({
-                                              "image/png": blob,
-                                          });
-                                          return navigator.clipboard.write([clipboardItem]);
-                                      });
-                              })
-                              .then(() => {
-                                  snackbar({
-                                      message: "B50 图片已成功复制到剪贴板!",
-                                  });
-                              })
-                              .catch(() => {
-                                  snackbar({
-                                      message: "复制失败，请检查浏览器权限或稍后重试。",
-                                  });
-                              }),
-                  },
-                  {
-                      text: "下载图片",
-                      onClick: () =>
-                          getB50Png().then((dataUrl: string) => {
-                              const link = document.createElement("a");
-                              link.href = dataUrl;
-                              const formattedTime = new Date().toLocaleString("zh-CN", {
-                                  year: "numeric",
-                                  month: "2-digit",
-                                  day: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                              });
-                              link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
-                              link.click();
-                          }),
-                  },
-              ]
-            : [];
+        const copyAction = {
+            text: "复制",
+            onClick: () =>
+                getB50Png()
+                    .then((dataUrl: string) => {
+                        return fetch(dataUrl).then(response => {
+                            if (!response.ok) {
+                                throw new Error("获取图片数据失败");
+                            }
+                            return response.blob();
+                        }).then(blob => {
+                            const clipboardItem = new ClipboardItem({ "image/png": blob });
+                            return navigator.clipboard.write([clipboardItem]);
+                        });
+                    })
+                    .then(() => {
+                        snackbar({ message: "B50 图片已成功复制到剪贴板!" });
+                    })
+                    .catch(() => {
+                        snackbar({ message: "复制失败，请检查浏览器权限或稍后重试。" });
+                    }),
+        };
+
+        const downloadAction = {
+            text: "下载",
+            onClick: () =>
+                getB50Png().then((dataUrl: string) => {
+                    const link = document.createElement("a");
+                    link.href = dataUrl;
+                    const formattedTime = new Date().toLocaleString("zh-CN", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                    });
+                    link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                    link.click();
+                }),
+        };
 
         const onlineRenderAction = {
-            text: "在线渲染",
+            text: "在线",
             onClick: () => onlineRenderAndDownload(),
         };
+
+        // If local rendering is supported, first ask whether to use local or online rendering.
+        // If local is chosen, show a second dialog allowing copy or download.
+        const showLocalSaveOptions = () => {
+            const localActions = [
+                ...baseActions,
+                copyAction,
+                downloadAction,
+            ];
+
+            dialog({
+                headline: "本地渲染",
+                description: "选择保存方式",
+                actions: localActions,
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+            });
+        };
+
+        const mainActions = [
+            ...baseActions,
+            ...(isSupported
+                ? [
+                      {
+                          text: "本地",
+                          onClick: () => showLocalSaveOptions(),
+                      },
+                  ]
+                : []),
+            onlineRenderAction,
+        ];
 
         dialog({
             headline: "生成 B50 图片",
             description: isSupported
-                ? "选择保存方式"
+                ? "请选择渲染方式"
                 : "本地渲染在 iOS 与基于 Firefox 的浏览器上不可用，请使用其他浏览器或在线渲染",
-            actions: [...baseActions, ...copyAndDownloadActions, onlineRenderAction],
+            actions: mainActions,
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
