@@ -323,15 +323,17 @@
             onClick: () =>
                 getB50Png()
                     .then((dataUrl: string) => {
-                        return fetch(dataUrl).then(response => {
-                            if (!response.ok) {
-                                throw new Error("获取图片数据失败");
-                            }
-                            return response.blob();
-                        }).then(blob => {
-                            const clipboardItem = new ClipboardItem({ "image/png": blob });
-                            return navigator.clipboard.write([clipboardItem]);
-                        });
+                        return fetch(dataUrl)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error("获取图片数据失败");
+                                }
+                                return response.blob();
+                            })
+                            .then(blob => {
+                                const clipboardItem = new ClipboardItem({ "image/png": blob });
+                                return navigator.clipboard.write([clipboardItem]);
+                            });
                     })
                     .then(() => {
                         snackbar({ message: "B50 图片已成功复制到剪贴板!" });
@@ -368,11 +370,7 @@
         // If local rendering is supported, first ask whether to use local or online rendering.
         // If local is chosen, show a second dialog allowing copy or download.
         const showLocalSaveOptions = () => {
-            const localActions = [
-                ...baseActions,
-                copyAction,
-                downloadAction,
-            ];
+            const localActions = [...baseActions, copyAction, downloadAction];
 
             dialog({
                 headline: "本地渲染",

@@ -60,13 +60,15 @@ export function convertDFMusicList(data: MusicDataResponse) {
 
         for (const [index, dfChart] of item.charts.entries()) {
             const chartId = item.cids[index];
+            let deluxeScoreMax = 0;
+            for (const n of dfChart.notes) deluxeScoreMax += n ?? 0;
             const chartInfo: ChartInfo = {
                 notes: dfChart.notes,
                 charter: dfChart.charter,
                 level: item.level[index],
                 grade: index,
                 constant: item.ds[index],
-                deluxeScoreMax: dfChart.notes.reduce((sum, count) => sum + count, 0) * 3,
+                deluxeScoreMax: deluxeScoreMax * 3,
                 stat: dfChart.stats || undefined,
             };
             const chart: Chart = {

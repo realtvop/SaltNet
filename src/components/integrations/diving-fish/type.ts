@@ -36,7 +36,7 @@ export interface BasicInfo {
 
 // Chart specific info from /music_data
 export interface ChartInfo {
-    notes: [number, number, number, number];
+    notes: [number, number, number, number, number?];
     charter: string;
 
     stats?: ChartStats; // SaltNet 整合曲目列表中包含的谱面统计数据

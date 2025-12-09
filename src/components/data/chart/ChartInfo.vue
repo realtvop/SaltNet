@@ -225,13 +225,14 @@
                         </mdui-dropdown>
                     </span>
                     <span class="info-value notes-breakdown">
-                        <span class="note-type">TAP: {{ currentChart.info.notes[0] }}</span>
-                        <span class="note-type">HOLD: {{ currentChart.info.notes[1] }}</span>
-                        <span class="note-type">SLIDE: {{ currentChart.info.notes[2] }}</span>
-                        <span class="note-type">BREAK: {{ currentChart.info.notes[3] }}</span>
-                        <span class="note-total">
-                            总计: {{ currentChart.info.notes.reduce((a, b) => a + b, 0) }}
+                        <span class="note-type">TAP: {{ noteCounts.tap }}</span>
+                        <span class="note-type">HOLD: {{ noteCounts.hold }}</span>
+                        <span class="note-type">SLIDE: {{ noteCounts.slide }}</span>
+                        <span class="note-type" v-if="noteCounts.hasTouch">
+                            TOUCH: {{ noteCounts.touch }}
                         </span>
+                        <span class="note-type">BREAK: {{ noteCounts.break }}</span>
+                        <span class="note-total">总计: {{ noteCounts.total }}</span>
                     </span>
                 </div>
             </div>
@@ -527,6 +528,26 @@
             currentUser.value.data.detailed[`${props.chart.music.id}-${expandedValue.value}`];
         if (!score) return null;
         return chartScoreFromDF(score);
+    });
+
+    const noteCounts = computed(() => {
+        const notes = (currentChart.value?.info.notes ?? []) as Array<number | undefined>;
+        const [tap = 0, hold = 0, slide = 0] = notes;
+        const hasTouch = notes.length === 5 || currentChart.value?.music?.info.type === "DX";
+        const touch = notes.length === 5 ? (notes[3] ?? 0) : 0;
+        const brk = notes.length === 5 ? (notes[4] ?? 0) : (notes[3] ?? 0);
+        let total = 0;
+        for (const n of notes) total += n ?? 0;
+
+        return {
+            tap,
+            hold,
+            slide,
+            touch,
+            break: brk,
+            total,
+            hasTouch,
+        };
     });
 
     // 计算排名
