@@ -119,7 +119,7 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value">{{ currentChartScore.playCount }} 次</div>
+                            <div class="dx-score-value" v-if="currentChartScore.playCount">{{ currentChartScore.playCount }} 次</div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
