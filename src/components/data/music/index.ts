@@ -4,6 +4,10 @@ import Charts from "./charts.json";
 import { type SavedMusicList } from "@/components/data/music/type";
 import { convertDFMusicList } from "@/components/integrations/diving-fish";
 
+import { musicMetadata } from "@/components/integrations/maimai_music_metadata";
+
+console.log(musicMetadata)
+
 export const musicInfo: SavedMusicList = convertDFMusicList(
     Charts.data as unknown as MusicDataResponse
 );

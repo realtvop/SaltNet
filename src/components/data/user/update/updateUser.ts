@@ -1,7 +1,6 @@
 import type { User } from "@/components/data/user/type";
 import { snackbar, alert } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
-// @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
 const updateUserWorker = new UpdateUserWorker();

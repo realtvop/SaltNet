@@ -43,36 +43,62 @@ export enum MusicOrigin {
     "maimai GreeN",
     "maimai GreeN PLUS",
     "maimai ORANGE",
-    "maimai MURASAKi PLUS",
     "maimai ORANGE PLUS",
-    "maimai MURASAKi",
     "maimai PiNK",
     "maimai PiNK PLUS",
+    "maimai MURASAKi",
+    "maimai MURASAKi PLUS",
     "maimai MiLK",
+    "maimai MiLK PLUS",
     "maimai FiNALE",
-    "MiLK PLUS",
-    "maimai でらっくす UNiVERSE",
-    "maimai でらっくす FESTiVAL",
-    "maimai でらっくす BUDDiES",
     "maimai でらっくす",
+    "maimai でらっくす PLUS",
     "maimai でらっくす Splash",
+    "maimai でらっくす Splash PLUS",
+    "maimai でらっくす UNiVERSE",
+    "maimai でらっくす UNiVERSE PLUS",
+    "maimai でらっくす FESTiVAL",
+    "maimai でらっくす FESTiVAL PLUS",
+    "maimai でらっくす BUDDiES",
+    "maimai でらっくす BUDDiES PLUS",
     "maimai でらっくす PRiSM",
+    "maimai でらっくす PRiSM PLUS",
+    "maimai でらっくす CiRCLE",
+    // "maimai でらっくす CiRCLE PLUS",
 }
 
 export enum MusicGenre {
-    "舞萌",
-    "流行&动漫",
-    "其他游戏",
-    "niconico & VOCALOID",
-    "niconicoボーカロイド",
-    "东方Project",
-    "音击&中二节奏",
-    "ゲームバラエティ",
-    "POPSアニメ",
-    "maimai",
-    "オンゲキCHUNITHM",
-    "東方Project",
     "宴会場",
+    "POPS＆アニメ",
+    "niconico＆ボーカロイド",
+    "東方Project",
+    "ゲーム＆バラエティ",
+    "maimai",
+    "オンゲキ＆CHUNITHM",
+}
+
+export enum MusicGenreCN {
+    "宴会場" = "宴会场",
+    "POPS＆アニメ" = "流行&动漫",
+    "niconico＆ボーカロイド" = "niconico & VOCALOID",
+    "東方Project" = "东方Project",
+    "ゲーム＆バラエティ" = "其他游戏",
+    "maimai" = "舞萌",
+    "オンゲキ＆CHUNITHM" = "音击&中二节奏",
+}
+
+export const MusicGenreCNMap: Record<MusicGenre, MusicGenreCN> = {
+    [MusicGenre["宴会場"]]: MusicGenreCN["宴会場"],
+    [MusicGenre["POPS＆アニメ"]]: MusicGenreCN["POPS＆アニメ"],
+    [MusicGenre["niconico＆ボーカロイド"]]: MusicGenreCN["niconico＆ボーカロイド"],
+    [MusicGenre["東方Project"]]: MusicGenreCN["東方Project"],
+    [MusicGenre["ゲーム＆バラエティ"]]: MusicGenreCN["ゲーム＆バラエティ"],
+    [MusicGenre["maimai"]]: MusicGenreCN["maimai"],
+    [MusicGenre["オンゲキ＆CHUNITHM"]]: MusicGenreCN["オンゲキ＆CHUNITHM"],
+}
+
+export function getMusicGenreCN(genre: MusicGenre): MusicGenreCN {
+    return MusicGenreCN[MusicGenre[genre] as keyof typeof MusicGenre];
 }
 
 /**
