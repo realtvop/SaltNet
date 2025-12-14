@@ -59,9 +59,6 @@
             <mdui-navigation-bar-item icon="people" value="/users" @click="router.push('/users')">
                 用户
             </mdui-navigation-bar-item>
-            <mdui-navigation-bar-item icon="info" value="/about" @click="router.push('/about')">
-                关于
-            </mdui-navigation-bar-item>
         </mdui-navigation-bar>
         <mdui-navigation-rail
             :value="route.path"
@@ -93,9 +90,6 @@
             </mdui-navigation-rail-item>
             <mdui-navigation-rail-item icon="people" value="/users" @click="router.push('/users')">
                 用户
-            </mdui-navigation-rail-item>
-            <mdui-navigation-rail-item icon="info" value="/about" @click="router.push('/about')">
-                关于
             </mdui-navigation-rail-item>
         </mdui-navigation-rail>
 

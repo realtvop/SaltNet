@@ -12,7 +12,7 @@
             icon="arrow_back"
             variant="text"
             v-if="
-                ['/settings', '/nearcade'].includes(route.path) ||
+                ['/settings', '/nearcade', '/about'].includes(route.path) ||
                 route.path.startsWith('/b50/') ||
                 route.path.startsWith('/songs/')
             "
@@ -29,6 +29,9 @@
             <img src="/favicon.ico" alt="icon" class="favicon-icon favicon" />
         </mdui-button>
         <mdui-top-app-bar-title>SaltNet</mdui-top-app-bar-title>
+        <template v-if="route.path === '/' || route.path === '/index'">
+            <mdui-button-icon icon="info" @click="router.push('/about')"></mdui-button-icon>
+        </template>
         <template v-if="route.path === '/' || route.path === '/index'">
             <mdui-button-icon icon="settings" @click="router.push('/settings')"></mdui-button-icon>
         </template>
