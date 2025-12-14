@@ -6,7 +6,7 @@
         :open="open"
         :fullscreen="isSmallScreen"
         @open="markDialogOpen"
-        @close="markDialogClosed"
+        @close="scrollDialogToTopAndMarkClosed"
     >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon
@@ -435,6 +435,29 @@
     onUnmounted(() => {
         window.removeEventListener("resize", handleResize);
     });
+
+    // 对话框打开动画完成后，滚动内容到顶部
+    function scrollDialogToTopAndMarkClosed(ref: HTMLElement) {
+        markDialogClosed(ref);
+        if (dialogRef.value) {
+            // 尝试访问 shadow DOM 中的 body 或 panel 部分
+            const shadowRoot = dialogRef.value.shadowRoot;
+            if (shadowRoot) {
+                // 尝试 body 部分（通常是可滚动区域）
+                const body = shadowRoot.querySelector('.body');
+                if (body) {
+                    body.scrollTop = 0;
+                }
+                // 尝试 panel 部分
+                const panel = shadowRoot.querySelector('.panel');
+                if (panel) {
+                    panel.scrollTop = 0;
+                }
+            }
+            // 也尝试滚动 dialog 元素本身（如果它可滚动）
+            dialogRef.value.scrollTop = 0;
+        }
+    }
 
     watch(
         () => props.open,
