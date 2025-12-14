@@ -127,6 +127,12 @@
                 </mdui-card>
             </a>
         </div>
+
+        <div>
+            <mdui-chip variant="outlined" icon="info" @click="router.push('/about')">
+                关于
+            </mdui-chip>
+        </div>
     </div>
 </template>
 
@@ -141,12 +147,11 @@
     .favicon-image {
         width: 120px;
         height: 120px;
-        margin-bottom: 15px;
     }
 
     .project-title {
-        margin-top: 0;
-        margin-bottom: 0;
+        margin-top: 5px;
+        margin-bottom: -5px;
     }
 
     .page-content {
@@ -186,7 +191,8 @@
     .rating-container {
         display: flex;
         justify-content: center;
-        margin: 25px 0;
+        margin-top: 20px;
+        margin-bottom: 5px;
     }
 
     .large-rating {
@@ -194,8 +200,9 @@
     }
 
     .loading-text {
-        margin: 25px 0;
         font-size: 1.1rem;
+        margin-top: 10px;
+        /* margin-bottom: 5px; */
     }
 
     .loading-text a {
