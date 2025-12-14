@@ -170,11 +170,13 @@
         }
     };
 
-    // 滚动事件处理
-    const handleScroll = (event: Event) => {
-        const target = event.target as HTMLElement;
+    // 滚动事件处理（使用 window 滚动）
+    const handleScroll = () => {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
         // 检查是否接近底部（距离底部200px时触发）
-        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+        if (scrollTop + windowHeight >= documentHeight - 200) {
             loadMore();
         }
     };
@@ -196,10 +198,7 @@
         visibleItemsCount.value = getLoadSize();
         if (!["all", "owned", "missing"].includes(filter.value)) filter.value = "all"; // 重置筛选器
         // 滚动到顶部
-        const container = document.querySelector(".collections-container");
-        if (container) {
-            container.scrollTop = 0;
-        }
+        window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     // 监听搜索变化，重置虚拟滚动
@@ -211,19 +210,18 @@
     watch(filter, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
-        const container = document.querySelector(".collections-container");
-        if (container) {
-            container.scrollTop = 0;
-        }
+        window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     onMounted(() => {
         visibleItemsCount.value = getLoadSize();
         window.addEventListener("resize", handleResize);
+        window.addEventListener("scroll", handleScroll);
     });
 
     onUnmounted(() => {
         window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleScroll);
     });
 
     // 根据称号颜色获取CSS类名
@@ -311,225 +309,231 @@
 </script>
 
 <template>
-    <!-- 主分类选择 - 使用Tab -->
-    <mdui-tabs :value="category" @change="(e: any) => (category = e.target.value)">
-        <mdui-tab v-for="(label, key) in Category" :key="key" :value="label">
-            {{ label }}
-        </mdui-tab>
-    </mdui-tabs>
-
-    <!-- 搜索框和筛选器 -->
-    <div class="filter-bar">
-        <mdui-select
-            class="filter-select"
-            :value="filter"
-            @change="handleFilterChange"
-            style="--mdui-comp-select-menu-max-height: 60vh"
+    <div class="collections-page">
+        <!-- 主分类选择 - 使用Tab -->
+        <mdui-tabs
+            :value="category"
+            @change="(e: any) => (category = e.target.value)"
+            class="category-tabs"
         >
-            <mdui-menu-item value="all">所有</mdui-menu-item>
-            <mdui-menu-item value="owned">已获得</mdui-menu-item>
-            <mdui-menu-item value="missing">未获得</mdui-menu-item>
-            <mdui-divider v-if="availableGenres.length"></mdui-divider>
-            <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
-                {{ genre }}
-            </mdui-menu-item>
-        </mdui-select>
+            <mdui-tab v-for="(label, key) in Category" :key="key" :value="label">
+                {{ label }}
+            </mdui-tab>
+        </mdui-tabs>
 
-        <mdui-text-field
-            class="search-field"
-            clearable
-            icon="search"
-            label="搜索"
-            placeholder="名称 类型 描述 ID"
-            @input="query = $event.target.value"
-        ></mdui-text-field>
-    </div>
-
-    <!-- 收藏品网格 -->
-    <div class="collections-container" @scroll="handleScroll">
-        <div class="collections-grid">
-            <mdui-card
-                v-for="collection in itemsToRender"
-                :key="`${collection.type}-${collection.id}`"
-                :variant="isCollectionOwned(collection) ? 'filled' : 'outlined'"
-                class="collection-card"
+        <!-- 搜索框和筛选器 -->
+        <div class="filter-bar">
+            <mdui-select
+                class="filter-select"
+                :value="filter"
+                @change="handleFilterChange"
+                style="--mdui-comp-select-menu-max-height: 60vh"
             >
-                <div class="collection-content">
-                    <!-- 根据类型显示不同的内容 -->
-                    <div v-if="collection.type === CollectionKind.Title" class="title-content">
-                        <div class="title-header">
-                            <div class="title-color-wrapper">
-                                <div
-                                    class="title-color-indicator"
-                                    :class="getTitleColorClass((collection as any).color)"
-                                ></div>
-                                <h3
-                                    class="title-name clickable"
-                                    @click="copyTextToClipboard(collection.name)"
-                                >
-                                    {{ collection.name }}
-                                </h3>
-                            </div>
-                        </div>
-                        <div class="title-info">
-                            <p
-                                class="collection-description clickable"
-                                @click="copyTextToClipboard(collection.description)"
-                            >
-                                {{ collection.description }}
-                            </p>
-                            <span
-                                class="collection-id clickable"
-                                @click="copyTextToClipboard(collection.id.toString())"
-                            >
-                                #{{ collection.id }}
-                            </span>
-                        </div>
-                    </div>
+                <mdui-menu-item value="all">所有</mdui-menu-item>
+                <mdui-menu-item value="owned">已获得</mdui-menu-item>
+                <mdui-menu-item value="missing">未获得</mdui-menu-item>
+                <mdui-divider v-if="availableGenres.length"></mdui-divider>
+                <mdui-menu-item v-for="genre in availableGenres" :key="genre" :value="genre">
+                    {{ genre }}
+                </mdui-menu-item>
+            </mdui-select>
 
-                    <!-- 其他类型的收藏品 -->
-                    <div
-                        v-else
-                        class="other-content"
-                        :class="{
-                            'icon-layout':
-                                collection.type === CollectionKind.Icon ||
-                                collection.type === CollectionKind.Character ||
-                                collection.type === CollectionKind.Partner,
-                            'plate-frame-layout':
-                                collection.type === CollectionKind.Plate ||
-                                collection.type === CollectionKind.Frame,
-                        }"
-                    >
-                        <div
-                            class="collection-image-placeholder"
-                            :class="{
-                                square:
-                                    collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character ||
-                                    collection.type === CollectionKind.Partner,
-                                plate: collection.type === CollectionKind.Plate,
-                                frame: collection.type === CollectionKind.Frame,
-                            }"
-                            v-if="!getImageUrl(collection)"
-                        >
-                            <mdui-icon
-                                name="image"
-                                style="font-size: 48px; opacity: 0.5"
-                            ></mdui-icon>
-                        </div>
-                        <img
-                            v-else-if="
-                                collection.type === CollectionKind.Icon ||
-                                collection.type === CollectionKind.Plate ||
-                                collection.type === CollectionKind.Frame ||
-                                collection.type === CollectionKind.Character ||
-                                collection.type === CollectionKind.Partner
-                            "
-                            :src="getImageUrl(collection)"
-                            :alt="collection.name"
-                            class="collection-image"
-                            :class="{
-                                square:
-                                    collection.type === CollectionKind.Icon ||
-                                    collection.type === CollectionKind.Character ||
-                                    collection.type === CollectionKind.Partner,
-                                plate: collection.type === CollectionKind.Plate,
-                                frame: collection.type === CollectionKind.Frame,
-                            }"
-                            crossorigin="anonymous"
-                            @error="(e: any) => e.target && (e.target.style.display = 'none')"
-                        />
-                        <div class="collection-info">
-                            <div
-                                class="collection-header"
-                                :class="{
-                                    'icon-header':
-                                        collection.type === CollectionKind.Icon ||
-                                        collection.type === CollectionKind.Character ||
-                                        collection.type === CollectionKind.Partner,
-                                }"
-                            >
-                                <h3
-                                    class="collection-name clickable"
-                                    @click="copyTextToClipboard(collection.name)"
-                                >
-                                    {{ collection.name }}
-                                </h3>
-                                <span
-                                    v-if="
-                                        collection.type === CollectionKind.Plate ||
-                                        collection.type === CollectionKind.Frame ||
-                                        collection.type === CollectionKind.Character
-                                    "
-                                    class="collection-id-inline clickable"
-                                    @click="copyTextToClipboard(collection.id.toString())"
-                                >
-                                    #{{ collection.id }}
-                                </span>
-                            </div>
-                            <p
-                                v-if="collection.type !== CollectionKind.Partner"
-                                class="collection-description clickable"
-                                @click="copyTextToClipboard(collection.description)"
-                            >
-                                {{ collection.description }}
-                            </p>
+            <mdui-text-field
+                class="search-field"
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="名称 类型 描述 ID"
+                @input="query = $event.target.value"
+            ></mdui-text-field>
+        </div>
 
-                            <div class="collection-meta">
+        <!-- 收藏品网格 -->
+        <div class="collections-container">
+            <div class="collections-grid">
+                <mdui-card
+                    v-for="collection in itemsToRender"
+                    :key="`${collection.type}-${collection.id}`"
+                    :variant="isCollectionOwned(collection) ? 'filled' : 'outlined'"
+                    class="collection-card"
+                >
+                    <div class="collection-content">
+                        <!-- 根据类型显示不同的内容 -->
+                        <div v-if="collection.type === CollectionKind.Title" class="title-content">
+                            <div class="title-header">
+                                <div class="title-color-wrapper">
+                                    <div
+                                        class="title-color-indicator"
+                                        :class="getTitleColorClass((collection as any).color)"
+                                    ></div>
+                                    <h3
+                                        class="title-name clickable"
+                                        @click="copyTextToClipboard(collection.name)"
+                                    >
+                                        {{ collection.name }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="title-info">
+                                <p
+                                    class="collection-description clickable"
+                                    @click="copyTextToClipboard(collection.description)"
+                                >
+                                    {{ collection.description }}
+                                </p>
                                 <span
-                                    v-if="
-                                        collection.type === CollectionKind.Icon ||
-                                        collection.type === CollectionKind.Partner
-                                    "
                                     class="collection-id clickable"
                                     @click="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>
                             </div>
-                            <!-- 旅行伙伴的特殊信息 -->
+                        </div>
+
+                        <!-- 其他类型的收藏品 -->
+                        <div
+                            v-else
+                            class="other-content"
+                            :class="{
+                                'icon-layout':
+                                    collection.type === CollectionKind.Icon ||
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner,
+                                'plate-frame-layout':
+                                    collection.type === CollectionKind.Plate ||
+                                    collection.type === CollectionKind.Frame,
+                            }"
+                        >
                             <div
-                                v-if="collection.type === CollectionKind.Character"
-                                class="character-info"
+                                class="collection-image-placeholder"
+                                :class="{
+                                    square:
+                                        collection.type === CollectionKind.Icon ||
+                                        collection.type === CollectionKind.Character ||
+                                        collection.type === CollectionKind.Partner,
+                                    plate: collection.type === CollectionKind.Plate,
+                                    frame: collection.type === CollectionKind.Frame,
+                                }"
+                                v-if="!getImageUrl(collection)"
                             >
-                                <div class="character-stats">
-                                    <span
-                                        v-if="(collection as any).userCharacter"
-                                        class="character-level"
+                                <mdui-icon
+                                    name="image"
+                                    style="font-size: 48px; opacity: 0.5"
+                                ></mdui-icon>
+                            </div>
+                            <img
+                                v-else-if="
+                                    collection.type === CollectionKind.Icon ||
+                                    collection.type === CollectionKind.Plate ||
+                                    collection.type === CollectionKind.Frame ||
+                                    collection.type === CollectionKind.Character ||
+                                    collection.type === CollectionKind.Partner
+                                "
+                                :src="getImageUrl(collection)"
+                                :alt="collection.name"
+                                class="collection-image"
+                                :class="{
+                                    square:
+                                        collection.type === CollectionKind.Icon ||
+                                        collection.type === CollectionKind.Character ||
+                                        collection.type === CollectionKind.Partner,
+                                    plate: collection.type === CollectionKind.Plate,
+                                    frame: collection.type === CollectionKind.Frame,
+                                }"
+                                crossorigin="anonymous"
+                                @error="(e: any) => e.target && (e.target.style.display = 'none')"
+                            />
+                            <div class="collection-info">
+                                <div
+                                    class="collection-header"
+                                    :class="{
+                                        'icon-header':
+                                            collection.type === CollectionKind.Icon ||
+                                            collection.type === CollectionKind.Character ||
+                                            collection.type === CollectionKind.Partner,
+                                    }"
+                                >
+                                    <h3
+                                        class="collection-name clickable"
+                                        @click="copyTextToClipboard(collection.name)"
                                     >
-                                        Lv. {{ (collection as any).userCharacter.level }}
+                                        {{ collection.name }}
+                                    </h3>
+                                    <span
+                                        v-if="
+                                            collection.type === CollectionKind.Plate ||
+                                            collection.type === CollectionKind.Frame ||
+                                            collection.type === CollectionKind.Character
+                                        "
+                                        class="collection-id-inline clickable"
+                                        @click="copyTextToClipboard(collection.id.toString())"
+                                    >
+                                        #{{ collection.id }}
                                     </span>
                                 </div>
-                                <div
-                                    v-if="(collection as any).userCharacter"
-                                    class="character-awakening-row"
+                                <p
+                                    v-if="collection.type !== CollectionKind.Partner"
+                                    class="collection-description clickable"
+                                    @click="copyTextToClipboard(collection.description)"
                                 >
-                                    <template v-for="i in 5" :key="i">
-                                        <mdui-icon
-                                            :name="
-                                                i <= (collection as any).userCharacter.awakening
-                                                    ? 'star'
-                                                    : 'star_border'
-                                            "
-                                            class="awakening-star"
-                                        ></mdui-icon>
-                                    </template>
-                                </div>
-                            </div>
+                                    {{ collection.description }}
+                                </p>
 
-                            <div class="collection-meta">
-                                <!-- collection-meta现在为空，但保留结构 -->
+                                <div class="collection-meta">
+                                    <span
+                                        v-if="
+                                            collection.type === CollectionKind.Icon ||
+                                            collection.type === CollectionKind.Partner
+                                        "
+                                        class="collection-id clickable"
+                                        @click="copyTextToClipboard(collection.id.toString())"
+                                    >
+                                        #{{ collection.id }}
+                                    </span>
+                                </div>
+                                <!-- 旅行伙伴的特殊信息 -->
+                                <div
+                                    v-if="collection.type === CollectionKind.Character"
+                                    class="character-info"
+                                >
+                                    <div class="character-stats">
+                                        <span
+                                            v-if="(collection as any).userCharacter"
+                                            class="character-level"
+                                        >
+                                            Lv. {{ (collection as any).userCharacter.level }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="(collection as any).userCharacter"
+                                        class="character-awakening-row"
+                                    >
+                                        <template v-for="i in 5" :key="i">
+                                            <mdui-icon
+                                                :name="
+                                                    i <= (collection as any).userCharacter.awakening
+                                                        ? 'star'
+                                                        : 'star_border'
+                                                "
+                                                class="awakening-star"
+                                            ></mdui-icon>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="collection-meta">
+                                    <!-- collection-meta现在为空，但保留结构 -->
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </mdui-card>
+                </mdui-card>
 
-            <!-- 加载更多指示器 -->
-            <div v-if="maxVisibleItems < filteredCollections.length" class="loading-indicator">
-                <div class="loading-text">正在加载更多...</div>
-                <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                <!-- 加载更多指示器 -->
+                <div v-if="maxVisibleItems < filteredCollections.length" class="loading-indicator">
+                    <div class="loading-text">正在加载更多...</div>
+                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                </div>
             </div>
         </div>
     </div>
@@ -540,12 +544,48 @@
         cursor: pointer;
     }
 
+    .collections-page {
+        padding-top: calc(48px + 64px); /* tabs + filter-bar height */
+    }
+
+    .category-tabs {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: rgb(var(--mdui-color-background));
+        min-width: 0;
+        height: 48px;
+        box-sizing: border-box;
+    }
+
+    @media (min-aspect-ratio: 1.001/1) {
+        .category-tabs {
+            left: 80px; /* navigation rail width */
+        }
+    }
+
     .filter-bar {
+        position: fixed;
+        top: calc(56px + 48px);
+        left: 0;
+        right: 0;
+        z-index: 99;
+        background: rgb(var(--mdui-color-background));
         padding: 5px 20px;
         display: flex;
         gap: 16px;
         align-items: center;
         flex-wrap: wrap;
+        height: 64px;
+        box-sizing: border-box;
+    }
+
+    @media (min-aspect-ratio: 1.001/1) {
+        .filter-bar {
+            left: 80px; /* navigation rail width */
+        }
     }
 
     .filter-select {
@@ -566,27 +606,15 @@
         min-width: 200px;
     }
 
-    mdui-tabs {
-        min-width: 0;
-    }
-
     .collections-container {
         padding: 5px 20px;
-        overflow-y: auto;
-        height: calc(100vh - 76px - 11.75rem);
-    }
-
-    @supports (-webkit-touch-callout: none) {
-        @media all and (display-mode: standalone) {
-            .collections-container {
-                height: calc(100vh - 76px - 12.75rem);
-            }
-        }
+        min-height: 50vh;
+        padding-bottom: calc(56px + 1rem);
     }
 
     @media (min-aspect-ratio: 1.001/1) {
         .collections-container {
-            height: calc(100vh - 76px - 6.75rem);
+            padding-bottom: 1rem;
         }
     }
 

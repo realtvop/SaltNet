@@ -573,11 +573,13 @@
         }
     };
 
-    // 滚动事件处理
-    const handleScroll = (event: Event) => {
-        const target = event.target as HTMLElement;
+    // 滚动事件处理（使用 window 滚动）
+    const handleScroll = () => {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
         // 检查是否接近底部（距离底部200px时触发）
-        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+        if (scrollTop + windowHeight >= documentHeight - 200) {
             loadMore();
         }
     };
@@ -598,10 +600,7 @@
         visibleItemsCount.value = getLoadSize();
         query.value = "";
         // 滚动到顶部
-        const container = document.querySelector(".card-container");
-        if (container) {
-            container.scrollTop = 0;
-        }
+        window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     watch(category, newCategory => {
@@ -636,30 +635,26 @@
     watch(plateFinishSort, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
-        const container = document.querySelector(".card-container");
-        if (container) {
-            container.scrollTop = 0;
-        }
+        window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     // 监听难度筛选变化，重新计算可视项目数
     watch(difficultyFilter, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
-        const container = document.querySelector(".card-container");
-        if (container) {
-            container.scrollTop = 0;
-        }
+        window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     onMounted(async () => {
         await loadPlayerData();
         visibleItemsCount.value = getLoadSize();
         window.addEventListener("resize", handleResize);
+        window.addEventListener("scroll", handleScroll);
     });
 
     onUnmounted(() => {
         window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleScroll);
     });
 
     // 新增收藏夹
@@ -869,7 +864,17 @@
 </script>
 
 <template>
-    <div class="songs-page" :class="{ 'songs-page-fixed': userId }">
+    <div
+        class="songs-page"
+        :class="{
+            'songs-page-fixed': userId,
+            'songs-page-with-detailed-filter':
+                constantFilterEnabled &&
+                category === Category.InGame &&
+                selectedDifficulty != 'ALL' &&
+                !(Number(selectedDifficulty) < 6),
+        }"
+    >
         <!-- [游戏排序]难度选单 -->
         <div class="category-bar">
             <mdui-dropdown>
@@ -1048,7 +1053,6 @@
             class="card-container"
             :class="{ 'card-container-fixed': userId }"
             v-if="chartListFiltered"
-            @scroll="handleScroll"
         >
             <div class="score-grid-wrapper">
                 <div class="score-grid">
@@ -1093,6 +1097,14 @@
 
 <style scoped>
     /* 固定页面模式下的全局样式重写 */
+    .songs-page {
+        padding-top: calc(48px + 64px); /* category-bar + search-input height */
+    }
+    .songs-page-with-detailed-filter {
+        padding-top: calc(
+            48px + 64px + 48px
+        ); /* category-bar + search-input + detailed-filter height */
+    }
     .songs-page-fixed {
         @media (min-aspect-ratio: 1.001/1) {
             margin-left: -16px;
@@ -1110,12 +1122,26 @@
     }
 
     .category-bar {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        z-index: 100;
         display: flex;
         align-items: center;
         justify-content: flex-start;
         padding: 0 10px;
         gap: 10px;
         overflow: hidden;
+        height: 48px;
+        background: rgb(var(--mdui-color-background));
+        box-sizing: border-box;
+    }
+
+    @media (min-aspect-ratio: 1.001/1) {
+        .category-bar {
+            left: 80px; /* navigation rail width */
+        }
     }
 
     mdui-tabs {
@@ -1126,8 +1152,23 @@
     }
 
     .search-input {
+        position: fixed;
+        top: calc(56px + 48px);
+        left: 0;
+        right: 0;
+        z-index: 99;
         padding: 5px 20px;
+        height: 64px;
+        background: rgb(var(--mdui-color-background));
+        box-sizing: border-box;
     }
+
+    @media (min-aspect-ratio: 1.001/1) {
+        .search-input {
+            left: 80px; /* navigation rail width */
+        }
+    }
+
     div.search-input {
         display: flex;
         align-items: center;
@@ -1143,37 +1184,35 @@
 
     .card-container {
         padding: 5px 20px;
-        overflow-y: auto;
-        height: calc(100vh - 76px - 11.75rem);
-
-        @supports (-webkit-touch-callout: none) {
-            @media all and (display-mode: standalone) {
-                height: calc(100vh - 76px - 12.75rem);
-            }
-        }
-        @media (min-aspect-ratio: 1.001/1) {
-            height: calc(100vh - 76px - 6.75rem);
-        }
+        min-height: 50vh;
+        padding-bottom: calc(56px + 1rem);
     }
 
-    /* 当页面为固定页面模式时（有用户ID参数） */
-    .card-container-fixed {
-        height: calc(100vh - 11.75rem) !important;
-
-        @supports (-webkit-touch-callout: none) {
-            @media all and (display-mode: standalone) {
-                height: calc(100vh - 12.75rem) !important;
-            }
-        }
-        @media (min-aspect-ratio: 1.001/1) {
-            height: calc(100vh - 6.75rem) !important;
+    @media (min-aspect-ratio: 1.001/1) {
+        .card-container {
+            padding-bottom: 1rem;
         }
     }
 
     .detailed-filter {
+        position: fixed;
+        top: calc(56px + 48px + 64px);
+        left: 0;
+        right: 0;
+        z-index: 98;
         display: flex;
         justify-content: center;
+        align-items: center;
         padding: 5px 20px;
+        height: 48px;
+        box-sizing: border-box;
+        background: rgb(var(--mdui-color-background));
+    }
+
+    @media (min-aspect-ratio: 1.001/1) {
+        .detailed-filter {
+            left: 80px; /* navigation rail width */
+        }
     }
 
     .detailed-filter-card {

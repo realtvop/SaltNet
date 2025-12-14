@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createRouter, createMemoryHistory } from "vue-router";
+    import { createRouter, createMemoryHistory, createWebHistory } from "vue-router";
     import { Dialog } from "mdui";
 
     import IndexPage from "../../pages/index.vue";
@@ -27,10 +27,10 @@
     ];
 
     const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade"];
-    const routesNeedFixedPage = ["/", "/about", "/songs", "/songs/:id", "/collections"];
+    const routesNeedFixedPage = ["/", "/about"];
 
     const router = createRouter({
-        history: createMemoryHistory(),
+        history: import.meta.env.PROD ? createMemoryHistory() : createWebHistory(),
         routes,
     });
 

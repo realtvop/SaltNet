@@ -111,8 +111,7 @@
     .app-container {
         padding: 16px;
         box-sizing: border-box;
-        height: 100%;
-        overflow-y: auto;
+        min-height: 100%;
     }
 
     mdui-navigation-bar,
