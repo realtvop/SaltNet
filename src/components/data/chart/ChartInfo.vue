@@ -444,12 +444,12 @@
             const shadowRoot = dialogRef.value.shadowRoot;
             if (shadowRoot) {
                 // 尝试 body 部分（通常是可滚动区域）
-                const body = shadowRoot.querySelector('.body');
+                const body = shadowRoot.querySelector(".body");
                 if (body) {
                     body.scrollTop = 0;
                 }
                 // 尝试 panel 部分
-                const panel = shadowRoot.querySelector('.panel');
+                const panel = shadowRoot.querySelector(".panel");
                 if (panel) {
                     panel.scrollTop = 0;
                 }
