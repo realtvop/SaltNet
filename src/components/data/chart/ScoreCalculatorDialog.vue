@@ -4,6 +4,7 @@
         close-on-esc
         close-on-overlay-click
         :open="open"
+        :fullscreen="isSmallScreen"
         @open="markDialogOpen"
         @close="handleClose"
     >
@@ -26,10 +27,10 @@
                     <thead>
                         <tr>
                             <th>Note</th>
-                            <th class="judge-perfect">PERFECT</th>
-                            <th class="judge-great">GREAT</th>
-                            <th class="judge-good">GOOD</th>
-                            <th class="judge-miss">MISS</th>
+                            <th class="judge-perfect">Perfect</th>
+                            <th class="judge-great">Great</th>
+                            <th class="judge-good">Good</th>
+                            <th class="judge-miss">Miss</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -150,7 +151,9 @@
     import { ref, computed, watch, nextTick } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import type { Chart } from "@/components/data/music/type";
+    import { useShared } from "@/components/app/shared";
 
+    const { isSmallScreen } = useShared();
     const props = defineProps<{
         open: boolean;
         chart: Chart | null;

@@ -4,17 +4,17 @@
         close-on-esc
         close-on-overlay-click
         :open="open"
-        :fullscreen="isSmallScreen"
+        :fullscreen="shared.isSmallScreen"
         @open="markDialogOpen"
         @close="scrollDialogToTopAndMarkClosed"
     >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon
-                :icon="isSmallScreen ? 'arrow_back' : 'close'"
+                :icon="shared.isSmallScreen ? 'arrow_back' : 'close'"
                 @click="dialogRef.open = false"
             ></mdui-button-icon>
             <mdui-button
-                v-if="isSmallScreen"
+                v-if="shared.isSmallScreen"
                 variant="text"
                 class="icon-btn"
                 @click="dialogRef.open = false"
@@ -371,7 +371,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
-    import { defineProps, watch, nextTick, ref, onMounted, onUnmounted, computed } from "vue";
+    import { defineProps, watch, nextTick, ref, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
@@ -408,33 +408,12 @@
     const currentUser = ref<User | null>(null);
     const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
-    const isSmallScreen = ref(false);
     const showScoreCalculator = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
     // 存储每个难度对应的项目位置（从缓存中获取）
     const chartPositionMap = ref<Map<number, string>>(new Map());
-
-    // 检查屏幕尺寸
-    function checkScreenSize() {
-        isSmallScreen.value = window.innerWidth < 560;
-    }
-
-    // 处理窗口大小变化
-    function handleResize() {
-        checkScreenSize();
-    }
-
-    // 生命周期钩子
-    onMounted(() => {
-        checkScreenSize();
-        window.addEventListener("resize", handleResize);
-    });
-
-    onUnmounted(() => {
-        window.removeEventListener("resize", handleResize);
-    });
 
     // 对话框打开动画完成后，滚动内容到顶部
     function scrollDialogToTopAndMarkClosed(ref: HTMLElement) {
