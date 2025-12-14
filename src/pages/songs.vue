@@ -1015,6 +1015,7 @@
                 placeholder="曲名 别名 id 曲师 谱师"
                 @input="query = $event.target.value"
                 style="flex: 1"
+                id="search-input"
             ></mdui-text-field>
         </div>
         <div v-else class="search-input">
@@ -1024,6 +1025,7 @@
                 label="搜索"
                 placeholder="曲名 别名 id 曲师 谱师"
                 @input="query = $event.target.value"
+                id="search-input"
             ></mdui-text-field>
             <mdui-button-icon
                 :icon="constantFilterEnabled ? 'keyboard_arrow_down' : 'keyboard_arrow_left'"
