@@ -1,5 +1,12 @@
 <template>
-    <mdui-dialog ref="dialogRef" headline="" description="" @close="handleClose" close-on-esc>
+    <mdui-dialog
+        ref="dialogRef"
+        headline=""
+        description=""
+        @open="markDialogOpen"
+        @close="handleClose"
+        close-on-esc
+    >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="handleClose"></mdui-button-icon>
             <mdui-top-app-bar-title>编辑用户绑定</mdui-top-app-bar-title>
@@ -114,6 +121,7 @@
     );
 
     const handleClose = () => {
+        markDialogClosed(dialogRef.value);
         emit("update:modelValue", false);
     };
 

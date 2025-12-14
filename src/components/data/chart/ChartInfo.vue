@@ -6,7 +6,7 @@
         :open="open"
         :fullscreen="isSmallScreen"
         @open="markDialogOpen"
-        @close="markDialogClosed"
+        @close="scrollDialogToTopAndMarkClosed"
     >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon
@@ -191,6 +191,15 @@
                         Note 统计
                         <br />
                         <br />
+
+                        <mdui-button
+                            variant="text"
+                            icon="calculate"
+                            @click="showScoreCalculator = true"
+                        >
+                            容错
+                        </mdui-button>
+                        <br />
                         <mdui-dropdown stay-open-on-click @open.stop @close.stop>
                             <mdui-button slot="trigger" variant="text" icon="playlist_add">
                                 收藏
@@ -349,6 +358,13 @@
             </mdui-chip>
         </div>
     </mdui-dialog>
+
+    <ScoreCalculatorDialog
+        :open="showScoreCalculator"
+        :chart="currentChart"
+        @update:open="showScoreCalculator = $event"
+        :copyTextToClipboard="copyTextToClipboard"
+    />
 </template>
 
 <script setup lang="ts">
@@ -367,6 +383,7 @@
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { getCoverURL } from "@/components/integrations/assets";
     import { getChartSearchUrls } from "./getSearchUrls";
+    import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
 
     const shared = useShared();
 
@@ -392,6 +409,7 @@
     const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
+    const showScoreCalculator = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
@@ -417,6 +435,29 @@
     onUnmounted(() => {
         window.removeEventListener("resize", handleResize);
     });
+
+    // 对话框打开动画完成后，滚动内容到顶部
+    function scrollDialogToTopAndMarkClosed(ref: HTMLElement) {
+        markDialogClosed(ref);
+        if (dialogRef.value) {
+            // 尝试访问 shadow DOM 中的 body 或 panel 部分
+            const shadowRoot = dialogRef.value.shadowRoot;
+            if (shadowRoot) {
+                // 尝试 body 部分（通常是可滚动区域）
+                const body = shadowRoot.querySelector(".body");
+                if (body) {
+                    body.scrollTop = 0;
+                }
+                // 尝试 panel 部分
+                const panel = shadowRoot.querySelector(".panel");
+                if (panel) {
+                    panel.scrollTop = 0;
+                }
+            }
+            // 也尝试滚动 dialog 元素本身（如果它可滚动）
+            dialogRef.value.scrollTop = 0;
+        }
+    }
 
     watch(
         () => props.open,

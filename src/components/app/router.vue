@@ -179,12 +179,15 @@
 
         const currentHash = window.location.hash;
         if (currentHash.endsWith("#dialog")) {
-            const openDialogs = document.querySelectorAll("mdui-dialog[open]");
-            if (
-                !Array.from(openDialogs).includes(element) &&
-                openDialogs.length < (currentHash.match(/#dialog/g) || []).length
-            )
-                history.back();
+            // 使用 setTimeout 确保 DOM 已更新，对话框的 open 属性已移除
+            setTimeout(() => {
+                const openDialogs = document.querySelectorAll("mdui-dialog[open]");
+                const dialogHashCount = (window.location.hash.match(/#dialog/g) || []).length;
+                // 如果打开的对话框数量少于 hash 中的 #dialog 数量，则回退
+                if (openDialogs.length < dialogHashCount) {
+                    history.back();
+                }
+            }, 0);
         }
     }
 
