@@ -27,6 +27,14 @@ export const useShared = defineStore("shared", () => {
     });
     const isUpdated = ref<boolean>(false);
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
+    const isSmallScreen = ref<boolean>(window.innerWidth < 560);
+
+    const handleScreenSizeChange = () => {
+        isSmallScreen.value = window.innerWidth < 560;
+    };
+
+    window.addEventListener("resize", handleScreenSizeChange);
+    handleScreenSizeChange();
 
     darkModeMediaQuery.addEventListener("change", event => (isDarkMode.value = !!event.matches));
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
@@ -91,5 +99,5 @@ export const useShared = defineStore("shared", () => {
         { deep: true }
     );
 
-    return { users, chartsSort, favorites, isUpdated, isDarkMode, nearcadeData };
+    return { users, chartsSort, favorites, isUpdated, isDarkMode, isSmallScreen, nearcadeData };
 });
