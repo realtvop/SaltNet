@@ -350,8 +350,6 @@
         v-model="isDialogVisible"
         :user="currentUserToEdit"
         @save="handleUserSave"
-        @open="markDialogOpen"
-        @close="markDialogClosed"
     />
 
     <div class="fab-container">
