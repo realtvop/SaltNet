@@ -191,6 +191,15 @@
                         Note 统计
                         <br />
                         <br />
+
+                        <mdui-button
+                            variant="text"
+                            icon="calculate"
+                            @click="showScoreCalculator = true"
+                        >
+                            容错
+                        </mdui-button>
+                        <br />
                         <mdui-dropdown stay-open-on-click @open.stop @close.stop>
                             <mdui-button slot="trigger" variant="text" icon="playlist_add">
                                 收藏
@@ -349,6 +358,13 @@
             </mdui-chip>
         </div>
     </mdui-dialog>
+
+    <ScoreCalculatorDialog
+        :open="showScoreCalculator"
+        :chart="currentChart"
+        @update:open="showScoreCalculator = $event"
+        :copyTextToClipboard="copyTextToClipboard"
+    />
 </template>
 
 <script setup lang="ts">
@@ -367,6 +383,7 @@
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { getCoverURL } from "@/components/integrations/assets";
     import { getChartSearchUrls } from "./getSearchUrls";
+    import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
 
     const shared = useShared();
 
@@ -392,6 +409,7 @@
     const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
     const expandedValue = ref<number>(0);
     const isSmallScreen = ref(false);
+    const showScoreCalculator = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
