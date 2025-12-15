@@ -14,7 +14,7 @@
         </mdui-top-app-bar>
 
         <mdui-text-field
-            label="用户备注"
+            label="备注名(选填)"
             :value="localUser.remark ?? ''"
             @input="localUser.remark = $event.target.value || null"
             placeholder="用于显示的自定义名称"
@@ -25,49 +25,64 @@
             clearable
         ></mdui-text-field>
 
-        <mdui-text-field
-            v-if="localUser.divingFish"
-            label="水鱼用户名"
-            :value="localUser.divingFish.name ?? ''"
-            @input="localUser.divingFish.name = $event.target.value || null"
-            placeholder="留空表示未绑定"
-            autocapitalize="off"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-        ></mdui-text-field>
+        绑定账号：
+        <mdui-tabs>
+            <mdui-tab value="inGame">NET</mdui-tab>
+            <mdui-tab-panel slot="panel" value="inGame">
+                <div class="userid-textfield">
+                    <mdui-text-field
+                        v-if="localUser.inGame"
+                        label="舞萌 UserID 右侧绑定"
+                        placeholder="未绑定"
+                        type="password"
+                        :value="localUser.inGame.id ?? ''"
+                        @input="
+                            localUser.inGame.id = $event.target.value
+                                ? parseInt($event.target.value)
+                                : null
+                        "
+                        autocapitalize="off"
+                        autocomplete="off"
+                        autocorrect="off"
+                        spellcheck="false"
+                        disabled
+                    ></mdui-text-field>
+                    <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
+                </div>
+            </mdui-tab-panel>
 
-        <div class="userid-textfield">
-            <mdui-text-field
-                v-if="localUser.inGame"
-                label="舞萌 UserID 右侧绑定"
-                placeholder="未绑定"
-                type="password"
-                :value="localUser.inGame.id ?? ''"
-                @input="
-                    localUser.inGame.id = $event.target.value ? parseInt($event.target.value) : null
-                "
-                autocapitalize="off"
-                autocomplete="off"
-                autocorrect="off"
-                spellcheck="false"
-                disabled
-            ></mdui-text-field>
-            <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
-        </div>
+            <mdui-tab value="divingFish">水鱼</mdui-tab>
+            <mdui-tab-panel slot="panel" value="divingFish">
+                <mdui-text-field
+                    v-if="localUser.divingFish"
+                    label="水鱼用户名"
+                    :value="localUser.divingFish.name ?? ''"
+                    @input="localUser.divingFish.name = $event.target.value || null"
+                    helper="用于获取数据，绑定了游戏则可以不填"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                ></mdui-text-field>
+                <mdui-text-field
+                    v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
+                    label="水鱼成绩导入 Token"
+                    :value="localUser.divingFish.importToken ?? ''"
+                    @input="localUser.divingFish.importToken = $event.target.value || null"
+                    helper="用于上传数据，若不绑定游戏则可以不填"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    clearable
+                ></mdui-text-field>
+            </mdui-tab-panel>
 
-        <mdui-text-field
-            v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
-            label="水鱼成绩导入 Token"
-            :value="localUser.divingFish.importToken ?? ''"
-            @input="localUser.divingFish.importToken = $event.target.value || null"
-            helper="用于上传数据，若不绑定游戏则可以不填"
-            autocapitalize="off"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
-            clearable
-        ></mdui-text-field>
+            <mdui-tab value="lxns">落雪</mdui-tab>
+            <mdui-tab-panel slot="panel" value="lxns">
+                <mdui-button full-width>绑定落雪帐号</mdui-button>
+            </mdui-tab-panel>
+        </mdui-tabs>
     </mdui-dialog>
 </template>
 
@@ -212,5 +227,12 @@
         width: calc(100% - 3rem);
         margin-bottom: 0px;
         margin-right: 0.5rem;
+    }
+
+    mdui-tabs {
+        --mdui-color-surface: #6cf;
+    }
+    mdui-tab-panel {
+        padding-top: 1rem;
     }
 </style>
