@@ -14,6 +14,7 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
+    import { handleSelectChange, handleNumericSelectChange } from "@/composables";
 
     declare global {
         interface Window {
@@ -101,31 +102,14 @@
         };
     });
     const plateFinishSort = ref("condition");
-    function handlePlateSortChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-
-        if (target.value) plateFinishSort.value = target.value;
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = plateFinishSort.value;
-            plateFinishSort.value = target.value;
-            plateFinishSort.value = previousValue;
-            // wtf
-        }
+    function onPlateSortChange(event: Event) {
+        handleSelectChange(event, plateFinishSort);
     }
 
     const difficultyFilter = ref(3);
 
-    function handleDifficultyFilterChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-
-        if (target.value) difficultyFilter.value = Number(target.value) - 1;
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = difficultyFilter.value;
-            difficultyFilter.value = Number(target.value) - 1;
-            difficultyFilter.value = previousValue;
-        }
+    function onDifficultyFilterChange(event: Event) {
+        handleNumericSelectChange(event, difficultyFilter, -1);
     }
 
     function getRandomChart() {
@@ -962,7 +946,7 @@
                 style="width: 5rem"
                 label="排序"
                 :value="plateFinishSort"
-                @change="handlePlateSortChange"
+                @change="onPlateSortChange"
             >
                 <mdui-menu-item value="condition" :selected="plateFinishSort === 'condition'">
                     条件
@@ -1002,7 +986,7 @@
                 style="width: 4.1rem"
                 label="难度"
                 :value="difficultyFilter + 1"
-                @change="handleDifficultyFilterChange"
+                @change="onDifficultyFilterChange"
             >
                 <mdui-menu-item v-for="index in 5" :key="index" :value="index">
                     {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
