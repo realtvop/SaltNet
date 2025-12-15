@@ -17,9 +17,9 @@
     // Features to add to the dev container. More info: https://containers.dev/features.
     // "features": {},
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [5173],
+    "forwardPorts": [5173, 3721],
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "pnpm install",
+    // "postCreateCommand": "pnpm install",
     // Configure tool-specific properties.
     "customizations": {
         "vscode": {

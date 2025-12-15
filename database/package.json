@@ -3,10 +3,20 @@
     "module": "index.ts",
     "type": "module",
     "private": true,
+    "scripts": {
+        "serve": "bun run index.ts"
+    },
     "devDependencies": {
-        "@types/bun": "latest"
+        "@types/bun": "latest",
+        "drizzle-kit": "^0.31.8"
     },
     "peerDependencies": {
         "typescript": "^5"
+    },
+    "dependencies": {
+        "@elysiajs/cors": "^1.4.0",
+        "drizzle-orm": "^0.45.1",
+        "elysia": "^1.4.19",
+        "postgres": "^3.4.7"
     }
 }
