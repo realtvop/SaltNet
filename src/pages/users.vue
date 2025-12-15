@@ -350,7 +350,13 @@
         </mdui-card>
     </div>
 
-    <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" :user-index="editingUserIndex" :is-editing-new-user="isEditingNewUser" @save="handleUserSave" />
+    <BindUserDialog
+        v-model="isDialogVisible"
+        :user="currentUserToEdit"
+        :user-index="editingUserIndex"
+        :is-editing-new-user="isEditingNewUser"
+        @save="handleUserSave"
+    />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

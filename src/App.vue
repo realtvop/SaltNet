@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { useRoute, useRouter } from "vue-router";
     import TopAppBar from "@/components/app/TopAppBar.vue";
-    import { getLXNSOAuthToken } from "./components/integrations/lxns";
+    import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
 
     const route = useRoute();
     const router = useRouter();
@@ -20,11 +20,11 @@
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
         const code = searchParams.get("code")!;
-        getLXNSOAuthToken(code)
-            .then((auth) => {
+        handleLXNSOAuthCallback(code)
+            .then(auth => {
                 console.log("LXNS OAuth successful:", auth);
             })
-            .catch((error) => {
+            .catch(error => {
                 console.error("LXNS OAuth failed:", error);
             });
     }

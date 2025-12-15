@@ -18,7 +18,7 @@ export interface User {
         auth: LXNSAuth | null;
         name: string | null;
         id: number | null;
-    },
+    };
     inGame: {
         name?: string | null;
         id: number | null;
