@@ -5,6 +5,7 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
+import type { LXNSAuth } from "@/components/integrations/lxns";
 
 export interface User {
     uid?: string;
@@ -13,6 +14,11 @@ export interface User {
         name: string | null;
         importToken?: string | null;
     };
+    lxns?: {
+        auth: LXNSAuth | null;
+        name: string | null;
+        id: number | null;
+    },
     inGame: {
         name?: string | null;
         id: number | null;

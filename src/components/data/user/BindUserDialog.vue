@@ -80,7 +80,7 @@
 
             <mdui-tab value="lxns">落雪</mdui-tab>
             <mdui-tab-panel slot="panel" value="lxns">
-                <mdui-button full-width>绑定落雪帐号</mdui-button>
+                <mdui-button full-width @click="startBindingLXNS">绑定落雪帐号</mdui-button>
             </mdui-tab-panel>
         </mdui-tabs>
     </mdui-dialog>
@@ -92,10 +92,13 @@
     import type { User } from "@/components/data/user/type";
     import { prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+    import { initLXNSOAuth } from "@/components/integrations/lxns";
 
     const props = defineProps<{
         modelValue: boolean;
         user: User | null;
+        userIndex: number | null;
+        isEditingNewUser: boolean;
     }>();
 
     const emit = defineEmits(["update:modelValue", "save", "delete"]);
@@ -115,10 +118,14 @@
                 if (!localUser.value.inGame) {
                     localUser.value.inGame = { name: null, id: null };
                 }
+                if (!localUser.value.lxns) {
+                    localUser.value.lxns = { auth: null, name: null, id: null };
+                }
             } else {
                 localUser.value = {
                     divingFish: { name: null, importToken: null },
                     inGame: { name: null, id: null },
+                    lxns: { auth: null, name: null, id: null },
                 };
             }
         },
@@ -140,15 +147,24 @@
         emit("update:modelValue", false);
     };
 
-    const handleSave = () => {
+    function saveUser() {
         emit("save", {
             remark: localUser.value.remark ?? null,
             divingFish: {
                 name: localUser.value.divingFish?.name ?? null,
                 importToken: localUser.value.divingFish?.importToken ?? null,
             },
+            lxns: {
+                auth: localUser.value.lxns?.auth ?? null,
+                name: localUser.value.lxns?.name ?? null,
+                id: localUser.value.lxns?.id ?? null,
+            },
             inGame: { id: localUser.value.inGame?.id ?? null },
         });
+    }
+
+    const handleSave = () => {
+        saveUser();
         handleClose();
     };
 
@@ -208,6 +224,14 @@
                     });
                 }
             });
+    }
+
+    function startBindingLXNS() {
+        if (props.isEditingNewUser) saveUser();
+        setTimeout(async () => {
+            const url = await initLXNSOAuth(props.userIndex!);
+            window.location.href = url;
+        }, 0);
     }
 </script>
 

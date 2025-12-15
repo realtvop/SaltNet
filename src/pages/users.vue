@@ -21,12 +21,14 @@
     const isDialogVisible = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
+    const isEditingNewUser = ref<boolean>(false);
 
     const router = useRouter();
 
     const openEditDialog = (user: User, index: number) => {
         currentUserToEdit.value = toRaw(user);
         editingUserIndex.value = index;
+        isEditingNewUser.value = false;
         isDialogVisible.value = true;
     };
 
@@ -35,6 +37,7 @@
             remark: null,
             divingFish: { name: null, importToken: null },
             inGame: { name: null, id: null },
+            lxns: { auth: null, name: null, id: null },
             settings: { manuallyUpdate: false },
             data: {
                 updateTime: null,
@@ -42,7 +45,8 @@
                 rating: null,
             },
         };
-        editingUserIndex.value = null;
+        editingUserIndex.value = shared.users.length;
+        isEditingNewUser.value = true;
         isDialogVisible.value = true;
     };
 
@@ -346,7 +350,7 @@
         </mdui-card>
     </div>
 
-    <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
+    <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" :user-index="editingUserIndex" :is-editing-new-user="isEditingNewUser" @save="handleUserSave" />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
