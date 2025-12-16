@@ -8,6 +8,7 @@
     },
     "devDependencies": {
         "@types/bun": "latest",
+        "@types/jsonwebtoken": "^9.0.10",
         "drizzle-kit": "^0.31.8"
     },
     "peerDependencies": {
@@ -15,8 +16,10 @@
     },
     "dependencies": {
         "@elysiajs/cors": "^1.4.0",
+        "@elysiajs/static": "^1.4.7",
         "drizzle-orm": "^0.45.1",
         "elysia": "^1.4.19",
+        "jsonwebtoken": "^9.0.3",
         "postgres": "^3.4.7"
     }
 }
