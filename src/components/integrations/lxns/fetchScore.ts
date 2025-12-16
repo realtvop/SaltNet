@@ -7,17 +7,20 @@ import { toHalfWidth } from "@/utils";
 
 function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
     return {
-        song_id: score.id,
+        song_id: score.id + (score.type === "dx" ? 1_0000 : 0),
         level_index: score.level_index,
         level: score.level,
         level_label: `${score.level}${score.level_index}`,
-        type: score.type.toUpperCase() as "DX" | "SD",
+        type: {
+            standard: "SD",
+            dx: "DX",
+        }[score.type] as "SD" | "DX",
         dxScore: score.dx_score,
         ds: 0, // LXNS does not provide ds
         fc: score.fc,
         fs: score.fs,
         achievements: score.achievements,
-        ra: score.dx_rating,
+        ra: Math.floor(score.dx_rating),
         rate: score.rate,
         title: score.song_name,
     };

@@ -12,7 +12,7 @@ export interface LXNSScore {
     level_index: number;
     rate: RankRate;
     song_name: string;
-    type: "sd" | "dx";
+    type: "standard" | "dx";
     upload_time: string;
 }
 
