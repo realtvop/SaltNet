@@ -6,11 +6,11 @@ export interface LXNSScore {
     dx_score: number;
     dx_star: number;
     fc: ComboStatus;
-    fs: SyncStatus
+    fs: SyncStatus;
     id: number;
     level: string;
     level_index: number;
-    rate: RankRate
+    rate: RankRate;
     song_name: string;
     type: "sd" | "dx";
     upload_time: string;

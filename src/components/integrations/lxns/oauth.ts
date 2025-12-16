@@ -2,16 +2,19 @@ import { useShared } from "@/components/app/shared";
 import type { User } from "@/components/data/user";
 import { jwtDecode } from "jwt-decode";
 import type { LXNSResponse } from "./type";
+import { snackbar } from "mdui";
 
 export async function initLXNSOAuth(userIndex: number): Promise<string> {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    const url = `https://maimai.lxns.net/oauth/authorize?response_type=code&client_id=${import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID
-        }&redirect_uri=${encodeURIComponent(
-            import.meta.env.VITE_LXNS_OAUTH_REDIRECT_URI
-        )}&code_challenge=${codeChallenge}&state=${codeVerifier
-        }&code_challenge_method=S256&response_type=code&scope=read_user_profile+read_player+write_player`;
+    const url = `https://maimai.lxns.net/oauth/authorize?response_type=code&client_id=${
+        import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID
+    }&redirect_uri=${encodeURIComponent(
+        import.meta.env.VITE_LXNS_OAUTH_REDIRECT_URI
+    )}&code_challenge=${codeChallenge}&state=${
+        codeVerifier
+    }&code_challenge_method=S256&response_type=code&scope=read_user_profile+read_player+write_player`;
 
     window.sessionStorage.setItem("lxns_oauth_user_index", userIndex.toString());
     window.sessionStorage.setItem("lxns_oauth_code_verifier", codeVerifier);
@@ -84,6 +87,7 @@ export async function refreshLXNSOAuthToken(user: User): Promise<LXNSAuth> {
 function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
     const shared = useShared();
     const user = shared.users[userIndex];
+
     if (!user) throw new Error("User not found");
     const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
         auth.accessToken!
@@ -97,6 +101,10 @@ function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
         name,
         id,
     };
+    snackbar({
+        message: "落雪绑定成功！",
+        autoCloseDelay: 500,
+    });
 }
 
 export async function handleLXNSOAuthCallback(code: string): Promise<void> {

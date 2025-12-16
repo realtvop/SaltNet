@@ -31,6 +31,7 @@
 
     const router = createRouter({
         history: import.meta.env.PROD ? createMemoryHistory() : createWebHistory(),
+        // history: createMemoryHistory(),
         routes,
     });
 

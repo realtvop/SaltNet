@@ -15,20 +15,19 @@
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
+    import type { LXNSAuth } from "@/components/integrations/lxns";
 
     const shared = useShared();
 
     const isDialogVisible = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
-    const isEditingNewUser = ref<boolean>(false);
 
     const router = useRouter();
 
     const openEditDialog = (user: User, index: number) => {
         currentUserToEdit.value = toRaw(user);
         editingUserIndex.value = index;
-        isEditingNewUser.value = false;
         isDialogVisible.value = true;
     };
 
@@ -45,8 +44,7 @@
                 rating: null,
             },
         };
-        editingUserIndex.value = shared.users.length;
-        isEditingNewUser.value = true;
+        editingUserIndex.value = null;
         isDialogVisible.value = true;
     };
 
@@ -130,6 +128,7 @@
     interface UpdatedUserData {
         remark?: string | null;
         divingFish: { name: string | null; importToken: string | null };
+        lxns: { auth: LXNSAuth | null; name: string | null; id: number | null };
         inGame: { name: string | null; id: number | null };
     }
 
@@ -140,6 +139,11 @@
                 divingFish: {
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
+                },
+                lxns: {
+                    auth: null,
+                    name: null,
+                    id: null,
                 },
                 inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
                 settings: { manuallyUpdate: false },
@@ -165,6 +169,12 @@
                     ...originalUser.divingFish,
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
+                },
+                lxns: {
+                    ...originalUser.lxns,
+                    auth: updatedUserData.lxns.auth,
+                    name: updatedUserData.lxns.name,
+                    id: updatedUserData.lxns.id,
                 },
                 inGame: {
                     ...originalUser.inGame,
@@ -353,8 +363,8 @@
     <BindUserDialog
         v-model="isDialogVisible"
         :user="currentUserToEdit"
-        :user-index="editingUserIndex"
-        :is-editing-new-user="isEditingNewUser"
+        :user-index="editingUserIndex || shared.users.length"
+        :is-editing-new-user="editingUserIndex === null"
         @save="handleUserSave"
     />
 

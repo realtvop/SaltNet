@@ -5,6 +5,7 @@
         description=""
         @open="markDialogOpen"
         @close="handleClose"
+        @closed="markDialogClosed"
         close-on-esc
     >
         <mdui-top-app-bar slot="header">
@@ -54,7 +55,11 @@
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
-                    v-if="localUser.divingFish && !(localUser.inGame && localUser.inGame.id) && !userLXNSBindStatus"
+                    v-if="
+                        localUser.divingFish &&
+                        !(localUser.inGame && localUser.inGame.id) &&
+                        !userLXNSBindStatus
+                    "
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
                     @input="localUser.divingFish.name = $event.target.value || null"
@@ -86,7 +91,12 @@
                 <mdui-button full-width @click="startBindingLXNS">
                     {{ userLXNSBindStatus ? "换绑" : "绑定" }}落雪帐号
                 </mdui-button>
-                <mdui-button full-width variant="text" @click="unbindLXNS">
+                <mdui-button
+                    full-width
+                    variant="text"
+                    @click="unbindLXNS"
+                    v-if="userLXNSBindStatus"
+                >
                     解绑
                 </mdui-button>
             </mdui-tab-panel>
@@ -157,7 +167,7 @@
     );
 
     const handleClose = () => {
-        markDialogClosed(dialogRef.value);
+        // markDialogClosed(dialogRef.value);
         emit("update:modelValue", false);
     };
 
@@ -243,7 +253,9 @@
     function startBindingLXNS() {
         if (props.isEditingNewUser) saveUser();
         setTimeout(async () => {
-            const url = await initLXNSOAuth(props.userIndex!);
+            const url = await initLXNSOAuth(
+                props.isEditingNewUser ? props.userIndex! - 1 : props.userIndex!
+            );
             window.location.href = url;
         }, 0);
     }

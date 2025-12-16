@@ -69,7 +69,10 @@
                         欢迎，{{ getUserDisplayName(shared.users[0]) }}！
                     </mdui-typography>
 
-                    <div v-if="shared.users[0] && shared.users[0].data.rating" class="rating-container">
+                    <div
+                        v-if="shared.users[0] && shared.users[0].data.rating"
+                        class="rating-container"
+                    >
                         <RatingPlate
                             :ra="shared.users[0].data.rating"
                             :small="false"

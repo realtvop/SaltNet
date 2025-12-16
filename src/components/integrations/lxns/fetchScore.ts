@@ -20,7 +20,7 @@ function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
         ra: score.dx_rating,
         rate: score.rate,
         title: score.song_name,
-    }
+    };
 }
 
 function getB50(scores: DivingFishFullRecord[]): DivingFishB50 {

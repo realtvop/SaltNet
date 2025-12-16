@@ -7,6 +7,7 @@ import type {
 } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { toHalfWidth } from "@/utils";
 
 self.onmessage = event => {
@@ -22,6 +23,16 @@ self.onmessage = event => {
                 user.inGame.id.toString().length === 8
             ) {
                 fromInGame(user, updateItem).then(data => {
+                    result = data;
+                    self.postMessage({
+                        type: `updateUserResult::${user.uid}`,
+                        result,
+                        status,
+                        message,
+                    });
+                });
+            } else if (user.lxns?.auth?.accessToken) {
+                fromLXNS(user).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -146,6 +157,26 @@ async function fromDFLikeInGame(user: User) {
     }
 }
 
+async function fromLXNS(user: User) {
+    info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
+    try {
+        const data = await fetchLXNSScore(user);
+        if (!data) return null;
+        info(`从落雪获取用户信息成功：${getUserDisplayName(user)}`);
+        return {
+            rating: data.rating,
+            name: data.name,
+            b50: data.b50,
+            detailed: data.scores,
+            updateTime: data.updateTime,
+        };
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        info(`从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`, errorMsg);
+        return null;
+    }
+}
+
 function fetchInGameData(
     userId: number,
     importToken?: string,
@@ -241,12 +272,12 @@ function previewStockedTickets(user: User) {
             (
                 data:
                     | {
-                        chargeId: number;
-                        stock: number;
-                        purchaseDate: string;
-                        validDate: string;
-                        extNum1: number;
-                    }[]
+                          chargeId: number;
+                          stock: number;
+                          purchaseDate: string;
+                          validDate: string;
+                          extNum1: number;
+                      }[]
                     | null
             ) => {
                 if (data) {
