@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+    import { ref, computed, watch } from "vue";
     import {
         icons,
         plates,
@@ -12,6 +12,8 @@
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
     import { copyTextToClipboard } from "@/components/app/utils";
+    import { useVirtualScroll, handleSelectChange } from "@/composables";
+    import { getCollectionImageURL } from "@/components/integrations/assets";
 
     const Category = {
         Title: "称号",
@@ -134,71 +136,35 @@
         return result;
     });
 
-    // 虚拟滚动状态管理
-    const visibleItemsCount = ref(0);
-
-    // 根据屏幕宽度计算每次加载的项目数
-    const getLoadSize = () => {
+    // 使用虚拟滚动组合式函数
+    const getCollectionGridConfig = () => {
         const width = window.innerWidth;
-
-        // 根据屏幕宽度确定列数
         let columns = 1;
         if (width >= 1200) columns = 4;
         else if (width >= 900) columns = 3;
         else if (width >= 600) columns = 2;
         else columns = 1;
 
-        // 计算行数和总加载数量
         const rowsPerPage = Math.max(Math.floor(window.innerHeight / 200), 2);
-        return columns * rowsPerPage * 2; // 一次加载2页的量
+        return { columns, cardHeight: rowsPerPage };
     };
 
-    const maxVisibleItems = computed(() =>
-        Math.min(visibleItemsCount.value, filteredCollections.value.length)
-    );
-
-    const itemsToRender = computed(() => {
-        return filteredCollections.value.slice(0, maxVisibleItems.value);
+    const {
+        visibleItemsCount,
+        maxVisibleItems,
+        itemsToRender,
+        loadMore,
+        resetScroll,
+        getLoadSize,
+    } = useVirtualScroll({
+        items: filteredCollections,
+        getGridConfig: getCollectionGridConfig,
     });
-
-    // 加载更多项目
-    const loadMore = () => {
-        const remainingItems = filteredCollections.value.length - visibleItemsCount.value;
-        if (remainingItems > 0) {
-            const loadSize = Math.min(getLoadSize(), remainingItems);
-            visibleItemsCount.value += loadSize;
-        }
-    };
-
-    // 滚动事件处理（使用 window 滚动）
-    const handleScroll = () => {
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const windowHeight = window.innerHeight;
-        const documentHeight = document.documentElement.scrollHeight;
-        // 检查是否接近底部（距离底部200px时触发）
-        if (scrollTop + windowHeight >= documentHeight - 200) {
-            loadMore();
-        }
-    };
-
-    // 窗口大小变化处理
-    const handleResize = () => {
-        const currentItemsPerPage = getLoadSize() / 2; // 单页数量
-        const currentPages = Math.ceil(visibleItemsCount.value / currentItemsPerPage);
-        const newVisibleCount = Math.min(
-            currentPages * currentItemsPerPage,
-            filteredCollections.value.length
-        );
-
-        visibleItemsCount.value = Math.max(newVisibleCount, getLoadSize());
-    };
 
     // 监听分类变化，重置虚拟滚动并滚动到顶部
     watch(category, () => {
-        visibleItemsCount.value = getLoadSize();
-        if (!["all", "owned", "missing"].includes(filter.value)) filter.value = "all"; // 重置筛选器
-        // 滚动到顶部
-        window.scrollTo({ top: 0, behavior: "instant" });
+        resetScroll();
+        if (!["all", "owned", "missing"].includes(filter.value)) filter.value = "all";
     });
 
     // 监听搜索变化，重置虚拟滚动
@@ -208,20 +174,7 @@
 
     // 监听筛选器变化，重置虚拟滚动
     watch(filter, () => {
-        visibleItemsCount.value = getLoadSize();
-        // 滚动到顶部
-        window.scrollTo({ top: 0, behavior: "instant" });
-    });
-
-    onMounted(() => {
-        visibleItemsCount.value = getLoadSize();
-        window.addEventListener("resize", handleResize);
-        window.addEventListener("scroll", handleScroll);
-    });
-
-    onUnmounted(() => {
-        window.removeEventListener("resize", handleResize);
-        window.removeEventListener("scroll", handleScroll);
+        resetScroll();
     });
 
     // 根据称号颜色获取CSS类名
@@ -241,24 +194,19 @@
     };
 
     // 根据收藏品类型获取图片URL
-    const getImageUrl = (collection: Collection) => {
-        const baseUrl = "https://collectionimg.maimai.realtvop.top";
-        const id = `${"0".repeat(6 - collection.id.toString().length)}${collection.id}`;
+    const COLLECTION_TYPE_MAP: Record<CollectionKind, string> = {
+        [CollectionKind.Icon]: "icon",
+        [CollectionKind.Plate]: "plate",
+        [CollectionKind.Frame]: "frame",
+        [CollectionKind.Character]: "character",
+        [CollectionKind.Partner]: "partner",
+        [CollectionKind.Title]: "",
+    };
 
-        switch (collection.type) {
-            case CollectionKind.Icon:
-                return `${baseUrl}/icon/${id}.png`;
-            case CollectionKind.Plate:
-                return `${baseUrl}/plate/${id}.png`;
-            case CollectionKind.Frame:
-                return `${baseUrl}/frame/${id}.png`;
-            case CollectionKind.Character:
-                return `${baseUrl}/character/${id}.png`;
-            case CollectionKind.Partner:
-                return `${baseUrl}/partner/${id}.png`;
-            default:
-                return "";
-        }
+    const getImageUrl = (collection: Collection) => {
+        const typePath = COLLECTION_TYPE_MAP[collection.type];
+        if (!typePath) return "";
+        return getCollectionImageURL(typePath, collection.id);
     };
 
     // 根据收藏品类型获取分类名称
@@ -294,17 +242,8 @@
         return owned[collection.type] && owned[collection.type].includes(collection.id);
     };
 
-    function handleFilterChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-
-        if (target.value) filter.value = target.value;
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = filter.value;
-            filter.value = target.value;
-            filter.value = previousValue;
-            // wtf
-        }
+    function onFilterChange(event: Event) {
+        handleSelectChange(event, filter);
     }
 </script>
 
@@ -326,7 +265,7 @@
             <mdui-select
                 class="filter-select"
                 :value="filter"
-                @change="handleFilterChange"
+                @change="onFilterChange"
                 style="--mdui-comp-select-menu-max-height: 60vh"
             >
                 <mdui-menu-item value="all">所有</mdui-menu-item>

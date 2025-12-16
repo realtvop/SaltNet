@@ -260,54 +260,12 @@
         return !isIOSDevice() && !isFirefoxBasedBrowser();
     }
 
-    // function isMobileDevice(): boolean {
-    //     const ua = navigator.userAgent;
-    //     return /Mobile|Android|iPhone|iPad|iPod/.test(ua);
-    // }
-
     function downloadB50Png() {
-        async function onlineRenderAndDownload() {
+        function onlineRenderAndDownload() {
             const renderOriginUrl = generateRenderUrl(
                 import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL
             );
-            // const isMobile = isMobileDevice();
-
-            // if (isMobile) {
             window.open(renderOriginUrl, "_blank");
-            // return;
-            // }
-
-            // try {
-            //     snackbar({ message: "正在生成图片，请稍候..." });
-
-            //     const response = await fetch(
-            //         generateRenderUrl(import.meta.env.VITE_puppeteer_renderer_improved_PROXIED_URL)
-            //     );
-            //     if (!response.ok) {
-            //         throw new Error("获取图片失败");
-            //     }
-
-            //     const blob = await response.blob();
-            //     const blobUrl = URL.createObjectURL(blob);
-
-            //     const link = document.createElement("a");
-            //     link.href = blobUrl;
-            //     const formattedTime = new Date().toLocaleString("zh-CN", {
-            //         year: "numeric",
-            //         month: "2-digit",
-            //         day: "2-digit",
-            //         hour: "2-digit",
-            //         minute: "2-digit",
-            //         hour12: false,
-            //     });
-            //     link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
-            //     link.click();
-            //     snackbar({ message: "图片下载成功" });
-            //     URL.revokeObjectURL(blobUrl);
-            // } catch (error) {
-            //     snackbar({ message: "下载失败，正在打开渲染页面..." });
-            //     window.open(renderOriginUrl, "_blank");
-            // }
         }
 
         const isSupported = isLocalRenderSupported();
