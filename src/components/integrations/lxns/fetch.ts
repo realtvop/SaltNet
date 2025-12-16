@@ -1,5 +1,6 @@
 import type { User } from "@/components/data/user";
 import { refreshLXNSOAuthToken } from "./oauth";
+import type { LXNSResponse } from "./type";
 
 export async function fetchLXNSApi<APIRespType>(
     user: User,
@@ -17,5 +18,5 @@ export async function fetchLXNSApi<APIRespType>(
             // ...init?.headers,
             Authorization: `${tokenType} ${accessToken}`,
         },
-    }).then(resp => resp.json())) as APIRespType;
+    }).then(resp => (resp.json() as unknown as LXNSResponse<APIRespType>).data)) as APIRespType;
 }

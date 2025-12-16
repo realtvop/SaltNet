@@ -1,18 +1,17 @@
 import { useShared } from "@/components/app/shared";
 import type { User } from "@/components/data/user";
 import { jwtDecode } from "jwt-decode";
+import type { LXNSResponse } from "./type";
 
 export async function initLXNSOAuth(userIndex: number): Promise<string> {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    const url = `https://maimai.lxns.net/oauth/authorize?response_type=code&client_id=${
-        import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID
-    }&redirect_uri=${encodeURIComponent(
-        import.meta.env.VITE_LXNS_OAUTH_REDIRECT_URI
-    )}&code_challenge=${codeChallenge}&state=${
-        codeVerifier
-    }&code_challenge_method=S256&response_type=code&scope=read_user_profile+read_player+write_player`;
+    const url = `https://maimai.lxns.net/oauth/authorize?response_type=code&client_id=${import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID
+        }&redirect_uri=${encodeURIComponent(
+            import.meta.env.VITE_LXNS_OAUTH_REDIRECT_URI
+        )}&code_challenge=${codeChallenge}&state=${codeVerifier
+        }&code_challenge_method=S256&response_type=code&scope=read_user_profile+read_player+write_player`;
 
     window.sessionStorage.setItem("lxns_oauth_user_index", userIndex.toString());
     window.sessionStorage.setItem("lxns_oauth_code_verifier", codeVerifier);
@@ -20,16 +19,12 @@ export async function initLXNSOAuth(userIndex: number): Promise<string> {
     return url;
 }
 
-interface LXNSTokenResponse {
-    code: number;
-    data: {
-        access_token: string;
-        token_type: string;
-        expires_in: number;
-        refresh_token: string;
-        scope: string;
-    };
-    success: boolean;
+interface LXNSTokenData {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    refresh_token: string;
+    scope: string;
 }
 async function getLXNSOAuthToken(code: string): Promise<LXNSAuth> {
     const codeVerifier = window.sessionStorage.getItem("lxns_oauth_code_verifier");
@@ -45,7 +40,7 @@ async function getLXNSOAuthToken(code: string): Promise<LXNSAuth> {
             code_verifier: codeVerifier,
         }),
     });
-    const data = (await resp.json()) as LXNSTokenResponse;
+    const data = (await resp.json()) as LXNSResponse<LXNSTokenData>;
 
     return {
         accessToken: data.data.access_token,
@@ -64,7 +59,7 @@ export async function refreshLXNSOAuthToken(user: User): Promise<LXNSAuth> {
             client_id: import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID,
         }),
     });
-    const data = (await resp.json()) as LXNSTokenResponse;
+    const data = (await resp.json()) as LXNSResponse<LXNSTokenData>;
     const auth = {
         accessToken: data.data.access_token,
         refreshToken: data.data.refresh_token,
