@@ -1,4 +1,4 @@
-import { jsonb, pgEnum, pgTable, serial, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, numeric, pgEnum, pgTable, serial, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 export const maimaidxRegionEnum = pgEnum("maimaidx_region", ["jp", "ex", "cn"]);
 export const users = pgTable("users", {
@@ -9,11 +9,78 @@ export const users = pgTable("users", {
     email: text("email").notNull().unique(),
     password: text("password").notNull(),
 
+    sessions: jsonb("sessions").default("[]"),
     pat: text("pat").unique(),
 
     // maimai DX
     maimaidxRegion: maimaidxRegionEnum("maimaidx_region").default("ex"),
     maimaidxRating: smallint("maimaidx_rating").default(-1),
-    maimaidxMusicData: jsonb("maimaidx_music_data").default("[]"),
-    maimaidxCollectionData: jsonb("maimaidx_collection_data").default("[]"),
+});
+export interface UserLoginSession {
+    userAgent: string;
+    ipAddress: string;
+    lastActive: number; // timestamp
+}
+
+export const maimaidxVersions = pgTable("maimaidx_versions", {
+    id: integer("id").primaryKey(),
+    name: text("name").notNull(),
+    releaseDate: timestamp("release_date").notNull(),
+    region: maimaidxRegionEnum("region").notNull(),
+});
+
+export const maimaidxMusics = pgTable("maimai_musics", {
+    id: integer("id"),
+    title: text("title").notNull().primaryKey(),
+    versions: integer("versions").references(() => maimaidxVersions.id).array().notNull(),
+    artist: text("artist").notNull(),
+    genre: text("genre").notNull(),
+    bpm: integer("bpm").notNull(),
+    releaseDate: timestamp("release_date").notNull(),
+});
+
+export const maimaidxChartTypeEnum = pgEnum("maimaidx_chart_type", ["std", "dx"]);
+export const maimaidxChartDifficultyEnum = pgEnum("maimaidx_chart_difficulty", ["basic", "advanced", "expert", "master", "remaster", "utage"]);
+export const maimaidxCharts = pgTable("maimaidx_charts", {
+    idx: serial("idx").primaryKey(),
+    music: text("music").references(() => maimaidxMusics.title).notNull(),
+    type: maimaidxChartTypeEnum("type").notNull(),
+    difficulty: maimaidxChartDifficultyEnum("difficulty").notNull(),
+    level: text("level").notNull(),
+    internalLevel: numeric("internal_level", { precision: 3, scale: 1 }).notNull(),
+    charter: text("charter").notNull(),
+    tapNotes: smallint("tap_notes").notNull(),
+    holdNotes: smallint("hold_notes").notNull(),
+    slideNotes: smallint("slide_notes").notNull(),
+    touchNotes: smallint("touch_notes").notNull(),
+    breakNotes: smallint("break_notes").notNull(),
+});
+
+export const maimaidxComboStatsEnum = pgEnum("maimaidx_combo_stats", ["", "fc", "fcp", "ap", "app"]);
+export const maimaidxSyncStatsEnum = pgEnum("maimaidx_sync_stats", ["", "sync", "fs", "fsp", "fsdx", "fsdxp"]);
+export const maimaidxScores = pgTable("maimaidx_scores", {
+    id: serial("id").primaryKey(),
+    user: integer("user").references(() => users.id).notNull(),
+    chart: integer("chart").references(() => maimaidxCharts.idx).notNull(),
+    achievements: numeric("achievements", { precision: 7, scale: 4 }),
+    deluxeScore: smallint("deluxe_score").notNull(),
+    comboStat: maimaidxComboStatsEnum("combo_stat").notNull(),
+    syncStat: maimaidxSyncStatsEnum("sync_stat").notNull(),
+    playCount: integer("play_count"),
+});
+
+export const maimaidxCollectionKindEnum = pgEnum("maimaidx_collection_kind", ["plate", "title", "icon", "frame", "character", "partner"]);
+export const maimaidxTitleColorEnum = pgEnum("maimaidx_title_color", ["normal", "bronze", "silver", "gold", "rainbow"]);
+export const maimaidxCollections = pgTable("maimaidx_collections", {
+    id: integer("id").primaryKey(),
+    kind: maimaidxCollectionKindEnum("kind").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    titleColor: maimaidxTitleColorEnum("title_color"),
+});
+
+export const maimaidxUserCollections = pgTable("maimaidx_user_collections", {
+    id: serial("id").primaryKey(),
+    user: integer("user").references(() => users.id).notNull(),
+    collection: integer("collection").references(() => maimaidxCollections.id).notNull(),
 });
