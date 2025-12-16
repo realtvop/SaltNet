@@ -29,7 +29,7 @@ export const maimaidxVersions = pgTable("maimaidx_versions", {
     region: maimaidxRegionEnum("region").notNull(),
 });
 
-export const maimaidxMusics = pgTable("maimai_musics", {
+export const maimaidxMusics = pgTable("maimaidx_musics", {
     id: integer("id"),
     title: text("title").notNull().primaryKey(),
     versions: integer("versions").references(() => maimaidxVersions.id).array().notNull(),
