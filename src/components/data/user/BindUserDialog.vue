@@ -54,7 +54,7 @@
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
-                    v-if="localUser.divingFish"
+                    v-if="localUser.divingFish && !(localUser.inGame && localUser.inGame.id) && !userLXNSBindStatus"
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
                     @input="localUser.divingFish.name = $event.target.value || null"
@@ -64,6 +64,9 @@
                     autocorrect="off"
                     spellcheck="false"
                 ></mdui-text-field>
+                <!-- <span v-else>
+                    已绑定其他数据源，暂不可绑定水鱼
+                </span> -->
                 <mdui-text-field
                     v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
                     label="水鱼成绩导入 Token"
@@ -81,7 +84,10 @@
             <mdui-tab value="lxns">落雪</mdui-tab>
             <mdui-tab-panel slot="panel" value="lxns">
                 <mdui-button full-width @click="startBindingLXNS">
-                    {{ userLXNSBindStatus ? "重新绑定" : "绑定" }}落雪帐号
+                    {{ userLXNSBindStatus ? "换绑" : "绑定" }}落雪帐号
+                </mdui-button>
+                <mdui-button full-width variant="text" @click="unbindLXNS">
+                    解绑
                 </mdui-button>
             </mdui-tab-panel>
         </mdui-tabs>
@@ -92,7 +98,7 @@
     import { ref, watch, defineProps, defineEmits, nextTick, toRaw, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import type { User } from "@/components/data/user/type";
-    import { prompt, snackbar } from "mdui";
+    import { confirm, prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
 
@@ -240,6 +246,23 @@
             const url = await initLXNSOAuth(props.userIndex!);
             window.location.href = url;
         }, 0);
+    }
+    function unbindLXNS() {
+        confirm({
+            headline: "确认解绑落雪帐号？",
+            description: "您可以稍后重新绑定",
+            confirmText: "解绑",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: () => {
+                localUser.value.lxns = { auth: null, name: null, id: null };
+                snackbar({ message: "已解绑落雪帐号", autoCloseDelay: 1000 });
+                return true;
+            },
+        });
     }
 </script>
 
