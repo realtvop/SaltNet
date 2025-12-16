@@ -4,7 +4,7 @@ import type { LXNSResponse } from "./type";
 
 export async function fetchLXNSApi<APIRespType>(
     user: User,
-    endpoint: string,
+    endpoint?: string,
     init?: any
 ): Promise<APIRespType> {
     if (!user.lxns?.auth?.accessToken) throw new Error("User is not authenticated with LXNS");
@@ -12,7 +12,7 @@ export async function fetchLXNSApi<APIRespType>(
         Date.now() >= (user.lxns.auth.expiresAt || 0)
             ? await refreshLXNSOAuthToken(user)
             : user.lxns.auth;
-    return (await fetch(`https://maimai.lxns.net/api/v0/maimai/player/${endpoint}`, {
+    return (await fetch(`https://maimai.lxns.net/api/v0/maimai/player${endpoint ? "/" : ""}${endpoint}`, {
         ...init,
         headers: {
             // ...init?.headers,

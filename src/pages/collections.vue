@@ -12,7 +12,7 @@
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
     import { copyTextToClipboard } from "@/components/app/utils";
-    import { useVirtualScroll, handleSelectChange } from "@/composables";
+    import { useVirtualScroll, handleSelectChange } from "@/utils";
     import { getCollectionImageURL } from "@/components/integrations/assets";
 
     const Category = {
