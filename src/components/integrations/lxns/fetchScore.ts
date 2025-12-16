@@ -1,4 +1,4 @@
-import type { User } from "@/components/data/user";
+import { convertDetailed, type User } from "@/components/data/user";
 import type { DivingFishB50, DivingFishFullRecord } from "../diving-fish/type";
 import type { LXNSScore, LXNSUser } from "./type";
 import { musicInfo } from "@/components/data/music";
@@ -57,7 +57,7 @@ export async function fetchLXNSScore(user: User) {
     return {
         name: toHalfWidth(userData.name),
         rating: userData.rating,
-        scores,
+        scores: convertDetailed(scores),
         b50,
         updateTime: Date.now(),
     };

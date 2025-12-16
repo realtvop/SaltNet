@@ -12,11 +12,11 @@ export async function fetchLXNSApi<APIRespType>(
         Date.now() >= (user.lxns.auth.expiresAt || 0)
             ? await refreshLXNSOAuthToken(user)
             : user.lxns.auth;
-    return (await fetch(`https://maimai.lxns.net/api/v0/maimai/player${endpoint ? "/" : ""}${endpoint}`, {
+    return (await fetch(`https://maimai.lxns.net/api/v0/user/maimai/player${endpoint ? "/" : ""}${endpoint ?? ""}`, {
         ...init,
         headers: {
             // ...init?.headers,
             Authorization: `${tokenType} ${accessToken}`,
         },
-    }).then(resp => (resp.json() as unknown as LXNSResponse<APIRespType>).data)) as APIRespType;
+    }).then(resp => resp.json() as unknown as LXNSResponse<APIRespType>)).data as APIRespType;
 }
