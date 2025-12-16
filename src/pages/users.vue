@@ -250,13 +250,26 @@
                     ></RatingPlate>
                 </div>
                 <div class="user-badges">
-                    <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">
+                    <mdui-chip
+                        icon="videogame_asset"
+                        :disabled="!user.divingFish?.name"
+                        v-if="
+                            user.divingFish &&
+                            (user.divingFish.name ||
+                                (user.divingFish?.importToken && user.inGame?.id))
+                        "
+                    >
                         {{
                             user.divingFish?.name ??
-                            (user.divingFish?.importToken && user.inGame?.id
-                                ? "仅上传"
+                            (user.divingFish?.importToken &&
+                            user.inGame?.id &&
+                            !(user.lxns && user.lxns.auth)
+                                ? "上传"
                                 : "未绑定水鱼")
                         }}
+                    </mdui-chip>
+                    <mdui-chip icon="videogame_asset" v-if="user.lxns && user.lxns.auth">
+                        落雪
                     </mdui-chip>
                     <mdui-chip
                         icon="local_laundry_service"
