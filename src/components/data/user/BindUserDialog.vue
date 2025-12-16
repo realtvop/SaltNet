@@ -80,14 +80,16 @@
 
             <mdui-tab value="lxns">落雪</mdui-tab>
             <mdui-tab-panel slot="panel" value="lxns">
-                <mdui-button full-width @click="startBindingLXNS">绑定落雪帐号</mdui-button>
+                <mdui-button full-width @click="startBindingLXNS">
+                    {{ userLXNSBindStatus ? "重新绑定" : "绑定" }}落雪帐号
+                </mdui-button>
             </mdui-tab-panel>
         </mdui-tabs>
     </mdui-dialog>
 </template>
 
 <script setup lang="ts">
-    import { ref, watch, defineProps, defineEmits, nextTick, toRaw } from "vue";
+    import { ref, watch, defineProps, defineEmits, nextTick, toRaw, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import type { User } from "@/components/data/user/type";
     import { prompt, snackbar } from "mdui";
@@ -131,6 +133,12 @@
         },
         { immediate: true, deep: true }
     );
+
+    const userLXNSBindStatus = computed(() => {
+        if (!localUser.value.lxns || !localUser.value.lxns.auth) return false;
+        if (localUser.value.lxns.auth.expiresAt! + 2592e6 > Date.now()) return true;
+        return false;
+    });
 
     watch(
         () => props.modelValue,
