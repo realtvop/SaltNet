@@ -71,6 +71,7 @@ export function getUserDisplayName(user: User, fallback: string = "wmc"): string
 
     return (
         user.remark ??
+        user.data.name ??
         user.inGame.name ??
         user.divingFish.name ??
         (user.inGame.id ? user.inGame.id.toString() : fallback)
