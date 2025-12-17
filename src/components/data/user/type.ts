@@ -5,10 +5,12 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
+import type { SaltNetDatabaseLogin } from "./database";
 
 export interface User {
     uid?: string;
     remark?: string | null;
+    saltnetDB: SaltNetDatabaseLogin;
     divingFish: {
         name: string | null;
         importToken?: string | null;
