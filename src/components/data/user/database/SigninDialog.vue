@@ -9,7 +9,7 @@
         close-on-esc
     >
         <mdui-top-app-bar slot="header">
-            <mdui-button-icon icon="close" @click="handleClose"></mdui-button-icon>
+            <mdui-button-icon icon="close" @click="requestClose"></mdui-button-icon>
             <mdui-top-app-bar-title>登录 SaltNet</mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-    import { defineEmits, defineProps, nextTick, ref, watch } from "vue";
+    import { nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
 
     const props = defineProps<{ modelValue: boolean }>();
@@ -71,6 +71,10 @@
 
     const handleClose = () => {
         markDialogClosed(dialogRef.value);
+        if (open.value) emit("update:modelValue", false);
+    };
+
+    const requestClose = () => {
         emit("update:modelValue", false);
     };
 </script>

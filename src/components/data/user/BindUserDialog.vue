@@ -8,7 +8,7 @@
         close-on-esc
     >
         <mdui-top-app-bar slot="header">
-            <mdui-button-icon icon="close" @click="handleClose"></mdui-button-icon>
+            <mdui-button-icon icon="close" @click="requestClose"></mdui-button-icon>
             <mdui-top-app-bar-title>编辑用户绑定</mdui-top-app-bar-title>
             <mdui-button variant="text" @click="handleSave">保存</mdui-button>
         </mdui-top-app-bar>
@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, watch, defineProps, defineEmits, nextTick, toRaw } from "vue";
+    import { ref, watch, nextTick, toRaw } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import type { User } from "@/components/data/user/type";
     import { prompt, snackbar } from "mdui";
@@ -122,6 +122,18 @@
 
     const handleClose = () => {
         markDialogClosed(dialogRef.value);
+        // emit("update:modelValue", false); // Do not emit here, this is only for cleanup when dialog actually closes
+        // If the dialog is closed by mdui-dialog internal logic (e.g. esc or overlay click), model needs to be updated?
+        // Actually, if it's closed by event, we should probably ensure the parent knows.
+        // But usually, we rely on the parent binding v-model.
+        // If this is triggered by @close, the dialog is ALREADY closed or closing.
+        // We should just ensure the upstream prop is synced if need be, but for history management, just clean history.
+        // However, if we don't emit false, the parent `show` ref might stay true?
+        // Let's check the watchers.
+        if (props.modelValue) emit("update:modelValue", false);
+    };
+
+    const requestClose = () => {
         emit("update:modelValue", false);
     };
 
@@ -134,7 +146,7 @@
             },
             inGame: { id: localUser.value.inGame?.id ?? null },
         });
-        handleClose();
+        requestClose();
     };
 
     function bindInGame() {
