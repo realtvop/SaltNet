@@ -3,7 +3,10 @@ import * as Brevo from "@getbrevo/brevo";
 
 // Brevo (primary)
 const brevoApiInstance = new Brevo.TransactionalEmailsApi();
-brevoApiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || "");
+brevoApiInstance.setApiKey(
+    Brevo.TransactionalEmailsApiApiKeys.apiKey,
+    process.env.BREVO_API_KEY || ""
+);
 
 // Resend (backup)
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -114,4 +117,3 @@ export async function sendEmailChangeVerification(newEmail: string, token: strin
 
     await sendEmail(newEmail, "Verify your new email - SaltNet", html);
 }
-

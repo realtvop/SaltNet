@@ -4,8 +4,4 @@ import { user, maimaidx } from "./routes";
 
 export const app = new Elysia()
     .use(cors())
-    .group("/api/v0", app =>
-        app
-            .group("/user", user)
-            .group("/maimaidx", maimaidx)
-    );
+    .group("/api/v0", app => app.group("/user", user).group("/maimaidx", maimaidx));

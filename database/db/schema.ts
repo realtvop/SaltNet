@@ -1,4 +1,15 @@
-import { boolean, integer, jsonb, numeric, pgEnum, pgTable, serial, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import {
+    boolean,
+    integer,
+    jsonb,
+    numeric,
+    pgEnum,
+    pgTable,
+    serial,
+    smallint,
+    text,
+    timestamp,
+} from "drizzle-orm/pg-core";
 
 export const maimaidxRegionEnum = pgEnum("maimaidx_region", ["jp", "ex", "cn"]);
 export const users = pgTable("users", {
@@ -30,7 +41,9 @@ export interface UserLoginSession {
 export const applications = pgTable("applications", {
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
-    owner: integer("owner").references(() => users.id).notNull(),
+    owner: integer("owner")
+        .references(() => users.id)
+        .notNull(),
     clientSecret: text("client_secret").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
 });
@@ -45,7 +58,10 @@ export const maimaidxVersions = pgTable("maimaidx_versions", {
 export const maimaidxMusics = pgTable("maimaidx_musics", {
     id: integer("id"),
     title: text("title").notNull().primaryKey(),
-    versions: integer("versions").references(() => maimaidxVersions.id).array().notNull(),
+    versions: integer("versions")
+        .references(() => maimaidxVersions.id)
+        .array()
+        .notNull(),
     artist: text("artist").notNull(),
     genre: text("genre").notNull(),
     bpm: integer("bpm").notNull(),
@@ -53,10 +69,19 @@ export const maimaidxMusics = pgTable("maimaidx_musics", {
 });
 
 export const maimaidxChartTypeEnum = pgEnum("maimaidx_chart_type", ["std", "dx"]);
-export const maimaidxChartDifficultyEnum = pgEnum("maimaidx_chart_difficulty", ["basic", "advanced", "expert", "master", "remaster", "utage"]);
+export const maimaidxChartDifficultyEnum = pgEnum("maimaidx_chart_difficulty", [
+    "basic",
+    "advanced",
+    "expert",
+    "master",
+    "remaster",
+    "utage",
+]);
 export const maimaidxCharts = pgTable("maimaidx_charts", {
     idx: serial("idx").primaryKey(),
-    music: text("music").references(() => maimaidxMusics.title).notNull(),
+    music: text("music")
+        .references(() => maimaidxMusics.title)
+        .notNull(),
     type: maimaidxChartTypeEnum("type").notNull(),
     difficulty: maimaidxChartDifficultyEnum("difficulty").notNull(),
     level: text("level").notNull(),
@@ -69,12 +94,29 @@ export const maimaidxCharts = pgTable("maimaidx_charts", {
     breakNotes: smallint("break_notes").notNull(),
 });
 
-export const maimaidxComboStatsEnum = pgEnum("maimaidx_combo_stats", ["", "fc", "fcp", "ap", "app"]);
-export const maimaidxSyncStatsEnum = pgEnum("maimaidx_sync_stats", ["", "sync", "fs", "fsp", "fsdx", "fsdxp"]);
+export const maimaidxComboStatsEnum = pgEnum("maimaidx_combo_stats", [
+    "",
+    "fc",
+    "fcp",
+    "ap",
+    "app",
+]);
+export const maimaidxSyncStatsEnum = pgEnum("maimaidx_sync_stats", [
+    "",
+    "sync",
+    "fs",
+    "fsp",
+    "fsdx",
+    "fsdxp",
+]);
 export const maimaidxScores = pgTable("maimaidx_scores", {
     id: serial("id").primaryKey(),
-    user: integer("user").references(() => users.id).notNull(),
-    chart: integer("chart").references(() => maimaidxCharts.idx).notNull(),
+    user: integer("user")
+        .references(() => users.id)
+        .notNull(),
+    chart: integer("chart")
+        .references(() => maimaidxCharts.idx)
+        .notNull(),
     achievements: numeric("achievements", { precision: 7, scale: 4 }),
     deluxeScore: smallint("deluxe_score").notNull(),
     comboStat: maimaidxComboStatsEnum("combo_stat").notNull(),
@@ -82,8 +124,21 @@ export const maimaidxScores = pgTable("maimaidx_scores", {
     playCount: integer("play_count"),
 });
 
-export const maimaidxCollectionKindEnum = pgEnum("maimaidx_collection_kind", ["plate", "title", "icon", "frame", "character", "partner"]);
-export const maimaidxTitleColorEnum = pgEnum("maimaidx_title_color", ["normal", "bronze", "silver", "gold", "rainbow"]);
+export const maimaidxCollectionKindEnum = pgEnum("maimaidx_collection_kind", [
+    "plate",
+    "title",
+    "icon",
+    "frame",
+    "character",
+    "partner",
+]);
+export const maimaidxTitleColorEnum = pgEnum("maimaidx_title_color", [
+    "normal",
+    "bronze",
+    "silver",
+    "gold",
+    "rainbow",
+]);
 export const maimaidxCollections = pgTable("maimaidx_collections", {
     id: integer("id").primaryKey(),
     kind: maimaidxCollectionKindEnum("kind").notNull(),
@@ -94,6 +149,10 @@ export const maimaidxCollections = pgTable("maimaidx_collections", {
 
 export const maimaidxUserCollections = pgTable("maimaidx_user_collections", {
     id: serial("id").primaryKey(),
-    user: integer("user").references(() => users.id).notNull(),
-    collection: integer("collection").references(() => maimaidxCollections.id).notNull(),
+    user: integer("user")
+        .references(() => users.id)
+        .notNull(),
+    collection: integer("collection")
+        .references(() => maimaidxCollections.id)
+        .notNull(),
 });

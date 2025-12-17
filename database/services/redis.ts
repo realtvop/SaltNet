@@ -23,7 +23,12 @@ export async function deleteEmailVerificationToken(token: string) {
 
 // Password Reset Token
 export async function savePasswordResetToken(userId: number, token: string) {
-    await redis.set(`${PASSWORD_RESET_PREFIX}${token}`, userId.toString(), "EX", PASSWORD_RESET_TTL);
+    await redis.set(
+        `${PASSWORD_RESET_PREFIX}${token}`,
+        userId.toString(),
+        "EX",
+        PASSWORD_RESET_TTL
+    );
 }
 
 export async function getPasswordResetUserId(token: string): Promise<number | null> {
@@ -44,7 +49,9 @@ export async function saveEmailChangeToken(userId: number, newEmail: string, tok
     await redis.set(`${EMAIL_CHANGE_PREFIX}${token}`, data, "EX", EMAIL_CHANGE_TTL);
 }
 
-export async function getEmailChangeData(token: string): Promise<{ userId: number; newEmail: string } | null> {
+export async function getEmailChangeData(
+    token: string
+): Promise<{ userId: number; newEmail: string } | null> {
     const data = await redis.get(`${EMAIL_CHANGE_PREFIX}${token}`);
     if (!data) return null;
     try {
@@ -57,4 +64,3 @@ export async function getEmailChangeData(token: string): Promise<{ userId: numbe
 export async function deleteEmailChangeToken(token: string) {
     await redis.del(`${EMAIL_CHANGE_PREFIX}${token}`);
 }
-
