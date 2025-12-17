@@ -34,3 +34,27 @@ export async function getPasswordResetUserId(token: string): Promise<number | nu
 export async function deletePasswordResetToken(token: string) {
     await redis.del(`${PASSWORD_RESET_PREFIX}${token}`);
 }
+
+// Email Change Token (stores both userId and newEmail)
+const EMAIL_CHANGE_PREFIX = "saltnet_email_change:";
+const EMAIL_CHANGE_TTL = 24 * 60 * 60; // 24 hours
+
+export async function saveEmailChangeToken(userId: number, newEmail: string, token: string) {
+    const data = JSON.stringify({ userId, newEmail });
+    await redis.set(`${EMAIL_CHANGE_PREFIX}${token}`, data, "EX", EMAIL_CHANGE_TTL);
+}
+
+export async function getEmailChangeData(token: string): Promise<{ userId: number; newEmail: string } | null> {
+    const data = await redis.get(`${EMAIL_CHANGE_PREFIX}${token}`);
+    if (!data) return null;
+    try {
+        return JSON.parse(data);
+    } catch {
+        return null;
+    }
+}
+
+export async function deleteEmailChangeToken(token: string) {
+    await redis.del(`${EMAIL_CHANGE_PREFIX}${token}`);
+}
+

@@ -1,8 +1,8 @@
 import { Elysia, t } from "elysia";
-import { eq, or } from "drizzle-orm";
+import { eq, or, isNull, and } from "drizzle-orm";
 import { db, schema } from "../db";
 import * as jwt from "jsonwebtoken";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
+import { sendVerificationEmail, sendPasswordResetEmail, sendEmailChangeVerification } from "../services/email";
 import {
     saveEmailVerificationToken,
     getEmailVerificationUserId,
@@ -10,10 +10,30 @@ import {
     savePasswordResetToken,
     getPasswordResetUserId,
     deletePasswordResetToken,
+    saveEmailChangeToken,
+    getEmailChangeData,
+    deleteEmailChangeToken,
 } from "../services/redis";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+
+// Password validation: 8-32 chars, uppercase, lowercase, digit
+const validatePassword = (password: string): { valid: boolean; error?: string } => {
+    if (password.length < 8 || password.length > 32) {
+        return { valid: false, error: "Password must be 8-32 characters" };
+    }
+    if (!/[A-Z]/.test(password)) {
+        return { valid: false, error: "Password must contain at least one uppercase letter" };
+    }
+    if (!/[a-z]/.test(password)) {
+        return { valid: false, error: "Password must contain at least one lowercase letter" };
+    }
+    if (!/[0-9]/.test(password)) {
+        return { valid: false, error: "Password must contain at least one digit" };
+    }
+    return { valid: true };
+};
 
 // 验证 sessionToken 并返回用户
 const verifyAuth = async (authorization: string | undefined) => {
@@ -68,16 +88,27 @@ export function user(app: Elysia | any) {
             async ({ body, set }) => {
                 const { userName, email, password } = body;
 
-                // 检查用户名或邮箱是否已存在
+                // 验证密码复杂度
+                const passwordValidation = validatePassword(password);
+                if (!passwordValidation.valid) {
+                    set.status = 400;
+                    return { error: passwordValidation.error };
+                }
+
+                // 检查用户名是否已存在
                 const [existingUserByName] = await db
                     .select()
                     .from(schema.users)
                     .where(eq(schema.users.userName, userName));
 
-                const [existingUserByEmail] = await db
-                    .select()
-                    .from(schema.users)
-                    .where(eq(schema.users.email, email));
+                // 如果邮箱已提供，检查是否已存在
+                let existingUserByEmail = null;
+                if (email) {
+                    [existingUserByEmail] = await db
+                        .select()
+                        .from(schema.users)
+                        .where(eq(schema.users.email, email));
+                }
 
                 // 如果用户名已存在且已验证邮箱，拒绝注册
                 if (existingUserByName && existingUserByName.emailVerified) {
@@ -101,10 +132,11 @@ export function user(app: Elysia | any) {
                     [newUser] = await db
                         .update(schema.users)
                         .set({
-                            email,
+                            email: email || null,
                             password: hashedPassword,
                             createdAt: new Date(),
                             sessions: [],
+                            emailVerified: false,
                         })
                         .where(eq(schema.users.id, existingUserByName.id))
                         .returning({
@@ -119,7 +151,7 @@ export function user(app: Elysia | any) {
                         .insert(schema.users)
                         .values({
                             userName,
-                            email,
+                            email: email || null,
                             password: hashedPassword,
                         })
                         .returning({
@@ -130,19 +162,22 @@ export function user(app: Elysia | any) {
                         });
                 }
 
-                // 生成验证 token 并发送验证邮件
-                const verificationToken = crypto.randomUUID();
-                await saveEmailVerificationToken(newUser!.id, verificationToken);
-                await sendVerificationEmail(email, verificationToken);
+                // 只有提供邮箱时才发送验证邮件
+                if (email) {
+                    const verificationToken = crypto.randomUUID();
+                    await saveEmailVerificationToken(newUser!.id, verificationToken);
+                    await sendVerificationEmail(email, verificationToken);
+                    return { message: "Registration successful. Please check your email to verify.", user: newUser };
+                }
 
-                return { message: "Registration successful. Please check your email to verify.", user: newUser };
+                return { message: "Registration successful.", user: newUser };
             },
 
             {
                 body: t.Object({
                     userName: t.String({ minLength: 2, maxLength: 32 }),
-                    email: t.String({ format: "email" }),
-                    password: t.String({ minLength: 6 }),
+                    email: t.Optional(t.String({ format: "email" })),
+                    password: t.String({ minLength: 8, maxLength: 32 }),
                 }),
             }
         )
@@ -169,12 +204,6 @@ export function user(app: Elysia | any) {
                 if (!isValid) {
                     set.status = 401;
                     return { error: "Invalid username or password" };
-                }
-
-                // 检查邮箱是否已验证
-                if (!user.emailVerified) {
-                    set.status = 403;
-                    return { error: "Please verify your email before logging in" };
                 }
 
 
@@ -416,6 +445,13 @@ export function user(app: Elysia | any) {
         .post("/reset-password", async ({ body, set }) => {
             const { token, password } = body;
 
+            // 验证密码复杂度
+            const passwordValidation = validatePassword(password);
+            if (!passwordValidation.valid) {
+                set.status = 400;
+                return { error: passwordValidation.error };
+            }
+
             const userId = await getPasswordResetUserId(token);
             if (!userId) {
                 set.status = 400;
@@ -435,7 +471,189 @@ export function user(app: Elysia | any) {
         }, {
             body: t.Object({
                 token: t.String(),
-                password: t.String({ minLength: 6 }),
+                password: t.String({ minLength: 8, maxLength: 32 }),
+            }),
+        })
+        // 修改密码（需要登录）
+        .post("/change-password", async ({ body, headers, set }) => {
+            const user = await verifyAuth(headers["authorization"]);
+            if (!user) {
+                set.status = 401;
+                return { error: "Not authenticated or invalid token" };
+            }
+
+            const { currentPassword, newPassword } = body;
+
+            // 验证新密码复杂度
+            const passwordValidation = validatePassword(newPassword);
+            if (!passwordValidation.valid) {
+                set.status = 400;
+                return { error: passwordValidation.error };
+            }
+
+            // 获取用户完整信息以验证当前密码
+            const [dbUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.id, user.id));
+
+            if (!dbUser) {
+                set.status = 404;
+                return { error: "User not found" };
+            }
+
+            // 验证当前密码
+            const isValid = await Bun.password.verify(currentPassword, dbUser.password);
+            if (!isValid) {
+                set.status = 400;
+                return { error: "Current password is incorrect" };
+            }
+
+            // 更新密码
+            const hashedPassword = await Bun.password.hash(newPassword);
+            await db.update(schema.users)
+                .set({ password: hashedPassword })
+                .where(eq(schema.users.id, user.id));
+
+            return { message: "Password changed successfully" };
+        }, {
+            body: t.Object({
+                currentPassword: t.String(),
+                newPassword: t.String({ minLength: 8, maxLength: 32 }),
+            }),
+        })
+        // 修改邮箱（需要登录）
+        .post("/change-email", async ({ body, headers, set }) => {
+            const user = await verifyAuth(headers["authorization"]);
+            if (!user) {
+                set.status = 401;
+                return { error: "Not authenticated or invalid token" };
+            }
+
+            const { newEmail, password } = body;
+
+            // 获取用户完整信息以验证密码
+            const [dbUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.id, user.id));
+
+            if (!dbUser) {
+                set.status = 404;
+                return { error: "User not found" };
+            }
+
+            // 验证密码
+            const isValid = await Bun.password.verify(password, dbUser.password);
+            if (!isValid) {
+                set.status = 400;
+                return { error: "Password is incorrect" };
+            }
+
+            // 检查新邮箱是否已被使用
+            const [existingUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, newEmail));
+
+            if (existingUser) {
+                set.status = 400;
+                return { error: "Email already in use" };
+            }
+
+            // 生成邮箱变更 token 并发送验证邮件
+            const changeToken = crypto.randomUUID();
+            await saveEmailChangeToken(user.id, newEmail, changeToken);
+            await sendEmailChangeVerification(newEmail, changeToken);
+
+            return { message: "Verification email sent to new address. Please verify to complete the change." };
+        }, {
+            body: t.Object({
+                newEmail: t.String({ format: "email" }),
+                password: t.String(),
+            }),
+        })
+        // 验证新邮箱
+        .get("/verify-email-change", async ({ query, set }) => {
+            const { token } = query;
+
+            const data = await getEmailChangeData(token);
+            if (!data) {
+                set.status = 400;
+                return { error: "Invalid or expired verification token" };
+            }
+
+            const { userId, newEmail } = data;
+
+            // 再次检查邮箱是否被占用（防止 race condition）
+            const [existingUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, newEmail));
+
+            if (existingUser && existingUser.id !== userId) {
+                set.status = 400;
+                return { error: "Email already in use" };
+            }
+
+            // 更新邮箱并设为已验证
+            await db.update(schema.users)
+                .set({ email: newEmail, emailVerified: true })
+                .where(eq(schema.users.id, userId));
+
+            // 删除已使用的 token
+            await deleteEmailChangeToken(token);
+
+            return { message: "Email changed successfully" };
+        }, {
+            query: t.Object({ token: t.String() }),
+        })
+        // 绑定邮箱（针对无邮箱用户）
+        .post("/bind-email", async ({ body, headers, set }) => {
+            const user = await verifyAuth(headers["authorization"]);
+            if (!user) {
+                set.status = 401;
+                return { error: "Not authenticated or invalid token" };
+            }
+
+            const { email } = body;
+
+            // 检查用户是否已有邮箱
+            const [dbUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.id, user.id));
+
+            if (!dbUser) {
+                set.status = 404;
+                return { error: "User not found" };
+            }
+
+            if (dbUser.email) {
+                set.status = 400;
+                return { error: "User already has an email. Use change-email instead." };
+            }
+
+            // 检查邮箱是否已被使用
+            const [existingUser] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, email));
+
+            if (existingUser) {
+                set.status = 400;
+                return { error: "Email already in use" };
+            }
+
+            // 生成验证 token 并发送验证邮件
+            const verificationToken = crypto.randomUUID();
+            await saveEmailChangeToken(user.id, email, verificationToken);
+            await sendEmailChangeVerification(email, verificationToken);
+
+            return { message: "Verification email sent. Please verify to bind the email." };
+        }, {
+            body: t.Object({
+                email: t.String({ format: "email" }),
             }),
         });
 }

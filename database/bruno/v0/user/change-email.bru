@@ -1,0 +1,69 @@
+meta {
+  name: Change Email
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/change-email
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+body:json {
+  {
+    "newEmail": "newemail@example.com",
+    "password": "YourPass123"
+  }
+}
+
+docs {
+  # Change Email
+  
+  Request to change the authenticated user's email address. A verification email will be sent to the new address.
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} |
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | newEmail | string | Yes | New email address |
+  | password | string | Yes | Current password for verification |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Verification email sent to new address. Please verify to complete the change."
+  }
+  ```
+  
+  ### Error (400)
+  ```json
+  {
+    "error": "Email already in use"
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ## Notes
+  
+  - The email change is not complete until the user verifies the new email via the link sent
+  - The verification link expires in 24 hours
+}

@@ -14,7 +14,7 @@ body:json {
   {
     "userName": "testuser",
     "email": "test@example.com",
-    "password": "123456"
+    "password": "TestPass123"
   }
 }
 
@@ -28,12 +28,12 @@ docs {
   | Field | Type | Required | Description |
   |-------|------|----------|-------------|
   | userName | string | Yes | Username, 2-32 characters |
-  | email | string | Yes | Email address |
-  | password | string | Yes | Password, minimum 6 characters |
+  | email | string | No | Email address (optional, can bind later) |
+  | password | string | Yes | Password (8-32 chars, uppercase, lowercase, digit) |
   
   ## Response
   
-  ### Success (200)
+  ### Success (200) - With Email
   ```json
   {
     "message": "Registration successful. Please check your email to verify.",
@@ -46,10 +46,30 @@ docs {
   }
   ```
   
-  ### Error (400)
+  ### Success (200) - Without Email
   ```json
   {
-    "error": "Username or email already exists"
+    "message": "Registration successful.",
+    "user": {
+      "id": 1,
+      "userName": "testuser",
+      "email": null,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
+  
+  ### Error (400) - Username Exists
+  ```json
+  {
+    "error": "Username already exists"
+  }
+  ```
+  
+  ### Error (400) - Password Invalid
+  ```json
+  {
+    "error": "Password must contain at least one uppercase letter"
   }
   ```
 }

@@ -98,3 +98,20 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 
     await sendEmail(email, "Reset your password - SaltNet", html);
 }
+
+export async function sendEmailChangeVerification(newEmail: string, token: string) {
+    const verificationUrl = `${API_HOST}api/v0/user/verify-email-change?token=${token}`;
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Email Change Verification</h2>
+            <p>Please click the button below to verify your new email address:</p>
+            <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px;">Verify New Email</a>
+            <p style="margin-top: 20px; color: #666;">This link will expire in 24 hours.</p>
+            <p style="color: #666;">If you didn't request this change, you can safely ignore this email.</p>
+        </div>
+    `;
+
+    await sendEmail(newEmail, "Verify your new email - SaltNet", html);
+}
+
