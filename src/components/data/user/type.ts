@@ -5,6 +5,7 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
+import type { LXNSAuth } from "@/components/integrations/lxns";
 
 export interface User {
     uid?: string;
@@ -12,6 +13,11 @@ export interface User {
     divingFish: {
         name: string | null;
         importToken?: string | null;
+    };
+    lxns?: {
+        auth: LXNSAuth | null;
+        name: string | null;
+        id: number | null;
     };
     inGame: {
         name?: string | null;
@@ -65,6 +71,7 @@ export function getUserDisplayName(user: User, fallback: string = "wmc"): string
 
     return (
         user.remark ??
+        user.data.name ??
         user.inGame.name ??
         user.divingFish.name ??
         (user.inGame.id ? user.inGame.id.toString() : fallback)

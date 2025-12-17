@@ -1,14 +1,8 @@
 <script setup lang="ts">
-    import { ref, provide } from "vue";
     import { useRoute, useRouter } from "vue-router";
-    import TopAppBar from "./components/app/TopAppBar.vue";
+    import TopAppBar from "@/components/app/TopAppBar.vue";
+    import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
 
-    const playerInfo = ref({
-        name: "",
-        data: null as any,
-    });
-
-    provide("playerInfo", playerInfo);
     const route = useRoute();
     const router = useRouter();
 
@@ -22,11 +16,24 @@
             router.push("/songs");
         }
     }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
+        const code = searchParams.get("code")!;
+        handleLXNSOAuthCallback(code)
+            .then(auth => {
+                console.log("LXNS OAuth successful:", auth);
+            })
+            .catch(error => {
+                console.error("LXNS OAuth failed:", error);
+            });
+    }
+    if (searchParams.size) router.replace({ path: route.path, query: {} });
 </script>
 
 <template>
     <mdui-layout>
-        <component :is="TopAppBar" :playerInfo="playerInfo" v-if="route.path !== '/b50/render'" />
+        <component :is="TopAppBar" v-if="route.path !== '/b50/render'" />
         <mdui-navigation-bar
             :value="route.path"
             v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"

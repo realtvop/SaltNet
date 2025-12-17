@@ -15,6 +15,7 @@
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
+    import type { LXNSAuth } from "@/components/integrations/lxns";
 
     const shared = useShared();
 
@@ -35,6 +36,7 @@
             remark: null,
             divingFish: { name: null, importToken: null },
             inGame: { name: null, id: null },
+            lxns: { auth: null, name: null, id: null },
             settings: { manuallyUpdate: false },
             data: {
                 updateTime: null,
@@ -126,6 +128,7 @@
     interface UpdatedUserData {
         remark?: string | null;
         divingFish: { name: string | null; importToken: string | null };
+        lxns: { auth: LXNSAuth | null; name: string | null; id: number | null };
         inGame: { name: string | null; id: number | null };
     }
 
@@ -136,6 +139,11 @@
                 divingFish: {
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
+                },
+                lxns: {
+                    auth: null,
+                    name: null,
+                    id: null,
                 },
                 inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
                 settings: { manuallyUpdate: false },
@@ -161,6 +169,12 @@
                     ...originalUser.divingFish,
                     name: updatedUserData.divingFish.name,
                     importToken: updatedUserData.divingFish.importToken,
+                },
+                lxns: {
+                    ...originalUser.lxns,
+                    auth: updatedUserData.lxns.auth,
+                    name: updatedUserData.lxns.name,
+                    id: updatedUserData.lxns.id,
                 },
                 inGame: {
                     ...originalUser.inGame,
@@ -236,13 +250,26 @@
                     ></RatingPlate>
                 </div>
                 <div class="user-badges">
-                    <mdui-chip icon="videogame_asset" :disabled="!user.divingFish?.name">
+                    <mdui-chip
+                        icon="videogame_asset"
+                        :disabled="!user.divingFish?.name"
+                        v-if="
+                            user.divingFish &&
+                            (user.divingFish.name ||
+                                (user.divingFish?.importToken && user.inGame?.id))
+                        "
+                    >
                         {{
                             user.divingFish?.name ??
-                            (user.divingFish?.importToken && user.inGame?.id
-                                ? "仅上传"
+                            (user.divingFish?.importToken &&
+                            user.inGame?.id &&
+                            !(user.lxns && user.lxns.auth)
+                                ? "上传"
                                 : "未绑定水鱼")
                         }}
+                    </mdui-chip>
+                    <mdui-chip icon="videogame_asset" v-if="user.lxns && user.lxns.auth">
+                        落雪
                     </mdui-chip>
                     <mdui-chip
                         icon="local_laundry_service"
@@ -346,7 +373,13 @@
         </mdui-card>
     </div>
 
-    <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
+    <BindUserDialog
+        v-model="isDialogVisible"
+        :user="currentUserToEdit"
+        :user-index="editingUserIndex || shared.users.length"
+        :is-editing-new-user="editingUserIndex === null"
+        @save="handleUserSave"
+    />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
