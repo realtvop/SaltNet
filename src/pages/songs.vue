@@ -14,7 +14,7 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
-    import { handleSelectChange, handleNumericSelectChange } from "@/composables";
+    import { handleSelectChange, handleNumericSelectChange } from "@/utils";
 
     declare global {
         interface Window {
