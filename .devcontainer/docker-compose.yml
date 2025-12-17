@@ -5,10 +5,10 @@ services:
         volumes:
             - ../:/workspace:cached
         # Use default network and rely on Docker service DNS (use 'db' hostname to reach database)
-        # (Removing `network_mode: service:db` avoids OCI runtime namespace errors on some hosts)
         command: sleep infinity
         depends_on:
             - postgres
+            - redis
 
     postgres:
         image: postgres:latest
@@ -20,5 +20,12 @@ services:
             POSTGRES_USER: postgres
             POSTGRES_DB: postgres
 
+    redis:
+        image: redis:alpine
+        restart: unless-stopped
+        volumes:
+            - redis-data:/data
+
 volumes:
     postgres-data:
+    redis-data:

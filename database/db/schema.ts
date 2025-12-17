@@ -1,4 +1,4 @@
-import { integer, jsonb, numeric, pgEnum, pgTable, serial, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, numeric, pgEnum, pgTable, serial, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 export const maimaidxRegionEnum = pgEnum("maimaidx_region", ["jp", "ex", "cn"]);
 export const users = pgTable("users", {
@@ -8,6 +8,7 @@ export const users = pgTable("users", {
     userName: text("userName").notNull().unique(),
     email: text("email").notNull().unique(),
     password: text("password").notNull(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
 
     sessions: jsonb("sessions").default("[]"),
     pat: text("pat").unique(),
@@ -16,6 +17,7 @@ export const users = pgTable("users", {
     maimaidxRegion: maimaidxRegionEnum("maimaidx_region").default("ex"),
     maimaidxRating: smallint("maimaidx_rating").default(-1),
 });
+
 export interface UserLoginSession {
     application: number | null;
     userAgent: string;

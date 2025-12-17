@@ -1,0 +1,45 @@
+meta {
+  name: Resend Verification Email
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/resend-verification
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "test@example.com"
+  }
+}
+
+docs {
+  # Resend Verification Email
+  
+  Resend email verification link to user's email.
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | email | string | Yes | Email address |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "If the email exists, a verification email will be sent"
+  }
+  ```
+  
+  ### Error (400) - Already Verified
+  ```json
+  {
+    "error": "Email is already verified"
+  }
+  ```
+}

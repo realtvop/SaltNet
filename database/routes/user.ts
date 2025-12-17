@@ -2,8 +2,18 @@ import { Elysia, t } from "elysia";
 import { eq, or } from "drizzle-orm";
 import { db, schema } from "../db";
 import * as jwt from "jsonwebtoken";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
+import {
+    saveEmailVerificationToken,
+    getEmailVerificationUserId,
+    deleteEmailVerificationToken,
+    savePasswordResetToken,
+    getPasswordResetUserId,
+    deletePasswordResetToken,
+} from "../services/redis";
 
-const JWT_SECRET = process.env.JWT_SECRET || "saltnet-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
 // 验证 sessionToken 并返回用户
 const verifyAuth = async (authorization: string | undefined) => {
@@ -50,7 +60,7 @@ const verifyAuth = async (authorization: string | undefined) => {
     }
 };
 
-export function user(app: Elysia) {
+export function user(app: Elysia | any) {
     return app
         // 用户注册
         .post(
@@ -59,36 +69,75 @@ export function user(app: Elysia) {
                 const { userName, email, password } = body;
 
                 // 检查用户名或邮箱是否已存在
-                const existingUser = await db
-                    .select({ id: schema.users.id })
+                const [existingUserByName] = await db
+                    .select()
                     .from(schema.users)
-                    .where(or(eq(schema.users.userName, userName), eq(schema.users.email, email)));
+                    .where(eq(schema.users.userName, userName));
 
-                if (existingUser.length > 0) {
+                const [existingUserByEmail] = await db
+                    .select()
+                    .from(schema.users)
+                    .where(eq(schema.users.email, email));
+
+                // 如果用户名已存在且已验证邮箱，拒绝注册
+                if (existingUserByName && existingUserByName.emailVerified) {
                     set.status = 400;
-                    return { error: "Username or email already exists" };
+                    return { error: "Username already exists" };
+                }
+
+                // 如果邮箱已存在（无论是否验证），拒绝注册
+                if (existingUserByEmail) {
+                    set.status = 400;
+                    return { error: "Email already exists" };
                 }
 
                 // 使用 Bun 内置的密码哈希
                 const hashedPassword = await Bun.password.hash(password);
 
-                // 创建用户
-                const [newUser] = await db
-                    .insert(schema.users)
-                    .values({
-                        userName,
-                        email,
-                        password: hashedPassword,
-                    })
-                    .returning({
-                        id: schema.users.id,
-                        userName: schema.users.userName,
-                        email: schema.users.email,
-                        createdAt: schema.users.createdAt,
-                    });
+                let newUser;
 
-                return { message: "Registration successful", user: newUser };
+                if (existingUserByName && !existingUserByName.emailVerified) {
+                    // 覆盖未验证邮箱的同名用户
+                    [newUser] = await db
+                        .update(schema.users)
+                        .set({
+                            email,
+                            password: hashedPassword,
+                            createdAt: new Date(),
+                            sessions: [],
+                        })
+                        .where(eq(schema.users.id, existingUserByName.id))
+                        .returning({
+                            id: schema.users.id,
+                            userName: schema.users.userName,
+                            email: schema.users.email,
+                            createdAt: schema.users.createdAt,
+                        });
+                } else {
+                    // 创建新用户
+                    [newUser] = await db
+                        .insert(schema.users)
+                        .values({
+                            userName,
+                            email,
+                            password: hashedPassword,
+                        })
+                        .returning({
+                            id: schema.users.id,
+                            userName: schema.users.userName,
+                            email: schema.users.email,
+                            createdAt: schema.users.createdAt,
+                        });
+                }
+
+                // 生成验证 token 并发送验证邮件
+                const verificationToken = crypto.randomUUID();
+                await saveEmailVerificationToken(newUser!.id, verificationToken);
+                await sendVerificationEmail(email, verificationToken);
+
+                return { message: "Registration successful. Please check your email to verify.", user: newUser };
             },
+
             {
                 body: t.Object({
                     userName: t.String({ minLength: 2, maxLength: 32 }),
@@ -97,6 +146,7 @@ export function user(app: Elysia) {
                 }),
             }
         )
+
         // 用户登录
         .post(
             "/login",
@@ -119,6 +169,12 @@ export function user(app: Elysia) {
                 if (!isValid) {
                     set.status = 401;
                     return { error: "Invalid username or password" };
+                }
+
+                // 检查邮箱是否已验证
+                if (!user.emailVerified) {
+                    set.status = 403;
+                    return { error: "Please verify your email before logging in" };
                 }
 
 
@@ -256,6 +312,130 @@ export function user(app: Elysia) {
         }, {
             body: t.Object({
                 refreshToken: t.String(),
+            }),
+        })
+        // 验证邮箱
+        .get("/verify-email", async ({ query, set }) => {
+            const { token } = query;
+
+            const userId = await getEmailVerificationUserId(token);
+            if (!userId) {
+                set.status = 400;
+                return { error: "Invalid or expired verification token" };
+            }
+
+            // 更新用户邮箱验证状态
+            await db.update(schema.users)
+                .set({ emailVerified: true })
+                .where(eq(schema.users.id, userId));
+
+            // 删除已使用的 token
+            await deleteEmailVerificationToken(token);
+
+            return { message: "Email verified successfully" };
+        }, {
+            query: t.Object({ token: t.String() }),
+        })
+        // 重发验证邮件
+        .post("/resend-verification", async ({ body, set }) => {
+            const { email } = body;
+
+            const [user] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, email));
+
+            if (!user) {
+                // 不透露用户是否存在
+                return { message: "If the email exists, a verification email will be sent" };
+            }
+
+            if (user.emailVerified) {
+                set.status = 400;
+                return { error: "Email is already verified" };
+            }
+
+            // 生成新的验证 token
+            const verificationToken = crypto.randomUUID();
+            await saveEmailVerificationToken(user.id, verificationToken);
+            await sendVerificationEmail(email, verificationToken);
+
+            return { message: "If the email exists, a verification email will be sent" };
+        }, {
+            body: t.Object({ email: t.String({ format: "email" }) }),
+        })
+        // 忘记密码 - 发送重置邮件
+        .post("/forgot-password", async ({ body }) => {
+            const { email } = body;
+
+            const [user] = await db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.email, email));
+
+            if (user) {
+                const resetToken = crypto.randomUUID();
+                await savePasswordResetToken(user.id, resetToken);
+                await sendPasswordResetEmail(email, resetToken);
+            }
+
+            // 不透露用户是否存在
+            return { message: "If the email exists, a password reset email will be sent" };
+        }, {
+            body: t.Object({ email: t.String({ format: "email" }) }),
+        })
+        // 重置密码页面
+        .get("/reset-password", async ({ query, set }) => {
+            const { token } = query;
+
+            const userId = await getPasswordResetUserId(token);
+            if (!userId) {
+                set.status = 400;
+                set.headers["Content-Type"] = "text/html";
+                return `
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Invalid Link</title></head>
+                    <body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:#1a1a2e;color:#fff;">
+                        <div style="text-align:center;">
+                            <h1>Invalid or Expired Link</h1>
+                            <p>Please request a new password reset.</p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+            }
+
+            // 返回重置密码页面
+            set.headers["Content-Type"] = "text/html";
+            return Bun.file("public/reset-password.html");
+        }, {
+            query: t.Object({ token: t.String() }),
+        })
+        // 处理密码重置
+        .post("/reset-password", async ({ body, set }) => {
+            const { token, password } = body;
+
+            const userId = await getPasswordResetUserId(token);
+            if (!userId) {
+                set.status = 400;
+                return { error: "Invalid or expired reset token" };
+            }
+
+            // 更新密码
+            const hashedPassword = await Bun.password.hash(password);
+            await db.update(schema.users)
+                .set({ password: hashedPassword })
+                .where(eq(schema.users.id, userId));
+
+            // 删除已使用的 token
+            await deletePasswordResetToken(token);
+
+            return { message: "Password reset successful" };
+        }, {
+            body: t.Object({
+                token: t.String(),
+                password: t.String({ minLength: 6 }),
             }),
         });
 }

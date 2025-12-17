@@ -17,9 +17,12 @@
     "dependencies": {
         "@elysiajs/cors": "^1.4.0",
         "@elysiajs/static": "^1.4.7",
+        "@getbrevo/brevo": "^3.0.1",
         "drizzle-orm": "^0.45.1",
         "elysia": "^1.4.19",
+        "ioredis": "^5.8.2",
         "jsonwebtoken": "^9.0.3",
-        "postgres": "^3.4.7"
+        "postgres": "^3.4.7",
+        "resend": "^6.6.0"
     }
 }
