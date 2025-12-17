@@ -4,6 +4,8 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
+    import SignupDialog from "@/components/data/user/database/SignupDialog.vue";
+    import SigninDialog from "@/components/data/user/database/SigninDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import {
         checkLogin,
@@ -15,10 +17,13 @@
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
+    import UserCard from "@/components/data/user/database/UserCard.vue";
 
     const shared = useShared();
 
     const isDialogVisible = ref(false);
+    const isSignupDialogOpen = ref(false);
+    const isSigninDialogOpen = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
 
@@ -44,6 +49,14 @@
         };
         editingUserIndex.value = null;
         isDialogVisible.value = true;
+    };
+
+    const openSignupDialog = () => {
+        isSignupDialogOpen.value = true;
+    };
+
+    const openSigninDialog = () => {
+        isSigninDialogOpen.value = true;
     };
 
     const openDeleteDialog = (index: number) => {
@@ -214,11 +227,15 @@
             user.settings.manuallyUpdate = !user.settings.manuallyUpdate;
         }
     };
+
+    // Business logic intentionally removed.
 </script>
 
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
+        <UserCard @open-signin="openSigninDialog" @open-signup="openSignupDialog" />
+
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in shared.users"
@@ -347,6 +364,8 @@
     </div>
 
     <BindUserDialog v-model="isDialogVisible" :user="currentUserToEdit" @save="handleUserSave" />
+    <SignupDialog v-model="isSignupDialogOpen" />
+    <SigninDialog v-model="isSigninDialogOpen" />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">
