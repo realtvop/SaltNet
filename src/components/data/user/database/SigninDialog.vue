@@ -45,14 +45,17 @@
             <mdui-button full-width @click="handleLogin" :loading="isLoading" :disabled="!canSubmit">
                 登录
             </mdui-button>
+
+            <mdui-button variant="text" @click="handleForgotPassword" full-width>忘记密码？</mdui-button>
         </div>
     </mdui-dialog>
 </template>
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from "vue";
+    import { prompt } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
-    import { loginSaltNet } from "./api";
+    import { loginSaltNet, forgotPassword } from "./api";
     import type { SaltNetDatabaseLogin } from "./type";
 
     const props = defineProps<{ modelValue: boolean }>();
@@ -110,6 +113,28 @@
             isLoading.value = false;
         }
     };
+
+    const handleForgotPassword = () => {
+        prompt({
+            headline: "找回密码",
+            description: "输入您的注册邮箱，我们将发送密码重置链接",
+            confirmText: "发送",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            textFieldOptions: {
+                type: "email",
+                label: "邮箱地址",
+            },
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: async (email: string) => {
+                if (email && email.trim()) {
+                    await forgotPassword(email.trim());
+                }
+            },
+        });
+    };
 </script>
 
 <style scoped>
@@ -122,4 +147,6 @@
     mdui-text-field {
         width: 100%;
     }
+
+
 </style>

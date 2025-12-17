@@ -95,9 +95,15 @@
         }
     });
 
+    let pendingBacks = 0;
+
     window.addEventListener("popstate", () => {
         const currentHash = window.location.hash;
         const openDialogs = document.querySelectorAll("mdui-dialog[open]");
+
+        if (pendingBacks > 0) {
+            pendingBacks--;
+        }
 
         // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
         if (previousHash.endsWith("#dialog")) {
@@ -184,8 +190,10 @@
             setTimeout(() => {
                 const openDialogs = document.querySelectorAll("mdui-dialog[open]");
                 const dialogHashCount = (window.location.hash.match(/#dialog/g) || []).length;
+                const effectiveHashCount = dialogHashCount - pendingBacks; // account for pending back actions
                 // 如果打开的对话框数量少于 hash 中的 #dialog 数量，则回退
-                if (openDialogs.length < dialogHashCount) {
+                if (openDialogs.length < effectiveHashCount) {
+                    pendingBacks++;
                     history.back();
                 }
             }, 0);

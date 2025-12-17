@@ -181,3 +181,40 @@ export async function registerSaltNet(
         return null;
     }
 }
+
+/**
+ * Request password reset email
+ */
+export async function forgotPassword(email: string): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/forgot-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+        });
+
+        if (!resp.ok) {
+            const data = await resp.json();
+            const errorData = data as ErrorResponse;
+            snackbar({
+                message: errorData.error || "发送失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "如果该邮箱已注册，重置邮件将会发送",
+            autoCloseDelay: 3000,
+        });
+        return true;
+    } catch (error) {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
+    }
+}
