@@ -28,7 +28,8 @@
                 "bierner.emojisense",
                 "eamodio.gitlens",
                 "Vue.volar",
-                "cweijan.vscode-postgresql-client2"
+                "cweijan.vscode-postgresql-client2",
+                "bruno-api-client.bruno"
             ]
         }
     }
