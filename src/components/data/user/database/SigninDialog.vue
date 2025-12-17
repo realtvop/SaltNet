@@ -24,6 +24,7 @@
                 spellcheck="false"
                 required
                 clearable
+                :disabled="isLoading"
             ></mdui-text-field>
 
             <mdui-text-field
@@ -37,20 +38,27 @@
                 spellcheck="false"
                 toggle-password-visibility
                 required
+                :disabled="isLoading"
+                @keydown.enter="handleLogin"
             ></mdui-text-field>
 
-            <mdui-button fullwidth>登录</mdui-button>
+            <mdui-button full-width @click="handleLogin" :loading="isLoading" :disabled="!canSubmit">
+                登录
+            </mdui-button>
         </div>
     </mdui-dialog>
 </template>
 
 <script setup lang="ts">
-    import { nextTick, ref, watch } from "vue";
+    import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { loginSaltNet } from "./api";
+    import type { SaltNetDatabaseLogin } from "./type";
 
     const props = defineProps<{ modelValue: boolean }>();
     const emit = defineEmits<{
         (event: "update:modelValue", value: boolean): void;
+        (event: "login-success", data: SaltNetDatabaseLogin): void;
     }>();
 
     const dialogRef = ref<any>(null);
@@ -58,6 +66,11 @@
 
     const identifier = ref("");
     const password = ref("");
+    const isLoading = ref(false);
+
+    const canSubmit = computed(() => {
+        return identifier.value.trim().length > 0 && password.value.length > 0 && !isLoading.value;
+    });
 
     watch(
         () => props.modelValue,
@@ -76,6 +89,26 @@
 
     const requestClose = () => {
         emit("update:modelValue", false);
+    };
+
+    const handleLogin = async () => {
+        if (!canSubmit.value) return;
+        
+        isLoading.value = true;
+        
+        try {
+            const result = await loginSaltNet(identifier.value.trim(), password.value);
+            
+            if (result) {
+                emit("login-success", result);
+                // Clear form
+                identifier.value = "";
+                password.value = "";
+                requestClose();
+            }
+        } finally {
+            isLoading.value = false;
+        }
     };
 </script>
 

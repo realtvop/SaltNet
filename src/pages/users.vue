@@ -19,6 +19,7 @@
     import type { UserInfo } from "@/components/data/inGame";
     import UserCard from "@/components/data/user/database/UserCard.vue";
     import type { LXNSAuth } from "@/components/integrations/lxns";
+    import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
 
     const shared = useShared();
 
@@ -39,8 +40,8 @@
     const openAddDialog = () => {
         currentUserToEdit.value = {
             remark: null,
-            divingFish: { name: null, importToken: null },
-            inGame: { name: null, id: null },
+            divingFish: { name: null },
+            inGame: { id: null },
             lxns: { auth: null, name: null, id: null },
             settings: { manuallyUpdate: false },
             data: {
@@ -59,6 +60,14 @@
 
     const openSigninDialog = () => {
         isSigninDialogOpen.value = true;
+    };
+
+    const handleLoginSuccess = (data: SaltNetDatabaseLogin) => {
+        shared.saltNetAccount = data;
+    };
+
+    const handleLogout = () => {
+        shared.saltNetAccount = null;
     };
 
     const openDeleteDialog = (index: number) => {
@@ -158,7 +167,10 @@
                     name: null,
                     id: null,
                 },
-                inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
+                inGame: {
+                    ...(updatedUserData.inGame.name && { name: updatedUserData.inGame.name }),
+                    id: updatedUserData.inGame.id,
+                },
                 settings: { manuallyUpdate: false },
                 data: {
                     updateTime: null,
@@ -248,7 +260,12 @@
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
-        <UserCard @open-signin="openSigninDialog" @open-signup="openSignupDialog" />
+        <UserCard 
+            :logged-in-user="shared.saltNetAccount" 
+            @open-signin="openSigninDialog" 
+            @open-signup="openSignupDialog" 
+            @logout="handleLogout"
+        />
 
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
@@ -397,8 +414,8 @@
         :is-editing-new-user="editingUserIndex === null"
         @save="handleUserSave"
     />
-    <SignupDialog v-model="isSignupDialogOpen" />
-    <SigninDialog v-model="isSigninDialogOpen" />
+    <SignupDialog v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+    <SigninDialog v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

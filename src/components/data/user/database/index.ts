@@ -1,1 +1,2 @@
-export type { SaltNetDatabaseLogin } from "./type.ts";
+export type { SaltNetDatabaseLogin, SaltNetDatabaseUser } from "./type.ts";
+export { loginSaltNet, refreshSaltNetToken, getSaltNetUser, registerSaltNet } from "./api.ts";

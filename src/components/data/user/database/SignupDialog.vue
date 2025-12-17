@@ -24,10 +24,11 @@
                 spellcheck="false"
                 required
                 clearable
+                :disabled="isLoading"
             ></mdui-text-field>
 
             <mdui-text-field
-                label="邮箱"
+                label="邮箱（选填）"
                 type="email"
                 :value="email"
                 @input="email = $event.target.value || ''"
@@ -36,6 +37,7 @@
                 autocorrect="off"
                 spellcheck="false"
                 clearable
+                :disabled="isLoading"
             ></mdui-text-field>
 
             <mdui-text-field
@@ -49,20 +51,28 @@
                 spellcheck="false"
                 toggle-password-visibility
                 required
+                :disabled="isLoading"
+                helper="8-32 个字符，需包含大小写字母和数字"
+                @keydown.enter="handleRegister"
             ></mdui-text-field>
 
-            <mdui-button fullwidth>注册</mdui-button>
+            <mdui-button full-width @click="handleRegister" :loading="isLoading" :disabled="!canSubmit">
+                注册
+            </mdui-button>
         </div>
     </mdui-dialog>
 </template>
 
 <script setup lang="ts">
-    import { nextTick, ref, watch } from "vue";
+    import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { registerSaltNet } from "./api";
+    import type { SaltNetDatabaseLogin } from "./type";
 
     const props = defineProps<{ modelValue: boolean }>();
     const emit = defineEmits<{
         (event: "update:modelValue", value: boolean): void;
+        (event: "register-success", data: SaltNetDatabaseLogin): void;
     }>();
 
     const dialogRef = ref<any>(null);
@@ -71,6 +81,11 @@
     const userName = ref("");
     const password = ref("");
     const email = ref("");
+    const isLoading = ref(false);
+
+    const canSubmit = computed(() => {
+        return userName.value.trim().length >= 2 && password.value.length >= 8 && !isLoading.value;
+    });
 
     watch(
         () => props.modelValue,
@@ -89,6 +104,31 @@
 
     const requestClose = () => {
         emit("update:modelValue", false);
+    };
+
+    const handleRegister = async () => {
+        if (!canSubmit.value) return;
+        
+        isLoading.value = true;
+        
+        try {
+            const result = await registerSaltNet(
+                userName.value.trim(),
+                password.value,
+                email.value.trim() || undefined
+            );
+            
+            if (result) {
+                emit("register-success", result);
+                // Clear form
+                userName.value = "";
+                password.value = "";
+                email.value = "";
+                requestClose();
+            }
+        } finally {
+            isLoading.value = false;
+        }
     };
 </script>
 

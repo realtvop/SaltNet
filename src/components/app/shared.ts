@@ -5,6 +5,7 @@ import localForage from "localforage";
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
+import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -28,6 +29,7 @@ export const useShared = defineStore("shared", () => {
     const isUpdated = ref<boolean>(false);
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
     const isSmallScreen = ref<boolean>(window.innerWidth < 560);
+    const saltNetAccount = ref<SaltNetDatabaseLogin | null>(null);
 
     const handleScreenSizeChange = () => {
         isSmallScreen.value = window.innerWidth < 560;
@@ -60,6 +62,9 @@ export const useShared = defineStore("shared", () => {
     });
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
+    });
+    localForage.getItem<SaltNetDatabaseLogin>("saltNetAccount").then((v: SaltNetDatabaseLogin | null) => {
+        if (v) saltNetAccount.value = v;
     });
 
     watch(
@@ -98,6 +103,21 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
+    watch(
+        saltNetAccount,
+        (newSaltNetAccount: SaltNetDatabaseLogin | null) => {
+            if (newSaltNetAccount) {
+                localForage.setItem("saltNetAccount", toRaw(newSaltNetAccount)).catch((err: any) => {
+                    console.error("Failed to save saltnet account:", err);
+                });
+            } else {
+                localForage.removeItem("saltNetAccount").catch((err: any) => {
+                    console.error("Failed to remove saltnet account:", err);
+                });
+            }
+        },
+        { deep: true }
+    );
 
-    return { users, chartsSort, favorites, isUpdated, isDarkMode, isSmallScreen, nearcadeData };
+    return { users, chartsSort, favorites, isUpdated, isDarkMode, isSmallScreen, nearcadeData, saltNetAccount };
 });
