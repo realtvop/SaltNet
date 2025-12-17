@@ -15,7 +15,7 @@ const API_HOST = process.env.API_HOST || "http://localhost:3000/";
 // Extract email address from "Name <email>" format
 function parseFromEmail(from: string): { name: string; email: string } {
     const match = from.match(/^(.+?)\s*<(.+?)>$/);
-    if (match) {
+    if (match && match[1] && match[2]) {
         return { name: match[1].trim(), email: match[2].trim() };
     }
     return { name: EMAIL_FROM_NAME, email: from };

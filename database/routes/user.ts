@@ -15,7 +15,15 @@ import {
     deleteEmailChangeToken,
 } from "../services/redis";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+// Type definitions for Elysia context
+type ElysiaSet = {
+    status?: number;
+    headers: Record<string, string>;
+};
+
+type ElysiaHeaders = Record<string, string | undefined>;
+
+const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
 // Password validation: 8-32 chars, uppercase, lowercase, digit
@@ -85,7 +93,7 @@ export function user(app: Elysia | any) {
         // 用户注册
         .post(
             "/register",
-            async ({ body, set }) => {
+            async ({ body, set }: { body: { userName: string; email?: string; password: string }; set: ElysiaSet }) => {
                 const { userName, email, password } = body;
 
                 // 验证密码复杂度
@@ -185,7 +193,7 @@ export function user(app: Elysia | any) {
         // 用户登录
         .post(
             "/login",
-            async ({ body, set, headers }) => {
+            async ({ body, set, headers }: { body: { identifier: string; password: string }; set: ElysiaSet; headers: ElysiaHeaders }) => {
                 const { identifier, password } = body;
 
                 // 查询用户（支持用户名或邮箱登录）
@@ -255,7 +263,7 @@ export function user(app: Elysia | any) {
             }
         )
         // 获取当前用户信息
-        .get("/", async ({ headers, set }) => {
+        .get("/", async ({ headers, set }: { headers: ElysiaHeaders; set: ElysiaSet }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
@@ -264,7 +272,7 @@ export function user(app: Elysia | any) {
             return { user };
         })
         // 用户登出（仅移除当前 session）
-        .post("/logout", async ({ headers, set }) => {
+        .post("/logout", async ({ headers, set }: { headers: ElysiaHeaders; set: ElysiaSet }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
@@ -285,7 +293,7 @@ export function user(app: Elysia | any) {
             return { message: "Logout successful" };
         })
         // 刷新 sessionToken
-        .post("/refresh", async ({ body, set }) => {
+        .post("/refresh", async ({ body, set }: { body: { refreshToken: string }; set: ElysiaSet }) => {
             const { refreshToken } = body;
 
             try {
@@ -344,7 +352,7 @@ export function user(app: Elysia | any) {
             }),
         })
         // 验证邮箱
-        .get("/verify-email", async ({ query, set }) => {
+        .get("/verify-email", async ({ query, set }: { query: { token: string }; set: ElysiaSet }) => {
             const { token } = query;
 
             const userId = await getEmailVerificationUserId(token);
@@ -366,7 +374,7 @@ export function user(app: Elysia | any) {
             query: t.Object({ token: t.String() }),
         })
         // 重发验证邮件
-        .post("/resend-verification", async ({ body, set }) => {
+        .post("/resend-verification", async ({ body, set }: { body: { email: string }; set: ElysiaSet }) => {
             const { email } = body;
 
             const [user] = await db
@@ -394,7 +402,7 @@ export function user(app: Elysia | any) {
             body: t.Object({ email: t.String({ format: "email" }) }),
         })
         // 忘记密码 - 发送重置邮件
-        .post("/forgot-password", async ({ body }) => {
+        .post("/forgot-password", async ({ body }: { body: { email: string } }) => {
             const { email } = body;
 
             const [user] = await db
@@ -414,7 +422,7 @@ export function user(app: Elysia | any) {
             body: t.Object({ email: t.String({ format: "email" }) }),
         })
         // 重置密码页面
-        .get("/reset-password", async ({ query, set }) => {
+        .get("/reset-password", async ({ query, set }: { query: { token: string }; set: ElysiaSet }) => {
             const { token } = query;
 
             const userId = await getPasswordResetUserId(token);
@@ -442,7 +450,7 @@ export function user(app: Elysia | any) {
             query: t.Object({ token: t.String() }),
         })
         // 处理密码重置
-        .post("/reset-password", async ({ body, set }) => {
+        .post("/reset-password", async ({ body, set }: { body: { token: string; password: string }; set: ElysiaSet }) => {
             const { token, password } = body;
 
             // 验证密码复杂度
@@ -475,7 +483,7 @@ export function user(app: Elysia | any) {
             }),
         })
         // 修改密码（需要登录）
-        .post("/change-password", async ({ body, headers, set }) => {
+        .post("/change-password", async ({ body, headers, set }: { body: { currentPassword: string; newPassword: string }; headers: ElysiaHeaders; set: ElysiaSet }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
@@ -523,7 +531,7 @@ export function user(app: Elysia | any) {
             }),
         })
         // 修改邮箱（需要登录）
-        .post("/change-email", async ({ body, headers, set }) => {
+        .post("/change-email", async ({ body, headers, set }: { body: { newEmail: string; password: string }; headers: ElysiaHeaders; set: ElysiaSet }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
@@ -574,7 +582,7 @@ export function user(app: Elysia | any) {
             }),
         })
         // 验证新邮箱
-        .get("/verify-email-change", async ({ query, set }) => {
+        .get("/verify-email-change", async ({ query, set }: { query: { token: string }; set: ElysiaSet }) => {
             const { token } = query;
 
             const data = await getEmailChangeData(token);
@@ -609,7 +617,7 @@ export function user(app: Elysia | any) {
             query: t.Object({ token: t.String() }),
         })
         // 绑定邮箱（针对无邮箱用户）
-        .post("/bind-email", async ({ body, headers, set }) => {
+        .post("/bind-email", async ({ body, headers, set }: { body: { email: string }; headers: ElysiaHeaders; set: ElysiaSet }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
