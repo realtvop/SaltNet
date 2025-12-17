@@ -17,10 +17,21 @@ export const users = pgTable("users", {
     maimaidxRating: smallint("maimaidx_rating").default(-1),
 });
 export interface UserLoginSession {
+    application: number | null;
     userAgent: string;
     ipAddress: string;
     lastActive: number; // timestamp
+    sessionToken: string; // vaild for 7d
+    refreshToken: string; // vaild for 30d
 }
+
+export const applications = pgTable("applications", {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    owner: integer("owner").references(() => users.id).notNull(),
+    clientSecret: text("client_secret").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const maimaidxVersions = pgTable("maimaidx_versions", {
     id: integer("id").primaryKey(),

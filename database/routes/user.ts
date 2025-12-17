@@ -5,7 +5,7 @@ import * as jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "saltnet-secret-key";
 
-// 验证 JWT 并返回用户
+// 验证 sessionToken 并返回用户
 const verifyAuth = async (authorization: string | undefined) => {
     if (!authorization || !authorization.startsWith("Bearer ")) {
         return null;
@@ -13,20 +13,38 @@ const verifyAuth = async (authorization: string | undefined) => {
 
     const token = authorization.slice(7);
     try {
-        const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+        const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string; type?: string };
+
+        // 验证是否为 session token
+        if (payload.type !== "session") {
+            return null;
+        }
+
         const [user] = await db
-            .select({
-                id: schema.users.id,
-                userName: schema.users.userName,
-                email: schema.users.email,
-                createdAt: schema.users.createdAt,
-                maimaidxRegion: schema.users.maimaidxRegion,
-                maimaidxRating: schema.users.maimaidxRating,
-            })
+            .select()
             .from(schema.users)
             .where(eq(schema.users.id, payload.userId));
 
-        return user || null;
+        if (!user) {
+            return null;
+        }
+
+        // 验证 sessionToken 是否存在于用户的 sessions 中
+        const sessions = (user.sessions as schema.UserLoginSession[]) || [];
+        const sessionExists = sessions.some(s => s.sessionToken === token);
+        if (!sessionExists) {
+            return null;
+        }
+
+        return {
+            id: user.id,
+            userName: user.userName,
+            email: user.email,
+            createdAt: user.createdAt,
+            maimaidxRegion: user.maimaidxRegion,
+            maimaidxRating: user.maimaidxRating,
+            currentSessionToken: token,
+        };
     } catch {
         return null;
     }
@@ -48,7 +66,7 @@ export function user(app: Elysia) {
 
                 if (existingUser.length > 0) {
                     set.status = 400;
-                    return { error: "用户名或邮箱已存在" };
+                    return { error: "Username or email already exists" };
                 }
 
                 // 使用 Bun 内置的密码哈希
@@ -69,7 +87,7 @@ export function user(app: Elysia) {
                         createdAt: schema.users.createdAt,
                     });
 
-                return { message: "注册成功", user: newUser };
+                return { message: "Registration successful", user: newUser };
             },
             {
                 body: t.Object({
@@ -93,35 +111,47 @@ export function user(app: Elysia) {
 
                 if (!user) {
                     set.status = 401;
-                    return { error: "用户名或密码错误" };
+                    return { error: "Invalid username or password" };
                 }
 
                 // 验证密码
                 const isValid = await Bun.password.verify(password, user.password);
                 if (!isValid) {
                     set.status = 401;
-                    return { error: "用户名或密码错误" };
+                    return { error: "Invalid username or password" };
                 }
 
-                // 生成 JWT
-                const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
-                    expiresIn: "7d",
-                });
+
+                // 生成 sessionToken 和 refreshToken
+                const sessionToken = jwt.sign(
+                    { userId: user.id, email: user.email, type: "session" },
+                    JWT_SECRET,
+                    { expiresIn: "7d" }
+                );
+                const refreshToken = jwt.sign(
+                    { userId: user.id, email: user.email, type: "refresh" },
+                    JWT_SECRET,
+                    { expiresIn: "30d" }
+                );
 
                 // 更新会话信息
-                const sessions = (user.sessions as any[]) || [];
-                const newSession = {
+                const sessions = (user.sessions as schema.UserLoginSession[]) || [];
+                const newSession: schema.UserLoginSession = {
+                    application: null, // null 表示官方网站登录
                     userAgent: headers["user-agent"] || "unknown",
                     ipAddress: headers["x-forwarded-for"] || headers["x-real-ip"] || "unknown",
                     lastActive: Date.now(),
+                    sessionToken,
+                    refreshToken,
                 };
                 sessions.push(newSession);
 
                 await db.update(schema.users).set({ sessions }).where(eq(schema.users.id, user.id));
 
                 return {
-                    message: "登录成功",
-                    token,
+                    message: "Login successful",
+                    sessionToken,
+                    refreshToken,
                     user: {
                         id: user.id,
                         userName: user.userName,
@@ -144,21 +174,88 @@ export function user(app: Elysia) {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
-                return { error: "未认证或令牌无效" };
+                return { error: "Not authenticated or invalid token" };
             }
             return { user };
         })
-        // 用户登出
+        // 用户登出（仅移除当前 session）
         .post("/logout", async ({ headers, set }) => {
             const user = await verifyAuth(headers["authorization"]);
             if (!user) {
                 set.status = 401;
-                return { error: "未认证或令牌无效" };
+                return { error: "Not authenticated or invalid token" };
             }
 
-            // 清空会话列表
-            await db.update(schema.users).set({ sessions: [] }).where(eq(schema.users.id, user.id));
+            // 获取当前用户的所有 sessions 并移除当前 sessionToken
+            const [dbUser] = await db
+                .select({ sessions: schema.users.sessions })
+                .from(schema.users)
+                .where(eq(schema.users.id, user.id));
 
-            return { message: "登出成功" };
+            const sessions = (dbUser?.sessions as schema.UserLoginSession[]) || [];
+            const updatedSessions = sessions.filter(s => s.sessionToken !== user.currentSessionToken);
+
+            await db.update(schema.users).set({ sessions: updatedSessions }).where(eq(schema.users.id, user.id));
+
+            return { message: "Logout successful" };
+        })
+        // 刷新 sessionToken
+        .post("/refresh", async ({ body, set }) => {
+            const { refreshToken } = body;
+
+            try {
+                const payload = jwt.verify(refreshToken, JWT_SECRET) as { userId: number; email: string; type?: string };
+
+                if (payload.type !== "refresh") {
+                    set.status = 401;
+                    return { error: "Invalid refresh token" };
+                }
+
+                const [user] = await db
+                    .select()
+                    .from(schema.users)
+                    .where(eq(schema.users.id, payload.userId));
+
+                if (!user) {
+                    set.status = 401;
+                    return { error: "User does not exist" };
+                }
+
+                // 验证 refreshToken 是否存在于用户的 sessions 中
+                const sessions = (user.sessions as schema.UserLoginSession[]) || [];
+                const sessionIndex = sessions.findIndex(s => s.refreshToken === refreshToken);
+                if (sessionIndex === -1) {
+                    set.status = 401;
+                    return { error: "Invalid or expired refresh token" };
+                }
+
+                // 生成新的 sessionToken
+                const newSessionToken = jwt.sign(
+                    { userId: user.id, email: user.email, type: "session" },
+                    JWT_SECRET,
+                    { expiresIn: "7d" }
+                );
+
+                // 更新 session 中的 sessionToken 和 lastActive
+                const currentSession = sessions[sessionIndex];
+                if (currentSession) {
+                    currentSession.sessionToken = newSessionToken;
+                    currentSession.lastActive = Date.now();
+                }
+
+                await db.update(schema.users).set({ sessions }).where(eq(schema.users.id, user.id));
+
+                return {
+                    message: "Refresh successful",
+                    sessionToken: newSessionToken,
+                };
+            } catch {
+                set.status = 401;
+                return { error: "Invalid or expired refresh token" };
+            }
+        }, {
+            body: t.Object({
+                refreshToken: t.String(),
+            }),
         });
 }
