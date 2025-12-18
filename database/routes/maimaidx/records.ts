@@ -147,12 +147,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                        | "basic"
-                        | "advanced"
-                        | "expert"
-                        | "master"
-                        | "remaster"
-                        | "utage"
+                            | "basic"
+                            | "advanced"
+                            | "expert"
+                            | "master"
+                            | "remaster"
+                            | "utage"
                     )
                 ),
             });
@@ -211,6 +211,7 @@ export async function uploadRecords({
             results.errors.push(
                 `Error processing ${score.title}: ${error instanceof Error ? error.message : "Unknown error"}`
             );
+            console.log(error, score);
         }
     }
 
