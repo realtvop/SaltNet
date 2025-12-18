@@ -276,6 +276,37 @@ export async function getSaltNetRecords(
     }
 }
 
+// B50 API Response Types
+export interface SaltNetB50Response {
+    past: SaltNetScoreResponse[]; // Top 35 scores from older versions
+    new: SaltNetScoreResponse[];  // Top 15 scores from current version
+}
+
+/**
+ * Get user B50 data from SaltNet database
+ */
+export async function getSaltNetB50(
+    sessionToken: string
+): Promise<SaltNetB50Response | null> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records/b50`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${sessionToken}`,
+            },
+        });
+
+        if (!resp.ok) {
+            return null;
+        }
+
+        const data = (await resp.json()) as SaltNetB50Response;
+        return data;
+    } catch {
+        return null;
+    }
+}
+
 /**
  * Upload scores to SaltNet database
  */

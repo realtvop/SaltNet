@@ -1,8 +1,16 @@
-import { getUserDisplayName, type User } from "@/components/data/user/type";
+import { getUserDisplayName, type User, convertDetailed } from "@/components/data/user/type";
 import { snackbar, alert } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { toHalfWidth } from "@/utils";
+import {
+    getSaltNetB50,
+    getSaltNetRecords,
+    type SaltNetScoreResponse,
+} from "@/components/data/user/database";
+import type { DivingFishFullRecord, DivingFishB50 } from "@/components/integrations/diving-fish/type";
+import type { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
+import { getRankRateByAchievement } from "@/components/data/maiTypes";
 // @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
@@ -62,6 +70,18 @@ export function updateUserWithWorker(user: User, updateItem: boolean = false) {
         return;
     }
 
+    // SaltNet-only user: user has saltnetDB but no other data sources
+    const hasOnlySaltNet =
+        user.saltnetDB?.sessionToken &&
+        !user.inGame?.id &&
+        !user.divingFish?.name &&
+        !user.lxns?.auth?.accessToken;
+
+    if (hasOnlySaltNet) {
+        downloadFromSaltNet(user);
+        return;
+    }
+
     const plainUser: User = JSON.parse(JSON.stringify(user));
 
     pendingUsers[user.uid] = user;
@@ -101,6 +121,122 @@ async function updateFromLXNS(user: User) {
         const errorMsg = e?.toString?.() || "Unknown error";
         snackbar({
             message: `从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
+            placement: "bottom",
+            autoCloseDelay: 3000,
+            action: "复制错误",
+            onActionClick: () => navigator.clipboard.writeText(errorMsg),
+        });
+    }
+}
+
+/**
+ * Convert SaltNet difficulty string to level_index
+ */
+function difficultyToLevelIndex(difficulty: string): number {
+    const difficulties: Record<string, number> = {
+        basic: 0,
+        advanced: 1,
+        expert: 2,
+        master: 3,
+        remaster: 4,
+    };
+    return difficulties[difficulty.toLowerCase()] ?? 3;
+}
+
+/**
+ * Convert SaltNet score to DivingFishFullRecord format
+ */
+function saltNetToDivingFish(record: SaltNetScoreResponse): DivingFishFullRecord {
+    // For song_id: when type is dx, add 10000 to the base id
+    const song_id = record.id + (record.type === "dx" ? 10000 : 0);
+    const level_index = difficultyToLevelIndex(record.difficulty);
+
+    return {
+        song_id,
+        level_index,
+        level: record.level,
+        level_label: record.difficulty,
+        type: record.type === "dx" ? "DX" : "SD",
+        dxScore: record.dxScore,
+        ds: record.internalLevel,
+        fc: (record.comboStat || "") as ComboStatus,
+        fs: (record.syncStat || "") as SyncStatus,
+        achievements: record.achievements,
+        ra: record.rating,
+        rate: getRankRateByAchievement(record.achievements),
+        title: record.title,
+        play_count: record.playCount ?? undefined,
+    };
+}
+
+/**
+ * Download scores from SaltNet database
+ */
+async function downloadFromSaltNet(user: User) {
+    if (!user.saltnetDB?.sessionToken) {
+        snackbar({
+            message: "请先登录 SaltNet 账户",
+            placement: "bottom",
+            autoCloseDelay: 3000,
+        });
+        return;
+    }
+
+    snackbar({
+        message: `正在从 SaltNet 获取用户信息：${getUserDisplayName(user)}`,
+        placement: "bottom",
+        autoCloseDelay: 1500,
+    });
+
+    try {
+        // Fetch B50 and all records in parallel
+        const [b50Data, allRecords] = await Promise.all([
+            getSaltNetB50(user.saltnetDB.sessionToken),
+            getSaltNetRecords(user.saltnetDB.sessionToken),
+        ]);
+
+        if (!b50Data || !allRecords) {
+            snackbar({
+                message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败`,
+                placement: "bottom",
+                autoCloseDelay: 3000,
+            });
+            return;
+        }
+
+        // Convert all records to DivingFish format
+        const dfRecords = allRecords.map(saltNetToDivingFish);
+
+        // Convert B50 to DivingFish format
+        const b50: DivingFishB50 = {
+            sd: b50Data.past.map(saltNetToDivingFish),
+            dx: b50Data.new.map(saltNetToDivingFish),
+        };
+
+        // Calculate total rating from B50
+        const totalRating =
+            b50.sd.reduce((sum, r) => sum + r.ra, 0) +
+            b50.dx.reduce((sum, r) => sum + r.ra, 0);
+
+        // Update user data
+        user.data = {
+            ...user.data,
+            rating: totalRating,
+            name: user.saltnetDB.username,
+            b50,
+            detailed: convertDetailed(dfRecords),
+            updateTime: Date.now(),
+        };
+
+        snackbar({
+            message: `从 SaltNet 获取用户信息成功：${getUserDisplayName(user)}`,
+            placement: "bottom",
+            autoCloseDelay: 1500,
+        });
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        snackbar({
+            message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
             placement: "bottom",
             autoCloseDelay: 3000,
             action: "复制错误",
