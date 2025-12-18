@@ -28,7 +28,14 @@
         { path: "/me", component: MePage },
     ];
 
-    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade", "/about", "/me"];
+    const routesNeedAddHistory = [
+        "/settings",
+        "/b50/:id",
+        "/songs/:id",
+        "/nearcade",
+        "/about",
+        "/me",
+    ];
     const routesNeedFixedPage = ["/", "/about"];
 
     const router = createRouter({

@@ -9,7 +9,10 @@ import {
     getSaltNetUser,
     type SaltNetScoreResponse,
 } from "@/components/data/user/database";
-import type { DivingFishFullRecord, DivingFishB50 } from "@/components/integrations/diving-fish/type";
+import type {
+    DivingFishFullRecord,
+    DivingFishB50,
+} from "@/components/integrations/diving-fish/type";
 import type { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
 import { getRankRateByAchievement } from "@/components/data/maiTypes";
 // @ts-ignore
@@ -226,8 +229,7 @@ async function downloadFromSaltNet(user: User) {
 
         // Calculate total rating from B50
         const totalRating =
-            b50.sd.reduce((sum, r) => sum + r.ra, 0) +
-            b50.dx.reduce((sum, r) => sum + r.ra, 0);
+            b50.sd.reduce((sum, r) => sum + r.ra, 0) + b50.dx.reduce((sum, r) => sum + r.ra, 0);
 
         // Update user data
         user.data = {

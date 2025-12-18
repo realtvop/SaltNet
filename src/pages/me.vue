@@ -140,10 +140,7 @@
                     <mdui-icon slot="end-icon" name="chevron_right"></mdui-icon>
                 </mdui-list-item>
 
-                <mdui-list-item
-                    @click="openPasswordDialog"
-                    :disabled="!hasEmail"
-                >
+                <mdui-list-item @click="openPasswordDialog" :disabled="!hasEmail">
                     <mdui-icon slot="icon" name="lock"></mdui-icon>
                     修改密码
                     <span v-if="!hasEmail" class="hint-text">（需先绑定邮箱）</span>
@@ -173,16 +170,17 @@
         </mdui-card>
 
         <div class="logout-container">
-            <mdui-button variant="outlined" @click="handleLogout" full-width>
-                退出登录
-            </mdui-button>
+            <mdui-button variant="outlined" @click="handleLogout" full-width>退出登录</mdui-button>
         </div>
 
         <!-- Email Dialog -->
         <mdui-dialog
             :open="isEmailDialogOpen"
             @open="markDialogOpen"
-            @closed="isEmailDialogOpen = false; markDialogClosed($event)"
+            @closed="
+                isEmailDialogOpen = false;
+                markDialogClosed($event);
+            "
             close-on-overlay-click
             close-on-esc
         >
@@ -211,7 +209,10 @@
         <mdui-dialog
             :open="isPasswordDialogOpen"
             @open="markDialogOpen"
-            @closed="isPasswordDialogOpen = false; markDialogClosed($event)"
+            @closed="
+                isPasswordDialogOpen = false;
+                markDialogClosed($event);
+            "
             close-on-overlay-click
             close-on-esc
         >
@@ -234,7 +235,11 @@
                     type="password"
                     toggle-password
                     v-model="passwordForm.confirmPassword"
-                    :helper="passwordForm.newPassword !== passwordForm.confirmPassword ? '密码不匹配' : ''"
+                    :helper="
+                        passwordForm.newPassword !== passwordForm.confirmPassword
+                            ? '密码不匹配'
+                            : ''
+                    "
                 ></mdui-text-field>
             </div>
             <mdui-button slot="action" variant="text" @click="isPasswordDialogOpen = false">

@@ -35,10 +35,8 @@
                 <div class="user-info">
                     <mdui-icon name="account_circle"></mdui-icon>
                     <div class="user-details">
+                        <span class="email" ]>欢迎回来，</span>
                         <span class="username">{{ props.loggedInUser.username }}</span>
-                        <span class="email" v-if="props.loggedInUser.email">
-                            {{ props.loggedInUser.email }}
-                        </span>
                     </div>
                 </div>
                 <mdui-button variant="text" @click="goToMe">账户设置</mdui-button>
@@ -67,6 +65,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 5px 0;
+        width: 100%;
     }
 
     .user-info {
