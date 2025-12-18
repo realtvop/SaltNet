@@ -1,0 +1,120 @@
+meta {
+  name: Get B50
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v0/maimaidx/records/b50
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+docs {
+  # Get B50
+  
+  Get the B50 data (Best 50) for the currently authenticated user.
+  
+  B50 is composed of:
+  - **Past (旧曲)**: Top 35 scores from older game versions
+  - **New (新曲)**: Top 15 scores from the current game version
+  
+  The current version is determined based on the user's configured region (jp, ex, cn).
+  
+  ## Authentication
+  
+  This endpoint supports two authentication methods:
+  
+  | Method | Header | Description |
+  |--------|--------|-------------|
+  | Session Token | `Authorization: Bearer <jwt>` | Full user permissions |
+  | PAT | `Authorization: Bearer <pat>` | Data read/write only |
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} or Bearer {pat} |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "past": [
+      {
+        "id": 1,
+        "title": "FREEDOM DiVE",
+        "type": "dx",
+        "difficulty": "master",
+        "level": "14+",
+        "internalLevel": 14.8,
+        "achievements": 101.0000,
+        "dxScore": 3200,
+        "comboStat": "ap",
+        "syncStat": "fsdx",
+        "playCount": 50,
+        "rating": 330
+      }
+    ],
+    "new": [
+      {
+        "id": 2,
+        "title": "New Song Title",
+        "type": "std",
+        "difficulty": "expert",
+        "level": "13",
+        "internalLevel": 13.2,
+        "achievements": 100.5000,
+        "dxScore": 2800,
+        "comboStat": "fc",
+        "syncStat": "fs",
+        "playCount": 10,
+        "rating": 290
+      }
+    ]
+  }
+  ```
+  
+  ### Response Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | past | ScoreResponse[] | Top 35 scores from older versions |
+  | new | ScoreResponse[] | Top 15 scores from current version |
+  
+  #### ScoreResponse Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | id | number | Score record ID |
+  | title | string | Music title |
+  | type | string | Chart type (std, dx, utage) |
+  | difficulty | string | Difficulty level |
+  | level | string | Display level |
+  | internalLevel | number | Internal level value |
+  | achievements | number | Achievement rate (0-101.0000) |
+  | dxScore | number | DX score |
+  | comboStat | string | Combo status ("", fc, fcp, ap, app) |
+  | syncStat | string | Sync status ("", sync, fs, fsp, fsdx, fsdxp) |
+  | playCount | number \| null | Play count |
+  | rating | number | Rating value calculated from achievements and internal level |
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ### Error (500)
+  ```json
+  {
+    "error": "No version data found for your region"
+  }
+  ```
+}

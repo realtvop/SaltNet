@@ -1,5 +1,5 @@
 import { db, schema } from "../../db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { verifyUserAuth } from "../../services/auth";
 import { calculateRating } from "./utils/rating";
 
@@ -182,5 +182,97 @@ export async function uploadRecords({
         success: results.success,
         failed: results.failed,
         errors: results.errors.length > 0 ? results.errors : undefined,
+    };
+}
+
+/**
+ * B50 Response structure
+ */
+interface B50Response {
+    past: ScoreResponse[];
+    new: ScoreResponse[];
+}
+
+/**
+ * GET /records/b50 - 获取当前用户的 B50 数据
+ * B50 = 35首旧版本最佳成绩 + 15首当前版本最佳成绩
+ */
+export async function getB50({
+    headers,
+    set,
+}: {
+    headers: ElysiaHeaders;
+    set: ElysiaSet;
+}): Promise<B50Response | { error: string }> {
+    const authResult = await verifyUserAuth(headers["authorization"]);
+    if (!authResult) {
+        set.status = 401;
+        return { error: "Not authenticated or invalid token" };
+    }
+
+    const user = authResult.user;
+    const userRegion = user.maimaidxRegion ?? "ex";
+
+    // Get the latest version for the user's region
+    const latestVersion = await db.query.maimaidxVersions.findFirst({
+        where: eq(schema.maimaidxVersions.region, userRegion),
+        orderBy: [desc(schema.maimaidxVersions.releaseDate)],
+    });
+
+    if (!latestVersion) {
+        set.status = 500;
+        return { error: "No version data found for your region" };
+    }
+
+    const latestVersionId = latestVersion.id;
+
+    // Query user scores with chart and music information
+    const scores = await db.query.maimaidxScores.findMany({
+        where: eq(schema.maimaidxScores.user, user.id),
+        with: {
+            chart: {
+                with: {
+                    music: true,
+                },
+            },
+        },
+    });
+
+    // Transform to response format and separate into past/new
+    const pastScores: ScoreResponse[] = [];
+    const newScores: ScoreResponse[] = [];
+
+    for (const score of scores) {
+        const scoreResponse: ScoreResponse = {
+            id: score.id,
+            title: score.chart.music.title,
+            type: score.chart.type,
+            difficulty: score.chart.difficulty,
+            level: score.chart.level,
+            internalLevel: parseFloat(score.chart.internalLevel),
+            achievements: score.achievements ? parseFloat(score.achievements) : 0,
+            dxScore: score.deluxeScore,
+            comboStat: score.comboStat,
+            syncStat: score.syncStat,
+            playCount: score.playCount,
+            rating: score.rating,
+        };
+
+        // Check if this chart is from the latest version
+        // A chart is "new" if its versions array contains the latest version ID
+        if (score.chart.versions.includes(latestVersionId)) {
+            newScores.push(scoreResponse);
+        } else {
+            pastScores.push(scoreResponse);
+        }
+    }
+
+    // Sort by rating descending and take top 35 past + top 15 new
+    pastScores.sort((a, b) => b.rating - a.rating);
+    newScores.sort((a, b) => b.rating - a.rating);
+
+    return {
+        past: pastScores.slice(0, 35),
+        new: newScores.slice(0, 15),
     };
 }
