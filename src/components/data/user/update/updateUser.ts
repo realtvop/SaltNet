@@ -326,7 +326,7 @@ export async function uploadScoresToSaltNet(user: User) {
         achievements: record.achievements,
         dxScore: record.dxScore,
         comboStat: record.fc || "",
-        syncStat: record.fs || "",
+        syncStat: (record.fs || "").replace("fsd", "fsdx"),
         playCount: record.play_count ?? null,
     }));
 
