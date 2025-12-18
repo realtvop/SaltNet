@@ -74,18 +74,14 @@ export const maimaidxMusicCategoryEnum = pgEnum("maimaidx_music_category", maima
 export const maimaidxMusics = pgTable("maimaidx_musics", {
     id: integer("id"),
     title: text("title").notNull().primaryKey(),
-    versions: integer("versions")
-        .references(() => maimaidxVersions.id)
-        .array()
-        .notNull(),
     artist: text("artist").notNull(),
     category: maimaidxMusicCategoryEnum("category").notNull(),
-    bpm: integer("bpm").notNull(),
-    releaseDate: timestamp("release_date").notNull(),
+    bpm: integer("bpm"),
+    releaseDate: timestamp("release_date"),
 });
 
 // MARK: maimai DX Charts
-export const maimaidxChartTypes = ["std", "dx"] as const;
+export const maimaidxChartTypes = ["std", "dx", "utage"] as const;
 export const maimaidxChartTypeEnum = pgEnum("maimaidx_chart_type", maimaidxChartTypes);
 export const maimaidxChartDifficultyEnum = pgEnum("maimaidx_chart_difficulty", [
     "basic",
@@ -100,16 +96,20 @@ export const maimaidxCharts = pgTable("maimaidx_charts", {
     music: text("music")
         .references(() => maimaidxMusics.title)
         .notNull(),
+    versions: integer("versions")
+        .references(() => maimaidxVersions.id)
+        .array()
+        .notNull(),
     type: maimaidxChartTypeEnum("type").notNull(),
     difficulty: maimaidxChartDifficultyEnum("difficulty").notNull(),
     level: text("level").notNull(),
     internalLevel: numeric("internal_level", { precision: 3, scale: 1 }).notNull(),
-    charter: text("charter").notNull(),
-    tapNotes: smallint("tap_notes").notNull(),
-    holdNotes: smallint("hold_notes").notNull(),
-    slideNotes: smallint("slide_notes").notNull(),
-    touchNotes: smallint("touch_notes").notNull(),
-    breakNotes: smallint("break_notes").notNull(),
+    charter: text("charter"),
+    tapNotes: smallint("tap_notes"),
+    holdNotes: smallint("hold_notes"),
+    slideNotes: smallint("slide_notes"),
+    touchNotes: smallint("touch_notes"),
+    breakNotes: smallint("break_notes"),
 });
 
 // MARK: maimai DX Scores
@@ -180,7 +180,7 @@ export const maimaidxUserCollections = pgTable("maimaidx_user_collections", {
 // MARK: maimai DX Music Aliases
 export const languages = ["en", "ja", "zh"] as const;
 export const languageEnum = pgEnum("language", languages);
-export const musicAliases = pgTable("music_aliases", {
+export const maimaidxMusicAliases = pgTable("maimaidx_music_aliases", {
     id: serial("id").primaryKey(),
     music: text("music")
         .references(() => maimaidxMusics.title)
@@ -209,7 +209,7 @@ export const maimaidxVersionsRelations = relations(maimaidxVersions, ({ many }) 
 
 export const maimaidxMusicsRelations = relations(maimaidxMusics, ({ many }) => ({
     charts: many(maimaidxCharts),
-    aliases: many(musicAliases),
+    aliases: many(maimaidxMusicAliases),
 }));
 
 export const maimaidxChartsRelations = relations(maimaidxCharts, ({ one, many }) => ({
@@ -246,9 +246,9 @@ export const maimaidxUserCollectionsRelations = relations(maimaidxUserCollection
     }),
 }));
 
-export const musicAliasesRelations = relations(musicAliases, ({ one }) => ({
+export const maimaidxMusicAliasesRelations = relations(maimaidxMusicAliases, ({ one }) => ({
     music: one(maimaidxMusics, {
-        fields: [musicAliases.music],
+        fields: [maimaidxMusicAliases.music],
         references: [maimaidxMusics.title],
     }),
 }));

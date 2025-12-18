@@ -1,4 +1,4 @@
-import type { AvalibleRegion, MusicDifficultyID } from "./data";
+import type { AvailableRegion, MusicDifficultyID } from "./data";
 
 export interface Music {
     id: number; // < 10000, same for sd and dx
@@ -23,7 +23,7 @@ export interface Chart {
     level: string;
     internalLevel: number;
     version: string | null;
-    regionVersionOverride?: Partial<Record<AvalibleRegion, string | number>>;
+    regionVersionOverride?: Partial<Record<AvailableRegion, string | number>>;
 
     noteDesigner: string;
     noteCounts: {
@@ -35,7 +35,7 @@ export interface Chart {
         total: number;
     };
 
-    avalibleRegions: AvalibleRegion[];
+    availableRegions: AvailableRegion[];
     // isSpecial: boolean;
 }
 

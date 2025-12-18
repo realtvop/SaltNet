@@ -1,7 +1,7 @@
 import type { Music, Version } from "./normal";
 
 export type { Music, Chart, Version } from "./normal";
-export type { AvalibleRegion, MusicDifficultyID } from "./data";
+export type { AvailableRegion, MusicDifficultyID } from "./data";
 
 export { categories } from "./data";
 

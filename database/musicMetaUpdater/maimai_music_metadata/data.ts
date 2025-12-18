@@ -7,7 +7,7 @@ export enum MusicDifficultyID {
     Utage = 10,
 }
 
-export enum AvalibleRegion {
+export enum AvailableRegion {
     Japan = "jp",
     International = "intl",
     China = "cn",
