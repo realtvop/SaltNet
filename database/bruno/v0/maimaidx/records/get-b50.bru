@@ -7,7 +7,11 @@ meta {
 get {
   url: {{baseUrl}}/api/v0/maimaidx/records/b50
   body: none
-  auth: bearer
+  auth: none
+}
+
+params:query {
+  ~user: username
 }
 
 auth:bearer {
@@ -17,28 +21,39 @@ auth:bearer {
 docs {
   # Get B50
   
-  Get the B50 data (Best 50) for the currently authenticated user.
+  Get the B50 data (Best 50) for a user. Supports public querying of other users by username via the `user` query parameter.
   
   B50 is composed of:
   - **Past (旧曲)**: Top 35 scores from older game versions
   - **New (新曲)**: Top 15 scores from the current game version
   
-  The current version is determined based on the user's configured region (jp, ex, cn).
+  The current version is determined based on the target user's configured region (jp, ex, cn).
   
   ## Authentication
   
-  This endpoint supports two authentication methods:
+  | Scenario | Auth Required |
+  |----------|---------------|
+  | Query by `user` param | **No** - Public access |
+  | Query own B50 (no `user` param) | **Yes** - Requires authentication |
+  
+  When authentication is required, this endpoint supports:
   
   | Method | Header | Description |
   |--------|--------|-------------|
   | Session Token | `Authorization: Bearer <jwt>` | Full user permissions |
   | PAT | `Authorization: Bearer <pat>` | Data read/write only |
   
+  ## Query Parameters
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | user | string | No | Username to query. If provided, **no authentication required**. If not provided, requires authentication and returns authenticated user's B50 |
+  
   ## Request Headers
   
   | Field | Type | Required | Description |
   |-------|------|----------|-------------|
-  | Authorization | string | Yes | Bearer {sessionToken} or Bearer {pat} |
+  | Authorization | string | Conditional | Required only when `user` param is not provided |
   
   ## Response
   
@@ -111,10 +126,17 @@ docs {
   }
   ```
   
+  ### Error (404)
+  ```json
+  {
+    "error": "User not found"
+  }
+  ```
+  
   ### Error (500)
   ```json
   {
-    "error": "No version data found for your region"
+    "error": "No version data found for the region"
   }
   ```
 }

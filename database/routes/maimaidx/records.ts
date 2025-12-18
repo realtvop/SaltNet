@@ -31,24 +31,44 @@ interface ScoreResponse extends UserScore {
 }
 
 /**
- * GET /records - 获取当前用户的所有成绩
+ * GET /records - 获取用户的所有成绩
+ * 支持通过 query param `user` 指定查询的用户名
+ * 需要任意有效的 sessionToken 或 PAT 认证
  */
 export async function getRecords({
     headers,
     set,
+    query,
 }: {
     headers: ElysiaHeaders;
     set: ElysiaSet;
+    query: { user?: string };
 }) {
+    // 必须有任意有效的认证
     const authResult = await verifyUserAuth(headers["authorization"]);
     if (!authResult) {
         set.status = 401;
         return { error: "Not authenticated or invalid token" };
     }
 
+    // 确定查询的目标用户
+    let targetUserId = authResult.user.id;
+
+    if (query.user) {
+        // 通过用户名查询指定用户
+        const targetUser = await db.query.users.findFirst({
+            where: eq(schema.users.userName, query.user),
+        });
+        if (!targetUser) {
+            set.status = 404;
+            return { error: "User not found" };
+        }
+        targetUserId = targetUser.id;
+    }
+
     // Query user scores with chart and music information
     const scores = await db.query.maimaidxScores.findMany({
-        where: eq(schema.maimaidxScores.user, authResult.user.id),
+        where: eq(schema.maimaidxScores.user, targetUserId),
         with: {
             chart: {
                 with: {
@@ -194,24 +214,52 @@ interface B50Response {
 }
 
 /**
- * GET /records/b50 - 获取当前用户的 B50 数据
+ * GET /records/b50 - 获取用户的 B50 数据
  * B50 = 35首旧版本最佳成绩 + 15首当前版本最佳成绩
+ * 支持通过 query param `user` 指定查询的用户名，使用该方法无需鉴权
+ * 不指定 user 时需要认证，查询自己的 B50
  */
 export async function getB50({
     headers,
     set,
+    query,
 }: {
     headers: ElysiaHeaders;
     set: ElysiaSet;
+    query: { user?: string };
 }): Promise<B50Response | { error: string }> {
-    const authResult = await verifyUserAuth(headers["authorization"]);
-    if (!authResult) {
-        set.status = 401;
-        return { error: "Not authenticated or invalid token" };
+    let targetUser: {
+        id: number;
+        maimaidxRegion: "jp" | "ex" | "cn" | null;
+    };
+
+    if (query.user) {
+        // 通过用户名查询指定用户的 B50，无需鉴权
+        const foundUser = await db.query.users.findFirst({
+            where: eq(schema.users.userName, query.user),
+        });
+        if (!foundUser) {
+            set.status = 404;
+            return { error: "User not found" };
+        }
+        targetUser = {
+            id: foundUser.id,
+            maimaidxRegion: foundUser.maimaidxRegion,
+        };
+    } else {
+        // 不指定 user 时，需要认证查询自己的 B50
+        const authResult = await verifyUserAuth(headers["authorization"]);
+        if (!authResult) {
+            set.status = 401;
+            return { error: "Not authenticated or invalid token" };
+        }
+        targetUser = {
+            id: authResult.user.id,
+            maimaidxRegion: authResult.user.maimaidxRegion,
+        };
     }
 
-    const user = authResult.user;
-    const userRegion = user.maimaidxRegion ?? "ex";
+    const userRegion = targetUser.maimaidxRegion ?? "ex";
 
     // Get the latest version for the user's region
     const latestVersion = await db.query.maimaidxVersions.findFirst({
@@ -221,14 +269,14 @@ export async function getB50({
 
     if (!latestVersion) {
         set.status = 500;
-        return { error: "No version data found for your region" };
+        return { error: "No version data found for the region" };
     }
 
     const latestVersionId = latestVersion.id;
 
     // Query user scores with chart and music information
     const scores = await db.query.maimaidxScores.findMany({
-        where: eq(schema.maimaidxScores.user, user.id),
+        where: eq(schema.maimaidxScores.user, targetUser.id),
         with: {
             chart: {
                 with: {

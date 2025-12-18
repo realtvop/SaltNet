@@ -10,6 +10,10 @@ get {
   auth: bearer
 }
 
+params:query {
+  ~user: username
+}
+
 auth:bearer {
   token: {{sessionToken}}
 }
@@ -17,9 +21,11 @@ auth:bearer {
 docs {
   # Get Records
   
-  Get all score records for the currently authenticated user.
+  Get all score records for a user. Supports querying other users by username via the `user` query parameter.
   
   ## Authentication
+  
+  **Authentication is required** regardless of whether you're querying your own records or another user's records.
   
   This endpoint supports two authentication methods:
   
@@ -33,6 +39,12 @@ docs {
   | Field | Type | Required | Description |
   |-------|------|----------|-------------|
   | Authorization | string | Yes | Bearer {sessionToken} or Bearer {pat} |
+  
+  ## Query Parameters
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | user | string | No | Username to query. If not provided, returns authenticated user's records |
   
   ## Response
   
@@ -77,6 +89,13 @@ docs {
   ```json
   {
     "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ### Error (404)
+  ```json
+  {
+    "error": "User not found"
   }
   ```
 }
