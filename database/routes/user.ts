@@ -19,6 +19,7 @@ import {
     deleteEmailChangeToken,
 } from "../services/redis";
 import { verifyUserAuth, validatePassword } from "../services/auth";
+import { updateUserB50Rating } from "./maimaidx/utils/rating";
 
 // Type definitions for Elysia context
 type ElysiaSet = {
@@ -766,7 +767,18 @@ export function user(app: Elysia | any) {
                         .set({ maimaidxRegion: region })
                         .where(eq(schema.users.id, user.id));
 
-                    return { message: "Region updated successfully", region };
+                    let rating: number | null = null;
+                    try {
+                        rating = await updateUserB50Rating(user.id, region);
+                    } catch {
+                        rating = null;
+                    }
+
+                    return {
+                        message: "Region updated successfully",
+                        region,
+                        rating: rating ?? null,
+                    };
                 },
                 {
                     body: t.Object({

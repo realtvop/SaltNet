@@ -1,7 +1,7 @@
 import { db, schema } from "../../db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { verifyUserAuth } from "../../services/auth";
-import { calculateRating } from "./utils/rating";
+import { calculateRating, updateUserB50Rating } from "./utils/rating";
 
 // Type definitions for Elysia context
 type ElysiaSet = {
@@ -52,23 +52,33 @@ export async function getRecords({
     }
 
     // 确定查询的目标用户
-    let targetUserId = authResult.user.id;
+    let targetUser = {
+        id: authResult.user.id,
+        userName: authResult.user.userName,
+        maimaidxRegion: authResult.user.maimaidxRegion,
+        maimaidxRating: authResult.user.maimaidxRating,
+    };
 
     if (query.user) {
         // 通过用户名查询指定用户
-        const targetUser = await db.query.users.findFirst({
+        const foundUser = await db.query.users.findFirst({
             where: eq(schema.users.userName, query.user),
         });
-        if (!targetUser) {
+        if (!foundUser) {
             set.status = 404;
             return { error: "User not found" };
         }
-        targetUserId = targetUser.id;
+        targetUser = {
+            id: foundUser.id,
+            userName: foundUser.userName,
+            maimaidxRegion: foundUser.maimaidxRegion,
+            maimaidxRating: foundUser.maimaidxRating,
+        };
     }
 
     // Query user scores with chart and music information
     const scores = await db.query.maimaidxScores.findMany({
-        where: eq(schema.maimaidxScores.user, targetUserId),
+        where: eq(schema.maimaidxScores.user, targetUser.id),
         with: {
             chart: {
                 with: {
@@ -94,7 +104,12 @@ export async function getRecords({
         rating: score.rating,
     }));
 
-    return result;
+    return {
+        userName: targetUser.userName,
+        region: targetUser.maimaidxRegion ?? "ex",
+        rating: targetUser.maimaidxRating ?? -1,
+        records: result,
+    };
 }
 
 /**
@@ -132,12 +147,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                        | "basic"
-                        | "advanced"
-                        | "expert"
-                        | "master"
-                        | "remaster"
-                        | "utage"
+                            | "basic"
+                            | "advanced"
+                            | "expert"
+                            | "master"
+                            | "remaster"
+                            | "utage"
                     )
                 ),
             });
@@ -199,6 +214,14 @@ export async function uploadRecords({
         }
     }
 
+    // 计算并更新用户的总 rating（基于 B50）
+    try {
+        const userRegion = authResult.user.maimaidxRegion ?? "ex";
+        await updateUserB50Rating(userId, userRegion);
+    } catch {
+        // 如果计算总 rating 失败，不影响成绩上传结果
+    }
+
     return {
         message: `Processed ${body.length} scores`,
         success: results.success,
@@ -211,6 +234,9 @@ export async function uploadRecords({
  * B50 Response structure
  */
 interface B50Response {
+    userName: string;
+    region: "jp" | "ex" | "cn";
+    rating: number;
     past: ScoreResponse[];
     new: ScoreResponse[];
 }
@@ -232,7 +258,9 @@ export async function getB50({
 }): Promise<B50Response | { error: string }> {
     let targetUser: {
         id: number;
+        userName: string;
         maimaidxRegion: "jp" | "ex" | "cn" | null;
+        maimaidxRating: number | null;
     };
 
     if (query.user) {
@@ -246,7 +274,9 @@ export async function getB50({
         }
         targetUser = {
             id: foundUser.id,
+            userName: foundUser.userName,
             maimaidxRegion: foundUser.maimaidxRegion,
+            maimaidxRating: foundUser.maimaidxRating,
         };
     } else {
         // 不指定 user 时，需要认证查询自己的 B50
@@ -257,7 +287,9 @@ export async function getB50({
         }
         targetUser = {
             id: authResult.user.id,
+            userName: authResult.user.userName,
             maimaidxRegion: authResult.user.maimaidxRegion,
+            maimaidxRating: authResult.user.maimaidxRating,
         };
     }
 
@@ -320,6 +352,9 @@ export async function getB50({
     newScores.sort((a, b) => b.rating - a.rating);
 
     return {
+        userName: targetUser.userName,
+        region: targetUser.maimaidxRegion ?? "ex",
+        rating: targetUser.maimaidxRating ?? -1,
         past: pastScores.slice(0, 35),
         new: newScores.slice(0, 15),
     };
