@@ -24,7 +24,7 @@ interface UserScore {
 
 // Response structure for fetching scores
 interface ScoreResponse extends UserScore {
-    id: number;
+    id: number | null;
     level: string;
     internalLevel: number;
     rating: number;
@@ -80,7 +80,7 @@ export async function getRecords({
 
     // Transform to response format
     const result: ScoreResponse[] = scores.map(score => ({
-        id: score.id,
+        id: score.chart.music.id,
         title: score.chart.music.title,
         type: score.chart.type,
         difficulty: score.chart.difficulty,
@@ -132,12 +132,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                            | "basic"
-                            | "advanced"
-                            | "expert"
-                            | "master"
-                            | "remaster"
-                            | "utage"
+                        | "basic"
+                        | "advanced"
+                        | "expert"
+                        | "master"
+                        | "remaster"
+                        | "utage"
                     )
                 ),
             });
@@ -294,7 +294,7 @@ export async function getB50({
 
     for (const score of scores) {
         const scoreResponse: ScoreResponse = {
-            id: score.id,
+            id: score.chart.music.id,
             title: score.chart.music.title,
             type: score.chart.type,
             difficulty: score.chart.difficulty,
