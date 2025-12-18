@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
     boolean,
     integer,
@@ -172,3 +173,67 @@ export const musicAliases = pgTable("music_aliases", {
     alias: text("alias").notNull(),
     language: languageEnum("language").notNull(),
 });
+
+// MARK: Relations
+export const usersRelations = relations(users, ({ many }) => ({
+    applications: many(applications),
+    scores: many(maimaidxScores),
+    userCollections: many(maimaidxUserCollections),
+}));
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
+    owner: one(users, {
+        fields: [applications.owner],
+        references: [users.id],
+    }),
+}));
+
+export const maimaidxVersionsRelations = relations(maimaidxVersions, ({ many }) => ({
+    musics: many(maimaidxMusics),
+}));
+
+export const maimaidxMusicsRelations = relations(maimaidxMusics, ({ many }) => ({
+    charts: many(maimaidxCharts),
+    aliases: many(musicAliases),
+}));
+
+export const maimaidxChartsRelations = relations(maimaidxCharts, ({ one, many }) => ({
+    music: one(maimaidxMusics, {
+        fields: [maimaidxCharts.music],
+        references: [maimaidxMusics.title],
+    }),
+    scores: many(maimaidxScores),
+}));
+
+export const maimaidxScoresRelations = relations(maimaidxScores, ({ one }) => ({
+    user: one(users, {
+        fields: [maimaidxScores.user],
+        references: [users.id],
+    }),
+    chart: one(maimaidxCharts, {
+        fields: [maimaidxScores.chart],
+        references: [maimaidxCharts.idx],
+    }),
+}));
+
+export const maimaidxCollectionsRelations = relations(maimaidxCollections, ({ many }) => ({
+    userCollections: many(maimaidxUserCollections),
+}));
+
+export const maimaidxUserCollectionsRelations = relations(maimaidxUserCollections, ({ one }) => ({
+    user: one(users, {
+        fields: [maimaidxUserCollections.user],
+        references: [users.id],
+    }),
+    collection: one(maimaidxCollections, {
+        fields: [maimaidxUserCollections.collection],
+        references: [maimaidxCollections.id],
+    }),
+}));
+
+export const musicAliasesRelations = relations(musicAliases, ({ one }) => ({
+    music: one(maimaidxMusics, {
+        fields: [musicAliases.music],
+        references: [maimaidxMusics.title],
+    }),
+}));

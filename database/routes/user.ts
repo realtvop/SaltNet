@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { eq, or, isNull, and } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, schema } from "../db";
 import * as jwt from "jsonwebtoken";
 import {
