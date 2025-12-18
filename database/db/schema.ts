@@ -125,8 +125,8 @@ export const maimaidxSyncStatsEnum = pgEnum("maimaidx_sync_stats", [
     "sync",
     "fs",
     "fsp",
-    "fsdx",
-    "fsdxp",
+    "fsd",
+    "fsdp",
 ]);
 export const maimaidxScores = pgTable("maimaidx_scores", {
     id: serial("id").primaryKey(),

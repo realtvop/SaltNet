@@ -147,12 +147,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                            | "basic"
-                            | "advanced"
-                            | "expert"
-                            | "master"
-                            | "remaster"
-                            | "utage"
+                        | "basic"
+                        | "advanced"
+                        | "expert"
+                        | "master"
+                        | "remaster"
+                        | "utage"
                     )
                 ),
             });
@@ -186,7 +186,7 @@ export async function uploadRecords({
                         achievements: score.achievements.toFixed(4),
                         deluxeScore: score.dxScore,
                         comboStat: score.comboStat as "" | "fc" | "fcp" | "ap" | "app",
-                        syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsdx" | "fsdxp",
+                        syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsd" | "fsdp",
                         playCount: score.playCount ?? null,
                         rating,
                     })
@@ -199,7 +199,7 @@ export async function uploadRecords({
                     achievements: score.achievements.toFixed(4),
                     deluxeScore: score.dxScore,
                     comboStat: score.comboStat as "" | "fc" | "fcp" | "ap" | "app",
-                    syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsdx" | "fsdxp",
+                    syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsd" | "fsdp",
                     playCount: score.playCount ?? null,
                     rating,
                 });
