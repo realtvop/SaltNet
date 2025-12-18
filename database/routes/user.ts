@@ -18,6 +18,7 @@ import {
     getEmailChangeData,
     deleteEmailChangeToken,
 } from "../services/redis";
+import { verifyUserAuth, validatePassword } from "../services/auth";
 
 // Type definitions for Elysia context
 type ElysiaSet = {
@@ -30,70 +31,16 @@ type ElysiaHeaders = Record<string, string | undefined>;
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 
-// Password validation: 8-32 chars, uppercase, lowercase, digit
-const validatePassword = (password: string): { valid: boolean; error?: string } => {
-    if (password.length < 8 || password.length > 32) {
-        return { valid: false, error: "Password must be 8-32 characters" };
-    }
-    if (!/[A-Z]/.test(password)) {
-        return { valid: false, error: "Password must contain at least one uppercase letter" };
-    }
-    if (!/[a-z]/.test(password)) {
-        return { valid: false, error: "Password must contain at least one lowercase letter" };
-    }
-    if (!/[0-9]/.test(password)) {
-        return { valid: false, error: "Password must contain at least one digit" };
-    }
-    return { valid: true };
-};
-
-// 验证 sessionToken 并返回用户
-const verifyAuth = async (authorization: string | undefined) => {
-    if (!authorization || !authorization.startsWith("Bearer ")) {
+// 包装 verifyUserAuth，仅允许 session 认证（用于账户管理操作）
+const verifySessionAuth = async (authorization: string | undefined) => {
+    const result = await verifyUserAuth(authorization);
+    if (!result || result.authType !== "session") {
         return null;
     }
-
-    const token = authorization.slice(7);
-    try {
-        const payload = jwt.verify(token, JWT_SECRET) as {
-            userId: number;
-            email: string;
-            type?: string;
-        };
-
-        // 验证是否为 session token
-        if (payload.type !== "session") {
-            return null;
-        }
-
-        const [user] = await db
-            .select()
-            .from(schema.users)
-            .where(eq(schema.users.id, payload.userId));
-
-        if (!user) {
-            return null;
-        }
-
-        // 验证 sessionToken 是否存在于用户的 sessions 中
-        const sessions = (user.sessions as schema.UserLoginSession[]) || [];
-        const sessionExists = sessions.some(s => s.sessionToken === token);
-        if (!sessionExists) {
-            return null;
-        }
-
-        return {
-            id: user.id,
-            userName: user.userName,
-            email: user.email,
-            createdAt: user.createdAt,
-            maimaidxRegion: user.maimaidxRegion,
-            maimaidxRating: user.maimaidxRating,
-            currentSessionToken: token,
-        };
-    } catch {
-        return null;
-    }
+    return {
+        ...result.user,
+        currentSessionToken: result.currentSessionToken,
+    };
 };
 
 export function user(app: Elysia | any) {
@@ -297,7 +244,7 @@ export function user(app: Elysia | any) {
             )
             // 获取当前用户信息
             .get("/", async ({ headers, set }: { headers: ElysiaHeaders; set: ElysiaSet }) => {
-                const user = await verifyAuth(headers["authorization"]);
+                const user = await verifySessionAuth(headers["authorization"]);
                 if (!user) {
                     set.status = 401;
                     return { error: "Not authenticated or invalid token" };
@@ -308,7 +255,7 @@ export function user(app: Elysia | any) {
             .post(
                 "/logout",
                 async ({ headers, set }: { headers: ElysiaHeaders; set: ElysiaSet }) => {
-                    const user = await verifyAuth(headers["authorization"]);
+                    const user = await verifySessionAuth(headers["authorization"]);
                     if (!user) {
                         set.status = 401;
                         return { error: "Not authenticated or invalid token" };
@@ -578,7 +525,7 @@ export function user(app: Elysia | any) {
                     headers: ElysiaHeaders;
                     set: ElysiaSet;
                 }) => {
-                    const user = await verifyAuth(headers["authorization"]);
+                    const user = await verifySessionAuth(headers["authorization"]);
                     if (!user) {
                         set.status = 401;
                         return { error: "Not authenticated or invalid token" };
@@ -639,7 +586,7 @@ export function user(app: Elysia | any) {
                     headers: ElysiaHeaders;
                     set: ElysiaSet;
                 }) => {
-                    const user = await verifyAuth(headers["authorization"]);
+                    const user = await verifySessionAuth(headers["authorization"]);
                     if (!user) {
                         set.status = 401;
                         return { error: "Not authenticated or invalid token" };
@@ -745,7 +692,7 @@ export function user(app: Elysia | any) {
                     headers: ElysiaHeaders;
                     set: ElysiaSet;
                 }) => {
-                    const user = await verifyAuth(headers["authorization"]);
+                    const user = await verifySessionAuth(headers["authorization"]);
                     if (!user) {
                         set.status = 401;
                         return { error: "Not authenticated or invalid token" };

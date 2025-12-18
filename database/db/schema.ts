@@ -25,7 +25,7 @@ export const users = pgTable("users", {
     emailVerified: boolean("email_verified").default(false).notNull(),
 
     sessions: jsonb("sessions").default("[]"),
-    pat: text("pat").unique(),
+    pat: text("pat").unique(), // Personal Access Token
 
     // maimai DX
     maimaidxRegion: maimaidxRegionEnum("maimaidx_region").default("ex"),

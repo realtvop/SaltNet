@@ -1,0 +1,103 @@
+meta {
+  name: Upload Records
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v0/maimaidx/records
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+body:json {
+  [
+    {
+      "title": "FREEDOM DiVE",
+      "type": "dx",
+      "difficulty": "master",
+      "achievements": 101.0000,
+      "dxScore": 3200,
+      "comboStat": "ap",
+      "syncStat": "fsdx",
+      "playCount": 50
+    }
+  ]
+}
+
+docs {
+  # Upload Records
+  
+  Batch upload or update score records for the currently authenticated user.
+  
+  ## Authentication
+  
+  This endpoint supports two authentication methods:
+  
+  | Method | Header | Description |
+  |--------|--------|-------------|
+  | Session Token | `Authorization: Bearer <jwt>` | Full user permissions |
+  | PAT | `Authorization: Bearer <pat>` | Data read/write only |
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} or Bearer {pat} |
+  | Content-Type | string | Yes | application/json |
+  
+  ## Request Body
+  
+  An array of score objects:
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | title | string | Yes | Music title (must match existing music) |
+  | type | string | Yes | Chart type (std, dx, utage) |
+  | difficulty | string | Yes | Difficulty (basic, advanced, expert, master, remaster, utage) |
+  | achievements | number | Yes | Achievement rate (0-101.0000) |
+  | dxScore | number | Yes | DX score |
+  | comboStat | string | Yes | Combo status ("", fc, fcp, ap, app) |
+  | syncStat | string | Yes | Sync status ("", sync, fs, fsp, fsdx, fsdxp) |
+  | playCount | number \| null | No | Play count |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Processed 1 scores",
+    "success": 1,
+    "failed": 0
+  }
+  ```
+  
+  ### Partial Success (200)
+  ```json
+  {
+    "message": "Processed 2 scores",
+    "success": 1,
+    "failed": 1,
+    "errors": [
+      "Chart not found: Unknown Song [dx] master"
+    ]
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ## Notes
+  
+  - Scores are matched by (user, chart) combination
+  - Existing scores will be updated, new scores will be inserted
+  - The chart must exist in the database (matched by title + type + difficulty)
+}
