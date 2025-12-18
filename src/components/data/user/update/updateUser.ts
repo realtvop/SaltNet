@@ -131,3 +131,92 @@ export function previewStockedTicketsWithWorker(user: User) {
 
     updateUserWorker.postMessage({ type: "previewStockedTickets", user: plainUser });
 }
+
+// Import for SaltNet upload
+import { uploadToSaltNet, type SaltNetUploadScore } from "@/components/data/user/database/api";
+import { useShared } from "@/components/app/shared";
+
+/**
+ * Convert level_index to difficulty string for SaltNet API
+ */
+function levelIndexToDifficulty(levelIndex: number): string {
+    const difficulties = ["basic", "advanced", "expert", "master", "remaster"];
+    return difficulties[levelIndex] || "master";
+}
+
+/**
+ * Convert DivingFish type to SaltNet API type
+ */
+function convertChartType(type: "DX" | "SD"): "std" | "dx" {
+    return type === "DX" ? "dx" : "std";
+}
+
+/**
+ * Upload user scores to SaltNet database
+ * Converts existing detailed data to SaltNet format and uploads
+ */
+export async function uploadScoresToSaltNet(user: User) {
+    const shared = useShared();
+
+    if (!shared.saltNetAccount?.sessionToken) {
+        snackbar({
+            message: "请先登录 SaltNet 账户",
+            placement: "bottom",
+            autoCloseDelay: 3000,
+        });
+        return;
+    }
+
+    if (!user.data.detailed) {
+        snackbar({
+            message: "没有可上传的成绩数据，请先更新用户",
+            placement: "bottom",
+            autoCloseDelay: 3000,
+        });
+        return;
+    }
+
+    snackbar({
+        message: `正在上传 ${getUserDisplayName(user)} 的成绩到 SaltNet...`,
+        placement: "bottom",
+        autoCloseDelay: 1500,
+    });
+
+    // Convert detailed data (Record<string, DivingFishFullRecord>) to SaltNetUploadScore[]
+    const scores: SaltNetUploadScore[] = Object.values(user.data.detailed).map(record => ({
+        title: record.title,
+        type: convertChartType(record.type),
+        difficulty: levelIndexToDifficulty(record.level_index),
+        achievements: record.achievements,
+        dxScore: record.dxScore,
+        comboStat: record.fc || "",
+        syncStat: record.fs || "",
+        playCount: record.play_count ?? null,
+    }));
+
+    try {
+        const result = await uploadToSaltNet(shared.saltNetAccount.sessionToken, scores);
+
+        if (result) {
+            snackbar({
+                message: `上传完成：成功 ${result.success} 条，失败 ${result.failed} 条`,
+                placement: "bottom",
+                autoCloseDelay: 3000,
+            });
+
+            if (result.failed > 0 && result.errors) {
+                console.warn("Upload errors:", result.errors);
+            }
+        }
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        snackbar({
+            message: `上传失败：${errorMsg}`,
+            placement: "bottom",
+            autoCloseDelay: 3000,
+            action: "复制错误",
+            onActionClick: () => navigator.clipboard.writeText(errorMsg),
+        });
+    }
+}
+

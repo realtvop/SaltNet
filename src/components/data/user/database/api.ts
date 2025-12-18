@@ -216,3 +216,100 @@ export async function forgotPassword(email: string): Promise<boolean> {
         return false;
     }
 }
+
+// Score API Types
+export interface SaltNetScoreResponse {
+    id: number;
+    title: string;
+    type: "std" | "dx" | "utage";
+    difficulty: string;
+    level: string;
+    internalLevel: number;
+    achievements: number;
+    dxScore: number;
+    comboStat: string;
+    syncStat: string;
+    playCount: number | null;
+    rating: number;
+}
+
+export interface SaltNetUploadScore {
+    title: string;
+    type: "std" | "dx" | "utage";
+    difficulty: string;
+    achievements: number;
+    dxScore: number;
+    comboStat: string;
+    syncStat: string;
+    playCount?: number | null;
+}
+
+interface UploadRecordsResponse {
+    message: string;
+    success: number;
+    failed: number;
+    errors?: string[];
+}
+
+/**
+ * Get user scores from SaltNet database
+ */
+export async function getSaltNetRecords(
+    sessionToken: string
+): Promise<SaltNetScoreResponse[] | null> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${sessionToken}`,
+            },
+        });
+
+        if (!resp.ok) {
+            return null;
+        }
+
+        const data = (await resp.json()) as SaltNetScoreResponse[];
+        return data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Upload scores to SaltNet database
+ */
+export async function uploadToSaltNet(
+    sessionToken: string,
+    scores: SaltNetUploadScore[]
+): Promise<UploadRecordsResponse | null> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify(scores),
+        });
+
+        if (!resp.ok) {
+            const data = await resp.json();
+            const errorData = data as ErrorResponse;
+            snackbar({
+                message: errorData.error || "上传失败",
+                autoCloseDelay: 3000,
+            });
+            return null;
+        }
+
+        return (await resp.json()) as UploadRecordsResponse;
+    } catch (error) {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return null;
+    }
+}
+

@@ -13,6 +13,7 @@
         previewRivals,
         clearIllegalTickets,
         previewStockedTickets,
+        uploadScoresToSaltNet,
     } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
@@ -254,7 +255,18 @@
         }
     };
 
-    // Business logic intentionally removed.
+    /**
+     * Check if user has any non-SaltNet data source bound
+     * This includes: divingFish name/importToken, LXNS auth, or inGame ID
+     */
+    function hasNonSaltNetDataSource(user: User): boolean {
+        return !!(
+            user.divingFish?.name ||
+            user.divingFish?.importToken ||
+            user.lxns?.auth ||
+            user.inGame?.id
+        );
+    }
 </script>
 
 <template>
@@ -350,6 +362,18 @@
                         >
                             查询对战好友
                             <mdui-icon slot="icon" name="list_alt"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item
+                            @click="uploadScoresToSaltNet(user)"
+                            v-if="
+                                !index &&
+                                shared.saltNetAccount &&
+                                hasNonSaltNetDataSource(user) &&
+                                user.data.detailed
+                            "
+                        >
+                            上传成绩到 SaltNet
+                            <mdui-icon slot="icon" name="cloud_upload"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
                             @click="goToUserFittedDetails(index)"
