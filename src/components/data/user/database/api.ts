@@ -111,9 +111,7 @@ export async function refreshSaltNetToken(
 /**
  * Get current user info
  */
-export async function getSaltNetUser(
-    sessionToken: string
-): Promise<SaltNetDatabaseUser | null> {
+export async function getSaltNetUser(sessionToken: string): Promise<SaltNetDatabaseUser | null> {
     try {
         const resp = await fetch(`${DB_API_URL}/api/v0/user`, {
             method: "GET",

@@ -26,7 +26,7 @@
                 <mdui-button full-width variant="text" @click="openSignup">注册</mdui-button>
             </div>
         </template>
-        
+
         <!-- Logged in state -->
         <template v-else>
             <div class="logged-in-header">
@@ -34,7 +34,9 @@
                     <mdui-icon name="account_circle"></mdui-icon>
                     <div class="user-details">
                         <span class="username">{{ props.loggedInUser.username }}</span>
-                        <span class="email" v-if="props.loggedInUser.email">{{ props.loggedInUser.email }}</span>
+                        <span class="email" v-if="props.loggedInUser.email">
+                            {{ props.loggedInUser.email }}
+                        </span>
                     </div>
                 </div>
                 <mdui-button variant="text" @click="handleLogout">退出登录</mdui-button>

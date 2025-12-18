@@ -4,7 +4,8 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "serve": "bun run index.ts"
+        "serve": "bun run index.ts",
+        "metaupdate": "bun run musicMetaUpdater/index.ts"
     },
     "devDependencies": {
         "@types/bun": "latest",

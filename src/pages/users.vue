@@ -260,10 +260,10 @@
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
-        <UserCard 
-            :logged-in-user="shared.saltNetAccount" 
-            @open-signin="openSigninDialog" 
-            @open-signup="openSignupDialog" 
+        <UserCard
+            :logged-in-user="shared.saltNetAccount"
+            @open-signin="openSigninDialog"
+            @open-signup="openSignupDialog"
             @logout="handleLogout"
         />
 

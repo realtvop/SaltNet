@@ -56,7 +56,12 @@
                 @keydown.enter="handleRegister"
             ></mdui-text-field>
 
-            <mdui-button full-width @click="handleRegister" :loading="isLoading" :disabled="!canSubmit">
+            <mdui-button
+                full-width
+                @click="handleRegister"
+                :loading="isLoading"
+                :disabled="!canSubmit"
+            >
                 注册
             </mdui-button>
         </div>
@@ -108,16 +113,16 @@
 
     const handleRegister = async () => {
         if (!canSubmit.value) return;
-        
+
         isLoading.value = true;
-        
+
         try {
             const result = await registerSaltNet(
                 userName.value.trim(),
                 password.value,
                 email.value.trim() || undefined
             );
-            
+
             if (result) {
                 emit("register-success", result);
                 // Clear form

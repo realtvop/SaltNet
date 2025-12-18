@@ -42,11 +42,18 @@
                 @keydown.enter="handleLogin"
             ></mdui-text-field>
 
-            <mdui-button full-width @click="handleLogin" :loading="isLoading" :disabled="!canSubmit">
+            <mdui-button
+                full-width
+                @click="handleLogin"
+                :loading="isLoading"
+                :disabled="!canSubmit"
+            >
                 登录
             </mdui-button>
 
-            <mdui-button variant="text" @click="handleForgotPassword" full-width>忘记密码？</mdui-button>
+            <mdui-button variant="text" @click="handleForgotPassword" full-width>
+                忘记密码？
+            </mdui-button>
         </div>
     </mdui-dialog>
 </template>
@@ -96,12 +103,12 @@
 
     const handleLogin = async () => {
         if (!canSubmit.value) return;
-        
+
         isLoading.value = true;
-        
+
         try {
             const result = await loginSaltNet(identifier.value.trim(), password.value);
-            
+
             if (result) {
                 emit("login-success", result);
                 // Clear form
@@ -147,6 +154,4 @@
     mdui-text-field {
         width: 100%;
     }
-
-
 </style>

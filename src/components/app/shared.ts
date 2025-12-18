@@ -63,9 +63,11 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
-    localForage.getItem<SaltNetDatabaseLogin>("saltNetAccount").then((v: SaltNetDatabaseLogin | null) => {
-        if (v) saltNetAccount.value = v;
-    });
+    localForage
+        .getItem<SaltNetDatabaseLogin>("saltNetAccount")
+        .then((v: SaltNetDatabaseLogin | null) => {
+            if (v) saltNetAccount.value = v;
+        });
 
     watch(
         users,
@@ -107,9 +109,11 @@ export const useShared = defineStore("shared", () => {
         saltNetAccount,
         (newSaltNetAccount: SaltNetDatabaseLogin | null) => {
             if (newSaltNetAccount) {
-                localForage.setItem("saltNetAccount", toRaw(newSaltNetAccount)).catch((err: any) => {
-                    console.error("Failed to save saltnet account:", err);
-                });
+                localForage
+                    .setItem("saltNetAccount", toRaw(newSaltNetAccount))
+                    .catch((err: any) => {
+                        console.error("Failed to save saltnet account:", err);
+                    });
             } else {
                 localForage.removeItem("saltNetAccount").catch((err: any) => {
                     console.error("Failed to remove saltnet account:", err);
@@ -119,5 +123,14 @@ export const useShared = defineStore("shared", () => {
         { deep: true }
     );
 
-    return { users, chartsSort, favorites, isUpdated, isDarkMode, isSmallScreen, nearcadeData, saltNetAccount };
+    return {
+        users,
+        chartsSort,
+        favorites,
+        isUpdated,
+        isDarkMode,
+        isSmallScreen,
+        nearcadeData,
+        saltNetAccount,
+    };
 });

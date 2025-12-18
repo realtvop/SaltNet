@@ -13,7 +13,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 // MARK: Users
-export const maimaidxRegionEnum = pgEnum("maimaidx_region", ["jp", "ex", "cn"]);
+export const maimaidxRegions = ["jp", "ex", "cn"] as const;
+export const maimaidxRegionEnum = pgEnum("maimaidx_region", maimaidxRegions);
 export const users = pgTable("users", {
     id: serial("id").primaryKey(),
     createdAt: timestamp("created_at").defaultNow(),
@@ -52,13 +53,24 @@ export const applications = pgTable("applications", {
 
 // MARK: maimai DX Versions
 export const maimaidxVersions = pgTable("maimaidx_versions", {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     name: text("name").notNull(),
+    word: text("word").array(),
     releaseDate: timestamp("release_date").notNull(),
     region: maimaidxRegionEnum("region").notNull(),
 });
 
 // MARK: maimai DX Musics
+export const maimaidxMusicCategories = [
+    "POPS＆アニメ",
+    "niconico＆ボーカロイド",
+    "東方Project",
+    "ゲーム＆バラエティ",
+    "maimai",
+    "オンゲキ＆CHUNITHM",
+    "宴会場",
+] as const;
+export const maimaidxMusicCategoryEnum = pgEnum("maimaidx_music_category", maimaidxMusicCategories);
 export const maimaidxMusics = pgTable("maimaidx_musics", {
     id: integer("id"),
     title: text("title").notNull().primaryKey(),
@@ -67,13 +79,14 @@ export const maimaidxMusics = pgTable("maimaidx_musics", {
         .array()
         .notNull(),
     artist: text("artist").notNull(),
-    genre: text("genre").notNull(),
+    category: maimaidxMusicCategoryEnum("category").notNull(),
     bpm: integer("bpm").notNull(),
     releaseDate: timestamp("release_date").notNull(),
 });
 
 // MARK: maimai DX Charts
-export const maimaidxChartTypeEnum = pgEnum("maimaidx_chart_type", ["std", "dx"]);
+export const maimaidxChartTypes = ["std", "dx"] as const;
+export const maimaidxChartTypeEnum = pgEnum("maimaidx_chart_type", maimaidxChartTypes);
 export const maimaidxChartDifficultyEnum = pgEnum("maimaidx_chart_difficulty", [
     "basic",
     "advanced",
@@ -131,21 +144,20 @@ export const maimaidxScores = pgTable("maimaidx_scores", {
 });
 
 // MARK: maimai DX Collections
-export const maimaidxCollectionKindEnum = pgEnum("maimaidx_collection_kind", [
+export const maimaidxCollectionKinds = [
     "plate",
     "title",
     "icon",
     "frame",
     "character",
     "partner",
-]);
-export const maimaidxTitleColorEnum = pgEnum("maimaidx_title_color", [
-    "normal",
-    "bronze",
-    "silver",
-    "gold",
-    "rainbow",
-]);
+] as const;
+export const maimaidxCollectionKindEnum = pgEnum(
+    "maimaidx_collection_kind",
+    maimaidxCollectionKinds
+);
+export const maimaidxTitleColors = ["normal", "bronze", "silver", "gold", "rainbow"] as const;
+export const maimaidxTitleColorEnum = pgEnum("maimaidx_title_color", maimaidxTitleColors);
 export const maimaidxCollections = pgTable("maimaidx_collections", {
     id: integer("id").primaryKey(),
     kind: maimaidxCollectionKindEnum("kind").notNull(),
@@ -166,10 +178,13 @@ export const maimaidxUserCollections = pgTable("maimaidx_user_collections", {
 });
 
 // MARK: maimai DX Music Aliases
-export const languageEnum = pgEnum("language", ["en", "ja", "zh"]);
+export const languages = ["en", "ja", "zh"] as const;
+export const languageEnum = pgEnum("language", languages);
 export const musicAliases = pgTable("music_aliases", {
     id: serial("id").primaryKey(),
-    music: text("music").references(() => maimaidxMusics.title).notNull(),
+    music: text("music")
+        .references(() => maimaidxMusics.title)
+        .notNull(),
     alias: text("alias").notNull(),
     language: languageEnum("language").notNull(),
 });
