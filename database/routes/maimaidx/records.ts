@@ -1,6 +1,7 @@
 import { db, schema } from "../../db";
 import { eq, and } from "drizzle-orm";
 import { verifyUserAuth } from "../../services/auth";
+import { calculateRating } from "./utils/rating";
 
 // Type definitions for Elysia context
 type ElysiaSet = {
@@ -26,6 +27,7 @@ interface ScoreResponse extends UserScore {
     id: number;
     level: string;
     internalLevel: number;
+    rating: number;
 }
 
 /**
@@ -69,6 +71,7 @@ export async function getRecords({
         comboStat: score.comboStat,
         syncStat: score.syncStat,
         playCount: score.playCount,
+        rating: score.rating,
     }));
 
     return result;
@@ -135,6 +138,9 @@ export async function uploadRecords({
                 ),
             });
 
+            // Calculate rating from achievements and internal level
+            const rating = Math.floor(calculateRating(score.achievements, parseFloat(chart.internalLevel)));
+
             if (existingScore) {
                 // Update existing score
                 await db
@@ -145,6 +151,7 @@ export async function uploadRecords({
                         comboStat: score.comboStat as "" | "fc" | "fcp" | "ap" | "app",
                         syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsdx" | "fsdxp",
                         playCount: score.playCount ?? null,
+                        rating,
                     })
                     .where(eq(schema.maimaidxScores.id, existingScore.id));
             } else {
@@ -157,6 +164,7 @@ export async function uploadRecords({
                     comboStat: score.comboStat as "" | "fc" | "fcp" | "ap" | "app",
                     syncStat: score.syncStat as "" | "sync" | "fs" | "fsp" | "fsdx" | "fsdxp",
                     playCount: score.playCount ?? null,
+                    rating,
                 });
             }
 

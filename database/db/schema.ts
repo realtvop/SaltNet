@@ -140,6 +140,7 @@ export const maimaidxScores = pgTable("maimaidx_scores", {
     deluxeScore: smallint("deluxe_score").notNull(),
     comboStat: maimaidxComboStatsEnum("combo_stat").notNull(),
     syncStat: maimaidxSyncStatsEnum("sync_stat").notNull(),
+    rating: smallint("rating").notNull(),
     playCount: integer("play_count"),
 });
 
