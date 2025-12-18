@@ -5,6 +5,7 @@ export interface SaltNetDatabaseLogin {
     sessionToken: string;
     refreshToken: string;
     sessionExpiry: number;
+    maimaidxRegion: MaimaidxRegion | null;
 }
 
 export interface SaltNetDatabaseUser {
@@ -12,6 +13,8 @@ export interface SaltNetDatabaseUser {
     userName: string;
     email: string | null;
     createdAt: string;
-    maimaidxRegion: string | null;
+    maimaidxRegion: MaimaidxRegion | null;
     maimaidxRating: number | null;
 }
+
+export type MaimaidxRegion = "jp" | "ex" | "cn";

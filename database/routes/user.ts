@@ -740,5 +740,39 @@ export function user(app: Elysia | any) {
                     }),
                 }
             )
+            // 修改地区设置
+            .post(
+                "/update-region",
+                async ({
+                    body,
+                    headers,
+                    set,
+                }: {
+                    body: { region: "jp" | "ex" | "cn" };
+                    headers: ElysiaHeaders;
+                    set: ElysiaSet;
+                }) => {
+                    const user = await verifySessionAuth(headers["authorization"]);
+                    if (!user) {
+                        set.status = 401;
+                        return { error: "Not authenticated or invalid token" };
+                    }
+
+                    const { region } = body;
+
+                    // 更新地区设置
+                    await db
+                        .update(schema.users)
+                        .set({ maimaidxRegion: region })
+                        .where(eq(schema.users.id, user.id));
+
+                    return { message: "Region updated successfully", region };
+                },
+                {
+                    body: t.Object({
+                        region: t.Union([t.Literal("jp"), t.Literal("ex"), t.Literal("cn")]),
+                    }),
+                }
+            )
     );
 }

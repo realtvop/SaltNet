@@ -11,6 +11,7 @@
     import CollectionsPage from "../../pages/collections.vue";
     import RenderingPage from "../../pages/b50ToRender.vue";
     import ShopPage from "../../pages/Shop.vue";
+    import MePage from "../../pages/me.vue";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -24,9 +25,10 @@
         { path: "/about", component: AboutPage },
         { path: "/collections", component: CollectionsPage },
         { path: "/nearcade", component: ShopPage },
+        { path: "/me", component: MePage },
     ];
 
-    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade", "/about"];
+    const routesNeedAddHistory = ["/settings", "/b50/:id", "/songs/:id", "/nearcade", "/about", "/me"];
     const routesNeedFixedPage = ["/", "/about"];
 
     const router = createRouter({

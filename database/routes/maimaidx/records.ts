@@ -308,8 +308,6 @@ export async function getB50({
             rating: score.rating,
         };
 
-        // Check if this chart is from the latest version
-        // A chart is "new" if its versions array contains the latest version ID
         if (score.chart.versions.includes(latestVersionId)) {
             newScores.push(scoreResponse);
         } else {

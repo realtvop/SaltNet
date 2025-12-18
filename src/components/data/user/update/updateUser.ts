@@ -6,6 +6,7 @@ import { toHalfWidth } from "@/utils";
 import {
     getSaltNetB50,
     getSaltNetRecords,
+    getSaltNetUser,
     type SaltNetScoreResponse,
 } from "@/components/data/user/database";
 import type { DivingFishFullRecord, DivingFishB50 } from "@/components/integrations/diving-fish/type";
@@ -189,11 +190,21 @@ async function downloadFromSaltNet(user: User) {
     });
 
     try {
-        // Fetch B50 and all records in parallel
-        const [b50Data, allRecords] = await Promise.all([
+        // Fetch B50, all records, and user info in parallel
+        const [b50Data, allRecords, userInfo] = await Promise.all([
             getSaltNetB50(user.saltnetDB.sessionToken),
             getSaltNetRecords(user.saltnetDB.sessionToken),
+            getSaltNetUser(user.saltnetDB.sessionToken),
         ]);
+
+        // Update shared.saltNetAccount with fresh user info (including region)
+        if (userInfo) {
+            const shared = useShared();
+            if (shared.saltNetAccount) {
+                shared.saltNetAccount.email = userInfo.email;
+                shared.saltNetAccount.maimaidxRegion = userInfo.maimaidxRegion;
+            }
+        }
 
         if (!b50Data || !allRecords) {
             snackbar({

@@ -67,10 +67,6 @@
         shared.saltNetAccount = data;
     };
 
-    const handleLogout = () => {
-        shared.saltNetAccount = null;
-    };
-
     const openDeleteDialog = (index: number) => {
         confirm({
             headline: `删除绑定的用户：${getUserDisplayName(shared.users[index])}？`,
@@ -276,7 +272,6 @@
             :logged-in-user="shared.saltNetAccount"
             @open-signin="openSigninDialog"
             @open-signup="openSignupDialog"
-            @logout="handleLogout"
         />
 
         <mdui-card

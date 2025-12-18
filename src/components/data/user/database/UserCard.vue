@@ -1,5 +1,8 @@
 <script setup lang="ts">
+    import { useRouter } from "vue-router";
     import type { SaltNetDatabaseLogin } from "./type";
+
+    const router = useRouter();
 
     const props = defineProps<{
         loggedInUser?: SaltNetDatabaseLogin | null;
@@ -8,12 +11,11 @@
     const emit = defineEmits<{
         (event: "open-signin"): void;
         (event: "open-signup"): void;
-        (event: "logout"): void;
     }>();
 
     const openSignin = () => emit("open-signin");
     const openSignup = () => emit("open-signup");
-    const handleLogout = () => emit("logout");
+    const goToMe = () => router.push("/me");
 </script>
 
 <template>
@@ -39,7 +41,7 @@
                         </span>
                     </div>
                 </div>
-                <mdui-button variant="text" @click="handleLogout">退出登录</mdui-button>
+                <mdui-button variant="text" @click="goToMe">账户设置</mdui-button>
             </div>
         </template>
     </mdui-card>

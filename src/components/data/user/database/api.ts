@@ -68,6 +68,7 @@ export async function loginSaltNet(
             sessionToken: loginData.sessionToken,
             refreshToken: loginData.refreshToken,
             sessionExpiry,
+            maimaidxRegion: loginData.user.maimaidxRegion,
         };
     } catch (error) {
         snackbar({
@@ -341,5 +342,197 @@ export async function uploadToSaltNet(
             autoCloseDelay: 3000,
         });
         return null;
+    }
+}
+
+// ==================== User Account Management APIs ====================
+
+import type { MaimaidxRegion } from "./type";
+
+/**
+ * Logout from SaltNet
+ */
+export async function logoutSaltNet(sessionToken: string): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/logout`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${sessionToken}`,
+            },
+        });
+
+        if (!resp.ok) {
+            return false;
+        }
+
+        snackbar({
+            message: "已退出登录",
+            autoCloseDelay: 2000,
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Update user's maimai DX region
+ */
+export async function updateSaltNetRegion(
+    sessionToken: string,
+    region: MaimaidxRegion
+): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/update-region`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ region }),
+        });
+
+        if (!resp.ok) {
+            const data = await resp.json();
+            snackbar({
+                message: (data as ErrorResponse).error || "更新地区失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "地区更新成功",
+            autoCloseDelay: 2000,
+        });
+        return true;
+    } catch {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
+    }
+}
+
+/**
+ * Change password (requires current password)
+ */
+export async function changePassword(
+    sessionToken: string,
+    currentPassword: string,
+    newPassword: string
+): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/change-password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ currentPassword, newPassword }),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            snackbar({
+                message: (data as ErrorResponse).error || "修改密码失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "密码修改成功",
+            autoCloseDelay: 2000,
+        });
+        return true;
+    } catch {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
+    }
+}
+
+/**
+ * Bind email to account (for users without email)
+ */
+export async function bindEmail(sessionToken: string, email: string): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/bind-email`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ email }),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            snackbar({
+                message: (data as ErrorResponse).error || "绑定邮箱失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "验证邮件已发送，请查收",
+            autoCloseDelay: 3000,
+        });
+        return true;
+    } catch {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
+    }
+}
+
+/**
+ * Request email change (requires password verification)
+ */
+export async function changeEmail(
+    sessionToken: string,
+    newEmail: string,
+    password: string
+): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/user/change-email`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({ newEmail, password }),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            snackbar({
+                message: (data as ErrorResponse).error || "修改邮箱失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "验证邮件已发送到新邮箱，请查收",
+            autoCloseDelay: 3000,
+        });
+        return true;
+    } catch {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
     }
 }
