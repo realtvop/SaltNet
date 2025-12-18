@@ -59,7 +59,7 @@ export async function verifyUserAuth(
 
             // 验证 sessionToken 是否存在于用户的 sessions 中
             const sessions = (user.sessions as schema.UserLoginSession[]) || [];
-            const sessionExists = sessions.some((s) => s.sessionToken === token);
+            const sessionExists = sessions.some(s => s.sessionToken === token);
             if (!sessionExists) {
                 return null;
             }
@@ -82,10 +82,7 @@ export async function verifyUserAuth(
     }
 
     // 2. 尝试 PAT 验证
-    const [user] = await db
-        .select()
-        .from(schema.users)
-        .where(eq(schema.users.pat, token));
+    const [user] = await db.select().from(schema.users).where(eq(schema.users.pat, token));
 
     if (user) {
         return {

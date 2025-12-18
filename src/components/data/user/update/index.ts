@@ -13,4 +13,3 @@ export const previewRivals = previewRivalsWithWorker;
 export const clearIllegalTickets = clearIllegalTicketsWithWorker;
 export const previewStockedTickets = previewStockedTicketsWithWorker;
 export { uploadScoresToSaltNet };
-

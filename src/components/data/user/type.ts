@@ -73,6 +73,7 @@ export function getUserDisplayName(user: User, fallback: string = "wmc"): string
 
     return (
         user.remark ??
+        (user.saltnetDB?.username || null) ??
         user.data.name ??
         user.inGame.name ??
         user.divingFish.name ??

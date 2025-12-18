@@ -79,7 +79,7 @@ export async function getRecords({
     });
 
     // Transform to response format
-    const result: ScoreResponse[] = scores.map((score) => ({
+    const result: ScoreResponse[] = scores.map(score => ({
         id: score.id,
         title: score.chart.music.title,
         type: score.chart.type,
@@ -132,12 +132,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                        | "basic"
-                        | "advanced"
-                        | "expert"
-                        | "master"
-                        | "remaster"
-                        | "utage"
+                            | "basic"
+                            | "advanced"
+                            | "expert"
+                            | "master"
+                            | "remaster"
+                            | "utage"
                     )
                 ),
             });
@@ -159,7 +159,9 @@ export async function uploadRecords({
             });
 
             // Calculate rating from achievements and internal level
-            const rating = Math.floor(calculateRating(score.achievements, parseFloat(chart.internalLevel)));
+            const rating = Math.floor(
+                calculateRating(score.achievements, parseFloat(chart.internalLevel))
+            );
 
             if (existingScore) {
                 // Update existing score

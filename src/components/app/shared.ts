@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, watch, toRaw } from "vue";
+import { ref, watch, toRaw, computed } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
@@ -29,7 +29,33 @@ export const useShared = defineStore("shared", () => {
     const isUpdated = ref<boolean>(false);
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
     const isSmallScreen = ref<boolean>(window.innerWidth < 560);
-    const saltNetAccount = ref<SaltNetDatabaseLogin | null>(null);
+
+    const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
+        get: () => users.value[0]?.saltnetDB ?? null,
+        set: (value: SaltNetDatabaseLogin | null) => {
+            if (value) {
+                if (users.value.length === 0) {
+                    users.value.push({
+                        remark: null,
+                        saltnetDB: value,
+                        divingFish: { name: null },
+                        inGame: { id: null },
+                        lxns: { auth: null, name: null, id: null },
+                        settings: { manuallyUpdate: false },
+                        data: {
+                            updateTime: null,
+                            name: null,
+                            rating: null,
+                        },
+                    });
+                } else {
+                    users.value[0].saltnetDB = value;
+                }
+            } else if (users.value.length > 0) {
+                users.value[0].saltnetDB = undefined;
+            }
+        },
+    });
 
     const handleScreenSizeChange = () => {
         isSmallScreen.value = window.innerWidth < 560;
@@ -63,10 +89,15 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
+
+    // Migrate old saltNetAccount to first user's saltnetDB
     localForage
         .getItem<SaltNetDatabaseLogin>("saltNetAccount")
         .then((v: SaltNetDatabaseLogin | null) => {
-            if (v) saltNetAccount.value = v;
+            if (v) {
+                saltNetAccount.value = v;
+                localForage.removeItem("saltNetAccount");
+            }
         });
 
     watch(
@@ -102,23 +133,6 @@ export const useShared = defineStore("shared", () => {
             localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: any) => {
                 console.error("Failed to save nearcade data:", err);
             });
-        },
-        { deep: true }
-    );
-    watch(
-        saltNetAccount,
-        (newSaltNetAccount: SaltNetDatabaseLogin | null) => {
-            if (newSaltNetAccount) {
-                localForage
-                    .setItem("saltNetAccount", toRaw(newSaltNetAccount))
-                    .catch((err: any) => {
-                        console.error("Failed to save saltnet account:", err);
-                    });
-            } else {
-                localForage.removeItem("saltNetAccount").catch((err: any) => {
-                    console.error("Failed to remove saltnet account:", err);
-                });
-            }
         },
         { deep: true }
     );

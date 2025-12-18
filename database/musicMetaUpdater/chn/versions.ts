@@ -95,4 +95,4 @@ export const cnVersions = [
         word: ["鏡", "彩"],
         releaseDate: "2024-09-12",
     },
-]
+];

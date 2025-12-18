@@ -12,4 +12,4 @@ export interface MusicMetadata {
 
 const m3URL = "https://meta.salt.realtvop.top/meta.json";
 
-export const meta = await fetch(m3URL).then(res => res.json()) as MusicMetadata;
+export const meta = (await fetch(m3URL).then(res => res.json())) as MusicMetadata;

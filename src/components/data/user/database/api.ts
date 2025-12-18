@@ -312,4 +312,3 @@ export async function uploadToSaltNet(
         return null;
     }
 }
-

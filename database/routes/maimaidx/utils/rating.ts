@@ -45,7 +45,10 @@ const SCORE_COEFFICIENT_TABLE: readonly ScoreCoefficientEntry[] = [
 export function calculateRating(achievements: number, ds: number): number {
     let coefficient = 0;
     for (let i = 0; i < SCORE_COEFFICIENT_TABLE.length; i++) {
-        if (i === SCORE_COEFFICIENT_TABLE.length - 1 || achievements < SCORE_COEFFICIENT_TABLE[i + 1]![0]) {
+        if (
+            i === SCORE_COEFFICIENT_TABLE.length - 1 ||
+            achievements < SCORE_COEFFICIENT_TABLE[i + 1]![0]
+        ) {
             coefficient = SCORE_COEFFICIENT_TABLE[i]![1];
             break;
         }

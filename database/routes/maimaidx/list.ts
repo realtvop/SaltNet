@@ -28,16 +28,17 @@ export async function listMusic() {
     };
 
     // Transform to match Music interface
-    const result: Music[] = musics.map((music) => ({
+    const result: Music[] = musics.map(music => ({
         id: music.id ?? 0,
         title: music.title,
         artist: music.artist,
         category: music.category,
         bpm: music.bpm,
-        aliases: music.aliases.length > 0
-            ? { cn: music.aliases.filter(a => a.language === "zh").map(a => a.alias) }
-            : undefined,
-        charts: music.charts.map((chart) => ({
+        aliases:
+            music.aliases.length > 0
+                ? { cn: music.aliases.filter(a => a.language === "zh").map(a => a.alias) }
+                : undefined,
+        charts: music.charts.map(chart => ({
             versions: {
                 jp: getVersionNames(chart.versions, "jp"),
                 ex: getVersionNames(chart.versions, "ex"),

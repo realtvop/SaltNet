@@ -219,4 +219,3 @@ export async function uploadScoresToSaltNet(user: User) {
         });
     }
 }
-
