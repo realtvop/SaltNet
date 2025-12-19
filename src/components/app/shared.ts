@@ -6,6 +6,8 @@ import type { ChartsSortCached, FavoriteList, User } from "@/components/data/use
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
 import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
+import type { MaimaidxRegion } from "@/components/data/user/database/type";
+import { setRegionGetter } from "@/components/data/music";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -29,6 +31,7 @@ export const useShared = defineStore("shared", () => {
     const isUpdated = ref<boolean>(false);
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
     const isSmallScreen = ref<boolean>(window.innerWidth < 560);
+    const musicDataLoading = ref<boolean>(false);
 
     const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
         get: () => users.value[0]?.saltnetDB ?? null,
@@ -100,6 +103,9 @@ export const useShared = defineStore("shared", () => {
             }
         });
 
+    // Set up region getter for music module
+    setRegionGetter(() => (saltNetAccount.value?.maimaidxRegion as MaimaidxRegion) ?? "cn");
+
     watch(
         users,
         (newUsers: User[]) => {
@@ -146,5 +152,6 @@ export const useShared = defineStore("shared", () => {
         isSmallScreen,
         nearcadeData,
         saltNetAccount,
+        musicDataLoading,
     };
 });

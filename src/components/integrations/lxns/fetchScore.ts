@@ -1,7 +1,7 @@
 import { convertDetailed, type User } from "@/components/data/user";
 import type { DivingFishB50, DivingFishFullRecord } from "../diving-fish/type";
 import type { LXNSScore, LXNSUser } from "./type";
-import { musicInfo } from "@/components/data/music";
+import { getMusicInfoAsync } from "@/components/data/music";
 import { fetchLXNSApi } from "./fetch";
 import { toHalfWidth } from "@/utils";
 
@@ -26,13 +26,14 @@ function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
     };
 }
 
-function getB50(scores: DivingFishFullRecord[]): DivingFishB50 {
+async function getB50(scores: DivingFishFullRecord[]): Promise<DivingFishB50> {
+    const musicInfo = await getMusicInfoAsync();
     const newScores: DivingFishFullRecord[] = [];
     const oldScores: DivingFishFullRecord[] = [];
 
     for (const score of scores) {
         // Look up music info to determine if the song is new
-        const music = musicInfo.musicList[score.song_id];
+        const music = musicInfo?.musicList[score.song_id];
         if (music?.info?.isNew) {
             newScores.push(score);
         } else {
@@ -55,7 +56,7 @@ export async function fetchLXNSScore(user: User) {
     const lxScores = await fetchLXNSApi<LXNSScore[]>(user, "scores");
 
     const scores = lxScores.map(LXNS2DF);
-    const b50 = getB50(scores);
+    const b50 = await getB50(scores);
 
     return {
         name: toHalfWidth(userData.name),

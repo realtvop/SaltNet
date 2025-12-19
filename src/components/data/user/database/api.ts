@@ -270,8 +270,8 @@ export async function getSaltNetRecords(
             return null;
         }
 
-        const data = (await resp.json()) as SaltNetScoreResponse[];
-        return data;
+        const data = (await resp.json()) as { records: SaltNetScoreResponse[] };
+        return data.records;
     } catch {
         return null;
     }

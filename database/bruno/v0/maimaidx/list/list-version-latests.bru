@@ -1,0 +1,64 @@
+meta {
+  name: List Version Latests
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v0/maimaidx/list/version/latests
+  body: none
+  auth: none
+}
+
+docs {
+  # List Version Latests
+  
+  Get the latest version for each region. Used for B50 calculation to determine which songs are considered "new" version songs.
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "jp": {
+      "id": 1,
+      "name": "maimai でらっくす PRiSM",
+      "word": ["虹"],
+      "releaseDate": "2024-09-12T00:00:00.000Z",
+      "region": "jp"
+    },
+    "ex": {
+      "id": 2,
+      "name": "maimai DX PRiSM",
+      "word": ["虹"],
+      "releaseDate": "2024-09-12T00:00:00.000Z",
+      "region": "ex"
+    },
+    "cn": {
+      "id": 3,
+      "name": "舞萌DX 2024",
+      "word": ["虹"],
+      "releaseDate": "2024-09-12T00:00:00.000Z",
+      "region": "cn"
+    }
+  }
+  ```
+  
+  ## Response Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | jp | Version \| null | Latest JP version |
+  | ex | Version \| null | Latest EX (international) version |
+  | cn | Version \| null | Latest CN version |
+  
+  ### Version Object
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | id | number | Version ID |
+  | name | string | Version name |
+  | word | string[] \| null | Version code words |
+  | releaseDate | string | ISO date string |
+  | region | string | Region code (jp, ex, cn) |
+}

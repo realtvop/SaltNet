@@ -87,3 +87,64 @@ interface Music {
 
     charts: Chart[];
 }
+
+interface Version {
+    id: number;
+    name: string;
+    word: string[] | null;
+    releaseDate: string;
+    region: "jp" | "ex" | "cn";
+}
+
+/**
+ * List all versions
+ */
+export async function listVersions(): Promise<Version[]> {
+    const versions = await db.query.maimaidxVersions.findMany({
+        orderBy: (versions, { asc }) => [asc(versions.region), asc(versions.releaseDate)],
+    });
+
+    return versions.map(v => ({
+        id: v.id,
+        name: v.name,
+        word: v.word,
+        releaseDate: v.releaseDate.toISOString(),
+        region: v.region,
+    }));
+}
+
+interface LatestVersions {
+    jp: Version | null;
+    ex: Version | null;
+    cn: Version | null;
+}
+
+/**
+ * Get latest version for each region (for B50 calculation to determine "new" songs)
+ */
+export async function listVersionLatests(): Promise<LatestVersions> {
+    const versions = await db.query.maimaidxVersions.findMany({
+        orderBy: (versions, { desc }) => [desc(versions.releaseDate)],
+    });
+
+    const result: LatestVersions = {
+        jp: null,
+        ex: null,
+        cn: null,
+    };
+
+    for (const v of versions) {
+        const region = v.region as "jp" | "ex" | "cn";
+        if (!result[region]) {
+            result[region] = {
+                id: v.id,
+                name: v.name,
+                word: v.word,
+                releaseDate: v.releaseDate.toISOString(),
+                region: region,
+            };
+        }
+    }
+
+    return result;
+}

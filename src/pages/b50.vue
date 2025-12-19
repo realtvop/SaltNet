@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed } from "vue";
+    import { ref, computed, onMounted } from "vue";
     import { useRoute } from "vue-router";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
@@ -7,7 +7,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-    import { musicInfo } from "@/components/data/music";
+    import { getMusicInfoAsync } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import B50ToRender from "@/components/rendering/b50.vue";
     import domtoimage from "dom-to-image-more";
@@ -23,7 +23,8 @@
     const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
-    function buildMusicChartMap() {
+    async function buildMusicChartMap() {
+        const musicInfo = await getMusicInfoAsync();
         if (!musicInfo) return;
         const map = new Map();
         for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
@@ -32,7 +33,10 @@
         }
         musicChartMap.value = map;
     }
-    buildMusicChartMap();
+
+    onMounted(() => {
+        buildMusicChartMap();
+    });
 
     const player = computed(() => {
         return shared.users[Number(userId.value ?? "0")] ?? null;

@@ -2,6 +2,7 @@
     import { useRoute, useRouter } from "vue-router";
     import TopAppBar from "@/components/app/TopAppBar.vue";
     import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
+    import { initializeMusicData } from "@/components/data/music";
 
     const route = useRoute();
     const router = useRouter();
@@ -29,6 +30,11 @@
             });
     }
     if (searchParams.size) router.replace({ path: route.path, query: {} });
+
+    // Initialize music data from database on app startup
+    initializeMusicData().catch(error => {
+        console.error("Failed to initialize music data:", error);
+    });
 </script>
 
 <template>

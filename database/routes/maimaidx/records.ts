@@ -1,5 +1,5 @@
 import { db, schema } from "../../db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { verifyUserAuth } from "../../services/auth";
 import { calculateRating, updateUserB50Rating } from "./utils/rating";
 
@@ -147,12 +147,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                            | "basic"
-                            | "advanced"
-                            | "expert"
-                            | "master"
-                            | "remaster"
-                            | "utage"
+                        | "basic"
+                        | "advanced"
+                        | "expert"
+                        | "master"
+                        | "remaster"
+                        | "utage"
                     )
                 ),
             });
