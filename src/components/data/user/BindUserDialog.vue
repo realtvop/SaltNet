@@ -26,9 +26,9 @@
             clearable
         ></mdui-text-field>
 
-        绑定账号：
+        绑定第三方账号：
         <mdui-tabs>
-            <mdui-tab value="inGame">NET</mdui-tab>
+            <mdui-tab value="inGame">国服 NET</mdui-tab>
             <mdui-tab-panel slot="panel" value="inGame">
                 <div class="userid-textfield">
                     <mdui-text-field

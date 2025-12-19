@@ -147,12 +147,12 @@ export async function uploadRecords({
                     eq(
                         schema.maimaidxCharts.difficulty,
                         score.difficulty as
-                        | "basic"
-                        | "advanced"
-                        | "expert"
-                        | "master"
-                        | "remaster"
-                        | "utage"
+                            | "basic"
+                            | "advanced"
+                            | "expert"
+                            | "master"
+                            | "remaster"
+                            | "utage"
                     )
                 ),
             });

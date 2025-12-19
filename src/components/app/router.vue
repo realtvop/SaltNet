@@ -36,7 +36,7 @@
         "/about",
         "/me",
     ];
-    const routesNeedFixedPage = ["/", "/about"];
+    const routesNeedFixedPage = ["/"];
 
     const router = createRouter({
         history: import.meta.env.PROD ? createMemoryHistory() : createWebHistory(),

@@ -67,10 +67,7 @@ async function saveToCache(data: SavedMusicList, region: string): Promise<void> 
  */
 async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMusicList | null> {
     // Fetch music list and version info in parallel
-    const [rawData, versionLatests] = await Promise.all([
-        fetchMusicList(),
-        fetchVersionLatests(),
-    ]);
+    const [rawData, versionLatests] = await Promise.all([fetchMusicList(), fetchVersionLatests()]);
 
     if (!rawData) return null;
 
