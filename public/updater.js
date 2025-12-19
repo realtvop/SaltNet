@@ -424,12 +424,14 @@ async function handleUpload() {
     setHelperHint("Collecting scores...");
 
     try {
+        showSnackbar("Fetching...");
         const scores = await collectScores();
         if (!scores.length) {
             showSnackbar("No scores found");
             return;
         }
         setHelperHint("Uploading...");
+        showSnackbar(`Uploading ${scores.length} scores...`);
 
         const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records`, {
             method: "POST",
