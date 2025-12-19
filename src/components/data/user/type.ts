@@ -25,6 +25,7 @@ export interface User {
         name?: string | null;
         id: number | null;
     };
+    saltnetUsername?: string | null; // For non-first users to query by SaltNet username
     settings: {
         manuallyUpdate: boolean;
     };

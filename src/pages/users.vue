@@ -65,6 +65,10 @@
 
     const handleLoginSuccess = (data: SaltNetDatabaseLogin) => {
         shared.saltNetAccount = data;
+        // Auto-sync scores if there's only one user (the first user)
+        if (shared.users.length === 1) {
+            updateUser(shared.users[0], true);
+        }
     };
 
     const openDeleteDialog = (index: number) => {
@@ -149,6 +153,7 @@
         divingFish: { name: string | null; importToken: string | null };
         lxns: { auth: LXNSAuth | null; name: string | null; id: number | null };
         inGame: { name: string | null; id: number | null };
+        saltnetUsername?: string | null;
     }
 
     const handleUserSave = (updatedUserData: UpdatedUserData) => {
@@ -168,6 +173,7 @@
                     ...(updatedUserData.inGame.name && { name: updatedUserData.inGame.name }),
                     id: updatedUserData.inGame.id,
                 },
+                saltnetUsername: updatedUserData.saltnetUsername ?? null,
                 settings: { manuallyUpdate: false },
                 data: {
                     updateTime: null,
@@ -202,6 +208,7 @@
                     ...originalUser.inGame,
                     id: updatedUserData.inGame.id,
                 },
+                saltnetUsername: updatedUserData.saltnetUsername ?? originalUser.saltnetUsername,
             };
         } else {
             console.warn("Invalid user index for update:", index);
@@ -431,7 +438,9 @@
         :user="currentUserToEdit"
         :user-index="editingUserIndex || shared.users.length"
         :is-editing-new-user="editingUserIndex === null"
+        :is-first-user="editingUserIndex === null && shared.users.length === 0"
         @save="handleUserSave"
+        @saltnet-login="handleLoginSuccess"
     />
     <SignupDialog v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
     <SigninDialog v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />

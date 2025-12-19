@@ -26,8 +26,42 @@
             clearable
         ></mdui-text-field>
 
-        绑定第三方账号：
+        <!-- First user: show SaltNet register/login buttons between remark and tabs -->
+        <div v-if="isFirstUser" class="saltnet-buttons">
+            <mdui-button full-width @click="openSigninDialog">登录 SaltNet</mdui-button>
+            <mdui-button full-width variant="tonal" @click="openSignupDialog">
+                注册 SaltNet
+            </mdui-button>
+        </div>
+
+        绑定账号：
         <mdui-tabs>
+            <!-- SaltNet tab only for non-first users -->
+            <mdui-tab
+                value="saltnet"
+                v-if="
+                    !isFirstUser &&
+                    !localUser.inGame?.id &&
+                    !localUser.divingFish?.name &&
+                    !userLXNSBindStatus
+                "
+            >
+                SaltNet
+            </mdui-tab>
+            <mdui-tab-panel slot="panel" value="saltnet" v-if="!isFirstUser">
+                <mdui-text-field
+                    label="SaltNet 用户名"
+                    :value="localUser.saltnetUsername ?? ''"
+                    @input="localUser.saltnetUsername = $event.target.value || null"
+                    helper="通过 SaltNet 用户名查询成绩"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    clearable
+                ></mdui-text-field>
+            </mdui-tab-panel>
+
             <mdui-tab value="inGame">国服 NET</mdui-tab>
             <mdui-tab-panel slot="panel" value="inGame">
                 <div class="userid-textfield">
@@ -58,7 +92,8 @@
                     v-if="
                         localUser.divingFish &&
                         !(localUser.inGame && localUser.inGame.id) &&
-                        !userLXNSBindStatus
+                        !userLXNSBindStatus &&
+                        !localUser.saltnetDB?.id
                     "
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
@@ -101,6 +136,9 @@
                 </mdui-button>
             </mdui-tab-panel>
         </mdui-tabs>
+
+        <SignupDialog v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+        <SigninDialog v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
     </mdui-dialog>
 </template>
 
@@ -112,16 +150,23 @@
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
 
+    import SignupDialog from "./database/SignupDialog.vue";
+    import SigninDialog from "./database/SigninDialog.vue";
+    import type { SaltNetDatabaseLogin } from "./database";
+
     const props = defineProps<{
         modelValue: boolean;
         user: User | null;
         userIndex: number | null;
         isEditingNewUser: boolean;
+        isFirstUser: boolean;
     }>();
 
-    const emit = defineEmits(["update:modelValue", "save", "delete"]);
+    const emit = defineEmits(["update:modelValue", "save", "delete", "saltnet-login"]);
 
     const dialogRef = ref<any>(null);
+    const isSignupDialogOpen = ref(false);
+    const isSigninDialogOpen = ref(false);
 
     const localUser = ref<Partial<User>>({});
 
@@ -188,8 +233,22 @@
                 id: localUser.value.lxns?.id ?? null,
             },
             inGame: { id: localUser.value.inGame?.id ?? null },
+            saltnetUsername: localUser.value.saltnetUsername ?? null,
         });
         requestClose();
+    }
+
+    function openSignupDialog() {
+        isSignupDialogOpen.value = true;
+    }
+
+    function openSigninDialog() {
+        isSigninDialogOpen.value = true;
+    }
+
+    function handleLoginSuccess(data: SaltNetDatabaseLogin) {
+        emit("saltnet-login", data);
+        snackbar({ message: "SaltNet 登录成功！", autoCloseDelay: 1500 });
     }
 
     const handleSave = () => {
@@ -305,5 +364,12 @@
     }
     mdui-tab-panel {
         padding-top: 1rem;
+    }
+
+    .saltnet-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
     }
 </style>

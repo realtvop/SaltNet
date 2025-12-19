@@ -23,7 +23,9 @@
         <!-- Logged out state -->
         <template v-if="!props.loggedInUser">
             <h2>注册或登录您的 SaltNet 账户</h2>
-            <span style="margin-top: -1rem; margin-bottom: 0.25rem;">(当前处于测试阶段) 您也永远可以不登录使用</span>
+            <span style="margin-top: -1rem; margin-bottom: 0.25rem">
+                (当前处于测试阶段) 您也永远可以不登录使用
+            </span>
             <div class="signup-login-btns">
                 <mdui-button full-width @click="openSignin">登录</mdui-button>
                 <mdui-button full-width variant="text" @click="openSignup">注册</mdui-button>

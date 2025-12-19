@@ -307,6 +307,60 @@ export async function getSaltNetB50(sessionToken: string): Promise<SaltNetB50Res
 }
 
 /**
+ * Get user B50 data by username (public API, no auth required)
+ */
+export async function getSaltNetB50ByUsername(
+    username: string
+): Promise<SaltNetB50Response | null> {
+    try {
+        const resp = await fetch(
+            `${DB_API_URL}/api/v0/maimaidx/records/b50?user=${encodeURIComponent(username)}`,
+            {
+                method: "GET",
+            }
+        );
+
+        if (!resp.ok) {
+            return null;
+        }
+
+        const data = (await resp.json()) as SaltNetB50Response;
+        return data;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Get user records by username (requires auth)
+ */
+export async function getSaltNetRecordsByUsername(
+    sessionToken: string,
+    username: string
+): Promise<SaltNetScoreResponse[] | null> {
+    try {
+        const resp = await fetch(
+            `${DB_API_URL}/api/v0/maimaidx/records?user=${encodeURIComponent(username)}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+            }
+        );
+
+        if (!resp.ok) {
+            return null;
+        }
+
+        const data = (await resp.json()) as { records: SaltNetScoreResponse[] };
+        return data.records;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Upload scores to SaltNet database
  */
 export async function uploadToSaltNet(

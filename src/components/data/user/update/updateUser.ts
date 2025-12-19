@@ -7,6 +7,8 @@ import {
     getSaltNetB50,
     getSaltNetRecords,
     getSaltNetUser,
+    getSaltNetB50ByUsername,
+    getSaltNetRecordsByUsername,
     type SaltNetScoreResponse,
 } from "@/components/data/user/database";
 import type {
@@ -83,6 +85,17 @@ export function updateUserWithWorker(user: User, updateItem: boolean = false) {
 
     if (hasOnlySaltNet) {
         downloadFromSaltNet(user);
+        return;
+    }
+
+    // User with saltnetUsername: query by username
+    if (
+        user.saltnetUsername &&
+        !user.inGame?.id &&
+        !user.divingFish?.name &&
+        !user.lxns?.auth?.accessToken
+    ) {
+        downloadFromSaltNetByUsername(user);
         return;
     }
 
@@ -238,6 +251,94 @@ async function downloadFromSaltNet(user: User) {
             name: user.saltnetDB.username,
             b50,
             detailed: convertDetailed(dfRecords),
+            updateTime: Date.now(),
+        };
+
+        snackbar({
+            message: `从 SaltNet 获取用户信息成功：${getUserDisplayName(user)}`,
+            placement: "bottom",
+            autoCloseDelay: 1500,
+        });
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        snackbar({
+            message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
+            placement: "bottom",
+            autoCloseDelay: 3000,
+            action: "复制错误",
+            onActionClick: () => navigator.clipboard.writeText(errorMsg),
+        });
+    }
+}
+
+/**
+ * Download scores from SaltNet database by username
+ * Uses first user's sessionToken if available for full records,
+ * otherwise falls back to public B50 API
+ */
+async function downloadFromSaltNetByUsername(user: User) {
+    if (!user.saltnetUsername) {
+        snackbar({
+            message: "请设置 SaltNet 用户名",
+            placement: "bottom",
+            autoCloseDelay: 3000,
+        });
+        return;
+    }
+
+    const username = user.saltnetUsername;
+
+    snackbar({
+        message: `正在从 SaltNet 获取用户信息：${getUserDisplayName(user)}`,
+        placement: "bottom",
+        autoCloseDelay: 1500,
+    });
+
+    try {
+        const shared = useShared();
+        const sessionToken = shared.saltNetAccount?.sessionToken;
+
+        let b50Data;
+        let allRecords = null;
+
+        if (sessionToken) {
+            // Use first user's session token to get full records
+            [b50Data, allRecords] = await Promise.all([
+                getSaltNetB50ByUsername(username),
+                getSaltNetRecordsByUsername(sessionToken, username),
+            ]);
+        } else {
+            // Fallback to public B50 API only
+            b50Data = await getSaltNetB50ByUsername(username);
+        }
+
+        if (!b50Data) {
+            snackbar({
+                message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败，用户可能不存在`,
+                placement: "bottom",
+                autoCloseDelay: 3000,
+            });
+            return;
+        }
+
+        // Convert B50 to DivingFish format
+        const b50: DivingFishB50 = {
+            sd: b50Data.past.map(saltNetToDivingFish),
+            dx: b50Data.new.map(saltNetToDivingFish),
+        };
+
+        // Calculate total rating from B50
+        const totalRating =
+            b50.sd.reduce((sum, r) => sum + r.ra, 0) + b50.dx.reduce((sum, r) => sum + r.ra, 0);
+
+        // Update user data
+        user.data = {
+            ...user.data,
+            rating: totalRating,
+            name: username,
+            b50,
+            // Only set detailed if we got full records
+            ...(allRecords && { detailed: convertDetailed(allRecords.map(saltNetToDivingFish)) }),
             updateTime: Date.now(),
         };
 
