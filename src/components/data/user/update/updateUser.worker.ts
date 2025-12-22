@@ -224,8 +224,9 @@ function clearIllegalTickets(user: User) {
     const userName = getUserDisplayName(user);
     info(`正在清理 ${userName} 的非法倍券`);
     return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { userId: user.inGame?.id })
-        .then(() => {
-            info(`已清理 ${userName} 的非法倍券`);
+        .then(r => {
+            if (r.ok) info(`已清理 ${userName} 的非法倍券`);
+            else info(`清理 ${userName} 的非法倍券失败，请检查是否已获取二维码或已被登录`);
         })
         .catch(e => {
             info(`清理 ${userName} 的非法倍券失败: ${e.toString()}`, e.toString());
