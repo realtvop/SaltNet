@@ -12,9 +12,10 @@
         clearIllegalTickets,
         previewStockedTickets,
     } from "@/components/data/user/update";
-    import { alert, confirm } from "mdui";
+    import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
+    import { exportUserBackup } from "@/components/data/user/exportBackup";
 
     const shared = useShared();
 
@@ -214,6 +215,43 @@
             user.settings.manuallyUpdate = !user.settings.manuallyUpdate;
         }
     };
+
+    async function exportUserBackupHandler(user: User) {
+        let abortBackup = false;
+        if (!user.inGame.id) return snackbar({ message: "你怎么进来的！", autoCloseDelay: 2000 });
+        if (!user.data.updateTime)
+            return confirm({
+                headline: `用户 ${getUserDisplayName(user)} 尚未更新过数据，无法导出备份`,
+                description: "是否现在更新？(更新后需手动重新导出备份)",
+                confirmText: "更新",
+                cancelText: "取消",
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+                onConfirm: () => {
+                    updateUser(user, true);
+                },
+            });
+        if (!user.data.characters || !user.data.characters.length) {
+            await confirm({
+                headline: `用户 ${getUserDisplayName(user)} 的数据${user.data.characters ? "可能" : ""}不完整`,
+                description:
+                    "直接导出会缺少收藏品数据，是否执行完整更新？(更新后需手动重新执行导出备份，也可只导出成绩数据)",
+                confirmText: "更新",
+                cancelText: "取消",
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+                onConfirm: () => {
+                    updateUser(user, true);
+                    abortBackup = true;
+                },
+            });
+        }
+        if (!abortBackup) exportUserBackup(user);
+    }
 </script>
 
 <template>
@@ -319,6 +357,14 @@
                         >
                             清理补偿倍券
                             <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-menu-item
+                            @click="exportUserBackupHandler(user)"
+                            v-if="user.inGame.id"
+                        >
+                            下载数据备份
+                            <mdui-icon slot="icon" name="cloud_download"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />
