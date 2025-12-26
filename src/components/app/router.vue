@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createRouter, createMemoryHistory, createWebHistory } from "vue-router";
-    import { Dialog } from "mdui";
+    import type { Dialog } from "mdui";
 
     import IndexPage from "../../pages/index.vue";
     import UserPage from "../../pages/b50.vue";
@@ -13,6 +13,9 @@
     import ShopPage from "../../pages/Shop.vue";
     import MePage from "../../pages/me.vue";
     import OAuthCallbackPage from "../../pages/oauth-callback.vue";
+
+    import { useRouterStore } from "../../stores/router";
+    import { useDialogStore } from "../../stores/dialog";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -30,185 +33,70 @@
         { path: "/oauth/callback", component: OAuthCallbackPage },
     ];
 
-    const routesNeedAddHistory = [
-        "/settings",
-        "/b50/:id",
-        "/songs/:id",
-        "/nearcade",
-        "/about",
-        "/me",
-    ];
-    const routesNeedFixedPage = ["/"];
-
     const router = createRouter({
         history: import.meta.env.PROD ? createMemoryHistory() : createWebHistory(),
-        // history: createMemoryHistory(),
         routes,
     });
 
-    let addedHistory = false;
-    let previousRoute: string | null = null;
-    let isHandlingPopstate = false;
-    let previousHash: string = "";
+    // 延迟初始化 stores（等待 Pinia 就绪）
+    let routerStore: ReturnType<typeof useRouterStore> | null = null;
+    let dialogStore: ReturnType<typeof useDialogStore> | null = null;
 
+    function getStores() {
+        if (!routerStore) routerStore = useRouterStore();
+        if (!dialogStore) dialogStore = useDialogStore();
+        return { routerStore, dialogStore };
+    }
+
+    // 初始化：清理 URL hash
     window.addEventListener("load", () => {
-        if (window.location.hash)
+        if (window.location.hash) {
             history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
     });
 
+    // 路由守卫
     router.beforeEach((to, from, next) => {
-        if (isHandlingPopstate) {
-            isHandlingPopstate = false;
-            next();
-            return;
-        }
-
-        const needsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
-            return regex.test(to.path);
-        });
-
-        if (needsHistory && !addedHistory) {
-            // 保存当前的 from.path 作为返回路径，如果为空则使用根路径
-            previousRoute = from.path && from.path !== "/" ? from.path : "/";
-            addedHistory = true;
-
-            history.pushState({ isCustomHistory: true }, "", `#${to.path}`);
-        } else if (
-            !needsHistory &&
-            from.path &&
-            from.path !== "/" &&
-            !routesNeedAddHistory.some(route => {
-                const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
-                return regex.test(from.path);
-            })
-        ) {
-            // 更新 previousRoute 为正常的页面路径
-            previousRoute = from.path;
-        }
-
+        const { routerStore } = getStores();
+        routerStore.onBeforeRoute(to, from);
         next();
     });
 
-    router.afterEach(to => {
+    router.afterEach((to, from) => {
+        const { routerStore } = getStores();
+
+        // 滚动到顶部
         window.scrollTo(0, 0);
 
-        // Check if the current route needs fixed page
-        const needsFixedPage = routesNeedFixedPage.some(route => {
-            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
-            return regex.test(to.path);
-        });
+        // 控制页面滚动
+        document.body.style.overflowY = routerStore.needsFixed(to.path) ? "hidden" : "";
 
-        if (needsFixedPage) {
-            document.body.style.overflowY = "hidden";
-        } else {
-            document.body.style.overflowY = "";
-        }
+        // 处理历史记录清理
+        routerStore.onAfterRoute(to, from);
     });
 
-    let pendingBacks = 0;
-
+    // popstate 事件处理
     window.addEventListener("popstate", () => {
-        const currentHash = window.location.hash;
-        const openDialogs = document.querySelectorAll("mdui-dialog[open]");
+        const { routerStore, dialogStore } = getStores();
 
-        if (pendingBacks > 0) {
-            pendingBacks--;
+        // 先让 dialog 处理
+        if (dialogStore.handlePopstate()) {
+            return;
         }
 
-        // if (openDialogs.length === 0 && !currentHash.endsWith("#dialog")) return; // 石山
-        if (previousHash.endsWith("#dialog")) {
-            // if (openDialogs.length <= 1) dialogHashAdded = false;
-            const dialogHashLength = (previousHash.match(/#dialog/g) || []).length;
-            if (openDialogs.length >= dialogHashLength) {
-                const topDialog =
-                    openDialogs.length > 0 ? openDialogs[openDialogs.length - 1] : null;
-                if (topDialog) (topDialog as any).open = false;
-            }
-            return (previousHash = currentHash);
-        }
-        if (currentHash.endsWith("#dialog"))
-            history.replaceState(
-                null,
-                "",
-                currentHash.replace("#dialog", "") ||
-                    window.location.pathname + window.location.search
-            );
-
-        if (addedHistory && previousRoute) {
-            if (!currentHash || currentHash === "") {
-                addedHistory = false;
-                isHandlingPopstate = true;
-                const targetRoute = previousRoute;
-                previousRoute = null;
-
-                // 删除之前添加的历史记录，防止用户点击向前箭头
-                history.replaceState(null, "", window.location.pathname + window.location.search);
-
-                router.push(targetRoute);
-            }
-        }
-
-        previousHash = currentHash;
+        // 再让路由处理
+        routerStore.handlePopstate(router);
     });
 
-    router.afterEach((to, from) => {
-        const fromNeedsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
-            return regex.test(from.path);
-        });
-
-        const toNeedsHistory = routesNeedAddHistory.some(route => {
-            const regex = new RegExp("^" + route.replace(/:\w+/g, "[^/]+") + "$");
-            return regex.test(to.path);
-        });
-
-        if (fromNeedsHistory && !toNeedsHistory && addedHistory) {
-            addedHistory = false;
-
-            setTimeout(() => {
-                if (window.history.length > 1) {
-                    window.history.replaceState(
-                        null,
-                        "",
-                        window.location.pathname + window.location.search
-                    );
-                }
-            }, 0);
-        }
-    });
-
+    // 导出 dialog 标记函数
     export function markDialogOpen(evtOrEle: Element | Event | Dialog) {
-        const element =
-            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
-        if (element.localName !== "mdui-dialog") return; // fuck mdui-select
-
-        // dialogHashAdded = true;
-        const currentHash = window.location.hash;
-        const newHash = currentHash ? `${currentHash}#dialog` : "#dialog";
-        history.pushState({ isDialogHistory: true }, "", newHash);
-        previousHash = newHash;
+        const { dialogStore } = getStores();
+        dialogStore.markOpen(evtOrEle);
     }
 
     export function markDialogClosed(evtOrEle: Element | Event | Dialog) {
-        const element =
-            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
-        if (element.localName !== "mdui-dialog") return; // fuck mdui-select
-
-        const currentHash = window.location.hash;
-        if (currentHash.endsWith("#dialog")) {
-            // 使用 setTimeout 确保 DOM 已更新，对话框的 open 属性已移除
-            setTimeout(() => {
-                const openDialogs = document.querySelectorAll("mdui-dialog[open]");
-                const dialogHashCount = (window.location.hash.match(/#dialog/g) || []).length;
-                const effectiveHashCount = dialogHashCount - pendingBacks; // account for pending back actions
-                // 如果打开的对话框数量少于 hash 中的 #dialog 数量，则回退
-                if (openDialogs.length < effectiveHashCount) {
-                    pendingBacks++;
-                    history.back();
-                }
-            }, 0);
-        }
+        const { dialogStore } = getStores();
+        dialogStore.markClosed(evtOrEle);
     }
 
     export default router;
