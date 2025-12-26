@@ -2,7 +2,7 @@ version: "3.8"
 services:
     saltnet-db:
         image: ghcr.io/realtvop/saltnet-db:latest
-        restart: always
+        restart: unless-stopped
         ports:
             - "3721:3721"
         depends_on:
