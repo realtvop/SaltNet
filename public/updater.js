@@ -1,4 +1,4 @@
-const DB_API_URL = window.SALTNET_DB_URL || "http://saltnet-db.localhost:3721";
+const DB_API_URL = window.SALTNET_DB_URL || "https://saltnet_db_test.realtvop.top/";
 const STORAGE_KEY = "saltnetAuthState";
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
 const DIFFICULTIES = ["basic", "advanced", "expert", "master", "remaster"];
