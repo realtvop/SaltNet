@@ -187,6 +187,38 @@ function saltNetToDivingFish(record: SaltNetScoreResponse): DivingFishFullRecord
 }
 
 /**
+ * Convert B50 data to DivingFish format and calculate rating
+ */
+function convertB50Data(b50Data: { past: SaltNetScoreResponse[]; new: SaltNetScoreResponse[] }): {
+    b50: DivingFishB50;
+    totalRating: number;
+} {
+    const b50: DivingFishB50 = {
+        sd: b50Data.past.map(saltNetToDivingFish),
+        dx: b50Data.new.map(saltNetToDivingFish),
+    };
+
+    const totalRating =
+        b50.sd.reduce((sum, r) => sum + r.ra, 0) + b50.dx.reduce((sum, r) => sum + r.ra, 0);
+
+    return { b50, totalRating };
+}
+
+/**
+ * Show error snackbar with copy action
+ */
+function showErrorSnackbar(user: User, error: unknown) {
+    const errorMsg = (error as Error)?.toString?.() || "Unknown error";
+    snackbar({
+        message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
+        placement: "bottom",
+        autoCloseDelay: 3000,
+        action: "复制错误",
+        onActionClick: () => navigator.clipboard.writeText(errorMsg),
+    });
+}
+
+/**
  * Download scores from SaltNet database
  */
 async function downloadFromSaltNet(user: User) {
@@ -231,26 +263,14 @@ async function downloadFromSaltNet(user: User) {
             return;
         }
 
-        // Convert all records to DivingFish format
-        const dfRecords = allRecords.map(saltNetToDivingFish);
+        const { b50, totalRating } = convertB50Data(b50Data);
 
-        // Convert B50 to DivingFish format
-        const b50: DivingFishB50 = {
-            sd: b50Data.past.map(saltNetToDivingFish),
-            dx: b50Data.new.map(saltNetToDivingFish),
-        };
-
-        // Calculate total rating from B50
-        const totalRating =
-            b50.sd.reduce((sum, r) => sum + r.ra, 0) + b50.dx.reduce((sum, r) => sum + r.ra, 0);
-
-        // Update user data
         user.data = {
             ...user.data,
             rating: totalRating,
             name: user.saltnetDB.username,
             b50,
-            detailed: convertDetailed(dfRecords),
+            detailed: convertDetailed(allRecords.map(saltNetToDivingFish)),
             updateTime: Date.now(),
         };
 
@@ -260,14 +280,7 @@ async function downloadFromSaltNet(user: User) {
             autoCloseDelay: 1500,
         });
     } catch (e) {
-        const errorMsg = e?.toString?.() || "Unknown error";
-        snackbar({
-            message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
-            placement: "bottom",
-            autoCloseDelay: 3000,
-            action: "复制错误",
-            onActionClick: () => navigator.clipboard.writeText(errorMsg),
-        });
+        showErrorSnackbar(user, e);
     }
 }
 
@@ -298,19 +311,12 @@ async function downloadFromSaltNetByUsername(user: User) {
         const shared = useShared();
         const sessionToken = shared.saltNetAccount?.sessionToken;
 
-        let b50Data;
-        let allRecords = null;
-
-        if (sessionToken) {
-            // Use first user's session token to get full records
-            [b50Data, allRecords] = await Promise.all([
-                getSaltNetB50ByUsername(username),
-                getSaltNetRecordsByUsername(sessionToken, username),
-            ]);
-        } else {
-            // Fallback to public B50 API only
-            b50Data = await getSaltNetB50ByUsername(username);
-        }
+        const [b50Data, allRecords] = sessionToken
+            ? await Promise.all([
+                  getSaltNetB50ByUsername(username),
+                  getSaltNetRecordsByUsername(sessionToken, username),
+              ])
+            : [await getSaltNetB50ByUsername(username), null];
 
         if (!b50Data) {
             snackbar({
@@ -321,23 +327,13 @@ async function downloadFromSaltNetByUsername(user: User) {
             return;
         }
 
-        // Convert B50 to DivingFish format
-        const b50: DivingFishB50 = {
-            sd: b50Data.past.map(saltNetToDivingFish),
-            dx: b50Data.new.map(saltNetToDivingFish),
-        };
+        const { b50, totalRating } = convertB50Data(b50Data);
 
-        // Calculate total rating from B50
-        const totalRating =
-            b50.sd.reduce((sum, r) => sum + r.ra, 0) + b50.dx.reduce((sum, r) => sum + r.ra, 0);
-
-        // Update user data
         user.data = {
             ...user.data,
             rating: totalRating,
             name: username,
             b50,
-            // Only set detailed if we got full records
             ...(allRecords && { detailed: convertDetailed(allRecords.map(saltNetToDivingFish)) }),
             updateTime: Date.now(),
         };
@@ -348,14 +344,7 @@ async function downloadFromSaltNetByUsername(user: User) {
             autoCloseDelay: 1500,
         });
     } catch (e) {
-        const errorMsg = e?.toString?.() || "Unknown error";
-        snackbar({
-            message: `从 SaltNet 获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
-            placement: "bottom",
-            autoCloseDelay: 3000,
-            action: "复制错误",
-            onActionClick: () => navigator.clipboard.writeText(errorMsg),
-        });
+        showErrorSnackbar(user, e);
     }
 }
 

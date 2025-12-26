@@ -110,7 +110,7 @@ function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
 export async function handleLXNSOAuthCallback(code: string): Promise<void> {
     const userIndexStr = window.sessionStorage.getItem("lxns_oauth_user_index");
     if (!userIndexStr) throw new Error("User index not found in session storage");
-    const userIndex = parseInt(userIndexStr, 0);
+    const userIndex = parseInt(userIndexStr, 10);
     const auth = await getLXNSOAuthToken(code);
     saveLXNSAuth(userIndex, auth);
     window.sessionStorage.removeItem("lxns_oauth_user_index");

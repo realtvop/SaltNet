@@ -24,6 +24,75 @@ interface ErrorResponse {
     error: string;
 }
 
+// ==================== API Request Helper ====================
+
+interface ApiRequestOptions<T> {
+    url: string;
+    method?: "GET" | "POST" | "DELETE";
+    body?: unknown;
+    sessionToken?: string;
+    successMessage?: string;
+    errorMessage?: string;
+    showNetworkError?: boolean;
+}
+
+/**
+ * Generic API request helper that handles common patterns:
+ * - JSON content type for POST requests with body
+ * - Authorization header when sessionToken provided
+ * - Error handling with snackbar notifications
+ * - Network error handling
+ */
+async function apiRequest<T>(options: ApiRequestOptions<T>): Promise<T | null> {
+    const {
+        url,
+        method = "GET",
+        body,
+        sessionToken,
+        successMessage,
+        errorMessage,
+        showNetworkError = true,
+    } = options;
+
+    try {
+        const headers: Record<string, string> = {};
+        if (body) headers["Content-Type"] = "application/json";
+        if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
+
+        const resp = await fetch(url, {
+            method,
+            headers,
+            ...(body && { body: JSON.stringify(body) }),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            if (errorMessage !== undefined) {
+                snackbar({
+                    message: (data as ErrorResponse).error || errorMessage,
+                    autoCloseDelay: 3000,
+                });
+            }
+            return null;
+        }
+
+        if (successMessage) {
+            snackbar({ message: successMessage, autoCloseDelay: 2000 });
+        }
+
+        return data as T;
+    } catch {
+        if (showNetworkError) {
+            snackbar({ message: "网络错误，请检查连接", autoCloseDelay: 3000 });
+        }
+        return null;
+    }
+}
+
+// Session expiry duration: 7 days
+const SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Login to SaltNet database
  */
@@ -31,52 +100,25 @@ export async function loginSaltNet(
     identifier: string,
     password: string
 ): Promise<SaltNetDatabaseLogin | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ identifier, password }),
-        });
+    const data = await apiRequest<LoginResponse>({
+        url: `${DB_API_URL}/api/v0/user/login`,
+        method: "POST",
+        body: { identifier, password },
+        errorMessage: "登录失败",
+        successMessage: "SaltNet 登录成功！",
+    });
 
-        const data = await resp.json();
+    if (!data) return null;
 
-        if (!resp.ok) {
-            const errorData = data as ErrorResponse;
-            snackbar({
-                message: errorData.error || "登录失败",
-                autoCloseDelay: 3000,
-            });
-            return null;
-        }
-
-        const loginData = data as LoginResponse;
-
-        // Calculate session expiry (7 days from now)
-        const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
-
-        snackbar({
-            message: "SaltNet 登录成功！",
-            autoCloseDelay: 2000,
-        });
-
-        return {
-            id: loginData.user.id,
-            username: loginData.user.userName,
-            email: loginData.user.email,
-            sessionToken: loginData.sessionToken,
-            refreshToken: loginData.refreshToken,
-            sessionExpiry,
-            maimaidxRegion: loginData.user.maimaidxRegion,
-        };
-    } catch (error) {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return null;
-    }
+    return {
+        id: data.user.id,
+        username: data.user.userName,
+        email: data.user.email,
+        sessionToken: data.sessionToken,
+        refreshToken: data.refreshToken,
+        sessionExpiry: Date.now() + SESSION_EXPIRY_MS,
+        maimaidxRegion: data.user.maimaidxRegion,
+    };
 }
 
 /**
@@ -85,51 +127,32 @@ export async function loginSaltNet(
 export async function refreshSaltNetToken(
     refreshToken: string
 ): Promise<{ sessionToken: string; sessionExpiry: number } | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/refresh`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ refreshToken }),
-        });
+    const data = await apiRequest<RefreshResponse>({
+        url: `${DB_API_URL}/api/v0/user/refresh`,
+        method: "POST",
+        body: { refreshToken },
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return null;
-        }
+    if (!data) return null;
 
-        const data = (await resp.json()) as RefreshResponse;
-
-        return {
-            sessionToken: data.sessionToken,
-            sessionExpiry: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        };
-    } catch {
-        return null;
-    }
+    return {
+        sessionToken: data.sessionToken,
+        sessionExpiry: Date.now() + SESSION_EXPIRY_MS,
+    };
 }
 
 /**
  * Get current user info
  */
 export async function getSaltNetUser(sessionToken: string): Promise<SaltNetDatabaseUser | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
+    const data = await apiRequest<UserResponse>({
+        url: `${DB_API_URL}/api/v0/user`,
+        sessionToken,
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return null;
-        }
-
-        const data = (await resp.json()) as UserResponse;
-        return data.user;
-    } catch {
-        return null;
-    }
+    return data?.user ?? null;
 }
 
 /**
@@ -140,82 +163,33 @@ export async function registerSaltNet(
     password: string,
     email?: string
 ): Promise<SaltNetDatabaseLogin | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/register`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                userName,
-                password,
-                ...(email && { email }),
-            }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/register`,
+        method: "POST",
+        body: { userName, password, ...(email && { email }) },
+        errorMessage: "注册失败",
+        successMessage: "注册成功！正在登录...",
+    });
 
-        const data = await resp.json();
+    if (!data) return null;
 
-        if (!resp.ok) {
-            const errorData = data as ErrorResponse;
-            snackbar({
-                message: errorData.error || "注册失败",
-                autoCloseDelay: 3000,
-            });
-            return null;
-        }
-
-        snackbar({
-            message: "注册成功！正在登录...",
-            autoCloseDelay: 1500,
-        });
-
-        // Auto-login after registration
-        const loginResult = await loginSaltNet(userName, password);
-        return loginResult;
-    } catch (error) {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return null;
-    }
+    // Auto-login after registration
+    return loginSaltNet(userName, password);
 }
 
 /**
  * Request password reset email
  */
 export async function forgotPassword(email: string): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/forgot-password`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/forgot-password`,
+        method: "POST",
+        body: { email },
+        errorMessage: "发送失败",
+        successMessage: "如果该邮箱已注册，重置邮件将会发送",
+    });
 
-        if (!resp.ok) {
-            const data = await resp.json();
-            const errorData = data as ErrorResponse;
-            snackbar({
-                message: errorData.error || "发送失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "如果该邮箱已注册，重置邮件将会发送",
-            autoCloseDelay: 3000,
-        });
-        return true;
-    } catch (error) {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 // Score API Types
@@ -258,23 +232,13 @@ interface UploadRecordsResponse {
 export async function getSaltNetRecords(
     sessionToken: string
 ): Promise<SaltNetScoreResponse[] | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
+    const data = await apiRequest<{ records: SaltNetScoreResponse[] }>({
+        url: `${DB_API_URL}/api/v0/maimaidx/records`,
+        sessionToken,
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return null;
-        }
-
-        const data = (await resp.json()) as { records: SaltNetScoreResponse[] };
-        return data.records;
-    } catch {
-        return null;
-    }
+    return data?.records ?? null;
 }
 
 // B50 API Response Types
@@ -287,23 +251,11 @@ export interface SaltNetB50Response {
  * Get user B50 data from SaltNet database
  */
 export async function getSaltNetB50(sessionToken: string): Promise<SaltNetB50Response | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records/b50`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
-
-        if (!resp.ok) {
-            return null;
-        }
-
-        const data = (await resp.json()) as SaltNetB50Response;
-        return data;
-    } catch {
-        return null;
-    }
+    return apiRequest<SaltNetB50Response>({
+        url: `${DB_API_URL}/api/v0/maimaidx/records/b50`,
+        sessionToken,
+        showNetworkError: false,
+    });
 }
 
 /**
@@ -312,23 +264,10 @@ export async function getSaltNetB50(sessionToken: string): Promise<SaltNetB50Res
 export async function getSaltNetB50ByUsername(
     username: string
 ): Promise<SaltNetB50Response | null> {
-    try {
-        const resp = await fetch(
-            `${DB_API_URL}/api/v0/maimaidx/records/b50?user=${encodeURIComponent(username)}`,
-            {
-                method: "GET",
-            }
-        );
-
-        if (!resp.ok) {
-            return null;
-        }
-
-        const data = (await resp.json()) as SaltNetB50Response;
-        return data;
-    } catch {
-        return null;
-    }
+    return apiRequest<SaltNetB50Response>({
+        url: `${DB_API_URL}/api/v0/maimaidx/records/b50?user=${encodeURIComponent(username)}`,
+        showNetworkError: false,
+    });
 }
 
 /**
@@ -338,26 +277,13 @@ export async function getSaltNetRecordsByUsername(
     sessionToken: string,
     username: string
 ): Promise<SaltNetScoreResponse[] | null> {
-    try {
-        const resp = await fetch(
-            `${DB_API_URL}/api/v0/maimaidx/records?user=${encodeURIComponent(username)}`,
-            {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${sessionToken}`,
-                },
-            }
-        );
+    const data = await apiRequest<{ records: SaltNetScoreResponse[] }>({
+        url: `${DB_API_URL}/api/v0/maimaidx/records?user=${encodeURIComponent(username)}`,
+        sessionToken,
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return null;
-        }
-
-        const data = (await resp.json()) as { records: SaltNetScoreResponse[] };
-        return data.records;
-    } catch {
-        return null;
-    }
+    return data?.records ?? null;
 }
 
 /**
@@ -367,34 +293,13 @@ export async function uploadToSaltNet(
     sessionToken: string,
     scores: SaltNetUploadScore[]
 ): Promise<UploadRecordsResponse | null> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/maimaidx/records`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify(scores),
-        });
-
-        if (!resp.ok) {
-            const data = await resp.json();
-            const errorData = data as ErrorResponse;
-            snackbar({
-                message: errorData.error || "上传失败",
-                autoCloseDelay: 3000,
-            });
-            return null;
-        }
-
-        return (await resp.json()) as UploadRecordsResponse;
-    } catch (error) {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return null;
-    }
+    return apiRequest<UploadRecordsResponse>({
+        url: `${DB_API_URL}/api/v0/maimaidx/records`,
+        method: "POST",
+        body: scores,
+        sessionToken,
+        errorMessage: "上传失败",
+    });
 }
 
 // ==================== User Account Management APIs ====================
@@ -405,26 +310,15 @@ import type { MaimaidxRegion } from "./type";
  * Logout from SaltNet
  */
 export async function logoutSaltNet(sessionToken: string): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/logout`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/logout`,
+        method: "POST",
+        sessionToken,
+        successMessage: "已退出登录",
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return false;
-        }
-
-        snackbar({
-            message: "已退出登录",
-            autoCloseDelay: 2000,
-        });
-        return true;
-    } catch {
-        return false;
-    }
+    return data !== null;
 }
 
 /**
@@ -434,37 +328,16 @@ export async function updateSaltNetRegion(
     sessionToken: string,
     region: MaimaidxRegion
 ): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/update-region`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({ region }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/update-region`,
+        method: "POST",
+        body: { region },
+        sessionToken,
+        errorMessage: "更新地区失败",
+        successMessage: "地区更新成功",
+    });
 
-        if (!resp.ok) {
-            const data = await resp.json();
-            snackbar({
-                message: (data as ErrorResponse).error || "更新地区失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "地区更新成功",
-            autoCloseDelay: 2000,
-        });
-        return true;
-    } catch {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 /**
@@ -475,76 +348,32 @@ export async function changePassword(
     currentPassword: string,
     newPassword: string
 ): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/change-password`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({ currentPassword, newPassword }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/change-password`,
+        method: "POST",
+        body: { currentPassword, newPassword },
+        sessionToken,
+        errorMessage: "修改密码失败",
+        successMessage: "密码修改成功",
+    });
 
-        const data = await resp.json();
-
-        if (!resp.ok) {
-            snackbar({
-                message: (data as ErrorResponse).error || "修改密码失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "密码修改成功",
-            autoCloseDelay: 2000,
-        });
-        return true;
-    } catch {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 /**
  * Bind email to account (for users without email)
  */
 export async function bindEmail(sessionToken: string, email: string): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/bind-email`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({ email }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/bind-email`,
+        method: "POST",
+        body: { email },
+        sessionToken,
+        errorMessage: "绑定邮箱失败",
+        successMessage: "验证邮件已发送，请查收",
+    });
 
-        const data = await resp.json();
-
-        if (!resp.ok) {
-            snackbar({
-                message: (data as ErrorResponse).error || "绑定邮箱失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "验证邮件已发送，请查收",
-            autoCloseDelay: 3000,
-        });
-        return true;
-    } catch {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 /**
@@ -555,38 +384,16 @@ export async function changeEmail(
     newEmail: string,
     password: string
 ): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/user/change-email`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({ newEmail, password }),
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/user/change-email`,
+        method: "POST",
+        body: { newEmail, password },
+        sessionToken,
+        errorMessage: "修改邮箱失败",
+        successMessage: "验证邮件已发送到新邮箱，请查收",
+    });
 
-        const data = await resp.json();
-
-        if (!resp.ok) {
-            snackbar({
-                message: (data as ErrorResponse).error || "修改邮箱失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "验证邮件已发送到新邮箱，请查收",
-            autoCloseDelay: 3000,
-        });
-        return true;
-    } catch {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 // ==================== OAuth APIs ====================
@@ -612,23 +419,13 @@ export function getOAuthBindUrl(provider: OAuthProvider): string {
  * Get linked OAuth accounts for current user
  */
 export async function getOAuthAccounts(sessionToken: string): Promise<OAuthAccount[]> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/oauth/accounts`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
+    const data = await apiRequest<{ accounts: OAuthAccount[] }>({
+        url: `${DB_API_URL}/api/v0/oauth/accounts`,
+        sessionToken,
+        showNetworkError: false,
+    });
 
-        if (!resp.ok) {
-            return [];
-        }
-
-        const data = (await resp.json()) as { accounts: OAuthAccount[] };
-        return data.accounts;
-    } catch {
-        return [];
-    }
+    return data?.accounts ?? [];
 }
 
 /**
@@ -638,36 +435,15 @@ export async function unlinkOAuthAccount(
     sessionToken: string,
     provider: OAuthProvider
 ): Promise<boolean> {
-    try {
-        const resp = await fetch(`${DB_API_URL}/api/v0/oauth/${provider}`, {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${sessionToken}`,
-            },
-        });
+    const data = await apiRequest<{ message: string }>({
+        url: `${DB_API_URL}/api/v0/oauth/${provider}`,
+        method: "DELETE",
+        sessionToken,
+        errorMessage: "解绑失败",
+        successMessage: "已解除绑定",
+    });
 
-        const data = await resp.json();
-
-        if (!resp.ok) {
-            snackbar({
-                message: (data as ErrorResponse).error || "解绑失败",
-                autoCloseDelay: 3000,
-            });
-            return false;
-        }
-
-        snackbar({
-            message: "已解除绑定",
-            autoCloseDelay: 2000,
-        });
-        return true;
-    } catch {
-        snackbar({
-            message: "网络错误，请检查连接",
-            autoCloseDelay: 3000,
-        });
-        return false;
-    }
+    return data !== null;
 }
 
 /**
@@ -701,7 +477,6 @@ export function handleOAuthCallback(): {
     const isNew = params.get("isNew") === "true";
 
     if (sessionToken && refreshToken && userName) {
-        const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
         return {
             success: true,
             isNew,
@@ -711,7 +486,7 @@ export function handleOAuthCallback(): {
                 email: null,
                 sessionToken,
                 refreshToken,
-                sessionExpiry,
+                sessionExpiry: Date.now() + SESSION_EXPIRY_MS,
                 maimaidxRegion: null,
             },
         };
