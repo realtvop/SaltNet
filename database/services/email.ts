@@ -11,9 +11,9 @@ brevoApiInstance.setApiKey(
 // Resend (backup)
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@example.com";
+const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@salt.realtvop.top";
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "SaltNet";
-const API_HOST = process.env.API_HOST || "http://localhost:3000/";
+const API_HOST = process.env.API_HOST || "http://localhost:3721/";
 
 // Extract email address from "Name <email>" format
 function parseFromEmail(from: string): { name: string; email: string } {
