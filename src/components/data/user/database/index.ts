@@ -1,4 +1,4 @@
-export type { SaltNetDatabaseLogin, SaltNetDatabaseUser } from "./type.ts";
+export type { SaltNetDatabaseLogin, SaltNetDatabaseUser, OAuthProvider, OAuthAccount } from "./type.ts";
 export {
     loginSaltNet,
     refreshSaltNetToken,
@@ -9,5 +9,10 @@ export {
     getSaltNetB50,
     getSaltNetB50ByUsername,
     getSaltNetRecordsByUsername,
+    getOAuthLoginUrl,
+    getOAuthBindUrl,
+    getOAuthAccounts,
+    unlinkOAuthAccount,
+    handleOAuthCallback,
 } from "./api.ts";
 export type { SaltNetScoreResponse, SaltNetB50Response } from "./api.ts";

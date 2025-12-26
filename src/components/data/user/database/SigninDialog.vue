@@ -54,6 +54,23 @@
             <mdui-button variant="text" @click="handleForgotPassword" full-width>
                 忘记密码？
             </mdui-button>
+
+            <div class="divider-container">
+                <mdui-divider></mdui-divider>
+                <span class="divider-text">或使用第三方账号</span>
+                <mdui-divider></mdui-divider>
+            </div>
+
+            <div class="oauth-buttons">
+                <mdui-button variant="outlined" @click="handleOAuthLogin('google')" full-width>
+                    <mdui-icon slot="icon" name="g_mobiledata"></mdui-icon>
+                    Google 登录
+                </mdui-button>
+                <mdui-button variant="outlined" @click="handleOAuthLogin('github')" full-width>
+                    <mdui-icon slot="icon" name="code"></mdui-icon>
+                    GitHub 登录
+                </mdui-button>
+            </div>
         </div>
     </mdui-dialog>
 </template>
@@ -62,8 +79,8 @@
     import { computed, nextTick, ref, watch } from "vue";
     import { prompt } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
-    import { loginSaltNet, forgotPassword } from "./api";
-    import type { SaltNetDatabaseLogin } from "./type";
+    import { loginSaltNet, forgotPassword, getOAuthLoginUrl } from "./api";
+    import type { SaltNetDatabaseLogin, OAuthProvider } from "./type";
 
     const props = defineProps<{ modelValue: boolean }>();
     const emit = defineEmits<{
@@ -142,6 +159,10 @@
             },
         });
     };
+
+    const handleOAuthLogin = (provider: OAuthProvider) => {
+        window.location.href = getOAuthLoginUrl(provider);
+    };
 </script>
 
 <style scoped>
@@ -153,5 +174,28 @@
 
     mdui-text-field {
         width: 100%;
+    }
+
+    .divider-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 8px 0;
+    }
+
+    .divider-container mdui-divider {
+        flex: 1;
+    }
+
+    .divider-text {
+        font-size: 0.85rem;
+        color: var(--mdui-color-on-surface-variant);
+        white-space: nowrap;
+    }
+
+    .oauth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 </style>

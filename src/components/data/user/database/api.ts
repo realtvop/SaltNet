@@ -588,3 +588,134 @@ export async function changeEmail(
         return false;
     }
 }
+
+// ==================== OAuth APIs ====================
+
+import type { OAuthProvider, OAuthAccount } from "./type";
+
+/**
+ * Get OAuth authorization URL for login
+ */
+export function getOAuthLoginUrl(provider: OAuthProvider): string {
+    return `${DB_API_URL}/api/v0/oauth/${provider}/login`;
+}
+
+/**
+ * Get OAuth authorization URL for binding (requires session token in header)
+ * Since this is a redirect, we need to handle it differently
+ */
+export function getOAuthBindUrl(provider: OAuthProvider): string {
+    return `${DB_API_URL}/api/v0/oauth/${provider}/bind`;
+}
+
+/**
+ * Get linked OAuth accounts for current user
+ */
+export async function getOAuthAccounts(sessionToken: string): Promise<OAuthAccount[]> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/oauth/accounts`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${sessionToken}`,
+            },
+        });
+
+        if (!resp.ok) {
+            return [];
+        }
+
+        const data = (await resp.json()) as { accounts: OAuthAccount[] };
+        return data.accounts;
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Unlink OAuth account
+ */
+export async function unlinkOAuthAccount(
+    sessionToken: string,
+    provider: OAuthProvider
+): Promise<boolean> {
+    try {
+        const resp = await fetch(`${DB_API_URL}/api/v0/oauth/${provider}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${sessionToken}`,
+            },
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            snackbar({
+                message: (data as ErrorResponse).error || "解绑失败",
+                autoCloseDelay: 3000,
+            });
+            return false;
+        }
+
+        snackbar({
+            message: "已解除绑定",
+            autoCloseDelay: 2000,
+        });
+        return true;
+    } catch {
+        snackbar({
+            message: "网络错误，请检查连接",
+            autoCloseDelay: 3000,
+        });
+        return false;
+    }
+}
+
+/**
+ * Handle OAuth callback - process tokens from URL
+ */
+export function handleOAuthCallback(): {
+    success: boolean;
+    data?: SaltNetDatabaseLogin;
+    error?: string;
+    action?: string;
+    isNew?: boolean;
+} {
+    const params = new URLSearchParams(window.location.search);
+
+    // Check for error
+    const error = params.get("error");
+    if (error) {
+        return { success: false, error };
+    }
+
+    // Check for success action (bind)
+    const successAction = params.get("success");
+    if (successAction) {
+        return { success: true, action: successAction };
+    }
+
+    // Check for login tokens
+    const sessionToken = params.get("sessionToken");
+    const refreshToken = params.get("refreshToken");
+    const userName = params.get("userName");
+    const isNew = params.get("isNew") === "true";
+
+    if (sessionToken && refreshToken && userName) {
+        const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+        return {
+            success: true,
+            isNew,
+            data: {
+                id: 0, // Will be fetched later
+                username: userName,
+                email: null,
+                sessionToken,
+                refreshToken,
+                sessionExpiry,
+                maimaidxRegion: null,
+            },
+        };
+    }
+
+    return { success: false, error: "invalid_callback" };
+}

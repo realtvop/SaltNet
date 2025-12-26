@@ -21,7 +21,7 @@ export const users = pgTable("users", {
 
     userName: text("userName").notNull().unique(),
     email: text("email").unique(),
-    password: text("password").notNull(),
+    password: text("password"), // nullable for OAuth-only users
     emailVerified: boolean("email_verified").default(false).notNull(),
 
     sessions: jsonb("sessions").default("[]"),
@@ -178,6 +178,22 @@ export const maimaidxUserCollections = pgTable("maimaidx_user_collections", {
         .notNull(),
 });
 
+// MARK: OAuth Accounts (Third-party login providers)
+export const oauthProviders = ["google", "github"] as const;
+export const oauthProviderEnum = pgEnum("oauth_provider", oauthProviders);
+export const oauthAccounts = pgTable("oauth_accounts", {
+    id: serial("id").primaryKey(),
+    user: integer("user")
+        .references(() => users.id, { onDelete: "cascade" })
+        .notNull(),
+    provider: oauthProviderEnum("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    email: text("email"),
+    name: text("name"),
+    avatarUrl: text("avatar_url"),
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
 // MARK: maimai DX Music Aliases
 export const languages = ["en", "ja", "zh"] as const;
 export const languageEnum = pgEnum("language", languages);
@@ -195,6 +211,7 @@ export const usersRelations = relations(users, ({ many }) => ({
     applications: many(applications),
     scores: many(maimaidxScores),
     userCollections: many(maimaidxUserCollections),
+    oauthAccounts: many(oauthAccounts),
 }));
 
 export const applicationsRelations = relations(applications, ({ one }) => ({
@@ -251,5 +268,12 @@ export const maimaidxMusicAliasesRelations = relations(maimaidxMusicAliases, ({ 
     music: one(maimaidxMusics, {
         fields: [maimaidxMusicAliases.music],
         references: [maimaidxMusics.title],
+    }),
+}));
+
+export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
+    user: one(users, {
+        fields: [oauthAccounts.user],
+        references: [users.id],
     }),
 }));

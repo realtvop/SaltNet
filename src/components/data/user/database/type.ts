@@ -18,3 +18,13 @@ export interface SaltNetDatabaseUser {
 }
 
 export type MaimaidxRegion = "jp" | "ex" | "cn";
+
+export type OAuthProvider = "google" | "github";
+
+export interface OAuthAccount {
+    provider: OAuthProvider;
+    email: string | null;
+    name: string | null;
+    avatarUrl: string | null;
+    linkedAt: string | null;
+}

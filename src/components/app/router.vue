@@ -12,6 +12,7 @@
     import RenderingPage from "../../pages/b50ToRender.vue";
     import ShopPage from "../../pages/Shop.vue";
     import MePage from "../../pages/me.vue";
+    import OAuthCallbackPage from "../../pages/oauth-callback.vue";
 
     const routes = [
         { path: "/", component: IndexPage },
@@ -26,6 +27,7 @@
         { path: "/collections", component: CollectionsPage },
         { path: "/nearcade", component: ShopPage },
         { path: "/me", component: MePage },
+        { path: "/oauth/callback", component: OAuthCallbackPage },
     ];
 
     const routesNeedAddHistory = [

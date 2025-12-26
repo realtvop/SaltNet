@@ -1,17 +1,20 @@
 <script setup lang="ts">
-    import { ref, computed } from "vue";
+    import { ref, computed, onMounted } from "vue";
     import { useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
-    import { confirm } from "mdui";
+    import { confirm, snackbar } from "mdui";
     import {
         logoutSaltNet,
         updateSaltNetRegion,
         changePassword,
         bindEmail,
         changeEmail,
+        getOAuthAccounts,
+        getOAuthBindUrl,
+        unlinkOAuthAccount,
     } from "@/components/data/user/database/api";
-    import type { MaimaidxRegion } from "@/components/data/user/database/type";
+    import type { MaimaidxRegion, OAuthProvider, OAuthAccount } from "@/components/data/user/database";
 
     const shared = useShared();
     const router = useRouter();
@@ -21,6 +24,12 @@
         jp: "日服",
         cn: "国服",
         ex: "国际服",
+    };
+
+    // OAuth provider labels
+    const oauthProviderLabels: Record<OAuthProvider, string> = {
+        google: "Google",
+        github: "GitHub",
     };
 
     // Dialog states
@@ -38,8 +47,34 @@
         confirmPassword: "",
     });
 
+    // OAuth accounts
+    const oauthAccounts = ref<OAuthAccount[]>([]);
+    const loadingOAuth = ref(false);
+
     // Computed
     const hasEmail = computed(() => !!shared.saltNetAccount?.email);
+
+    // Check if a provider is linked
+    function isProviderLinked(provider: OAuthProvider): boolean {
+        return oauthAccounts.value.some((a) => a.provider === provider);
+    }
+
+    // Get linked account for a provider
+    function getLinkedAccount(provider: OAuthProvider): OAuthAccount | undefined {
+        return oauthAccounts.value.find((a) => a.provider === provider);
+    }
+
+    // Load OAuth accounts
+    async function loadOAuthAccounts() {
+        if (!shared.saltNetAccount) return;
+        loadingOAuth.value = true;
+        oauthAccounts.value = await getOAuthAccounts(shared.saltNetAccount.sessionToken);
+        loadingOAuth.value = false;
+    }
+
+    onMounted(() => {
+        loadOAuthAccounts();
+    });
 
     // Handlers
     function handleLogout() {
@@ -114,6 +149,39 @@
         );
         if (success) isPasswordDialogOpen.value = false;
     }
+
+    // OAuth handlers
+    function handleOAuthBind(provider: OAuthProvider) {
+        if (!shared.saltNetAccount) return;
+        // Store session token for after redirect
+        sessionStorage.setItem("oauth_bind_token", shared.saltNetAccount.sessionToken);
+        // Redirect to OAuth bind URL
+        window.location.href = getOAuthBindUrl(provider);
+    }
+
+    function handleOAuthUnlink(provider: OAuthProvider) {
+        if (!shared.saltNetAccount) return;
+        const account = getLinkedAccount(provider);
+        confirm({
+            headline: `解除绑定 ${oauthProviderLabels[provider]}？`,
+            description: account?.email ? `当前绑定: ${account.email}` : undefined,
+            confirmText: "解除绑定",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: async () => {
+                const success = await unlinkOAuthAccount(
+                    shared.saltNetAccount!.sessionToken,
+                    provider
+                );
+                if (success) {
+                    await loadOAuthAccounts();
+                }
+            },
+        });
+    }
 </script>
 
 <template>
@@ -167,6 +235,43 @@
                     </div>
                 </mdui-list-item>
             </mdui-list>
+        </mdui-card>
+
+        <mdui-card variant="outlined" class="settings-card">
+            <h3>第三方账号</h3>
+
+            <mdui-list>
+                <mdui-list-item v-for="provider in (['google', 'github'] as OAuthProvider[])" :key="provider">
+                    <mdui-icon slot="icon" :name="provider === 'google' ? 'g_mobiledata' : 'code'"></mdui-icon>
+                    <div class="oauth-item-content">
+                        <div class="oauth-provider-info">
+                            <span class="oauth-provider-name">{{ oauthProviderLabels[provider] }}</span>
+                            <span v-if="isProviderLinked(provider)" class="oauth-linked-email">
+                                {{ getLinkedAccount(provider)?.email || getLinkedAccount(provider)?.name || "已绑定" }}
+                            </span>
+                            <span v-else class="oauth-not-linked">未绑定</span>
+                        </div>
+                        <mdui-button
+                            v-if="isProviderLinked(provider)"
+                            variant="text"
+                            @click="handleOAuthUnlink(provider)"
+                        >
+                            解绑
+                        </mdui-button>
+                        <mdui-button
+                            v-else
+                            variant="tonal"
+                            @click="handleOAuthBind(provider)"
+                        >
+                            绑定
+                        </mdui-button>
+                    </div>
+                </mdui-list-item>
+            </mdui-list>
+
+            <div v-if="loadingOAuth" class="loading-overlay">
+                <mdui-circular-progress></mdui-circular-progress>
+            </div>
         </mdui-card>
 
         <div class="logout-container">
@@ -367,5 +472,39 @@
     .login-prompt-card p {
         color: var(--mdui-color-on-surface-variant);
         margin-bottom: 24px;
+    }
+
+    /* OAuth styles */
+    .oauth-item-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .oauth-provider-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .oauth-provider-name {
+        font-weight: 500;
+    }
+
+    .oauth-linked-email {
+        font-size: 0.8rem;
+        color: var(--mdui-color-primary);
+    }
+
+    .oauth-not-linked {
+        font-size: 0.8rem;
+        color: var(--mdui-color-on-surface-variant);
+    }
+
+    .loading-overlay {
+        display: flex;
+        justify-content: center;
+        padding: 16px;
     }
 </style>
