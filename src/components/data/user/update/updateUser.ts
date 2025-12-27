@@ -1,6 +1,6 @@
 import { getUserDisplayName, type User, convertDetailed } from "@/components/data/user/type";
 import { snackbar, alert } from "mdui";
-import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+import { markDialogOpen, markDialogClosed } from "@/components/app/router";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { toHalfWidth } from "@/utils";
 import {
@@ -17,7 +17,6 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
 import { getRankRateByAchievement } from "@/components/data/maiTypes";
-// @ts-ignore
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
 const updateUserWorker = new UpdateUserWorker();
@@ -59,7 +58,7 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
             },
             onClose: markDialogClosed,
         });
-    } else console.log(type, event.data);
+    }
 };
 
 const pendingUsers: { [key: string]: User } = {};

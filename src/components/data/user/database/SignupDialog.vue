@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { registerSaltNet } from "./api";
     import type { SaltNetDatabaseLogin } from "./type";
 

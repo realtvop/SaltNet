@@ -110,7 +110,7 @@ export const useShared = defineStore("shared", () => {
         users,
         (newUsers: User[]) => {
             if (!newUsers) return;
-            localForage.setItem("users", toRaw(newUsers)).catch((err: any) => {
+            localForage.setItem("users", toRaw(newUsers)).catch((err: unknown) => {
                 console.error("Failed to save users:", err);
             });
         },
@@ -120,7 +120,7 @@ export const useShared = defineStore("shared", () => {
         favorites,
         (newFavorites: FavoriteList[]) => {
             if (!newFavorites) return;
-            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: any) => {
+            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: unknown) => {
                 console.error("Failed to save favorites:", err);
             });
         },
@@ -128,7 +128,7 @@ export const useShared = defineStore("shared", () => {
     );
     watch(chartsSort, (newChartsSort: ChartsSortCached) => {
         if (!newChartsSort) return;
-        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
+        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: unknown) => {
             console.error("Failed to save charts sort:", err);
         });
     });
@@ -136,7 +136,7 @@ export const useShared = defineStore("shared", () => {
         nearcadeData,
         (newNearcadeData: NearcadeData) => {
             if (!newNearcadeData) return;
-            localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: any) => {
+            localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: unknown) => {
                 console.error("Failed to save nearcade data:", err);
             });
         },

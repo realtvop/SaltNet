@@ -67,7 +67,10 @@ export async function exchangeCodeForUserInfo(
     return null;
 }
 
-async function exchangeGoogleCode(code: string, redirectUri: string): Promise<OAuthUserInfo | null> {
+async function exchangeGoogleCode(
+    code: string,
+    redirectUri: string
+): Promise<OAuthUserInfo | null> {
     try {
         // Exchange code for tokens
         const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
@@ -112,7 +115,10 @@ async function exchangeGoogleCode(code: string, redirectUri: string): Promise<OA
     }
 }
 
-async function exchangeGitHubCode(code: string, redirectUri: string): Promise<OAuthUserInfo | null> {
+async function exchangeGitHubCode(
+    code: string,
+    redirectUri: string
+): Promise<OAuthUserInfo | null> {
     try {
         // Exchange code for access token
         const tokenResp = await fetch("https://github.com/login/oauth/access_token", {
@@ -165,7 +171,7 @@ async function exchangeGitHubCode(code: string, redirectUri: string): Promise<OA
                 primary: boolean;
                 verified: boolean;
             }>;
-            const primaryEmail = emails.find((e) => e.primary && e.verified);
+            const primaryEmail = emails.find(e => e.primary && e.verified);
             email = primaryEmail?.email || null;
         }
 
@@ -256,16 +262,12 @@ export function createSessionTokens(
     userId: number,
     email: string | null
 ): { sessionToken: string; refreshToken: string } {
-    const sessionToken = jwt.sign(
-        { userId, email, type: "session" },
-        JWT_SECRET,
-        { expiresIn: "7d" }
-    );
-    const refreshToken = jwt.sign(
-        { userId, email, type: "refresh" },
-        JWT_SECRET,
-        { expiresIn: "30d" }
-    );
+    const sessionToken = jwt.sign({ userId, email, type: "session" }, JWT_SECRET, {
+        expiresIn: "7d",
+    });
+    const refreshToken = jwt.sign({ userId, email, type: "refresh" }, JWT_SECRET, {
+        expiresIn: "30d",
+    });
     return { sessionToken, refreshToken };
 }
 

@@ -149,7 +149,7 @@
 
 <script setup lang="ts">
     import { ref, computed, watch, nextTick } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import type { Chart } from "@/components/data/music/type";
     import { useShared } from "@/components/app/shared";
 

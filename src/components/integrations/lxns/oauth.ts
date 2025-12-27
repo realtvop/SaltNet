@@ -92,7 +92,6 @@ function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
     const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
         auth.accessToken!
     );
-    console.log(jwtDecode<{ name: string; id: number; exp: number }>(auth.accessToken!));
     user.lxns = {
         auth: {
             ...auth,

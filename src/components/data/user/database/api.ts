@@ -26,7 +26,7 @@ interface ErrorResponse {
 
 // ==================== API Request Helper ====================
 
-interface ApiRequestOptions<T> {
+interface ApiRequestOptions {
     url: string;
     method?: "GET" | "POST" | "DELETE";
     body?: unknown;
@@ -43,7 +43,7 @@ interface ApiRequestOptions<T> {
  * - Error handling with snackbar notifications
  * - Network error handling
  */
-async function apiRequest<T>(options: ApiRequestOptions<T>): Promise<T | null> {
+async function apiRequest<T>(options: ApiRequestOptions): Promise<T | null> {
     const {
         url,
         method = "GET",
@@ -59,11 +59,15 @@ async function apiRequest<T>(options: ApiRequestOptions<T>): Promise<T | null> {
         if (body) headers["Content-Type"] = "application/json";
         if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
 
-        const resp = await fetch(url, {
+        const fetchOptions: RequestInit = {
             method,
             headers,
-            ...(body && { body: JSON.stringify(body) }),
-        });
+        };
+        if (body) {
+            fetchOptions.body = JSON.stringify(body);
+        }
+
+        const resp = await fetch(url, fetchOptions);
 
         const data = await resp.json();
 

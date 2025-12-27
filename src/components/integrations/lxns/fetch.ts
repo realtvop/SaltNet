@@ -5,7 +5,7 @@ import type { LXNSResponse } from "./type";
 export async function fetchLXNSApi<APIRespType>(
     user: User,
     endpoint?: string,
-    init?: any
+    init?: RequestInit
 ): Promise<APIRespType> {
     if (!user.lxns?.auth?.accessToken) throw new Error("User is not authenticated with LXNS");
     const { accessToken, tokenType } =

@@ -144,7 +144,7 @@
 
 <script setup lang="ts">
     import { ref, watch, nextTick, toRaw, computed } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import type { User } from "@/components/data/user/type";
     import { confirm, prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
@@ -297,8 +297,7 @@
 
     function getUserIdFromQRCode(qrCode: string) {
         qrCode = qrCode.slice(-64);
-        //@ts-ignore
-        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode })
+        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode } as Record<string, unknown>)
             .then(r => r.json())
             .then(data => {
                 if (data.errorID === 0) {

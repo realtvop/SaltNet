@@ -2,8 +2,8 @@
     import { ref, computed, onMounted } from "vue";
     import { useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
-    import { confirm, snackbar } from "mdui";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
+    import { confirm } from "mdui";
     import {
         logoutSaltNet,
         updateSaltNetRegion,
@@ -14,7 +14,11 @@
         getOAuthBindUrl,
         unlinkOAuthAccount,
     } from "@/components/data/user/database/api";
-    import type { MaimaidxRegion, OAuthProvider, OAuthAccount } from "@/components/data/user/database";
+    import type {
+        MaimaidxRegion,
+        OAuthProvider,
+        OAuthAccount,
+    } from "@/components/data/user/database";
 
     const shared = useShared();
     const router = useRouter();
@@ -56,12 +60,12 @@
 
     // Check if a provider is linked
     function isProviderLinked(provider: OAuthProvider): boolean {
-        return oauthAccounts.value.some((a) => a.provider === provider);
+        return oauthAccounts.value.some(a => a.provider === provider);
     }
 
     // Get linked account for a provider
     function getLinkedAccount(provider: OAuthProvider): OAuthAccount | undefined {
-        return oauthAccounts.value.find((a) => a.provider === provider);
+        return oauthAccounts.value.find(a => a.provider === provider);
     }
 
     // Load OAuth accounts
@@ -241,13 +245,25 @@
             <h3>第三方账号</h3>
 
             <mdui-list>
-                <mdui-list-item v-for="provider in (['google', 'github'] as OAuthProvider[])" :key="provider">
-                    <mdui-icon slot="icon" :name="provider === 'google' ? 'g_mobiledata' : 'code'"></mdui-icon>
+                <mdui-list-item
+                    v-for="provider in ['google', 'github'] as OAuthProvider[]"
+                    :key="provider"
+                >
+                    <mdui-icon
+                        slot="icon"
+                        :name="provider === 'google' ? 'g_mobiledata' : 'code'"
+                    ></mdui-icon>
                     <div class="oauth-item-content">
                         <div class="oauth-provider-info">
-                            <span class="oauth-provider-name">{{ oauthProviderLabels[provider] }}</span>
+                            <span class="oauth-provider-name">
+                                {{ oauthProviderLabels[provider] }}
+                            </span>
                             <span v-if="isProviderLinked(provider)" class="oauth-linked-email">
-                                {{ getLinkedAccount(provider)?.email || getLinkedAccount(provider)?.name || "已绑定" }}
+                                {{
+                                    getLinkedAccount(provider)?.email ||
+                                    getLinkedAccount(provider)?.name ||
+                                    "已绑定"
+                                }}
                             </span>
                             <span v-else class="oauth-not-linked">未绑定</span>
                         </div>
@@ -258,11 +274,7 @@
                         >
                             解绑
                         </mdui-button>
-                        <mdui-button
-                            v-else
-                            variant="tonal"
-                            @click="handleOAuthBind(provider)"
-                        >
+                        <mdui-button v-else variant="tonal" @click="handleOAuthBind(provider)">
                             绑定
                         </mdui-button>
                     </div>

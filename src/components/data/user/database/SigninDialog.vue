@@ -78,7 +78,7 @@
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from "vue";
     import { prompt } from "mdui";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { loginSaltNet, forgotPassword, getOAuthLoginUrl } from "./api";
     import type { SaltNetDatabaseLogin, OAuthProvider } from "./type";
 

@@ -1,5 +1,5 @@
 {
-    "name": "vite",
+    "name": "saltnet",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -9,7 +9,9 @@
         "build": "vue-tsc -b && vite build && node ./script/generateBuildInfo.cjs",
         "preview": "vite preview",
         "pret": "prettier --check .",
-        "pret:fix": "prettier --write ."
+        "pret:fix": "prettier --write .",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix"
     },
     "dependencies": {
         "dom-to-image-more": "^3.6.3",
@@ -21,11 +23,13 @@
         "vue-router": "^4.5.0"
     },
     "devDependencies": {
+        "@antfu/eslint-config": "^6.7.3",
         "@types/dom-to-image": "^2.6.7",
         "@types/node": "^22.14.1",
         "@vitejs/plugin-legacy": "^7.2.1",
         "@vitejs/plugin-vue": "^6.0.1",
         "@vue/tsconfig": "^0.7.0",
+        "eslint": "^9.39.2",
         "path": "^0.12.7",
         "prettier": "^3.5.3",
         "typescript": "~5.7.2",

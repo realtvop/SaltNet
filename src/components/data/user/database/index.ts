@@ -1,4 +1,10 @@
-export type { SaltNetDatabaseLogin, SaltNetDatabaseUser, OAuthProvider, OAuthAccount } from "./type.ts";
+export type {
+    SaltNetDatabaseLogin,
+    SaltNetDatabaseUser,
+    OAuthProvider,
+    OAuthAccount,
+    MaimaidxRegion,
+} from "./type.ts";
 export {
     loginSaltNet,
     refreshSaltNetToken,

@@ -21,19 +21,15 @@
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
         const code = searchParams.get("code")!;
-        handleLXNSOAuthCallback(code)
-            .then(auth => {
-                console.log("LXNS OAuth successful:", auth);
-            })
-            .catch(error => {
-                console.error("LXNS OAuth failed:", error);
-            });
+        handleLXNSOAuthCallback(code).catch(() => {
+            // OAuth error is already handled by the callback
+        });
     }
     if (searchParams.size) router.replace({ path: route.path, query: {} });
 
     // Initialize music data from database on app startup
-    initializeMusicData().catch(error => {
-        console.error("Failed to initialize music data:", error);
+    initializeMusicData().catch(() => {
+        // Music data init error - silent fail, will retry on demand
     });
 </script>
 

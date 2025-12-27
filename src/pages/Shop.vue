@@ -4,7 +4,7 @@
     import { ref, computed, onMounted, watch } from "vue";
     import { useShared } from "@/components/app/shared";
     import type { AttendanceApiResponse } from "@/components/integrations/nearcade/types/Attendance";
-    import { markDialogClosed, markDialogOpen } from "@/components/app/router.vue";
+    import { markDialogClosed, markDialogOpen } from "@/components/app/router";
     import { setAPIKey } from "@/components/integrations/nearcade/setAPIKey";
 
     const { nearcadeData } = useShared();
@@ -99,13 +99,11 @@
             });
     }
     function doSearch() {
-        //@ts-ignore
-        tabsRef.value.value = "find";
+        (tabsRef.value as unknown as { value: string }).value = "find";
         currentMode.value = "all";
     }
     function getNearcades() {
-        //@ts-ignore
-        tabsRef.value.value = "find";
+        (tabsRef.value as unknown as { value: string }).value = "find";
         if (!navigator.geolocation) {
             snackbar({
                 message: "获取定位失败: 浏览器不支持定位功能",
@@ -163,8 +161,11 @@
         }
         const evtListener = function (event: KeyboardEvent) {
             if (event.key === "Enter") {
-                //@ts-ignore
-                document.querySelector("body > mdui-dialog > mdui-button:nth-child(3)").click();
+                (
+                    document.querySelector(
+                        "body > mdui-dialog > mdui-button:nth-child(3)"
+                    ) as HTMLElement | null
+                )?.click();
             }
         };
         window.addEventListener("keydown", evtListener);

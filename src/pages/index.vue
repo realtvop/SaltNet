@@ -15,7 +15,6 @@
 
     let lastSaltClick = -114514;
     function meow() {
-        console.log("meow");
         const now = performance.now();
         if (now - lastSaltClick < 500) {
             snackbar({

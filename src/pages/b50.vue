@@ -12,7 +12,7 @@
     import B50ToRender from "@/components/rendering/b50.vue";
     import domtoimage from "dom-to-image-more";
     import { dialog, snackbar } from "mdui";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
 
     const route = useRoute();

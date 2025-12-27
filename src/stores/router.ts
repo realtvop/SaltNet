@@ -1,16 +1,9 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import type { RouteLocationNormalized } from "vue-router";
 
 // 需要添加历史记录的路由（用于支持浏览器后退）
-const ROUTES_NEED_HISTORY = [
-    "/settings",
-    "/b50/:id",
-    "/songs/:id",
-    "/nearcade",
-    "/about",
-    "/me",
-];
+const ROUTES_NEED_HISTORY = ["/settings", "/b50/:id", "/songs/:id", "/nearcade", "/about", "/me"];
 
 // 需要固定页面（禁用滚动）的路由
 const ROUTES_NEED_FIXED = ["/"];
