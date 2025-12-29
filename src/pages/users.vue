@@ -12,7 +12,7 @@
         clearIllegalTickets,
         previewStockedTickets,
     } from "@/components/data/user/update";
-    import { alert, confirm, snackbar } from "mdui";
+    import { alert, confirm, prompt, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
     import { exportUserBackup } from "@/components/data/user/exportBackup";
@@ -106,19 +106,40 @@
             onClose: markDialogClosed,
         });
     }
+    function extractQrCodeFromInput(raw: string): string | null {
+        const value = raw?.trim();
+        if (!value) return null;
+        if (value.startsWith("SGWCMAID") && value.length >= 64) return value.slice(-64);
+        if (value.startsWith("http")) {
+            const matches = value.match(/MAID.{0,76}/g);
+            if (matches?.[0]) return matches[0].slice(-64);
+            return null;
+        }
+        if (value.length >= 64) return value.slice(-64);
+        return null;
+    }
     function clearIllegalTicketsPrompt(user: User) {
-        confirm({
-            headline: `清除 ${getUserDisplayName(user)} 的补偿倍券？`,
-            description:
-                "[请先点击获取登录二维码] 仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
+        prompt({
+            headline: `请输入登录二维码的链接或扫描结果`,
+            description: "仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
             confirmText: "确认",
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            textFieldOptions: {
+                type: "text",
+                placeholder: "粘贴登录二维码扫描结果或链接",
+            },
+            validator: value => {
+                if (!extractQrCodeFromInput(value)) return "二维码/链接解析失败，请检查是否正确";
+                return true;
+            },
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
-            onConfirm: () => {
-                clearIllegalTickets(user);
+            onConfirm: value => {
+                const qrCode = extractQrCodeFromInput(value);
+                if (!qrCode) return false;
+                clearIllegalTickets(user, qrCode);
                 return true;
             },
         });

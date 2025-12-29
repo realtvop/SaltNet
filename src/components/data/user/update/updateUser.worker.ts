@@ -9,7 +9,7 @@ import { convertDetailed, getUserDisplayName, type User } from "@/components/dat
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 
 self.onmessage = event => {
-    const { type, user, updateItem } = event.data;
+    const { type, user, updateItem, qrCode } = event.data;
     if (type === "updateUser") {
         let result = null;
         let status = "success";
@@ -70,7 +70,7 @@ self.onmessage = event => {
         }
     } else if (type === "clearIllegalTickets") {
         try {
-            clearIllegalTickets(user);
+            clearIllegalTickets(user, qrCode);
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`清理非法倍券失败：${errorMsg}`, errorMsg);
@@ -220,10 +220,27 @@ function getRivalsInfo(user: User) {
             return [];
         });
 }
-function clearIllegalTickets(user: User) {
+function normalizeQrCodeFromInput(raw?: string): string | null {
+    const value = raw?.trim();
+    if (!value) return null;
+    if (value.startsWith("SGWCMAID") && value.length >= 64) return value.slice(-64);
+    if (value.startsWith("http")) {
+        const matches = value.match(/MAID.{0,76}/g);
+        if (matches?.[0]) return matches[0].slice(-64);
+        return null;
+    }
+    if (value.length >= 64) return value.slice(-64);
+    return null;
+}
+function clearIllegalTickets(user: User, qrCodeInput?: string) {
     const userName = getUserDisplayName(user);
+    const qrCode = normalizeQrCodeFromInput(qrCodeInput);
+    if (!qrCode) {
+        info(`清理 ${userName} 的非法倍券失败，二维码无效`);
+        return;
+    }
     info(`正在清理 ${userName} 的非法倍券`);
-    return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { userId: user.inGame?.id })
+    return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { qrCode })
         .then(r => {
             if (r.ok) info(`已清理 ${userName} 的非法倍券`);
             else info(`清理 ${userName} 的非法倍券失败，请检查是否已获取二维码或已被登录`);
