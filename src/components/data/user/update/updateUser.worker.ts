@@ -239,7 +239,7 @@ function clearIllegalTickets(user: User, qrCodeInput?: string) {
         info(`清理 ${userName} 的非法倍券失败，二维码无效`);
         return;
     }
-    info(`正在清理 ${userName} 的非法倍券`);
+    info(`正在清理 ${userName} 的非法倍券，请稍等约1分钟`);
     return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { qrCode })
         .then(r => {
             if (r.ok) info(`已清理 ${userName} 的非法倍券`);
