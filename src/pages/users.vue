@@ -119,10 +119,10 @@
         return null;
     }
     function clearIllegalTicketsPrompt(user: User) {
-        return snackbar({
-            message: `我知道你很急，但是你先别急，现在还在研究`,
-            autoCloseDelay: 5000,
-        });
+        // return snackbar({
+        //     message: `我知道你很急，但是你先别急，现在还在研究`,
+        //     autoCloseDelay: 5000,
+        // });
         prompt({
             headline: `请输入登录二维码的链接或扫描结果`,
             description: "仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
