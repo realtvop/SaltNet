@@ -3,7 +3,7 @@ import { createPinia } from "pinia";
 
 import "./style.css";
 import App from "./App.vue";
-import router from "./components/app/router.vue";
+import router from "./components/app/router";
 import "mdui/mdui.css";
 import { setColorScheme } from "mdui";
 import { checkForUpdate } from "./components/app/checkForUpdate";

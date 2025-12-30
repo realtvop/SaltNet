@@ -3,16 +3,23 @@
 {
     "name": "SaltNet dev",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+    "dockerComposeFile": "docker-compose.yml",
+    // The service in docker-compose to use as the devcontainer
+    "service": "devcontainer",
     "features": {
-        "ghcr.io/devcontainers-extra/features/pnpm:2": {}
+        "ghcr.io/devcontainers-extra/features/pnpm:2": {},
+        "ghcr.io/rails/devcontainer/features/bun:1.0.2": {}
     },
+    // Mount in docker-compose maps the repository root to /workspace
+    "workspaceFolder": "/workspace",
+    // Stop the docker-compose services when the devcontainer is stopped
+    "shutdownAction": "stopCompose",
     // Features to add to the dev container. More info: https://containers.dev/features.
     // "features": {},
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [5173],
+    "forwardPorts": [5173, 3721],
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "pnpm install",
+    // "postCreateCommand": "pnpm install",
     // Configure tool-specific properties.
     "customizations": {
         "vscode": {
@@ -20,7 +27,9 @@
                 "esbenp.prettier-vscode",
                 "bierner.emojisense",
                 "eamodio.gitlens",
-                "Vue.volar"
+                "Vue.volar",
+                "cweijan.vscode-postgresql-client2",
+                "bruno-api-client.bruno"
             ]
         }
     }

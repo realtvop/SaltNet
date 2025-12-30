@@ -1,0 +1,101 @@
+meta {
+  name: Get Records
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v0/maimaidx/records
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~user: username
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+docs {
+  # Get Records
+  
+  Get all score records for a user. Supports querying other users by username via the `user` query parameter.
+  
+  ## Authentication
+  
+  **Authentication is required** regardless of whether you're querying your own records or another user's records.
+  
+  This endpoint supports two authentication methods:
+  
+  | Method | Header | Description |
+  |--------|--------|-------------|
+  | Session Token | `Authorization: Bearer <jwt>` | Full user permissions |
+  | PAT | `Authorization: Bearer <pat>` | Data read/write only |
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} or Bearer {pat} |
+  
+  ## Query Parameters
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | user | string | No | Username to query. If not provided, returns authenticated user's records |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  [
+    {
+      "id": 1,
+      "title": "FREEDOM DiVE",
+      "type": "dx",
+      "difficulty": "master",
+      "level": "14+",
+      "internalLevel": 14.8,
+      "achievements": 101.0000,
+      "dxScore": 3200,
+      "comboStat": "ap",
+      "syncStat": "fsd",
+      "playCount": 50,
+      "rating": 330
+    }
+  ]
+  ```
+  
+  ### Response Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | id | number | Music ID |
+  | title | string | Music title |
+  | type | string | Chart type (std, dx, utage) |
+  | difficulty | string | Difficulty level |
+  | level | string | Display level |
+  | internalLevel | number | Internal level value |
+  | achievements | number | Achievement rate (0-101.0000) |
+  | dxScore | number | DX score |
+  | comboStat | string | Combo status ("", fc, fcp, ap, app) |
+  | syncStat | string | Sync status ("", sync, fs, fsp, fsd, fsdp) |
+  | playCount | number \| null | Play count |
+  | rating | number | Rating value calculated from achievements and internal level |
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ### Error (404)
+  ```json
+  {
+    "error": "User not found"
+  }
+  ```
+}

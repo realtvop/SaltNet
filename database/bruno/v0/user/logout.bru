@@ -1,0 +1,48 @@
+meta {
+  name: User Logout
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/logout
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+docs {
+  # User Logout
+  
+  Logout from current session (only removes current session).
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Logout successful"
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ## Notes
+  
+  - Current sessionToken will be invalidated after logout
+  - Login sessions on other devices are not affected
+}

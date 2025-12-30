@@ -1,0 +1,51 @@
+meta {
+  name: Get Current User
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v0/user
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+docs {
+  # Get Current User
+  
+  Get information about the currently authenticated user.
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "user": {
+      "id": 1,
+      "userName": "testuser",
+      "email": "test@example.com",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "maimaidxRegion": null,
+      "maimaidxRating": null,
+      "currentSessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+}

@@ -1,0 +1,62 @@
+meta {
+  name: User Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "identifier": "testuser",
+    "password": "123456"
+  }
+}
+
+docs {
+  # User Login
+  
+  Login with username or email.
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | identifier | string | Yes | Username or email |
+  | password | string | Yes | Password |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Login successful",
+    "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "userName": "testuser",
+      "email": "test@example.com",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "maimaidxRegion": null,
+      "maimaidxRating": null
+    }
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Invalid username or password"
+  }
+  ```
+  
+  ## Notes
+  
+  - sessionToken expires in 7 days
+  - refreshToken expires in 30 days
+}

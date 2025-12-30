@@ -18,6 +18,15 @@
     --nav-bar-height: 5rem;
     --nav-bar-padding-bottom: 0px;
     --content-left-padding: 0px;
+
+    /* 难度颜色（浅色模式） */
+    --difficulty-0-color: #96d767;
+    --difficulty-1-color: #eeba41;
+    --difficulty-2-color: #ef888f;
+    --difficulty-3-color: #b54fdf;
+    --difficulty-4-color: #d3acf9;
+    --difficulty-5-color: #ee78f6;
+
     @supports (-webkit-touch-callout: none) {
         @media all and (display-mode: standalone) {
             --nav-bar-height: 6rem !important;
@@ -27,6 +36,18 @@
     }
     @media (min-aspect-ratio: 1.001/1) {
         --content-left-padding: 5rem;
+    }
+}
+
+/* 深色模式下的难度颜色 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --difficulty-0-color: #45c124;
+        --difficulty-1-color: #ffba01;
+        --difficulty-2-color: #ff7b7b;
+        --difficulty-3-color: #9f51dc;
+        --difficulty-4-color: #dbaaff;
+        --difficulty-5-color: #ff6ffd;
     }
 }
 

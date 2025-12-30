@@ -7,6 +7,7 @@ import type {
 } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+import { toHalfWidth } from "@/utils";
 
 self.onmessage = event => {
     const { type, user, updateItem, qrCode } = event.data;
@@ -292,14 +293,6 @@ function previewStockedTickets(user: User) {
             info(`获取 ${userName} 的倍券失败：${e.toString()}`, e.toString());
             return [];
         });
-}
-
-function toHalfWidth(str: string): string {
-    return str
-        .replace(/[\uFF01-\uFF5E]/g, char => {
-            return String.fromCharCode(char.charCodeAt(0) - 65248);
-        })
-        .replace(/\u3000/g, " ");
 }
 
 function info(message: string, errorMsg?: string) {

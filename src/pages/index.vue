@@ -15,7 +15,6 @@
 
     let lastSaltClick = -114514;
     function meow() {
-        console.log("meow");
         const now = performance.now();
         if (now - lastSaltClick < 500) {
             snackbar({
@@ -69,9 +68,12 @@
                         欢迎，{{ getUserDisplayName(shared.users[0]) }}！
                     </mdui-typography>
 
-                    <div v-if="shared.users[0]" class="rating-container">
+                    <div
+                        v-if="shared.users[0] && shared.users[0].data.rating"
+                        class="rating-container"
+                    >
                         <RatingPlate
-                            :ra="shared.users[0].data.rating as number"
+                            :ra="shared.users[0].data.rating"
                             :small="false"
                             class="large-rating"
                         />
@@ -89,21 +91,17 @@
 
         <!-- 友链导航 -->
         <div class="links-section">
-            <a
-                href="https://www.diving-fish.com/maimaidx/prober/"
-                target="_blank"
-                class="link-wrapper"
-            >
+            <a href="javascript:void(0)" class="link-wrapper" @click="router.push('/about')">
                 <mdui-card variant="outlined" clickable class="link-card">
                     <div class="link-content">
-                        <mdui-icon name="set_meal"></mdui-icon>
+                        <mdui-icon name="info"></mdui-icon>
                         <div class="link-text">
-                            <mdui-typography variant="title-medium">水鱼查分器</mdui-typography>
+                            <mdui-typography variant="title-medium">关于 SaltNet</mdui-typography>
                             <mdui-typography
                                 variant="body-small"
                                 style="color: var(--mdui-color-on-surface-variant)"
                             >
-                                本站使用的成绩同步网站
+                                加入社群及获取帮助
                             </mdui-typography>
                         </div>
                     </div>
@@ -126,12 +124,6 @@
                     </div>
                 </mdui-card>
             </a>
-        </div>
-
-        <div>
-            <mdui-chip variant="outlined" icon="info" @click="router.push('/about')">
-                关于
-            </mdui-chip>
         </div>
     </div>
 </template>

@@ -5,18 +5,27 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
+import type { SaltNetDatabaseLogin } from "./database";
+import type { LXNSAuth } from "@/components/integrations/lxns";
 
 export interface User {
     uid?: string;
     remark?: string | null;
+    saltnetDB?: SaltNetDatabaseLogin;
     divingFish: {
         name: string | null;
         importToken?: string | null;
+    };
+    lxns?: {
+        auth: LXNSAuth | null;
+        name: string | null;
+        id: number | null;
     };
     inGame: {
         name?: string | null;
         id: number | null;
     };
+    saltnetUsername?: string | null; // For non-first users to query by SaltNet username
     settings: {
         manuallyUpdate: boolean;
     };
@@ -65,6 +74,8 @@ export function getUserDisplayName(user: User, fallback: string = "wmc"): string
 
     return (
         user.remark ??
+        (user.saltnetDB?.username || null) ??
+        user.data.name ??
         user.inGame.name ??
         user.divingFish.name ??
         (user.inGame.id ? user.inGame.id.toString() : fallback)

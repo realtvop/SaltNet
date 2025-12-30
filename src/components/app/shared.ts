@@ -1,10 +1,13 @@
 import { defineStore } from "pinia";
-import { ref, watch, toRaw } from "vue";
+import { ref, watch, toRaw, computed } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
+import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
+import type { MaimaidxRegion } from "@/components/data/user/database/type";
+import { setRegionGetter } from "@/components/data/music";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -28,6 +31,34 @@ export const useShared = defineStore("shared", () => {
     const isUpdated = ref<boolean>(false);
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
     const isSmallScreen = ref<boolean>(window.innerWidth < 560);
+    const musicDataLoading = ref<boolean>(false);
+
+    const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
+        get: () => users.value[0]?.saltnetDB ?? null,
+        set: (value: SaltNetDatabaseLogin | null) => {
+            if (value) {
+                if (users.value.length === 0) {
+                    users.value.push({
+                        remark: null,
+                        saltnetDB: value,
+                        divingFish: { name: null },
+                        inGame: { id: null },
+                        lxns: { auth: null, name: null, id: null },
+                        settings: { manuallyUpdate: false },
+                        data: {
+                            updateTime: null,
+                            name: null,
+                            rating: null,
+                        },
+                    });
+                } else {
+                    users.value[0].saltnetDB = value;
+                }
+            } else if (users.value.length > 0) {
+                users.value[0].saltnetDB = undefined;
+            }
+        },
+    });
 
     const handleScreenSizeChange = () => {
         isSmallScreen.value = window.innerWidth < 560;
@@ -62,11 +93,24 @@ export const useShared = defineStore("shared", () => {
         if (v) nearcadeData.value = v;
     });
 
+    // Migrate old saltNetAccount to first user's saltnetDB
+    localForage
+        .getItem<SaltNetDatabaseLogin>("saltNetAccount")
+        .then((v: SaltNetDatabaseLogin | null) => {
+            if (v) {
+                saltNetAccount.value = v;
+                localForage.removeItem("saltNetAccount");
+            }
+        });
+
+    // Set up region getter for music module
+    setRegionGetter(() => (saltNetAccount.value?.maimaidxRegion as MaimaidxRegion) ?? "cn");
+
     watch(
         users,
         (newUsers: User[]) => {
             if (!newUsers) return;
-            localForage.setItem("users", toRaw(newUsers)).catch((err: any) => {
+            localForage.setItem("users", toRaw(newUsers)).catch((err: unknown) => {
                 console.error("Failed to save users:", err);
             });
         },
@@ -76,7 +120,7 @@ export const useShared = defineStore("shared", () => {
         favorites,
         (newFavorites: FavoriteList[]) => {
             if (!newFavorites) return;
-            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: any) => {
+            localForage.setItem("favorites", toRaw(newFavorites)).catch((err: unknown) => {
                 console.error("Failed to save favorites:", err);
             });
         },
@@ -84,7 +128,7 @@ export const useShared = defineStore("shared", () => {
     );
     watch(chartsSort, (newChartsSort: ChartsSortCached) => {
         if (!newChartsSort) return;
-        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: any) => {
+        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: unknown) => {
             console.error("Failed to save charts sort:", err);
         });
     });
@@ -92,12 +136,22 @@ export const useShared = defineStore("shared", () => {
         nearcadeData,
         (newNearcadeData: NearcadeData) => {
             if (!newNearcadeData) return;
-            localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: any) => {
+            localForage.setItem("nearcadeData", toRaw(newNearcadeData)).catch((err: unknown) => {
                 console.error("Failed to save nearcade data:", err);
             });
         },
         { deep: true }
     );
 
-    return { users, chartsSort, favorites, isUpdated, isDarkMode, isSmallScreen, nearcadeData };
+    return {
+        users,
+        chartsSort,
+        favorites,
+        isUpdated,
+        isDarkMode,
+        isSmallScreen,
+        nearcadeData,
+        saltNetAccount,
+        musicDataLoading,
+    };
 });

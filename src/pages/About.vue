@@ -30,6 +30,40 @@
         </mdui-card>
 
         <div class="links-section">
+            <a href="https://qm.qq.com/q/mwhqbv7FpQ" target="_blank" class="link-wrapper">
+                <mdui-card variant="outlined" clickable class="link-card">
+                    <div class="link-content">
+                        <mdui-icon name="chat"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">QQ 用户群</mdui-typography>
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
+                                638052667
+                            </mdui-typography>
+                        </div>
+                    </div>
+                </mdui-card>
+            </a>
+
+            <a href="https://discord.gg/RhwMHMuMj8" target="_blank" class="link-wrapper">
+                <mdui-card variant="outlined" clickable class="link-card">
+                    <div class="link-content">
+                        <mdui-icon name="forum"></mdui-icon>
+                        <div class="link-text">
+                            <mdui-typography variant="title-medium">Discord 服务器</mdui-typography>
+                            <mdui-typography
+                                variant="body-small"
+                                style="color: var(--mdui-color-on-surface-variant)"
+                            >
+                                加入我们的社区
+                            </mdui-typography>
+                        </div>
+                    </div>
+                </mdui-card>
+            </a>
+
             <a
                 href="https://docs.salt.realtvop.top/basis/intro/"
                 target="_blank"
@@ -51,17 +85,21 @@
                 </mdui-card>
             </a>
 
-            <a href="https://qm.qq.com/q/mwhqbv7FpQ" target="_blank" class="link-wrapper">
+            <a
+                href="https://www.diving-fish.com/maimaidx/prober/"
+                target="_blank"
+                class="link-wrapper"
+            >
                 <mdui-card variant="outlined" clickable class="link-card">
                     <div class="link-content">
-                        <mdui-icon name="chat"></mdui-icon>
+                        <mdui-icon name="set_meal"></mdui-icon>
                         <div class="link-text">
-                            <mdui-typography variant="title-medium">QQ 用户群</mdui-typography>
+                            <mdui-typography variant="title-medium">水鱼查分器</mdui-typography>
                             <mdui-typography
                                 variant="body-small"
                                 style="color: var(--mdui-color-on-surface-variant)"
                             >
-                                638052667
+                                成绩同步网站
                             </mdui-typography>
                         </div>
                     </div>
@@ -164,11 +202,11 @@
         grid-template-columns: 1fr 1fr;
         gap: 16px;
         width: 100%;
-        max-width: 600px;
+        max-width: 700px;
         /* margin-top: 24px; */
     }
 
-    @media (max-width: 460px) {
+    @media (max-width: 520px) {
         .links-section {
             grid-template-columns: 1fr;
             gap: 0;

@@ -12,7 +12,7 @@
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
     import { copyTextToClipboard } from "@/components/app/utils";
-    import { useVirtualScroll, handleSelectChange } from "@/composables";
+    import { useVirtualScroll, handleSelectChange } from "@/utils";
     import { getCollectionImageURL } from "@/components/integrations/assets";
 
     const Category = {
@@ -30,6 +30,12 @@
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
     const filter = ref<string>("all");
+
+    function handleCategoryChange(e: Event) {
+        const target = e.target as HTMLElement & { value: string };
+        category.value = target.value as CategoryType;
+    }
+
     const ownedCollections = computed<Record<number, number[]>>(() => {
         if (!users || !users[0] || !users[0].data.items)
             return { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
@@ -250,11 +256,7 @@
 <template>
     <div class="collections-page">
         <!-- 主分类选择 - 使用Tab -->
-        <mdui-tabs
-            :value="category"
-            @change="(e: any) => (category = e.target.value)"
-            class="category-tabs"
-        >
+        <mdui-tabs :value="category" @change="handleCategoryChange" class="category-tabs">
             <mdui-tab v-for="(label, key) in Category" :key="key" :value="label">
                 {{ label }}
             </mdui-tab>
@@ -380,7 +382,12 @@
                                     frame: collection.type === CollectionKind.Frame,
                                 }"
                                 crossorigin="anonymous"
-                                @error="(e: any) => e.target && (e.target.style.display = 'none')"
+                                @error="
+                                    (e: Event) => {
+                                        const target = e.target as HTMLElement | null;
+                                        if (target) target.style.display = 'none';
+                                    }
+                                "
                             />
                             <div class="collection-info">
                                 <div

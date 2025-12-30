@@ -372,7 +372,7 @@
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
     import { defineProps, watch, nextTick, ref, computed } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
     import { copyTextToClipboard } from "@/components/app/utils";
@@ -474,7 +474,17 @@
 
             // 为每个难度生成好友成绩数据
             props.chart.music.charts.forEach(chartInfo => {
-                const chartFriends: any[] = [];
+                interface ChartFriend {
+                    name: string;
+                    user: User;
+                    achievements?: number;
+                    ra?: number;
+                    rate?: string;
+                    fc?: string;
+                    fs?: string;
+                    played: boolean;
+                }
+                const chartFriends: ChartFriend[] = [];
 
                 shared.users.forEach(user => {
                     const uname = String(

@@ -101,7 +101,7 @@ async function updateMusicData() {
     }
 
     fs.writeFileSync(
-        "src/components/data/music/charts.json",
+        "public/charts.json",
         JSON.stringify({
             data: musicData,
             chartCount,

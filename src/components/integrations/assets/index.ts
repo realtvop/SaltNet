@@ -4,7 +4,7 @@
  * @param length - 目标长度（默认 5）
  * @returns 格式化后的 ID 字符串
  */
-export function padId(id: number, length: number = 5): string {
+export function padId(id: number, length: number = 6): string {
     return "0".repeat(Math.max(length - id.toString().length, 0)) + id;
 }
 
@@ -14,8 +14,7 @@ export function padId(id: number, length: number = 5): string {
  * @returns 封面图片 URL
  */
 export function getCoverURL(id: number): string {
-    if (10000 < id) id -= Math.floor(id / 10000) * 10000;
-    return `https://jacket.maimai.realtvop.top/${padId(id)}.png`;
+    return `https://meta.salt.realtvop.top/covers/${padId(id % 1e4)}.png`;
 }
 
 /**
