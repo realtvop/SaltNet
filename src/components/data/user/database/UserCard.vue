@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { useRouter } from "vue-router";
     import type { SaltNetDatabaseLogin } from "./type";
+    import { isDBEnabled } from "./index";
 
     const router = useRouter();
 
@@ -19,7 +20,7 @@
 </script>
 
 <template>
-    <mdui-card variant="filled">
+    <mdui-card variant="filled" v-if="isDBEnabled">
         <!-- Logged out state -->
         <template v-if="!props.loggedInUser">
             <h2>注册或登录您的 SaltNet 账户</h2>

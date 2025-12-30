@@ -20,7 +20,7 @@
     import type { UserInfo } from "@/components/data/inGame";
     import UserCard from "@/components/data/user/database/UserCard.vue";
     import type { LXNSAuth } from "@/components/integrations/lxns";
-    import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
+    import { isDBEnabled, type SaltNetDatabaseLogin } from "@/components/data/user/database";
 
     const shared = useShared();
 
@@ -368,6 +368,7 @@
                         <mdui-menu-item
                             @click="uploadScoresToSaltNet(user)"
                             v-if="
+                                isDBEnabled &&
                                 !index &&
                                 shared.saltNetAccount &&
                                 hasNonSaltNetDataSource(user) &&
@@ -442,8 +443,8 @@
         @save="handleUserSave"
         @saltnet-login="handleLoginSuccess"
     />
-    <SignupDialog v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
-    <SigninDialog v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
+    <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+    <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

@@ -5,6 +5,9 @@ export type {
     OAuthAccount,
     MaimaidxRegion,
 } from "./type.ts";
+
+/** Whether the SaltNet Database feature is enabled (VITE_DB_URL is configured) */
+export const isDBEnabled = !!import.meta.env.VITE_DB_URL;
 export {
     loginSaltNet,
     refreshSaltNetToken,

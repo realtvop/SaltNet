@@ -27,7 +27,7 @@
         ></mdui-text-field>
 
         <!-- First user: show SaltNet register/login buttons between remark and tabs -->
-        <div v-if="isFirstUser" class="saltnet-buttons">
+        <div v-if="isDBEnabled && isFirstUser" class="saltnet-buttons">
             <mdui-button full-width @click="openSigninDialog">登录 SaltNet</mdui-button>
             <mdui-button full-width variant="tonal" @click="openSignupDialog">
                 注册 SaltNet
@@ -40,6 +40,7 @@
             <mdui-tab
                 value="saltnet"
                 v-if="
+                    isDBEnabled &&
                     !isFirstUser &&
                     !localUser.inGame?.id &&
                     !localUser.divingFish?.name &&
@@ -48,7 +49,7 @@
             >
                 SaltNet
             </mdui-tab>
-            <mdui-tab-panel slot="panel" value="saltnet" v-if="!isFirstUser">
+            <mdui-tab-panel slot="panel" value="saltnet" v-if="isDBEnabled && !isFirstUser">
                 <mdui-text-field
                     label="SaltNet 用户名"
                     :value="localUser.saltnetUsername ?? ''"
@@ -137,8 +138,8 @@
             </mdui-tab-panel>
         </mdui-tabs>
 
-        <SignupDialog v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
-        <SigninDialog v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
+        <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+        <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
     </mdui-dialog>
 </template>
 
@@ -152,7 +153,7 @@
 
     import SignupDialog from "./database/SignupDialog.vue";
     import SigninDialog from "./database/SigninDialog.vue";
-    import type { SaltNetDatabaseLogin } from "./database";
+    import { isDBEnabled, type SaltNetDatabaseLogin } from "./database";
 
     const props = defineProps<{
         modelValue: boolean;

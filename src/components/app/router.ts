@@ -15,6 +15,7 @@ import OAuthCallbackPage from "../../pages/oauth-callback.vue";
 
 import { useRouterStore } from "../../stores/router";
 import { useDialogStore } from "../../stores/dialog";
+import { isDBEnabled } from "../data/user/database";
 
 const routes = [
     { path: "/", component: IndexPage },
@@ -28,8 +29,13 @@ const routes = [
     { path: "/about", component: AboutPage },
     { path: "/collections", component: CollectionsPage },
     { path: "/nearcade", component: ShopPage },
-    { path: "/me", component: MePage },
-    { path: "/oauth/callback", component: OAuthCallbackPage },
+    // Only register /me and OAuth callback routes when DB is enabled
+    ...(isDBEnabled
+        ? [
+              { path: "/me", component: MePage },
+              { path: "/oauth/callback", component: OAuthCallbackPage },
+          ]
+        : []),
 ];
 
 const router = createRouter({
