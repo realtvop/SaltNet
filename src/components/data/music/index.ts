@@ -1,6 +1,7 @@
 /**
  * Music Data Module
- * Provides music and chart data from SaltNet database with caching
+ * Provides music and chart data from SaltNet database with caching,
+ * or from local JSON file when DB is disabled (no caching)
  */
 
 import localForage from "localforage";
@@ -11,6 +12,8 @@ import {
     fetchVersionLatests,
     filterMusicByRegion,
     convertSaltNetMusicList,
+    fetchLocalMusicList,
+    isDBEnabled,
 } from "./musicApi";
 import MusicSort from "./sort.json";
 
@@ -85,11 +88,19 @@ async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMu
 
 /**
  * Main function to load music data with caching strategy:
- * 1. Return cached data immediately if available and region matches
- * 2. Fetch fresh data from API in background
- * 3. Update cache and module state with fresh data
+ * - When DB is enabled: Use caching with background refresh
+ * - When DB is disabled: Always fetch from local JSON without caching
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
+    // When DB is disabled, always fetch from local JSON without caching
+    if (!isDBEnabled) {
+        const localData = await fetchLocalMusicList();
+        if (localData) {
+            musicData = localData;
+        }
+        return musicData;
+    }
+
     const region = getSaltNetRegion();
 
     // Check if we already have data for this region

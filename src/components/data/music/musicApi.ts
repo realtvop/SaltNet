@@ -1,11 +1,14 @@
 /**
  * Music API Module
- * Fetches music data from SaltNet database API
+ * Fetches music data from SaltNet database API or local JSON fallback
  */
 
 import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import type { Music, MusicInfo, Chart, ChartInfo, SavedMusicList } from "./type";
 import { ChartType, type MusicGenre, type MusicOrigin } from "../maiTypes";
+import type { MusicDataResponse } from "@/components/integrations/diving-fish/type";
+import { convertDFMusicList } from "@/components/integrations/diving-fish";
+import { isDBEnabled } from "@/components/data/user/database";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
 
@@ -231,3 +234,28 @@ export function convertSaltNetMusicList(
         chartList,
     };
 }
+
+/**
+ * Fetch music data from local JSON file (fallback when DB is disabled)
+ * Always fetches fresh data without caching
+ */
+export async function fetchLocalMusicList(): Promise<SavedMusicList | null> {
+    try {
+        const resp = await fetch("/charts.json", {
+            cache: "no-store",
+        });
+
+        if (!resp.ok) {
+            console.error("Failed to fetch local music list:", resp.status);
+            return null;
+        }
+
+        const data = (await resp.json()) as { data: MusicDataResponse };
+        return convertDFMusicList(data.data);
+    } catch (error) {
+        console.error("Error fetching local music list:", error);
+        return null;
+    }
+}
+
+export { isDBEnabled };
