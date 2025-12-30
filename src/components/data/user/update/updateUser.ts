@@ -359,10 +359,10 @@ export function previewRivalsWithWorker(user: User) {
     updateUserWorker.postMessage({ type: "previewRivals", user: plainUser });
 }
 
-export function clearIllegalTicketsWithWorker(user: User) {
+export function clearIllegalTicketsWithWorker(user: User, qrCode: string) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
 
-    updateUserWorker.postMessage({ type: "clearIllegalTickets", user: plainUser });
+    updateUserWorker.postMessage({ type: "clearIllegalTickets", user: plainUser, qrCode });
 }
 export function previewStockedTicketsWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));

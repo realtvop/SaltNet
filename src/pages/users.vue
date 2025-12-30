@@ -15,12 +15,13 @@
         previewStockedTickets,
         uploadScoresToSaltNet,
     } from "@/components/data/user/update";
-    import { alert, confirm } from "mdui";
+    import { alert, confirm, prompt, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
     import UserCard from "@/components/data/user/database/UserCard.vue";
     import type { LXNSAuth } from "@/components/integrations/lxns";
     import { isDBEnabled, type SaltNetDatabaseLogin } from "@/components/data/user/database";
+    import { exportUserBackup } from "@/components/data/user/exportBackup";
 
     const shared = useShared();
 
@@ -130,19 +131,44 @@
             onClose: markDialogClosed,
         });
     }
+    function extractQrCodeFromInput(raw: string): string | null {
+        const value = raw?.trim();
+        if (!value) return null;
+        if (value.startsWith("SGWCMAID") && value.length >= 64) return value.slice(-64);
+        if (value.startsWith("http")) {
+            const matches = value.match(/MAID.{0,76}/g);
+            if (matches?.[0]) return matches[0].slice(-64);
+            return null;
+        }
+        if (value.length >= 64) return value.slice(-64);
+        return null;
+    }
     function clearIllegalTicketsPrompt(user: User) {
-        confirm({
-            headline: `清除 ${getUserDisplayName(user)} 的补偿倍券？`,
-            description:
-                "[请先点击获取登录二维码] 仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
+        // return snackbar({
+        //     message: `我知道你很急，但是你先别急，现在还在研究`,
+        //     autoCloseDelay: 5000,
+        // });
+        prompt({
+            headline: `请输入登录二维码的链接或扫描结果`,
+            description: "仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
             confirmText: "确认",
             cancelText: "取消",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            textFieldOptions: {
+                type: "text",
+                placeholder: "粘贴登录二维码扫描结果或链接",
+            },
+            validator: value => {
+                if (!extractQrCodeFromInput(value)) return "二维码/链接解析失败，请检查是否正确";
+                return true;
+            },
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
-            onConfirm: () => {
-                clearIllegalTickets(user);
+            onConfirm: value => {
+                const qrCode = extractQrCodeFromInput(value);
+                if (!qrCode) return false;
+                clearIllegalTickets(user, qrCode);
                 return true;
             },
         });
@@ -258,10 +284,6 @@
         }
     };
 
-    /**
-     * Check if user has any non-SaltNet data source bound
-     * This includes: divingFish name/importToken, LXNS auth, or inGame ID
-     */
     function hasNonSaltNetDataSource(user: User): boolean {
         return !!(
             user.divingFish?.name ||
@@ -269,6 +291,43 @@
             user.lxns?.auth ||
             user.inGame?.id
         );
+    }
+
+    async function exportUserBackupHandler(user: User) {
+        let abortBackup = false;
+        if (!user.inGame.id) return snackbar({ message: "你怎么进来的！", autoCloseDelay: 2000 });
+        if (!user.data.updateTime)
+            return confirm({
+                headline: `用户 ${getUserDisplayName(user)} 尚未更新过数据，无法导出备份`,
+                description: "是否现在更新？(更新后需手动重新导出备份)",
+                confirmText: "更新",
+                cancelText: "取消",
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+                onConfirm: () => {
+                    updateUser(user, true);
+                },
+            });
+        if (!user.data.characters || !user.data.characters.length) {
+            await confirm({
+                headline: `用户 ${getUserDisplayName(user)} 的数据${user.data.characters ? "可能" : ""}不完整`,
+                description:
+                    "直接导出会缺少收藏品数据，是否执行完整更新？(更新后需手动重新执行导出备份，也可只导出成绩数据)",
+                confirmText: "更新",
+                cancelText: "取消",
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+                onConfirm: () => {
+                    updateUser(user, true);
+                    abortBackup = true;
+                },
+            });
+        }
+        if (!abortBackup) exportUserBackup(user);
     }
 </script>
 
@@ -407,6 +466,14 @@
                         >
                             清理补偿倍券
                             <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
+                        </mdui-menu-item>
+
+                        <mdui-menu-item
+                            @click="exportUserBackupHandler(user)"
+                            v-if="user.inGame.id"
+                        >
+                            下载数据备份
+                            <mdui-icon slot="icon" name="cloud_download"></mdui-icon>
                         </mdui-menu-item>
 
                         <mdui-divider />
