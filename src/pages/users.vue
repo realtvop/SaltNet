@@ -510,8 +510,16 @@
         @save="handleUserSave"
         @saltnet-login="handleLoginSuccess"
     />
-    <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
-    <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
+    <SignupDialog
+        v-if="isDBEnabled"
+        v-model="isSignupDialogOpen"
+        @register-success="handleLoginSuccess"
+    />
+    <SigninDialog
+        v-if="isDBEnabled"
+        v-model="isSigninDialogOpen"
+        @login-success="handleLoginSuccess"
+    />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

@@ -138,8 +138,16 @@
             </mdui-tab-panel>
         </mdui-tabs>
 
-        <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
-        <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
+        <SignupDialog
+            v-if="isDBEnabled"
+            v-model="isSignupDialogOpen"
+            @register-success="handleLoginSuccess"
+        />
+        <SigninDialog
+            v-if="isDBEnabled"
+            v-model="isSigninDialogOpen"
+            @login-success="handleLoginSuccess"
+        />
     </mdui-dialog>
 </template>
 
