@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+    saltnet-db:
+        image: ghcr.io/realtvop/saltnet-db:latest
+        restart: unless-stopped
+        ports:
+            - "3721:3721"
+        depends_on:
+            - postgres
+            - redis
+        environment:
+            DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+            REDIS_URL: redis://redis:6379/0
+            JWT_SECRET: your_jwt_secret_here
+            BREVO_API_KEY: your_brevo_api_key_here
+            RESEND_API_KEY: your_resend_api_key_here
+            API_HOST: http://localhost:3721
+
+    postgres:
+        image: postgres:latest
+        restart: unless-stopped
+        volumes:
+            - ./postgres-data:/var/lib/postgresql
+        environment:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_DB: postgres
+
+    redis:
+        image: redis:alpine
+        restart: unless-stopped
+        volumes:
+            - ./redis-data:/data

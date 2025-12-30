@@ -1,6 +1,6 @@
 import { prompt } from "mdui";
 import { useShared } from "@/components/app/shared";
-import { markDialogClosed, markDialogOpen } from "@/components/app/router.vue";
+import { markDialogClosed, markDialogOpen } from "@/components/app/router";
 
 export function setAPIKey(): Promise<string> {
     const shared = useShared();

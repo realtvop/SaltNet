@@ -82,3 +82,11 @@ export interface UserChartScore {
     fs: string | null;
     rate: string | null;
 }
+
+// 曲目缓存类型
+export interface CachedMusicData {
+    musicList: Record<number, Music>;
+    chartList: Record<number, Chart>;
+    region: string;
+    cachedAt: number;
+}

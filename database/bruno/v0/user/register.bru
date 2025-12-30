@@ -1,0 +1,75 @@
+meta {
+  name: User Registration
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "userName": "testuser",
+    "email": "test@example.com",
+    "password": "TestPass123"
+  }
+}
+
+docs {
+  # User Registration
+  
+  Register a new user account.
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | userName | string | Yes | Username, 2-32 characters |
+  | email | string | No | Email address (optional, can bind later) |
+  | password | string | Yes | Password (8-32 chars, uppercase, lowercase, digit) |
+  
+  ## Response
+  
+  ### Success (200) - With Email
+  ```json
+  {
+    "message": "Registration successful. Please check your email to verify.",
+    "user": {
+      "id": 1,
+      "userName": "testuser",
+      "email": "test@example.com",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
+  
+  ### Success (200) - Without Email
+  ```json
+  {
+    "message": "Registration successful.",
+    "user": {
+      "id": 1,
+      "userName": "testuser",
+      "email": null,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+  ```
+  
+  ### Error (400) - Username Exists
+  ```json
+  {
+    "error": "Username already exists"
+  }
+  ```
+  
+  ### Error (400) - Password Invalid
+  ```json
+  {
+    "error": "Password must contain at least one uppercase letter"
+  }
+  ```
+}

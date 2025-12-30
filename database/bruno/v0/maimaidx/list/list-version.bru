@@ -1,0 +1,49 @@
+meta {
+  name: List Versions
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v0/maimaidx/list/version
+  body: none
+  auth: none
+}
+
+docs {
+  # List Versions
+  
+  Get all game versions across all regions.
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  [
+    {
+      "id": 1,
+      "name": "maimai でらっくす PRiSM",
+      "word": ["虹"],
+      "releaseDate": "2024-09-12T00:00:00.000Z",
+      "region": "jp"
+    },
+    {
+      "id": 2,
+      "name": "舞萌DX 2024",
+      "word": ["虹"],
+      "releaseDate": "2024-09-12T00:00:00.000Z",
+      "region": "cn"
+    }
+  ]
+  ```
+  
+  ## Response Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | id | number | Version ID |
+  | name | string | Version name |
+  | word | string[] \| null | Version code words |
+  | releaseDate | string | ISO date string |
+  | region | string | Region code (jp, ex, cn) |
+}

@@ -1,0 +1,75 @@
+meta {
+  name: Bind Email
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/bind-email
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+body:json {
+  {
+    "email": "newemail@example.com"
+  }
+}
+
+docs {
+  # Bind Email
+  
+  Bind an email address to a user account that was registered without email.
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} |
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | email | string | Yes | Email address to bind |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Verification email sent. Please verify to bind the email."
+  }
+  ```
+  
+  ### Error (400) - Already Has Email
+  ```json
+  {
+    "error": "User already has an email. Use change-email instead."
+  }
+  ```
+  
+  ### Error (400) - Email Taken
+  ```json
+  {
+    "error": "Email already in use"
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+  
+  ## Notes
+  
+  - This endpoint is only for users who registered without an email
+  - Users with an existing email should use the change-email endpoint instead
+  - A verification email will be sent to confirm the binding
+}

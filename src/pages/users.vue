@@ -1,9 +1,11 @@
 <script setup lang="ts">
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
+    import SignupDialog from "@/components/data/user/database/SignupDialog.vue";
+    import SigninDialog from "@/components/data/user/database/SigninDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import {
         checkLogin,
@@ -11,15 +13,20 @@
         previewRivals,
         clearIllegalTickets,
         previewStockedTickets,
+        uploadScoresToSaltNet,
     } from "@/components/data/user/update";
     import { alert, confirm } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
+    import UserCard from "@/components/data/user/database/UserCard.vue";
     import type { LXNSAuth } from "@/components/integrations/lxns";
+    import { isDBEnabled, type SaltNetDatabaseLogin } from "@/components/data/user/database";
 
     const shared = useShared();
 
     const isDialogVisible = ref(false);
+    const isSignupDialogOpen = ref(false);
+    const isSigninDialogOpen = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
 
@@ -34,8 +41,8 @@
     const openAddDialog = () => {
         currentUserToEdit.value = {
             remark: null,
-            divingFish: { name: null, importToken: null },
-            inGame: { name: null, id: null },
+            divingFish: { name: null },
+            inGame: { id: null },
             lxns: { auth: null, name: null, id: null },
             settings: { manuallyUpdate: false },
             data: {
@@ -46,6 +53,22 @@
         };
         editingUserIndex.value = null;
         isDialogVisible.value = true;
+    };
+
+    const openSignupDialog = () => {
+        isSignupDialogOpen.value = true;
+    };
+
+    const openSigninDialog = () => {
+        isSigninDialogOpen.value = true;
+    };
+
+    const handleLoginSuccess = (data: SaltNetDatabaseLogin) => {
+        shared.saltNetAccount = data;
+        // Auto-sync scores if there's only one user (the first user)
+        if (shared.users.length === 1) {
+            updateUser(shared.users[0], true);
+        }
     };
 
     const openDeleteDialog = (index: number) => {
@@ -130,6 +153,7 @@
         divingFish: { name: string | null; importToken: string | null };
         lxns: { auth: LXNSAuth | null; name: string | null; id: number | null };
         inGame: { name: string | null; id: number | null };
+        saltnetUsername?: string | null;
     }
 
     const handleUserSave = (updatedUserData: UpdatedUserData) => {
@@ -145,7 +169,11 @@
                     name: null,
                     id: null,
                 },
-                inGame: { name: updatedUserData.inGame.name, id: updatedUserData.inGame.id },
+                inGame: {
+                    ...(updatedUserData.inGame.name && { name: updatedUserData.inGame.name }),
+                    id: updatedUserData.inGame.id,
+                },
+                saltnetUsername: updatedUserData.saltnetUsername ?? null,
                 settings: { manuallyUpdate: false },
                 data: {
                     updateTime: null,
@@ -180,6 +208,7 @@
                     ...originalUser.inGame,
                     id: updatedUserData.inGame.id,
                 },
+                saltnetUsername: updatedUserData.saltnetUsername ?? originalUser.saltnetUsername,
             };
         } else {
             console.warn("Invalid user index for update:", index);
@@ -228,11 +257,30 @@
             user.settings.manuallyUpdate = !user.settings.manuallyUpdate;
         }
     };
+
+    /**
+     * Check if user has any non-SaltNet data source bound
+     * This includes: divingFish name/importToken, LXNS auth, or inGame ID
+     */
+    function hasNonSaltNetDataSource(user: User): boolean {
+        return !!(
+            user.divingFish?.name ||
+            user.divingFish?.importToken ||
+            user.lxns?.auth ||
+            user.inGame?.id
+        );
+    }
 </script>
 
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
+        <UserCard
+            :logged-in-user="shared.saltNetAccount"
+            @open-signin="openSigninDialog"
+            @open-signup="openSignupDialog"
+        />
+
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in shared.users"
@@ -318,6 +366,19 @@
                             <mdui-icon slot="icon" name="list_alt"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
+                            @click="uploadScoresToSaltNet(user)"
+                            v-if="
+                                isDBEnabled &&
+                                !index &&
+                                shared.saltNetAccount &&
+                                hasNonSaltNetDataSource(user) &&
+                                user.data.detailed
+                            "
+                        >
+                            上传成绩到 SaltNet
+                            <mdui-icon slot="icon" name="cloud_upload"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item
                             @click="goToUserFittedDetails(index)"
                             v-if="user.data.detailed"
                         >
@@ -378,8 +439,12 @@
         :user="currentUserToEdit"
         :user-index="editingUserIndex || shared.users.length"
         :is-editing-new-user="editingUserIndex === null"
+        :is-first-user="editingUserIndex === null && shared.users.length === 0"
         @save="handleUserSave"
+        @saltnet-login="handleLoginSuccess"
     />
+    <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+    <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
 
     <div class="fab-container">
         <mdui-fab icon="update" extended v-if="shared.users.length" @click="updateAll">

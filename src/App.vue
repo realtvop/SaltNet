@@ -2,6 +2,7 @@
     import { useRoute, useRouter } from "vue-router";
     import TopAppBar from "@/components/app/TopAppBar.vue";
     import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
+    import { initializeMusicData } from "@/components/data/music";
 
     const route = useRoute();
     const router = useRouter();
@@ -20,15 +21,16 @@
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
         const code = searchParams.get("code")!;
-        handleLXNSOAuthCallback(code)
-            .then(auth => {
-                console.log("LXNS OAuth successful:", auth);
-            })
-            .catch(error => {
-                console.error("LXNS OAuth failed:", error);
-            });
+        handleLXNSOAuthCallback(code).catch(() => {
+            // OAuth error is already handled by the callback
+        });
     }
     if (searchParams.size) router.replace({ path: route.path, query: {} });
+
+    // Initialize music data from database on app startup
+    initializeMusicData().catch(() => {
+        // Music data init error - silent fail, will retry on demand
+    });
 </script>
 
 <template>

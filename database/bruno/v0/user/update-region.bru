@@ -1,0 +1,56 @@
+meta {
+  name: Update Region
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/update-region
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{sessionToken}}
+}
+
+body:json {
+  {
+    "region": "jp"
+  }
+}
+
+docs {
+  # Update Region
+  
+  Update the user's maimai DX region setting.
+  
+  ## Request Headers
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | Authorization | string | Yes | Bearer {sessionToken} |
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | region | string | Yes | Region code: "jp" (Japan), "ex" (International), "cn" (China) |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Region updated successfully",
+    "region": "jp"
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Not authenticated or invalid token"
+  }
+  ```
+}

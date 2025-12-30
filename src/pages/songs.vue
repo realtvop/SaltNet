@@ -9,7 +9,7 @@
     import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { versionPlates } from "@/components/data/collection";
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
@@ -40,7 +40,10 @@
     const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
-    const chartInfoDialog = ref({
+    const chartInfoDialog = ref<{
+        open: boolean;
+        chart: Chart | null;
+    }>({
         open: false,
         chart: null,
     });
@@ -445,7 +448,7 @@
         let finalFilteredCharts = chartsWithOriginalIndex;
 
         if (query.value) {
-            finalFilteredCharts = chartsWithOriginalIndex.filter((chart: any) => {
+            finalFilteredCharts = chartsWithOriginalIndex.filter(chart => {
                 const chartData = chart.score;
                 return (
                     // 曲名 曲师 谱师 别名
@@ -499,7 +502,7 @@
         else loadChartsWithCache();
     };
 
-    function openChartInfoDialog(chart: any) {
+    function openChartInfoDialog(chart: Chart) {
         chartInfoDialog.value.chart = chart;
         chartInfoDialog.value.open = !chartInfoDialog.value.open;
     }
@@ -827,7 +830,6 @@
     function rangeChange(event: Event) {
         const target = event.target as HTMLInputElement;
         const value = target.value;
-        // console.log(value);
         rangeLowerValue.value = Number(value[0]);
         rangeUpperValue.value = Number(value[1]);
     }
@@ -841,8 +843,7 @@
         // 然后更新滑块的值
         const slider = document.querySelector(".rangeSlider");
         if (slider) {
-            //@ts-ignore
-            slider.value = [rangeMin.value, rangeMax.value];
+            (slider as unknown as { value: number[] }).value = [rangeMin.value, rangeMax.value];
         }
     }
 </script>
@@ -1049,7 +1050,12 @@
                         "
                         cover="/icons/random.png"
                         :data="randomChartDummy"
-                        @click="openChartInfoDialog(getRandomChart())"
+                        @click="
+                            () => {
+                                const chart = getRandomChart();
+                                if (chart) openChartInfoDialog(chart);
+                            }
+                        "
                     />
                     <div
                         v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"

@@ -1,0 +1,80 @@
+meta {
+  name: List Music
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v0/maimaidx/list/music
+  body: none
+  auth: none
+}
+
+docs {
+  # List Music
+  
+  Get all music tracks with their charts and aliases.
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  [
+    {
+      "id": 1,
+      "title": "FREEDOM DiVE",
+      "artist": "xi",
+      "category": "maimai",
+      "bpm": 222,
+      "aliases": {
+        "cn": ["fd"]
+      },
+      "charts": [
+        {
+          "versions": {
+            "jp": "maimai DX",
+            "ex": "maimai DX",
+            "cn": "舞萌DX"
+          },
+          "type": "dx",
+          "difficulty": "master",
+          "level": "14+",
+          "internalLevel": 14.8,
+          "charter": "Jack",
+          "notes": {
+            "tap": 1234,
+            "hold": 56,
+            "slide": 78,
+            "touch": 90,
+            "break": 12
+          }
+        }
+      ]
+    }
+  ]
+  ```
+  
+  ## Response Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | id | number | Music ID |
+  | title | string | Music title |
+  | artist | string | Artist name |
+  | category | string | Music category |
+  | bpm | number \| null | Beats per minute |
+  | aliases | object \| undefined | Aliases by language (cn) |
+  | charts | array | List of charts |
+  
+  ### Chart Fields
+  
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | versions | object | Version names by region (jp, ex, cn) |
+  | type | string | Chart type (std, dx, utage) |
+  | difficulty | string | Difficulty level |
+  | level | string | Display level |
+  | internalLevel | number | Internal level value |
+  | charter | string \| null | Chart designer |
+  | notes | object | Note counts by type |
+}

@@ -1,0 +1,52 @@
+meta {
+  name: Refresh Token
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v0/user/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}
+
+docs {
+  # Refresh Token
+  
+  Get a new sessionToken using the refreshToken.
+  
+  ## Request Body
+  
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | refreshToken | string | Yes | The refreshToken returned during login |
+  
+  ## Response
+  
+  ### Success (200)
+  ```json
+  {
+    "message": "Refresh successful",
+    "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
+  
+  ### Error (401)
+  ```json
+  {
+    "error": "Invalid or expired refresh token"
+  }
+  ```
+  
+  ## Notes
+  
+  - A new sessionToken will be generated
+  - The refreshToken remains unchanged
+  - New sessionToken expires in 7 days
+}

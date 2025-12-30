@@ -9,7 +9,7 @@
         close-on-esc
     >
         <mdui-top-app-bar slot="header">
-            <mdui-button-icon icon="close" @click="handleClose"></mdui-button-icon>
+            <mdui-button-icon icon="close" @click="requestClose"></mdui-button-icon>
             <mdui-top-app-bar-title>编辑用户绑定</mdui-top-app-bar-title>
             <mdui-button variant="text" @click="handleSave">保存</mdui-button>
         </mdui-top-app-bar>
@@ -26,9 +26,44 @@
             clearable
         ></mdui-text-field>
 
+        <!-- First user: show SaltNet register/login buttons between remark and tabs -->
+        <div v-if="isDBEnabled && isFirstUser" class="saltnet-buttons">
+            <mdui-button full-width @click="openSigninDialog">登录 SaltNet</mdui-button>
+            <mdui-button full-width variant="tonal" @click="openSignupDialog">
+                注册 SaltNet
+            </mdui-button>
+        </div>
+
         绑定账号：
         <mdui-tabs>
-            <mdui-tab value="inGame">NET</mdui-tab>
+            <!-- SaltNet tab only for non-first users -->
+            <mdui-tab
+                value="saltnet"
+                v-if="
+                    isDBEnabled &&
+                    !isFirstUser &&
+                    !localUser.inGame?.id &&
+                    !localUser.divingFish?.name &&
+                    !userLXNSBindStatus
+                "
+            >
+                SaltNet
+            </mdui-tab>
+            <mdui-tab-panel slot="panel" value="saltnet" v-if="isDBEnabled && !isFirstUser">
+                <mdui-text-field
+                    label="SaltNet 用户名"
+                    :value="localUser.saltnetUsername ?? ''"
+                    @input="localUser.saltnetUsername = $event.target.value || null"
+                    helper="通过 SaltNet 用户名查询成绩"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    clearable
+                ></mdui-text-field>
+            </mdui-tab-panel>
+
+            <mdui-tab value="inGame">国服 NET</mdui-tab>
             <mdui-tab-panel slot="panel" value="inGame">
                 <div class="userid-textfield">
                     <mdui-text-field
@@ -58,7 +93,8 @@
                     v-if="
                         localUser.divingFish &&
                         !(localUser.inGame && localUser.inGame.id) &&
-                        !userLXNSBindStatus
+                        !userLXNSBindStatus &&
+                        !localUser.saltnetDB?.id
                     "
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
@@ -101,27 +137,37 @@
                 </mdui-button>
             </mdui-tab-panel>
         </mdui-tabs>
+
+        <SignupDialog v-if="isDBEnabled" v-model="isSignupDialogOpen" @register-success="handleLoginSuccess" />
+        <SigninDialog v-if="isDBEnabled" v-model="isSigninDialogOpen" @login-success="handleLoginSuccess" />
     </mdui-dialog>
 </template>
 
 <script setup lang="ts">
-    import { ref, watch, defineProps, defineEmits, nextTick, toRaw, computed } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router.vue";
+    import { ref, watch, nextTick, toRaw, computed } from "vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import type { User } from "@/components/data/user/type";
     import { confirm, prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
+
+    import SignupDialog from "./database/SignupDialog.vue";
+    import SigninDialog from "./database/SigninDialog.vue";
+    import { isDBEnabled, type SaltNetDatabaseLogin } from "./database";
 
     const props = defineProps<{
         modelValue: boolean;
         user: User | null;
         userIndex: number | null;
         isEditingNewUser: boolean;
+        isFirstUser: boolean;
     }>();
 
-    const emit = defineEmits(["update:modelValue", "save", "delete"]);
+    const emit = defineEmits(["update:modelValue", "save", "delete", "saltnet-login"]);
 
     const dialogRef = ref<any>(null);
+    const isSignupDialogOpen = ref(false);
+    const isSigninDialogOpen = ref(false);
 
     const localUser = ref<Partial<User>>({});
 
@@ -167,7 +213,11 @@
     );
 
     const handleClose = () => {
-        // markDialogClosed(dialogRef.value);
+        // 同步父组件的 modelValue，但不重复 markDialogClosed（已在 @closed 事件中调用）
+        if (props.modelValue) emit("update:modelValue", false);
+    };
+
+    const requestClose = () => {
         emit("update:modelValue", false);
     };
 
@@ -184,12 +234,26 @@
                 id: localUser.value.lxns?.id ?? null,
             },
             inGame: { id: localUser.value.inGame?.id ?? null },
+            saltnetUsername: localUser.value.saltnetUsername ?? null,
         });
+        requestClose();
+    }
+
+    function openSignupDialog() {
+        isSignupDialogOpen.value = true;
+    }
+
+    function openSigninDialog() {
+        isSigninDialogOpen.value = true;
+    }
+
+    function handleLoginSuccess(data: SaltNetDatabaseLogin) {
+        emit("saltnet-login", data);
+        snackbar({ message: "SaltNet 登录成功！", autoCloseDelay: 1500 });
     }
 
     const handleSave = () => {
         saveUser();
-        handleClose();
     };
 
     function bindInGame() {
@@ -234,8 +298,7 @@
 
     function getUserIdFromQRCode(qrCode: string) {
         qrCode = qrCode.slice(-64);
-        //@ts-ignore
-        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode })
+        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode } as Record<string, unknown>)
             .then(r => r.json())
             .then(data => {
                 if (data.errorID === 0) {
@@ -301,5 +364,12 @@
     }
     mdui-tab-panel {
         padding-top: 1rem;
+    }
+
+    .saltnet-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
     }
 </style>

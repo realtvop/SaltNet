@@ -208,42 +208,22 @@
         box-sizing: border-box;
     }
     .constant-pill[difficulty="0"] {
-        background: #96d767;
+        background: var(--difficulty-0-color);
     }
     .constant-pill[difficulty="1"] {
-        background: #eeba41;
+        background: var(--difficulty-1-color);
     }
     .constant-pill[difficulty="2"] {
-        background: #ef888f;
+        background: var(--difficulty-2-color);
     }
     .constant-pill[difficulty="3"] {
-        background: #b54fdf;
+        background: var(--difficulty-3-color);
     }
     .constant-pill[difficulty="4"] {
-        background: #d3acf9;
+        background: var(--difficulty-4-color);
     }
     .constant-pill[difficulty="5"] {
-        background: #ee78f6;
-    }
-    @media (prefers-color-scheme: dark) {
-        .constant-pill[difficulty="0"] {
-            background: #45c124;
-        }
-        .constant-pill[difficulty="1"] {
-            background: #ffba01;
-        }
-        .constant-pill[difficulty="2"] {
-            background: #ff7b7b;
-        }
-        .constant-pill[difficulty="3"] {
-            background: #9f51dc;
-        }
-        .constant-pill[difficulty="4"] {
-            background: #dbaaff;
-        }
-        .constant-pill[difficulty="5"] {
-            background: #ff6ffd;
-        }
+        background: var(--difficulty-5-color);
     }
 
     .song-jacket-section {
@@ -327,42 +307,22 @@
         flex-grow: 0.75;
     }
     .pill-section.level[difficulty="0"] {
-        background: #96d767;
+        background: var(--difficulty-0-color);
     }
     .pill-section.level[difficulty="1"] {
-        background: #eeba41;
+        background: var(--difficulty-1-color);
     }
     .pill-section.level[difficulty="2"] {
-        background: #ef888f;
+        background: var(--difficulty-2-color);
     }
     .pill-section.level[difficulty="3"] {
-        background: #b54fdf;
+        background: var(--difficulty-3-color);
     }
     .pill-section.level[difficulty="4"] {
-        background: #d3acf9;
+        background: var(--difficulty-4-color);
     }
     .pill-section.level[difficulty="5"] {
-        background: #ee78f6;
-    }
-    @media (prefers-color-scheme: dark) {
-        .pill-section.level[difficulty="0"] {
-            background: #45c124;
-        }
-        .pill-section.level[difficulty="1"] {
-            background: #ffba01;
-        }
-        .pill-section.level[difficulty="2"] {
-            background: #ff7b7b;
-        }
-        .pill-section.level[difficulty="3"] {
-            background: #9f51dc;
-        }
-        .pill-section.level[difficulty="4"] {
-            background: #dbaaff;
-        }
-        .pill-section.level[difficulty="5"] {
-            background: #ff6ffd;
-        }
+        background: var(--difficulty-5-color);
     }
 
     .pill-section.points {
@@ -476,40 +436,28 @@
         --badge-bg-color: #ddd;
     }
 
-    .mdui-theme-light .constant-pill[difficulty="0"] {
-        background: #96d767 !important;
-    }
-    .mdui-theme-light .constant-pill[difficulty="1"] {
-        background: #eeba41 !important;
-    }
-    .mdui-theme-light .constant-pill[difficulty="2"] {
-        background: #ef888f !important;
-    }
-    .mdui-theme-light .constant-pill[difficulty="3"] {
-        background: #b54fdf !important;
-    }
-    .mdui-theme-light .constant-pill[difficulty="4"] {
-        background: #d3acf9 !important;
-    }
-    .mdui-theme-light .constant-pill[difficulty="5"] {
-        background: #ee78f6 !important;
-    }
-
+    /* Light theme overrides for rendering mode */
+    .mdui-theme-light .constant-pill[difficulty="0"],
     .mdui-theme-light .pill-section.level[difficulty="0"] {
         background: #96d767 !important;
     }
+    .mdui-theme-light .constant-pill[difficulty="1"],
     .mdui-theme-light .pill-section.level[difficulty="1"] {
         background: #eeba41 !important;
     }
+    .mdui-theme-light .constant-pill[difficulty="2"],
     .mdui-theme-light .pill-section.level[difficulty="2"] {
         background: #ef888f !important;
     }
+    .mdui-theme-light .constant-pill[difficulty="3"],
     .mdui-theme-light .pill-section.level[difficulty="3"] {
         background: #b54fdf !important;
     }
+    .mdui-theme-light .constant-pill[difficulty="4"],
     .mdui-theme-light .pill-section.level[difficulty="4"] {
         background: #d3acf9 !important;
     }
+    .mdui-theme-light .constant-pill[difficulty="5"],
     .mdui-theme-light .pill-section.level[difficulty="5"] {
         background: #ee78f6 !important;
     }
