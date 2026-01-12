@@ -413,10 +413,10 @@
 
                         <mdui-divider />
 
-                        <mdui-menu-item @click="checkLogin(user)" v-if="user.inGame?.id">
+                        <!-- <mdui-menu-item @click="checkLogin(user)" v-if="user.inGame?.id">
                             视奸（查询登录状态）
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
-                        </mdui-menu-item>
+                        </mdui-menu-item> -->
                         <mdui-menu-item
                             @click="previewRivals(user)"
                             v-if="!index && user.inGame?.id"
@@ -456,7 +456,7 @@
                             <mdui-icon slot="icon" name="info"></mdui-icon>
                         </mdui-menu-item>
 
-                        <mdui-menu-item @click="previewStockedTickets(user)" v-if="user.inGame?.id">
+                        <!-- <mdui-menu-item @click="previewStockedTickets(user)" v-if="user.inGame?.id">
                             预览倍券
                             <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
                         </mdui-menu-item>
@@ -466,7 +466,7 @@
                         >
                             清理补偿倍券
                             <mdui-icon slot="icon" name="airplane_ticket"></mdui-icon>
-                        </mdui-menu-item>
+                        </mdui-menu-item> -->
 
                         <mdui-menu-item
                             @click="exportUserBackupHandler(user)"
