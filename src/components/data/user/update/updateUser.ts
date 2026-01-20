@@ -1,5 +1,5 @@
 import { getUserDisplayName, type User, convertDetailed } from "@/components/data/user/type";
-import { snackbar, alert } from "mdui";
+import { snackbar, alert, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { toHalfWidth } from "@/utils";
@@ -63,11 +63,12 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
 
 const pendingUsers: { [key: string]: User } = {};
 
-export function updateUserWithWorker(user: User, updateItem: boolean = false) {
+export function updateUserWithWorker(user: User) {
     // 检查并生成 uid
     if (!user.uid) {
         user.uid = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
     }
+    const userUid = user.uid;
 
     // LXNS uses useShared which is not supported in workers, handle it on main thread
     if (user.lxns?.auth?.accessToken) {
@@ -78,7 +79,7 @@ export function updateUserWithWorker(user: User, updateItem: boolean = false) {
     // SaltNet-only user: user has saltnetDB but no other data sources
     const hasOnlySaltNet =
         user.saltnetDB?.sessionToken &&
-        !user.inGame?.id &&
+        !user.inGame?.enabled &&
         !user.divingFish?.name &&
         !user.lxns?.auth?.accessToken;
 
@@ -90,7 +91,7 @@ export function updateUserWithWorker(user: User, updateItem: boolean = false) {
     // User with saltnetUsername: query by username
     if (
         user.saltnetUsername &&
-        !user.inGame?.id &&
+        !user.inGame?.enabled &&
         !user.divingFish?.name &&
         !user.lxns?.auth?.accessToken
     ) {
@@ -98,10 +99,44 @@ export function updateUserWithWorker(user: User, updateItem: boolean = false) {
         return;
     }
 
+    const shouldPromptQrCode = user.inGame?.enabled && !user.inGame?.useFastUpdate;
+
+    if (shouldPromptQrCode) {
+        prompt({
+            headline: "更新用户数据",
+            description: "输入二维码扫描结果或复制的二维码页面链接",
+            confirmText: "更新",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: (value: string) => {
+                if (!value?.trim()) {
+                    snackbar({
+                        message: "请输入二维码内容",
+                        placement: "bottom",
+                        autoCloseDelay: 1500,
+                    });
+                    return false;
+                }
+                const plainUser: User = JSON.parse(JSON.stringify(user));
+                pendingUsers[userUid] = user;
+                updateUserWorker.postMessage({
+                    type: "updateUser",
+                    user: plainUser,
+                    qrCode: value,
+                });
+                return true;
+            },
+        });
+        return;
+    }
+
     const plainUser: User = JSON.parse(JSON.stringify(user));
 
-    pendingUsers[user.uid] = user;
-    updateUserWorker.postMessage({ type: "updateUser", user: plainUser, updateItem });
+    pendingUsers[userUid] = user;
+    updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
 }
 
 async function updateFromLXNS(user: User) {
@@ -350,7 +385,7 @@ async function downloadFromSaltNetByUsername(user: User) {
 export function checkLoginWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
 
-    updateUserWorker.postMessage({ type: "checkLogin", user: plainUser, updateItem: false });
+    updateUserWorker.postMessage({ type: "checkLogin", user: plainUser });
 }
 
 export function previewRivalsWithWorker(user: User) {

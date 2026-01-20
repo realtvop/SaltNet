@@ -10,18 +10,14 @@ import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { toHalfWidth } from "@/utils";
 
 self.onmessage = event => {
-    const { type, user, updateItem, qrCode } = event.data;
+    const { type, user, qrCode } = event.data;
     if (type === "updateUser") {
         let result = null;
         let status = "success";
         let message = "";
         try {
-            if (
-                user.inGame.id &&
-                typeof user.inGame.id === "number" &&
-                user.inGame.id.toString().length === 8
-            ) {
-                fromInGame(user, updateItem).then(data => {
+            if (user.inGame.enabled) {
+                fromInGame(user, qrCode).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -103,12 +99,18 @@ async function fromDivingFish(user: User) {
         });
 }
 
-async function fromInGame(user: User, updateItem: boolean) {
+async function fromInGame(user: User, qrCodeInput?: string) {
     info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
+    const shouldUseQrCode = !user.inGame?.useFastUpdate;
+    const qrCode = shouldUseQrCode ? normalizeQrCodeFromInput(qrCodeInput) : null;
+    if (shouldUseQrCode && !qrCode) {
+        info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
+        return null;
+    }
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
         user.divingFish.importToken as string,
-        updateItem
+        qrCode ?? undefined
     );
     if (data) {
         info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
@@ -149,9 +151,13 @@ async function fromDFLikeInGame(user: User) {
 function fetchInGameData(
     userId: number,
     importToken?: string,
-    updateItem: boolean = false
+    qrCode?: string
 ): Promise<UpdateUserResponse | null> {
-    return postAPI(SaltAPIEndpoints.UpdateUser, { userId, importToken, getItems: updateItem })
+    return postAPI(SaltAPIEndpoints.UpdateUser, {
+        userId,
+        importToken,
+        ...(qrCode ? { qrCode } : {}),
+    })
         .then(r => r.json())
         .catch(e => {
             info(`获取 InGame 数据失败：${e.toString()}`, e.toString());

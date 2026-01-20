@@ -24,6 +24,8 @@ export interface User {
     inGame: {
         name?: string | null;
         id: number | null;
+        enabled?: boolean;
+        useFastUpdate?: boolean;
     };
     saltnetUsername?: string | null; // For non-first users to query by SaltNet username
     settings: {
