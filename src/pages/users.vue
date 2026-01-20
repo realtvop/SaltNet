@@ -65,7 +65,7 @@
         shared.saltNetAccount = data;
         // Auto-sync scores if there's only one user (the first user)
         if (shared.users.length === 1) {
-            updateUser(shared.users[0], true);
+            updateUser(shared.users[0]);
         }
     };
 
@@ -241,9 +241,9 @@
     };
 
     function updateAll() {
-        shared.users.forEach((user, index) => {
+        shared.users.forEach(user => {
             if (!user.settings || !user.settings.manuallyUpdate) {
-                updateUser(user, index === 0 ? true : false);
+                updateUser(user);
             }
         });
     }
@@ -280,7 +280,7 @@
                 onOpen: markDialogOpen,
                 onClose: markDialogClosed,
                 onConfirm: () => {
-                    updateUser(user, true);
+                    updateUser(user);
                 },
             });
         if (!user.data.characters || !user.data.characters.length) {
@@ -295,7 +295,7 @@
                 onOpen: markDialogOpen,
                 onClose: markDialogClosed,
                 onConfirm: () => {
-                    updateUser(user, true);
+                    updateUser(user);
                     abortBackup = true;
                 },
             });
@@ -370,7 +370,7 @@
                 <mdui-button-icon
                     variant="standard"
                     icon="update"
-                    @click="updateUser(user, index === 0 ? true : false)"
+                    @click="updateUser(user)"
                 ></mdui-button-icon>
                 <mdui-dropdown>
                     <mdui-button-icon
