@@ -65,26 +65,50 @@
 
             <mdui-tab value="inGame">国服 NET</mdui-tab>
             <mdui-tab-panel slot="panel" value="inGame">
-                <div class="userid-textfield">
-                    <mdui-text-field
-                        v-if="localUser.inGame"
-                        label="舞萌 UserID 右侧绑定"
-                        placeholder="未绑定"
-                        type="password"
-                        :value="localUser.inGame.id ?? ''"
-                        @input="
-                            localUser.inGame.id = $event.target.value
-                                ? parseInt($event.target.value)
-                                : null
-                        "
-                        autocapitalize="off"
-                        autocomplete="off"
-                        autocorrect="off"
-                        spellcheck="false"
-                        disabled
-                    ></mdui-text-field>
-                    <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
-                </div>
+                <mdui-list-item headline="从国服 NET 同步成绩">
+                    <span slot="description">直接从游戏内获取成绩</span>
+                    <mdui-switch
+                        slot="end-icon"
+                        :checked="localUser.inGame?.enabled ?? false"
+                        @change="handleEnabledChange"
+                    ></mdui-switch>
+                </mdui-list-item>
+                <br />
+                <template v-if="localUser.inGame?.enabled">
+                    <mdui-list-item headline="快速更新">
+                        <span slot="description">
+                            无需每次获取二维码登录，但只能获取有限数据
+                            <br />
+                            未启用不需要绑定账户
+                        </span>
+                        <mdui-switch
+                            slot="end-icon"
+                            :checked="localUser.inGame?.useFastUpdate ?? false"
+                            @change="handleFastUpdateChange"
+                        ></mdui-switch>
+                    </mdui-list-item>
+                    <br v-if="localUser.inGame?.useFastUpdate" />
+                    <div class="userid-textfield" v-if="localUser.inGame?.useFastUpdate">
+                        <mdui-text-field
+                            v-if="localUser.inGame"
+                            label="舞萌 UserID 右侧绑定"
+                            placeholder="未绑定"
+                            type="password"
+                            :value="localUser.inGame.id ?? ''"
+                            @input="
+                                localUser.inGame.id = $event.target.value
+                                    ? parseInt($event.target.value)
+                                    : null
+                            "
+                            autocapitalize="off"
+                            autocomplete="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            disabled
+                        ></mdui-text-field>
+                        <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
+                    </div>
+                </template>
             </mdui-tab-panel>
 
             <mdui-tab value="divingFish">水鱼</mdui-tab>
@@ -179,6 +203,23 @@
 
     const localUser = ref<Partial<User>>({});
 
+    const ensureUserSettings = (user: Partial<User>) => {
+        if (!user.settings) {
+            user.settings = { manuallyUpdate: false } as User["settings"];
+            return;
+        }
+        if (user.settings.manuallyUpdate === undefined) user.settings.manuallyUpdate = false;
+    };
+
+    const ensureInGame = (user: Partial<User>) => {
+        if (!user.inGame) {
+            user.inGame = { name: null, id: null, enabled: false, useFastUpdate: false };
+            return;
+        }
+        if (user.inGame.enabled === undefined) user.inGame.enabled = false;
+        if (user.inGame.useFastUpdate === undefined) user.inGame.useFastUpdate = false;
+    };
+
     watch(
         () => props.user,
         newUser => {
@@ -187,17 +228,17 @@
                 if (!localUser.value.divingFish) {
                     localUser.value.divingFish = { name: null, importToken: null };
                 }
-                if (!localUser.value.inGame) {
-                    localUser.value.inGame = { name: null, id: null };
-                }
+                ensureInGame(localUser.value);
                 if (!localUser.value.lxns) {
                     localUser.value.lxns = { auth: null, name: null, id: null };
                 }
+                ensureUserSettings(localUser.value);
             } else {
                 localUser.value = {
                     divingFish: { name: null, importToken: null },
-                    inGame: { name: null, id: null },
+                    inGame: { name: null, id: null, enabled: false, useFastUpdate: false },
                     lxns: { auth: null, name: null, id: null },
+                    settings: { manuallyUpdate: false },
                 };
             }
         },
@@ -230,6 +271,8 @@
     };
 
     function saveUser() {
+        ensureUserSettings(localUser.value);
+        ensureInGame(localUser.value);
         emit("save", {
             remark: localUser.value.remark ?? null,
             divingFish: {
@@ -241,11 +284,28 @@
                 name: localUser.value.lxns?.name ?? null,
                 id: localUser.value.lxns?.id ?? null,
             },
-            inGame: { id: localUser.value.inGame?.id ?? null },
+            inGame: {
+                id: localUser.value.inGame?.id ?? null,
+                enabled: localUser.value.inGame?.enabled ?? false,
+                useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
+            },
             saltnetUsername: localUser.value.saltnetUsername ?? null,
+            settings: {
+                manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
+            },
         });
         requestClose();
     }
+
+    const handleFastUpdateChange = (event: Event) => {
+        ensureInGame(localUser.value);
+        localUser.value.inGame!.useFastUpdate = (event.target as HTMLInputElement).checked;
+    };
+
+    const handleEnabledChange = (event: Event) => {
+        ensureInGame(localUser.value);
+        localUser.value.inGame!.enabled = (event.target as HTMLInputElement).checked;
+    };
 
     function openSignupDialog() {
         isSignupDialogOpen.value = true;
@@ -355,6 +415,19 @@
         margin-bottom: 16px;
     }
 
+    .switch-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 0 2px;
+        justify-content: space-between;
+    }
+    .switch-description {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
     .userid-textfield {
         display: flex;
         align-items: center;

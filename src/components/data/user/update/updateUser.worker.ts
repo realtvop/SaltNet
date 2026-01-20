@@ -16,11 +16,7 @@ self.onmessage = event => {
         let status = "success";
         let message = "";
         try {
-            if (
-                user.inGame.id &&
-                typeof user.inGame.id === "number" &&
-                user.inGame.id.toString().length === 8
-            ) {
+            if (user.inGame.enabled && user.inGame.id && typeof user.inGame.id === "number") {
                 fromInGame(user, updateItem).then(data => {
                     result = data;
                     self.postMessage({

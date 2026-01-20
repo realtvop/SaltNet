@@ -42,7 +42,7 @@ export const useShared = defineStore("shared", () => {
                         remark: null,
                         saltnetDB: value,
                         divingFish: { name: null },
-                        inGame: { id: null },
+                        inGame: { id: null, enabled: false, useFastUpdate: false },
                         lxns: { auth: null, name: null, id: null },
                         settings: { manuallyUpdate: false },
                         data: {
@@ -70,15 +70,25 @@ export const useShared = defineStore("shared", () => {
     darkModeMediaQuery.addEventListener("change", event => (isDarkMode.value = !!event.matches));
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) {
-            // Migrate users without settings property
             const migratedUsers = v.map(user => {
-                if (!user.settings) {
-                    return {
-                        ...user,
-                        settings: { manuallyUpdate: false },
-                    };
-                }
-                return user;
+                const hasValidInGameId =
+                    typeof user.inGame?.id === "number" &&
+                    Number.isFinite(user.inGame.id) &&
+                    user.inGame.id.toString().length === 8;
+
+                const migratedInGame = {
+                    ...user.inGame,
+                    enabled: Boolean(user.inGame?.enabled ?? hasValidInGameId),
+                    useFastUpdate: Boolean(user.inGame?.useFastUpdate ?? false),
+                };
+                const migratedSettings = {
+                    manuallyUpdate: user.settings?.manuallyUpdate ?? false,
+                };
+                return {
+                    ...user,
+                    inGame: migratedInGame,
+                    settings: migratedSettings,
+                };
             });
             users.value = migratedUsers;
         }

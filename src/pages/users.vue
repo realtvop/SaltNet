@@ -8,14 +8,11 @@
     import SigninDialog from "@/components/data/user/database/SigninDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import {
-        checkLogin,
         updateUser,
         previewRivals,
-        clearIllegalTickets,
-        previewStockedTickets,
         uploadScoresToSaltNet,
     } from "@/components/data/user/update";
-    import { alert, confirm, prompt, snackbar } from "mdui";
+    import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
     import UserCard from "@/components/data/user/database/UserCard.vue";
@@ -43,7 +40,7 @@
         currentUserToEdit.value = {
             remark: null,
             divingFish: { name: null },
-            inGame: { id: null },
+            inGame: { id: null, enabled: false, useFastUpdate: false },
             lxns: { auth: null, name: null, id: null },
             settings: { manuallyUpdate: false },
             data: {
@@ -131,55 +128,18 @@
             onClose: markDialogClosed,
         });
     }
-    function extractQrCodeFromInput(raw: string): string | null {
-        const value = raw?.trim();
-        if (!value) return null;
-        if (value.startsWith("SGWCMAID") && value.length >= 64) return value.slice(-64);
-        if (value.startsWith("http")) {
-            const matches = value.match(/MAID.{0,76}/g);
-            if (matches?.[0]) return matches[0].slice(-64);
-            return null;
-        }
-        if (value.length >= 64) return value.slice(-64);
-        return null;
-    }
-    function clearIllegalTicketsPrompt(user: User) {
-        // return snackbar({
-        //     message: `我知道你很急，但是你先别急，现在还在研究`,
-        //     autoCloseDelay: 5000,
-        // });
-        prompt({
-            headline: `请输入登录二维码的链接或扫描结果`,
-            description: "仅用于修复异常数据，将会上传一次游玩成绩，介意勿用",
-            confirmText: "确认",
-            cancelText: "取消",
-            closeOnEsc: true,
-            closeOnOverlayClick: true,
-            textFieldOptions: {
-                type: "text",
-                placeholder: "粘贴登录二维码扫描结果或链接",
-            },
-            validator: value => {
-                if (!extractQrCodeFromInput(value)) return "二维码/链接解析失败，请检查是否正确";
-                return true;
-            },
-            onOpen: markDialogOpen,
-            onClose: markDialogClosed,
-            onConfirm: value => {
-                const qrCode = extractQrCodeFromInput(value);
-                if (!qrCode) return false;
-                clearIllegalTickets(user, qrCode);
-                return true;
-            },
-        });
-    }
-
     interface UpdatedUserData {
         remark?: string | null;
         divingFish: { name: string | null; importToken: string | null };
         lxns: { auth: LXNSAuth | null; name: string | null; id: number | null };
-        inGame: { name: string | null; id: number | null };
+        inGame: {
+            name: string | null;
+            id: number | null;
+            enabled: boolean;
+            useFastUpdate: boolean;
+        };
         saltnetUsername?: string | null;
+        settings: { manuallyUpdate: boolean };
     }
 
     const handleUserSave = (updatedUserData: UpdatedUserData) => {
@@ -198,9 +158,13 @@
                 inGame: {
                     ...(updatedUserData.inGame.name && { name: updatedUserData.inGame.name }),
                     id: updatedUserData.inGame.id,
+                    enabled: updatedUserData.inGame.enabled ?? false,
+                    useFastUpdate: updatedUserData.inGame.useFastUpdate ?? false,
                 },
                 saltnetUsername: updatedUserData.saltnetUsername ?? null,
-                settings: { manuallyUpdate: false },
+                settings: {
+                    manuallyUpdate: updatedUserData.settings?.manuallyUpdate ?? false,
+                },
                 data: {
                     updateTime: null,
                     name: null,
@@ -216,6 +180,7 @@
 
         if (index >= 0 && index < shared.users.length) {
             const originalUser = shared.users[index];
+            const defaultSettings = { manuallyUpdate: false };
             shared.users[index] = {
                 ...originalUser,
                 remark: updatedUserData.remark,
@@ -233,8 +198,18 @@
                 inGame: {
                     ...originalUser.inGame,
                     id: updatedUserData.inGame.id,
+                    enabled: updatedUserData.inGame.enabled ?? originalUser.inGame.enabled ?? false,
+                    useFastUpdate:
+                        updatedUserData.inGame.useFastUpdate ??
+                        originalUser.inGame.useFastUpdate ??
+                        false,
                 },
                 saltnetUsername: updatedUserData.saltnetUsername ?? originalUser.saltnetUsername,
+                settings: {
+                    ...defaultSettings,
+                    ...(originalUser.settings ?? {}),
+                    ...(updatedUserData.settings ?? {}),
+                },
             };
         } else {
             console.warn("Invalid user index for update:", index);
@@ -277,9 +252,7 @@
         if (index >= 0 && index < shared.users.length) {
             const user = shared.users[index];
             // Ensure settings object exists
-            if (!user.settings) {
-                user.settings = { manuallyUpdate: false };
-            }
+            if (!user.settings) user.settings = { manuallyUpdate: false };
             user.settings.manuallyUpdate = !user.settings.manuallyUpdate;
         }
     };
