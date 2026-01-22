@@ -5,6 +5,7 @@ import type {
 import type { UserMusic, UserItem, UserInfo, UserCharacter } from "../../inGame";
 
 export interface UpdateUserResponse {
+    userId: number;
     userName: string;
     iconId: number;
     rating: number;

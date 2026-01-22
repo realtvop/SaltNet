@@ -63,54 +63,6 @@
                 ></mdui-text-field>
             </mdui-tab-panel>
 
-            <mdui-tab value="inGame">国服 NET</mdui-tab>
-            <mdui-tab-panel slot="panel" value="inGame">
-                <mdui-list-item headline="从国服 NET 同步成绩">
-                    <span slot="description">直接从游戏内获取成绩</span>
-                    <mdui-switch
-                        slot="end-icon"
-                        :checked="localUser.inGame?.enabled ?? false"
-                        @change="handleEnabledChange"
-                    ></mdui-switch>
-                </mdui-list-item>
-                <br />
-                <template v-if="localUser.inGame?.enabled">
-                    <mdui-list-item headline="快速更新">
-                        <span slot="description">
-                            无需每次获取二维码登录，但只能获取有限数据
-                            <br />
-                            未启用不需要绑定账户
-                        </span>
-                        <mdui-switch
-                            slot="end-icon"
-                            :checked="localUser.inGame?.useFastUpdate ?? false"
-                            @change="handleFastUpdateChange"
-                        ></mdui-switch>
-                    </mdui-list-item>
-                    <br v-if="localUser.inGame?.useFastUpdate" />
-                    <div class="userid-textfield" v-if="localUser.inGame?.useFastUpdate">
-                        <mdui-text-field
-                            v-if="localUser.inGame"
-                            label="舞萌 UserID 右侧绑定"
-                            placeholder="未绑定"
-                            type="password"
-                            :value="localUser.inGame.id ?? ''"
-                            @input="
-                                localUser.inGame.id = $event.target.value
-                                    ? parseInt($event.target.value)
-                                    : null
-                            "
-                            autocapitalize="off"
-                            autocomplete="off"
-                            autocorrect="off"
-                            spellcheck="false"
-                            disabled
-                        ></mdui-text-field>
-                        <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
-                    </div>
-                </template>
-            </mdui-tab-panel>
-
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
@@ -159,6 +111,56 @@
                 >
                     解绑
                 </mdui-button>
+            </mdui-tab-panel>
+
+            <mdui-tab value="inGame">国服 NET</mdui-tab>
+            <mdui-tab-panel slot="panel" value="inGame">
+                <mdui-list-item headline="从国服 NET 同步成绩">
+                    <span slot="description">直接从游戏内获取成绩</span>
+                    <mdui-switch
+                        slot="end-icon"
+                        :checked="localUser.inGame?.enabled ?? false"
+                        @change="handleEnabledChange"
+                    ></mdui-switch>
+                </mdui-list-item>
+                <br />
+                <template v-if="localUser.inGame?.enabled">
+                    <mdui-list-item headline="默认快速更新">
+                        <span slot="description">
+                            无需每次获取二维码登录
+                            <br />
+                            只能更新达成率和 DX 分数
+                            <br />
+                            未启用不需要绑定账户
+                        </span>
+                        <mdui-switch
+                            slot="end-icon"
+                            :checked="localUser.inGame?.useFastUpdate ?? false"
+                            @change="handleFastUpdateChange"
+                        ></mdui-switch>
+                    </mdui-list-item>
+                    <br v-if="localUser.inGame?.useFastUpdate" />
+                    <div class="userid-textfield" v-if="localUser.inGame?.useFastUpdate">
+                        <mdui-text-field
+                            v-if="localUser.inGame"
+                            label="舞萌 UserID 右侧绑定"
+                            placeholder="未绑定"
+                            type="password"
+                            :value="localUser.inGame.id ?? ''"
+                            @input="
+                                localUser.inGame.id = $event.target.value
+                                    ? parseInt($event.target.value)
+                                    : null
+                            "
+                            autocapitalize="off"
+                            autocomplete="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            disabled
+                        ></mdui-text-field>
+                        <mdui-button-icon icon="edit" @click="bindInGame"></mdui-button-icon>
+                    </div>
+                </template>
             </mdui-tab-panel>
         </mdui-tabs>
 

@@ -61,7 +61,7 @@ export interface FavoriteChart {
     d: Level;
 }
 
-type DetailedData = Record<string, DivingFishFullRecord>;
+export type DetailedData = Record<string, DivingFishFullRecord>;
 
 export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     const result: DetailedData = {};

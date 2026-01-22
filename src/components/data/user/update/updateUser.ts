@@ -99,6 +99,7 @@ export function updateUserWithWorker(user: User) {
         return;
     }
 
+    const plainUser: User = JSON.parse(JSON.stringify(user));
     const shouldPromptQrCode = user.inGame?.enabled && !user.inGame?.useFastUpdate;
 
     if (shouldPromptQrCode) {
@@ -120,7 +121,6 @@ export function updateUserWithWorker(user: User) {
                     });
                     return false;
                 }
-                const plainUser: User = JSON.parse(JSON.stringify(user));
                 pendingUsers[userUid] = user;
                 updateUserWorker.postMessage({
                     type: "updateUser",
@@ -132,8 +132,6 @@ export function updateUserWithWorker(user: User) {
         });
         return;
     }
-
-    const plainUser: User = JSON.parse(JSON.stringify(user));
 
     pendingUsers[userUid] = user;
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });

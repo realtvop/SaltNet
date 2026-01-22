@@ -1,6 +1,6 @@
 // src/utils/updateUserWorker.ts
 import { fetchPlayerData } from "@/components/integrations/diving-fish";
-import type { DivingFishResponse } from "@/components/integrations/diving-fish/type";
+import type { DivingFishFullRecord, DivingFishResponse } from "@/components/integrations/diving-fish/type";
 import type {
     RivalPreview,
     UpdateUserResponse,
@@ -8,6 +8,7 @@ import type {
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { toHalfWidth } from "@/utils";
+import { migrateB50, migrateRecordList } from "./migrateData";
 
 self.onmessage = event => {
     const { type, user, qrCode } = event.data;
@@ -109,16 +110,22 @@ async function fromInGame(user: User, qrCodeInput?: string) {
     }
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
-        user.divingFish.importToken as string,
+        "",
         qrCode ?? undefined
     );
     if (data) {
         info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
+        const divingFishData = migrateRecordList(user.data.detailed, data.divingFishData)
+        if (user.divingFish.importToken) {
+            info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
+            uploadToDivingFish(data.divingFishData, user.divingFish.importToken).catch(e => info(`上传到水鱼失败：${e.toString()}`, e.toString()));
+        }
         return {
+            userId: data.userId || user.inGame.id,
             rating: data.rating,
             name: toHalfWidth(data.userName),
-            b50: data.b50,
-            detailed: convertDetailed(data.divingFishData),
+            b50: migrateB50(user.data.detailed, data.b50),
+            detailed: convertDetailed(divingFishData),
             updateTime: Date.now(),
             items: data.items || [],
             characters: data.characters || [],
@@ -265,12 +272,12 @@ function previewStockedTickets(user: User) {
             (
                 data:
                     | {
-                          chargeId: number;
-                          stock: number;
-                          purchaseDate: string;
-                          validDate: string;
-                          extNum1: number;
-                      }[]
+                        chargeId: number;
+                        stock: number;
+                        purchaseDate: string;
+                        validDate: string;
+                        extNum1: number;
+                    }[]
                     | null
             ) => {
                 if (data) {
@@ -298,6 +305,21 @@ function previewStockedTickets(user: User) {
         .catch(e => {
             info(`获取 ${userName} 的倍券失败：${e.toString()}`, e.toString());
             return [];
+        });
+}
+
+function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
+    return fetch("https://www.diving-fish.com/api/maimaidxprober/player/update_records", {
+        method: "POST",
+        headers: {
+        "Import-Token": importToken,
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    })
+        .then(r => r.json())
+        .catch(e => {
+            info(`上传到水鱼失败：${e.toString()}`, e.toString());
         });
 }
 
