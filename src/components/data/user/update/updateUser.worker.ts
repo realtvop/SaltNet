@@ -120,9 +120,7 @@ async function fromInGame(user: User, qrCodeInput?: string) {
         const divingFishData = migrateRecordList(user.data.detailed, data.divingFishData);
         if (user.divingFish.importToken) {
             info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
-            uploadToDivingFish(data.divingFishData, user.divingFish.importToken).catch(e =>
-                info(`上传到水鱼失败：${e.toString()}`, e.toString())
-            );
+            uploadToDivingFish(data.divingFishData, user.divingFish.importToken);
         }
         return {
             userId: data.userId || user.inGame.id,
@@ -321,7 +319,9 @@ function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
         },
         body: JSON.stringify(data),
     })
-        .then(r => r.json())
+        .then(() => {
+            info(`上传到水鱼成功`);
+        })
         .catch(e => {
             info(`上传到水鱼失败：${e.toString()}`, e.toString());
         });
