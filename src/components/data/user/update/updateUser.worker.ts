@@ -106,7 +106,7 @@ async function fromDivingFish(user: User) {
 async function fromInGame(user: User, qrCodeInput?: string) {
     info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
     const qrCode = qrCodeInput ? normalizeQrCodeFromInput(qrCodeInput) : null;
-    if (qrCodeInput || !user.inGame?.id && !qrCode) {
+    if (qrCodeInput || (!user.inGame?.id && !qrCode)) {
         info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
         return null;
     }
