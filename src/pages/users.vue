@@ -7,11 +7,7 @@
     import SignupDialog from "@/components/data/user/database/SignupDialog.vue";
     import SigninDialog from "@/components/data/user/database/SigninDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import {
-        updateUser,
-        previewRivals,
-        uploadScoresToSaltNet,
-    } from "@/components/data/user/update";
+    import { updateUser, uploadScoresToSaltNet, checkLogin } from "@/components/data/user/update";
     import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
@@ -111,7 +107,12 @@
                       `总觉醒数: ${info.totalAwake ?? "未知"}\n` +
                       `最后游戏程序版本: ${info.lastRomVersion ?? "未知"}\n` +
                       `最后数据版本: ${info.lastDataVersion ?? "未知"}\n` +
-                      `Rating 显示设置: ${info.dispRate ?? "未知"}\n\n`
+                      `Rating 显示设置: ${info.dispRate ?? "未知"}\n` +
+                      `对战好友:${
+                          info.rivals && info.rivals.length
+                              ? "\n    " + info.rivals.join("\n    ")
+                              : "无"
+                      }\n\n`
                     : "") +
                 `最后更新: ${new Date(Number(user.data.updateTime)).toLocaleString() ?? "未知"}`,
             closeOnEsc: true,
@@ -386,16 +387,9 @@
 
                         <mdui-divider />
 
-                        <!-- <mdui-menu-item @click="checkLogin(user)" v-if="user.inGame?.id">
-                            视奸（查询登录状态）
+                        <mdui-menu-item @click="checkLogin(user)" v-if="user.inGame?.id">
+                            查询登录状态
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
-                        </mdui-menu-item> -->
-                        <mdui-menu-item
-                            @click="previewRivals(user)"
-                            v-if="!index && user.inGame?.id"
-                        >
-                            查询对战好友
-                            <mdui-icon slot="icon" name="list_alt"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
                             @click="uploadScoresToSaltNet(user)"

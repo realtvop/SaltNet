@@ -4,10 +4,7 @@ import type {
     DivingFishFullRecord,
     DivingFishResponse,
 } from "@/components/integrations/diving-fish/type";
-import type {
-    RivalPreview,
-    UpdateUserResponse,
-} from "@/components/data/user/update/updateUser.type";
+import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { toHalfWidth } from "@/utils";
@@ -57,17 +54,10 @@ self.onmessage = event => {
         }
     } else if (type === "checkLogin") {
         try {
-            checkLogin(user);
+            checkLogin(user, qrCode);
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             info(`检查登录状态失败：${errorMsg}`, errorMsg);
-        }
-    } else if (type === "previewRivals") {
-        try {
-            getRivalsInfo(user);
-        } catch (e) {
-            const errorMsg = e instanceof Error ? e.message : String(e);
-            info(`获取对战好友信息失败：${errorMsg}`, errorMsg);
         }
     } else if (type === "clearIllegalTickets") {
         try {
@@ -106,7 +96,8 @@ async function fromDivingFish(user: User) {
 async function fromInGame(user: User, qrCodeInput?: string) {
     info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
     const qrCode = qrCodeInput ? normalizeQrCodeFromInput(qrCodeInput) : null;
-    if (qrCodeInput || (!user.inGame?.id && !qrCode)) {
+    console.log(qrCode);
+    if ((qrCodeInput || !user.inGame?.id) && !qrCode) {
         info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
         return null;
     }
@@ -182,9 +173,14 @@ function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | n
         });
 }
 
-function checkLogin(user: User) {
+function checkLogin(user: User, qrCodeInput?: string) {
     const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
-    return postAPI(SaltAPIEndpoints.CheckLogin, { userId: user.inGame.id })
+    const qrCode = normalizeQrCodeFromInput(qrCodeInput);
+    if (!qrCode) {
+        info(`检查登录状态失败：${userName}，二维码无效`);
+        return;
+    }
+    return postAPI(SaltAPIEndpoints.CheckLogin, { qrCode })
         .then(r => r.json())
         .then((data: { isLogin: string } | null) => {
             if (data) {
@@ -203,37 +199,6 @@ function checkLogin(user: User) {
         })
         .catch(e => {
             info(`获取 InGame 数据失败：${userName} - ${e.toString()}`, e.toString());
-        });
-}
-function getRivalsInfo(user: User) {
-    info(`正在获取 ${getUserDisplayName(user)} 的对战好友信息`);
-    return postAPI(SaltAPIEndpoints.PreviewRivals, { userId: user.inGame.id })
-        .then(r => r.json())
-        .then((data: RivalPreview[] | null) => {
-            if (data) {
-                let description = data
-                    .map(rival => `${toHalfWidth(rival.name)} ${rival.rating}`)
-                    .join("\n");
-                self.postMessage({
-                    type: "alert",
-                    data: {
-                        headline: `${getUserDisplayName(user)} 的对战好友`,
-                        description,
-                        closeOnOverlayClick: true,
-                        closeOnEsc: true,
-                    },
-                });
-            } else {
-                info(`获取 ${getUserDisplayName(user)} 的对战好友信息失败`);
-                return [];
-            }
-        })
-        .catch(e => {
-            info(
-                `获取 ${getUserDisplayName(user)} 的对战好友信息失败：${e.toString()}`,
-                e.toString()
-            );
-            return [];
         });
 }
 function normalizeQrCodeFromInput(raw?: string): string | null {

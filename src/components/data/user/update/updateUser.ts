@@ -382,14 +382,28 @@ async function downloadFromSaltNetByUsername(user: User) {
 
 export function checkLoginWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
-
-    updateUserWorker.postMessage({ type: "checkLogin", user: plainUser });
-}
-
-export function previewRivalsWithWorker(user: User) {
-    const plainUser: User = JSON.parse(JSON.stringify(user));
-
-    updateUserWorker.postMessage({ type: "previewRivals", user: plainUser });
+    prompt({
+        headline: "检查登录状态",
+        description: "输入二维码扫描结果或复制的二维码页面链接。此操作不会尝试登录您的帐户。",
+        confirmText: "检查",
+        cancelText: "取消",
+        closeOnEsc: true,
+        closeOnOverlayClick: true,
+        onOpen: markDialogOpen,
+        onClose: markDialogClosed,
+        onConfirm: (value: string) => {
+            if (!value?.trim()) {
+                snackbar({
+                    message: "二维码不能为空",
+                    placement: "bottom",
+                    autoCloseDelay: 1500,
+                });
+                return false;
+            }
+            updateUserWorker.postMessage({ type: "checkLogin", user: plainUser, qrCode: value });
+            return true;
+        },
+    });
 }
 
 export function clearIllegalTicketsWithWorker(user: User, qrCode: string) {

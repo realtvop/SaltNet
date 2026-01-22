@@ -59,6 +59,7 @@ export interface UserInfo {
     iconId: number;
     totalAwake: number;
     dispRate: number; // rating 显示 这什么几把命名
+    rivals?: string[];
 }
 
 export interface UserCharacter {
