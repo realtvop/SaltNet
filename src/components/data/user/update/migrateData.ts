@@ -1,11 +1,17 @@
-import type { DivingFishB50, DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+import type {
+    DivingFishB50,
+    DivingFishFullRecord,
+} from "@/components/integrations/diving-fish/type";
 import type { DetailedData } from "..";
 
-function migrateRecord(existing: DetailedData | undefined, incoming: DivingFishFullRecord): DivingFishFullRecord {
+function migrateRecord(
+    existing: DetailedData | undefined,
+    incoming: DivingFishFullRecord
+): DivingFishFullRecord {
     if (!existing) return incoming;
     const existingRecord = existing[`${incoming.song_id}-${incoming.level_index}`];
     if (!existingRecord) return incoming;
-    
+
     return {
         achievements: incoming.achievements,
         ds: incoming.ds,
@@ -31,10 +37,7 @@ export function migrateRecordList(
     return incomingList.map(incoming => migrateRecord(existing, incoming));
 }
 
-export function migrateB50(
-    existing: DetailedData | undefined,
-    b50: DivingFishB50
-): DivingFishB50 {
+export function migrateB50(existing: DetailedData | undefined, b50: DivingFishB50): DivingFishB50 {
     if (!existing) return b50;
     return {
         dx: migrateRecordList(existing, b50.dx),

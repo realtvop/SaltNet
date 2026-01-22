@@ -105,7 +105,7 @@ export function updateUserWithWorker(user: User) {
     if (shouldPromptQrCode) {
         prompt({
             headline: "更新用户数据",
-            description: "输入二维码扫描结果或复制的二维码页面链接",
+            description: "输入二维码扫描结果或复制的二维码页面链接，也可以留空使用快速更新",
             confirmText: "更新",
             cancelText: "取消",
             closeOnEsc: true,
@@ -113,9 +113,9 @@ export function updateUserWithWorker(user: User) {
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
             onConfirm: (value: string) => {
-                if (!value?.trim()) {
+                if (!value?.trim() && !user.data.detailed) {
                     snackbar({
-                        message: "请输入二维码内容",
+                        message: "首次更新请输入二维码内容",
                         placement: "bottom",
                         autoCloseDelay: 1500,
                     });

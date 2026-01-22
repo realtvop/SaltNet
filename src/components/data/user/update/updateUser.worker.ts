@@ -1,6 +1,9 @@
 // src/utils/updateUserWorker.ts
 import { fetchPlayerData } from "@/components/integrations/diving-fish";
-import type { DivingFishFullRecord, DivingFishResponse } from "@/components/integrations/diving-fish/type";
+import type {
+    DivingFishFullRecord,
+    DivingFishResponse,
+} from "@/components/integrations/diving-fish/type";
 import type {
     RivalPreview,
     UpdateUserResponse,
@@ -102,9 +105,8 @@ async function fromDivingFish(user: User) {
 
 async function fromInGame(user: User, qrCodeInput?: string) {
     info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
-    const shouldUseQrCode = !user.inGame?.useFastUpdate;
-    const qrCode = shouldUseQrCode ? normalizeQrCodeFromInput(qrCodeInput) : null;
-    if (shouldUseQrCode && !qrCode) {
+    const qrCode = qrCodeInput ? normalizeQrCodeFromInput(qrCodeInput) : null;
+    if (qrCodeInput || !user.inGame?.id && !qrCode) {
         info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
         return null;
     }
@@ -115,10 +117,12 @@ async function fromInGame(user: User, qrCodeInput?: string) {
     );
     if (data) {
         info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
-        const divingFishData = migrateRecordList(user.data.detailed, data.divingFishData)
+        const divingFishData = migrateRecordList(user.data.detailed, data.divingFishData);
         if (user.divingFish.importToken) {
             info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
-            uploadToDivingFish(data.divingFishData, user.divingFish.importToken).catch(e => info(`上传到水鱼失败：${e.toString()}`, e.toString()));
+            uploadToDivingFish(data.divingFishData, user.divingFish.importToken).catch(e =>
+                info(`上传到水鱼失败：${e.toString()}`, e.toString())
+            );
         }
         return {
             userId: data.userId || user.inGame.id,
@@ -272,12 +276,12 @@ function previewStockedTickets(user: User) {
             (
                 data:
                     | {
-                        chargeId: number;
-                        stock: number;
-                        purchaseDate: string;
-                        validDate: string;
-                        extNum1: number;
-                    }[]
+                          chargeId: number;
+                          stock: number;
+                          purchaseDate: string;
+                          validDate: string;
+                          extNum1: number;
+                      }[]
                     | null
             ) => {
                 if (data) {
@@ -312,8 +316,8 @@ function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
     return fetch("https://www.diving-fish.com/api/maimaidxprober/player/update_records", {
         method: "POST",
         headers: {
-        "Import-Token": importToken,
-        "Content-Type": "application/json",
+            "Import-Token": importToken,
+            "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
     })
