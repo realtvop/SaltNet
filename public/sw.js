@@ -124,6 +124,7 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("fetch", async function (e) {
+    if (e.request.method !== "GET") return;
     const urlOri = e.request.url;
     const urlParsed = parseURL(urlOri);
     const currentUrlParsed = parseURL(self.location.href);
