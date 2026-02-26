@@ -10,6 +10,41 @@ const CKMusicListURL =
 
 const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
 
+const versionRank = [
+    "maimai",
+    "maimai PLUS",
+    "maimai GreeN",
+    "maimai GreeN PLUS",
+    "maimai ORANGE",
+    "maimai ORANGE PLUS",
+    "maimai PiNK",
+    "maimai PiNK PLUS",
+    "maimai MURASAKi",
+    "maimai MURASAKi PLUS",
+    "maimai MiLK",
+    "MiLK PLUS",
+    "maimai MiLK PLUS",
+    "maimai FiNALE",
+    "maimai でらっくす",
+    "maimai でらっくす PLUS",
+    "maimai でらっくす Splash",
+    "maimai でらっくす Splash PLUS",
+    "maimai でらっくす UNiVERSE",
+    "maimai でらっくす UNiVERSE PLUS",
+    "maimai でらっくす FESTiVAL",
+    "maimai でらっくす FESTiVAL PLUS",
+    "maimai でらっくす BUDDiES",
+    "maimai でらっくす BUDDiES PLUS",
+    "maimai でらっくす PRiSM",
+];
+
+function getVersionRank(v) {
+    if (!v) return -1;
+    const index = versionRank.indexOf(v);
+    if (index !== -1) return index;
+    return -1;
+}
+
 async function updateCollectionData() {
     const icons = await fetchLXListData("icon").then(res => res.icons);
     const plates = await fetchLXListData("plate").then(res => res.plates);
@@ -51,6 +86,14 @@ async function updateMusicData() {
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
     const yzcAliases = await fetch(YzcAliasDataAPIURL).then(r => r.json());
 
+    // Create a map to easily look up peer charts (DX vs SD) for the same song title
+    const songsByTitle = {};
+    for (const song of musicData) {
+        if (!songsByTitle[song.title]) songsByTitle[song.title] = {};
+        if (song.type === "SD") songsByTitle[song.title].SD = song;
+        else if (song.type === "DX") songsByTitle[song.title].DX = song;
+    }
+
     for (const song of musicData) {
         const id = Number(song.id);
         const ids = 10000 < id < 100000 ? [id, id - 10000] : [id];
@@ -73,13 +116,38 @@ async function updateMusicData() {
             if (song.type == "DX" && c.dx_lev_bas) return true;
             return false;
         });
+
         if (ckMatch) {
-            if (song.type === "SD" && ckMatch.lev_bas && ckMatch.dx_lev_bas) {
-                // Do nothing
+            // Check if it's a merged entry (contains both SD and DX levels)
+            const isMerged = ckMatch.lev_bas && ckMatch.dx_lev_bas;
+
+            if (isMerged && song.type === "SD") {
+                // Determine if we should swap the version label with the DX chart's version
+                // This handles cases where the SD version in the source data is incorrectly labeled as newer than the DX version
+                let usePeerVersion = false;
+                const peer = songsByTitle[song.title]?.DX;
+
+                if (peer) {
+                    const rankSD = getVersionRank(song.basic_info.from);
+                    const rankDX = getVersionRank(peer.basic_info.from);
+
+                    // If SD version is newer than DX version, assume swapped/incorrect labeling and use DX version for SD
+                    if (rankSD !== -1 && rankDX !== -1 && rankSD > rankDX) {
+                        usePeerVersion = true;
+                    }
+                }
+
+                if (usePeerVersion && peer) {
+                    song.basic_info.from = peer.basic_info.from;
+                } else {
+                    // Keep original SD version (do not overwrite with merged CK version)
+                }
             } else {
+                // For DX charts, or unmerged SD charts, update from CK data
                 song.basic_info.from = ckMatch.version;
             }
         }
+
         if (!song.basic_info.from.startsWith("舞萌") && !song.basic_info.from.startsWith("maimai"))
             song.basic_info.from = `maimai ${song.basic_info.from}`;
 
