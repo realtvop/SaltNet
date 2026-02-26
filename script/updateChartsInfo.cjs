@@ -66,14 +66,20 @@ async function updateMusicData() {
 
         if (aliasList) song.aliases = finalAliasList;
 
-        song.basic_info.from =
-            ckMusicData.find(c => {
-                if (c.title != song.title) return false;
-                if (!c.version.startsWith("舞萌")) return false;
-                if (song.type == "SD" && c.lev_bas) return true;
-                if (song.type == "DX" && c.dx_lev_bas) return true;
-                return false;
-            })?.version || song.basic_info.from;
+        const ckMatch = ckMusicData.find(c => {
+            if (c.title != song.title) return false;
+            if (!c.version.startsWith("舞萌")) return false;
+            if (song.type == "SD" && c.lev_bas) return true;
+            if (song.type == "DX" && c.dx_lev_bas) return true;
+            return false;
+        });
+        if (ckMatch) {
+            if (song.type === "SD" && ckMatch.lev_bas && ckMatch.dx_lev_bas) {
+                // Do nothing
+            } else {
+                song.basic_info.from = ckMatch.version;
+            }
+        }
         if (!song.basic_info.from.startsWith("舞萌") && !song.basic_info.from.startsWith("maimai"))
             song.basic_info.from = `maimai ${song.basic_info.from}`;
 
