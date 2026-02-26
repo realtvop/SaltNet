@@ -1,14 +1,26 @@
 // 曲目信息列表更新 用于 Actions 执行
 const fs = require("fs");
+const { execSync } = require("child_process");
+
+const fetchWithCurl = url => {
+    try {
+        const command = `curl -s -L "${url}"`;
+        const output = execSync(command, { maxBuffer: 10 * 1024 * 1024 });
+        return Promise.resolve({
+            json: () => Promise.resolve(JSON.parse(output.toString()))
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
 
 const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_data";
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
 const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
 const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
-const CKMusicListURL =
-    "https://raw.githubusercontent.com/CrazyKidCN/maimaiDX-CN-songs-database/refs/heads/main/maidata.json";
+const LXSongListAPIURL = "https://maimai.lxns.net/api/v0/maimai/song/list";
 
-const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
+const fetchLXListData = dataType => fetchWithCurl(LXListAPIURL(dataType)).then(r => r.json());
 
 async function updateCollectionData() {
     const icons = await fetchLXListData("icon").then(res => res.icons);
@@ -45,11 +57,14 @@ async function updateCollectionData() {
 }
 
 async function updateMusicData() {
-    const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
-    const ckMusicData = await fetch(CKMusicListURL).then(r => r.json());
-    const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
+    const musicData = await fetchWithCurl(DFMusicDataAPIURL).then(r => r.json());
+    const lxSongData = await fetchWithCurl(LXSongListAPIURL).then(r => r.json());
+    const chartStats = await fetchWithCurl(DFChartStatsAPIURL).then(r => r.json());
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
-    const yzcAliases = await fetch(YzcAliasDataAPIURL).then(r => r.json());
+    const yzcAliases = await fetchWithCurl(YzcAliasDataAPIURL).then(r => r.json());
+
+    const lxSongs = lxSongData.songs;
+    const lxVersions = lxSongData.versions;
 
     for (const song of musicData) {
         const id = Number(song.id);
@@ -66,16 +81,24 @@ async function updateMusicData() {
 
         if (aliasList) song.aliases = finalAliasList;
 
-        song.basic_info.from =
-            ckMusicData.find(c => {
-                if (c.title != song.title) return false;
-                if (!c.version.startsWith("舞萌")) return false;
-                if (song.type == "SD" && c.lev_bas) return true;
-                if (song.type == "DX" && c.dx_lev_bas) return true;
-                return false;
-            })?.version || song.basic_info.from;
-        if (!song.basic_info.from.startsWith("舞萌") && !song.basic_info.from.startsWith("maimai"))
-            song.basic_info.from = `maimai ${song.basic_info.from}`;
+        const normalizedId = id > 10000 && id < 100000 ? id % 10000 : id;
+        const lxSong = lxSongs.find(s => s.id === normalizedId) || lxSongs.find(s => s.title === song.title);
+
+        if (lxSong) {
+            let versionId;
+            if (song.type === "SD" && lxSong.difficulties.standard && lxSong.difficulties.standard.length > 0) {
+                versionId = lxSong.difficulties.standard[0].version;
+            } else if (song.type === "DX" && lxSong.difficulties.dx && lxSong.difficulties.dx.length > 0) {
+                versionId = lxSong.difficulties.dx[0].version;
+            }
+
+            if (versionId !== undefined) {
+                const version = lxVersions.find(v => v.version === versionId);
+                if (version) {
+                    song.basic_info.from = version.title;
+                }
+            }
+        }
 
         const stats = chartStats.charts[song.id];
         if (!stats) continue;
