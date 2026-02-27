@@ -5,8 +5,6 @@ const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
 const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
 const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
-const CKMusicListURL =
-    "https://raw.githubusercontent.com/CrazyKidCN/maimaiDX-CN-songs-database/refs/heads/main/maidata.json";
 
 const fetchLXListData = dataType => fetch(LXListAPIURL(dataType)).then(r => r.json());
 
@@ -46,9 +44,10 @@ async function updateCollectionData() {
 
 async function updateMusicData() {
     const musicData = await fetch(DFMusicDataAPIURL).then(r => r.json());
-    const ckMusicData = await fetch(CKMusicListURL).then(r => r.json());
     const chartStats = await fetch(DFChartStatsAPIURL).then(r => r.json());
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
+    const lxSongs = await fetchLXListData("song").then(res => res.songs || res);
+    const lxVersions = await fetchLXListData("version").then(res => res.versions || res);
     const yzcAliases = await fetch(YzcAliasDataAPIURL).then(r => r.json());
 
     for (const song of musicData) {
@@ -66,14 +65,27 @@ async function updateMusicData() {
 
         if (aliasList) song.aliases = finalAliasList;
 
-        song.basic_info.from =
-            ckMusicData.find(c => {
-                if (c.title != song.title) return false;
-                if (!c.version.startsWith("舞萌")) return false;
-                if (song.type == "SD" && c.lev_bas) return true;
-                if (song.type == "DX" && c.dx_lev_bas) return true;
-                return false;
-            })?.version || song.basic_info.from;
+        const lxSong = lxSongs.find(c => c.title === song.title);
+        if (lxSong?.charts) {
+            const chartType = song.type === "DX" ? "dx" : "standard";
+            const charts =
+                Array.isArray(lxSong.charts) && lxSong.charts.length > 0
+                    ? lxSong.charts.filter(c => c.type?.toLowerCase() === chartType)
+                    : lxSong.charts[chartType] || [];
+            const targetChart = charts?.[0];
+            const versionId =
+                targetChart?.version ?? targetChart?.version_id ?? targetChart?.versionId;
+            if (versionId) {
+                const lxVersion = lxVersions.find(v => v.version === versionId - (versionId % 100));
+                const versionName =
+                    lxVersion?.name_cn ||
+                    lxVersion?.name ||
+                    lxVersion?.label ||
+                    lxVersion?.title ||
+                    lxVersion?.display_name;
+                if (versionName) song.basic_info.from = versionName;
+            }
+        }
         if (!song.basic_info.from.startsWith("舞萌") && !song.basic_info.from.startsWith("maimai"))
             song.basic_info.from = `maimai ${song.basic_info.from}`;
 
