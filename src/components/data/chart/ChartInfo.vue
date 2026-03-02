@@ -652,11 +652,34 @@
         const raTable = chartRatingTables.value.current;
 
         if (ratingDisplayMode.value === "简洁") {
-            // 简洁模式：只显示第一个和最后两个
+            // 简洁模式：显示第一个、最后两个，以及最后一个加分项
             if (raTable.length <= 3) {
                 return raTable;
             }
-            return [raTable[0], ...raTable.slice(-2)];
+
+            const displayItems = [raTable[0], ...raTable.slice(-2)];
+            const baseRa = currentUserLowestRaInChartOrSection.value;
+
+            if (typeof baseRa !== "number") {
+                return displayItems;
+            }
+
+            const lastBonusItem = [...raTable].reverse().find((item) => item.rating > baseRa);
+            if (!lastBonusItem) {
+                return displayItems;
+            }
+
+            const existed = displayItems.some(
+                (item) =>
+                    item.achievements === lastBonusItem.achievements &&
+                    item.rating === lastBonusItem.rating
+            );
+
+            if (!existed) {
+                displayItems.splice(1, 0, lastBonusItem);
+            }
+
+            return displayItems;
         } else {
             // 吃分和完整模式：显示全部
             return raTable;
