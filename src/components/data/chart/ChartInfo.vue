@@ -409,7 +409,11 @@
         }[]
     >([]);
     const currentUser = ref<User | null>(null);
-    const ratingDisplayMode = ref<"简洁" | "吃分" | "完整">("简洁");
+    type RatingDisplayMode = "简洁" | "吃分" | "完整";
+    const ratingModeOrder: RatingDisplayMode[] = ["简洁", "吃分", "完整"];
+    const ratingDisplayMode = ref<RatingDisplayMode>(
+        shared.appSettings.defaultChartRatingDisplayMode
+    );
     const expandedValue = ref<number>(0);
     const showScoreCalculator = ref(false);
 
@@ -450,7 +454,6 @@
             }
             friendsScores.value = [];
             currentUser.value = null;
-            ratingDisplayMode.value = "简洁";
             chartFriendsScoresMap.value.clear();
 
             if (!props.chart?.music?.charts) return;
@@ -474,6 +477,9 @@
 
             // 从缓存中加载项目位置
             await loadChartPositionsFromCache();
+            ratingDisplayMode.value = resolveAvailableRatingDisplayMode(
+                shared.appSettings.defaultChartRatingDisplayMode
+            );
 
             // 为每个难度生成好友成绩数据
             props.chart.music.charts.forEach(chartInfo => {
@@ -647,6 +653,28 @@
         };
     });
 
+    const availableRatingDisplayModes = computed<RatingDisplayMode[]>(() => {
+        const modes: RatingDisplayMode[] = ["简洁"];
+        if (chartRatingTables.value.filtered.length > 3) {
+            modes.push("吃分");
+        }
+        modes.push("完整");
+        return modes;
+    });
+
+    function resolveAvailableRatingDisplayMode(preferred: RatingDisplayMode): RatingDisplayMode {
+        const available = availableRatingDisplayModes.value;
+        if (available.includes(preferred)) return preferred;
+
+        const preferredIndex = ratingModeOrder.indexOf(preferred);
+        for (let i = preferredIndex - 1; i >= 0; i--) {
+            const fallback = ratingModeOrder[i];
+            if (available.includes(fallback)) return fallback;
+        }
+
+        return available[0] ?? "简洁";
+    }
+
     // 获取指定难度的显示 Rating 阶段表
     function getDisplayedChartRaTable() {
         const raTable = chartRatingTables.value.current;
@@ -791,9 +819,9 @@
 
     function handleDisplayModeChange(event: Event) {
         const target = event.target as HTMLSelectElement;
-        const value = target.value as typeof ratingDisplayMode.value;
+        const value = target.value as RatingDisplayMode;
 
-        if (value) ratingDisplayMode.value = value;
+        if (value) ratingDisplayMode.value = resolveAvailableRatingDisplayMode(value);
         else {
             // 阻止点击已经选择的项目时清空项目
             const previousValue = ratingDisplayMode.value;
@@ -802,6 +830,14 @@
             // wtf
         }
     }
+
+    watch(
+        availableRatingDisplayModes,
+        () => {
+            ratingDisplayMode.value = resolveAvailableRatingDisplayMode(ratingDisplayMode.value);
+        },
+        { immediate: true }
+    );
 
     // 计算DX Score星星显示
     const dxScoreStarsCount = computed(() => {

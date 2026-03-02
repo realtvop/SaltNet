@@ -10,6 +10,10 @@ import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import { setRegionGetter } from "@/components/data/music";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+type RatingDisplayMode = "简洁" | "吃分" | "完整";
+type AppSettings = {
+    defaultChartRatingDisplayMode: RatingDisplayMode;
+};
 
 // MARK: shared
 export const useShared = defineStore("shared", () => {
@@ -32,6 +36,9 @@ export const useShared = defineStore("shared", () => {
     const isDarkMode = ref<boolean>(darkModeMediaQuery.matches);
     const isSmallScreen = ref<boolean>(window.innerWidth < 560);
     const musicDataLoading = ref<boolean>(false);
+    const appSettings = ref<AppSettings>({
+        defaultChartRatingDisplayMode: "简洁",
+    });
 
     const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
         get: () => users.value[0]?.saltnetDB ?? null,
@@ -102,6 +109,15 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
+    localForage.getItem<Partial<AppSettings>>("appSettings").then((v: Partial<AppSettings> | null) => {
+        if (!v) return;
+        appSettings.value = {
+            ...appSettings.value,
+            ...v,
+            defaultChartRatingDisplayMode:
+                v.defaultChartRatingDisplayMode ?? appSettings.value.defaultChartRatingDisplayMode,
+        };
+    });
 
     // Migrate old saltNetAccount to first user's saltnetDB
     localForage
@@ -152,6 +168,16 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
+    watch(
+        appSettings,
+        (newAppSettings: AppSettings) => {
+            if (!newAppSettings) return;
+            localForage.setItem("appSettings", toRaw(newAppSettings)).catch((err: unknown) => {
+                console.error("Failed to save app settings:", err);
+            });
+        },
+        { deep: true }
+    );
 
     return {
         users,
@@ -163,5 +189,6 @@ export const useShared = defineStore("shared", () => {
         nearcadeData,
         saltNetAccount,
         musicDataLoading,
+        appSettings,
     };
 });

@@ -17,6 +17,22 @@
                 </mdui-button>
             </div>
         </mdui-card>
+        <mdui-card variant="filled" class="settings-item">
+            <h2>显示</h2>
+            <br />
+            <div class="setting-row">
+                <span class="setting-label">Rating 阶段默认筛选</span>
+                <mdui-select
+                    :value="shared.appSettings.defaultChartRatingDisplayMode"
+                    style="width: 8em; --mdui-comp-select-menu-container-shape: 8px"
+                    @change="handleDefaultRatingModeChange"
+                >
+                    <mdui-menu-item value="简洁">简洁</mdui-menu-item>
+                    <mdui-menu-item value="吃分">吃分</mdui-menu-item>
+                    <mdui-menu-item value="完整">全部</mdui-menu-item>
+                </mdui-select>
+            </div>
+        </mdui-card>
     </div>
 </template>
 
@@ -25,6 +41,7 @@
     import { snackbar, confirm } from "mdui";
 
     const shared = useShared();
+    type RatingDisplayMode = "简洁" | "吃分" | "完整";
 
     const userData = {
         import: () => {
@@ -118,6 +135,13 @@
                     }),
         });
     }
+
+    function handleDefaultRatingModeChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        const value = target.value as RatingDisplayMode;
+        if (!value) return;
+        shared.appSettings.defaultChartRatingDisplayMode = value;
+    }
 </script>
 
 <style scoped>
@@ -141,5 +165,14 @@
         display: flex;
         flex-direction: row-reverse;
         gap: 20px;
+    }
+    .setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+    .setting-label {
+        color: rgb(var(--mdui-color-on-surface));
     }
 </style>
