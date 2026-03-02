@@ -6,11 +6,12 @@
 import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import type { Music, MusicInfo, Chart, ChartInfo, SavedMusicList } from "./type";
 import { ChartType, type MusicGenre, type MusicOrigin } from "../maiTypes";
-import type { MusicDataResponse } from "@/components/integrations/diving-fish/type";
+import type { ChartStats, MusicDataResponse } from "@/components/integrations/diving-fish/type";
 import { convertDFMusicList } from "@/components/integrations/diving-fish";
 import { isDBEnabled } from "@/components/data/user/database";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
+let localChartStatsMapPromise: Promise<Map<string, ChartStats> | null> | null = null;
 
 // Types matching the SaltNet database API response
 export interface SaltNetChartNotes {
@@ -233,6 +234,36 @@ export function convertSaltNetMusicList(
         musicList,
         chartList,
     };
+}
+
+async function getLocalChartStatsMap(): Promise<Map<string, ChartStats> | null> {
+    if (localChartStatsMapPromise) return localChartStatsMapPromise;
+
+    localChartStatsMapPromise = (async () => {
+        const localData = await fetchLocalMusicList();
+        if (!localData) return null;
+
+        const statsMap = new Map<string, ChartStats>();
+        for (const chart of Object.values(localData.chartList)) {
+            if (!chart.info.stat) continue;
+            statsMap.set(`${chart.music.id}-${chart.info.grade}`, chart.info.stat);
+        }
+        return statsMap;
+    })();
+
+    return localChartStatsMapPromise;
+}
+
+export async function enrichWithLocalChartStats(data: SavedMusicList): Promise<void> {
+    const statsMap = await getLocalChartStatsMap();
+    if (!statsMap) return;
+
+    for (const chart of Object.values(data.chartList)) {
+        if (chart.info.stat) continue;
+        const stat = statsMap.get(`${chart.music.id}-${chart.info.grade}`);
+        if (!stat) continue;
+        chart.info.stat = stat;
+    }
 }
 
 /**

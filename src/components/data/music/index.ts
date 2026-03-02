@@ -13,6 +13,7 @@ import {
     filterMusicByRegion,
     convertSaltNetMusicList,
     fetchLocalMusicList,
+    enrichWithLocalChartStats,
     isDBEnabled,
 } from "./musicApi";
 import MusicSort from "./sort.json";
@@ -79,6 +80,7 @@ async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMu
 
     const filteredData = filterMusicByRegion(rawData, region);
     const converted = convertSaltNetMusicList(filteredData, region, latestVersionName);
+    await enrichWithLocalChartStats(converted);
 
     // Save to cache in background
     saveToCache(converted, region);
@@ -130,6 +132,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
             musicList: cached.musicList,
             chartList: cached.chartList,
         };
+        await enrichWithLocalChartStats(musicData);
         currentRegion = region;
 
         // Start background refresh
