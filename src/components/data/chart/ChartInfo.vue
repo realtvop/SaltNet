@@ -692,13 +692,13 @@
                 return displayItems;
             }
 
-            const lastBonusItem = [...raTable].reverse().find((item) => item.rating > baseRa);
+            const lastBonusItem = [...raTable].reverse().find(item => item.rating > baseRa);
             if (!lastBonusItem) {
                 return displayItems;
             }
 
             const existed = displayItems.some(
-                (item) =>
+                item =>
                     item.achievements === lastBonusItem.achievements &&
                     item.rating === lastBonusItem.rating
             );

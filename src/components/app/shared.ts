@@ -109,15 +109,18 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
-    localForage.getItem<Partial<AppSettings>>("appSettings").then((v: Partial<AppSettings> | null) => {
-        if (!v) return;
-        appSettings.value = {
-            ...appSettings.value,
-            ...v,
-            defaultChartRatingDisplayMode:
-                v.defaultChartRatingDisplayMode ?? appSettings.value.defaultChartRatingDisplayMode,
-        };
-    });
+    localForage
+        .getItem<Partial<AppSettings>>("appSettings")
+        .then((v: Partial<AppSettings> | null) => {
+            if (!v) return;
+            appSettings.value = {
+                ...appSettings.value,
+                ...v,
+                defaultChartRatingDisplayMode:
+                    v.defaultChartRatingDisplayMode ??
+                    appSettings.value.defaultChartRatingDisplayMode,
+            };
+        });
 
     // Migrate old saltNetAccount to first user's saltnetDB
     localForage
