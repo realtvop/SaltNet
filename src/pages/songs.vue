@@ -296,27 +296,7 @@
         } else if (category.value === Category.Version) {
             // 版本模式
             // 创建版本名称映射
-            const versionMapping: Record<string, string> = {
-                Maimai: "maimai",
-                "Maimai PLUS": "maimai PLUS",
-                "Maimai GreeN": "maimai GreeN",
-                "Maimai GreeN PLUS": "maimai GreeN PLUS",
-                "Maimai ORANGE": "maimai ORANGE",
-                "Maimai ORANGE PLUS": "maimai ORANGE PLUS",
-                "Maimai PiNK": "maimai PiNK",
-                "Maimai PiNK PLUS": "maimai PiNK PLUS",
-                "Maimai MURASAKi": "maimai MURASAKi",
-                "Maimai MURASAKi PLUS": "maimai MURASAKi PLUS",
-                "Maimai MiLK": "maimai MiLK",
-                "Maimai MiLK PLUS": "MiLK PLUS",
-                "Maimai FiNALE": "maimai FiNALE",
-                舞萌DX: "maimai でらっくす",
-                "舞萌DX 2021": "舞萌DX 2021",
-                "舞萌DX 2022": "舞萌DX 2022",
-                "舞萌DX 2023": "舞萌DX 2023",
-                "舞萌DX 2024": "舞萌DX 2024",
-                "舞萌DX 2025": "舞萌DX 2025",
-            };
+            const versionMapping: Record<string, string> = {};
 
             const targetVersion =
                 versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
