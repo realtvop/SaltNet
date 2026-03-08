@@ -9,6 +9,8 @@ import { ChartType, type MusicGenre, type MusicOrigin } from "../maiTypes";
 import type { ChartStats, MusicDataResponse } from "@/components/integrations/diving-fish/type";
 import { convertDFMusicList } from "@/components/integrations/diving-fish";
 import { isDBEnabled } from "@/components/data/user/database";
+import { getChartStatsIdentity } from "@/components/data/chart/chartIdentity";
+import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
 let localChartStatsMapPromise: Promise<Map<string, ChartStats> | null> | null = null;
@@ -134,7 +136,7 @@ function getDifficultyGrade(difficulty: SaltNetChart["difficulty"]): number {
         expert: 2,
         master: 3,
         remaster: 4,
-        utage: 10,
+        utage: UTAGE_GRADE,
     };
     return gradeMap[difficulty] ?? 3;
 }
@@ -143,7 +145,7 @@ function getDifficultyGrade(difficulty: SaltNetChart["difficulty"]): number {
  * Map SaltNet chart type to ChartType enum
  */
 function getChartType(type: SaltNetChart["type"]): ChartType {
-    if (type === "dx") return ChartType.Deluxe;
+    if (type === "dx" || type === "utage") return ChartType.Deluxe;
     return ChartType.Standard;
 }
 
@@ -164,7 +166,7 @@ export function convertSaltNetMusicList(
         const chartType = firstChart ? getChartType(firstChart.type) : ChartType.Standard;
 
         // Add 1e4 offset for DX type songs
-        const id = item.id + (chartType === ChartType.Deluxe ? 1e4 : 0);
+        const id = item.id + (firstChart?.type === "dx" ? 1e4 : 0);
 
         // Get version info from region
         const versionInfo = firstChart?.versions[region] || "";
@@ -188,10 +190,11 @@ export function convertSaltNetMusicList(
             charts: [],
         };
 
-        for (const saltChart of item.charts) {
+        for (const [chartIndex, saltChart] of item.charts.entries()) {
             const grade = getDifficultyGrade(saltChart.difficulty);
-            // Generate unique chart ID: musicId * 10 + grade
-            const chartId = id * 10 + grade;
+            // Keep the previous chart id shape for normal charts, while allowing multi-utage charts.
+            const chartId =
+                grade === UTAGE_GRADE ? id * 100 + UTAGE_GRADE + chartIndex : id * 10 + grade;
 
             // Calculate deluxe score max from notes
             const notes = saltChart.notes;
@@ -246,7 +249,7 @@ async function getLocalChartStatsMap(): Promise<Map<string, ChartStats> | null> 
         const statsMap = new Map<string, ChartStats>();
         for (const chart of Object.values(localData.chartList)) {
             if (!chart.info.stat) continue;
-            statsMap.set(`${chart.music.id}-${chart.info.grade}`, chart.info.stat);
+            statsMap.set(getChartStatsIdentity(chart), chart.info.stat);
         }
         return statsMap;
     })();
@@ -260,7 +263,7 @@ export async function enrichWithLocalChartStats(data: SavedMusicList): Promise<v
 
     for (const chart of Object.values(data.chartList)) {
         if (chart.info.stat) continue;
-        const stat = statsMap.get(`${chart.music.id}-${chart.info.grade}`);
+        const stat = statsMap.get(getChartStatsIdentity(chart));
         if (!stat) continue;
         chart.info.stat = stat;
     }

@@ -120,7 +120,10 @@ async function updateMusicData() {
                     .map(difficulty => difficulty.version)
                     .filter(version => typeof version === "number");
                 if (versionValues.length > 0) {
-                    const versionTitle = resolveVersionTitle(Math.min(...versionValues), versionTable);
+                    const versionTitle = resolveVersionTitle(
+                        Math.min(...versionValues),
+                        versionTable
+                    );
                     if (versionTitle) {
                         song.basic_info.from = versionTitle;
                         if (

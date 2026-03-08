@@ -26,6 +26,7 @@
     --difficulty-3-color: #b54fdf;
     --difficulty-4-color: #d3acf9;
     --difficulty-5-color: #ee78f6;
+    --difficulty-10-color: #ff6b9b;
 
     @supports (-webkit-touch-callout: none) {
         @media all and (display-mode: standalone) {
@@ -48,6 +49,7 @@
         --difficulty-3-color: #9f51dc;
         --difficulty-4-color: #dbaaff;
         --difficulty-5-color: #ff6ffd;
+        --difficulty-10-color: #ff4f87;
     }
 }
 

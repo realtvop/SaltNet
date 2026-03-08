@@ -17,6 +17,7 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
 import { getRankRateByAchievement } from "@/components/data/maiTypes";
+import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
 const updateUserWorker = new UpdateUserWorker();
@@ -189,6 +190,7 @@ function difficultyToLevelIndex(difficulty: string): number {
         expert: 2,
         master: 3,
         remaster: 4,
+        utage: UTAGE_GRADE,
     };
     return difficulties[difficulty.toLowerCase()] ?? 3;
 }
@@ -206,7 +208,7 @@ function saltNetToDivingFish(record: SaltNetScoreResponse): DivingFishFullRecord
         level_index,
         level: record.level,
         level_label: record.difficulty,
-        type: record.type === "dx" ? "DX" : "SD",
+        type: record.type === "std" ? "SD" : "DX",
         dxScore: record.dxScore,
         ds: record.internalLevel,
         fc: (record.comboStat || "") as ComboStatus,
@@ -427,13 +429,15 @@ import { useShared } from "@/components/app/shared";
  */
 function levelIndexToDifficulty(levelIndex: number): string {
     const difficulties = ["basic", "advanced", "expert", "master", "remaster"];
+    if (levelIndex === UTAGE_GRADE) return "utage";
     return difficulties[levelIndex] || "master";
 }
 
 /**
  * Convert DivingFish type to SaltNet API type
  */
-function convertChartType(type: "DX" | "SD"): "std" | "dx" {
+function convertChartType(type: "DX" | "SD", levelIndex: number): "std" | "dx" | "utage" {
+    if (levelIndex === UTAGE_GRADE) return "utage";
     return type === "DX" ? "dx" : "std";
 }
 
@@ -471,7 +475,7 @@ export async function uploadScoresToSaltNet(user: User) {
     // Convert detailed data (Record<string, DivingFishFullRecord>) to SaltNetUploadScore[]
     const scores: SaltNetUploadScore[] = Object.values(user.data.detailed).map(record => ({
         title: record.title,
-        type: convertChartType(record.type),
+        type: convertChartType(record.type, record.level_index),
         difficulty: levelIndexToDifficulty(record.level_index),
         achievements: record.achievements,
         dxScore: record.dxScore,

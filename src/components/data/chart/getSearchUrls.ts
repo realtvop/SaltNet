@@ -1,5 +1,6 @@
 import { ChartType } from "../maiTypes";
 import type { Chart } from "../music/type";
+import { getChartDifficultySearchLabel } from "./difficulty";
 
 export function getChartSearchUrls(chart: Chart): typeof VideoSearchUrls {
     const urls: typeof VideoSearchUrls = [];
@@ -9,7 +10,7 @@ export function getChartSearchUrls(chart: Chart): typeof VideoSearchUrls {
             url: template.url.replace(
                 "%s",
                 encodeURIComponent(
-                    `${chart.music.info.title} ${chart.music.info.type == ChartType.Deluxe ? "DX" : template.name === "YT" ? "スタンダード" : "标"} ${["BASIC", "ADVANDCED", "EXPERT", "MASTER", "Re:MASTER"][chart.info.grade]} ${chart.info.level}`
+                    `${chart.music.info.title} ${chart.music.info.type == ChartType.Deluxe ? "DX" : template.name === "YT" ? "スタンダード" : "标"} ${getChartDifficultySearchLabel(chart.info.grade)} ${chart.info.level}`
                 )
             ),
             icon: template.icon,

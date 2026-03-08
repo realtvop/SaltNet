@@ -10,6 +10,7 @@ import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import { setRegionGetter } from "@/components/data/music";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
@@ -103,21 +104,26 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;
     });
-    localForage.getItem<ChartsSortCached>("chartsSortCached").then((v: ChartsSortCached | null) => {
-        if (v) chartsSort.value = v;
-    });
+    localForage
+        .getItem<ChartsSortCached>(CHARTS_SORT_CACHE_KEY)
+        .then((v: ChartsSortCached | null) => {
+            if (v) chartsSort.value = v;
+        });
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
-    localForage.getItem<Partial<AppSettings>>("appSettings").then((v: Partial<AppSettings> | null) => {
-        if (!v) return;
-        appSettings.value = {
-            ...appSettings.value,
-            ...v,
-            defaultChartRatingDisplayMode:
-                v.defaultChartRatingDisplayMode ?? appSettings.value.defaultChartRatingDisplayMode,
-        };
-    });
+    localForage
+        .getItem<Partial<AppSettings>>("appSettings")
+        .then((v: Partial<AppSettings> | null) => {
+            if (!v) return;
+            appSettings.value = {
+                ...appSettings.value,
+                ...v,
+                defaultChartRatingDisplayMode:
+                    v.defaultChartRatingDisplayMode ??
+                    appSettings.value.defaultChartRatingDisplayMode,
+            };
+        });
 
     // Migrate old saltNetAccount to first user's saltnetDB
     localForage
@@ -154,7 +160,7 @@ export const useShared = defineStore("shared", () => {
     );
     watch(chartsSort, (newChartsSort: ChartsSortCached) => {
         if (!newChartsSort) return;
-        localForage.setItem("chartsSortCached", toRaw(newChartsSort)).catch((err: unknown) => {
+        localForage.setItem(CHARTS_SORT_CACHE_KEY, toRaw(newChartsSort)).catch((err: unknown) => {
             console.error("Failed to save charts sort:", err);
         });
     });

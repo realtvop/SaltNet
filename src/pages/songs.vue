@@ -14,7 +14,9 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
-    import { handleSelectChange, handleNumericSelectChange } from "@/utils";
+    import { getDifficultyFilterOptions, UTAGE_GRADE } from "@/components/data/chart/difficulty";
+    import { findDetailedScoreForChart } from "@/components/data/chart/scoreLookup";
+    import { handleSelectChange } from "@/utils";
 
     declare global {
         interface Window {
@@ -110,9 +112,14 @@
     }
 
     const difficultyFilter = ref(3);
+    const difficultyFilterOptions = computed(() =>
+        getDifficultyFilterOptions(
+            category.value === Category.Version || category.value === Category.Favorite
+        )
+    );
 
     function onDifficultyFilterChange(event: Event) {
-        handleNumericSelectChange(event, difficultyFilter, -1);
+        handleSelectChange(event, difficultyFilter, value => Number(value));
     }
 
     function getRandomChart() {
@@ -186,7 +193,7 @@
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
             if (userData?.data?.detailed) {
-                const d = userData.data.detailed[`${chart.music.id}-${chart.info.grade}`];
+                const d = findDetailedScoreForChart(userData.data.detailed, chart);
                 if (
                     d &&
                     typeof d.achievements === "number" &&
@@ -221,8 +228,8 @@
 
         if (userData?.data?.detailed) {
             charts.sort((a, b) => {
-                const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
-                const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
+                const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
+                const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
                 const playedA = typeof chartDataA?.achievements === "number";
                 const playedB = typeof chartDataB?.achievements === "number";
                 if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
@@ -263,9 +270,6 @@
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
-        const allCharts: Chart[] = shared.chartsSort.charts.filter(
-            (chart: Chart) => chart.info.grade === 3
-        );
 
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
@@ -286,7 +290,8 @@
             // 宴会场模式
             if (selectedDifficulty.value === "ALL") {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === 3 && chart.info.level.endsWith("?")
+                    (chart: Chart) =>
+                        chart.info.grade === UTAGE_GRADE && chart.info.level.endsWith("?")
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -388,6 +393,18 @@
         } else {
             filteredCharts = [];
         }
+
+        const allChartsReferenceGrade =
+            category.value === Category.Banquet
+                ? UTAGE_GRADE
+                : category.value === Category.Version || category.value === Category.Favorite
+                  ? difficultyFilter.value
+                  : category.value === Category.InGame && selectedDifficulty.value === "ALL"
+                    ? difficultyFilter.value
+                    : (filteredCharts[0]?.info.grade ?? 3);
+        const allCharts: Chart[] = shared.chartsSort.charts.filter(
+            (chart: Chart) => chart.info.grade === allChartsReferenceGrade
+        );
 
         // 先给所有符合难度条件的曲目添加原始排序索引
         const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
@@ -574,6 +591,7 @@
         // 切换分类时，重置到该分类的默认选项
         if (newCategory === Category.InGame) {
             selectedTab.value[Category.InGame] = "ALL";
+            if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
         } else if (newCategory === Category.Banquet) {
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
@@ -966,11 +984,15 @@
             <mdui-select
                 style="width: 4.1rem"
                 label="难度"
-                :value="difficultyFilter + 1"
+                :value="difficultyFilter.toString()"
                 @change="onDifficultyFilterChange"
             >
-                <mdui-menu-item v-for="index in 5" :key="index" :value="index">
-                    {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
                 </mdui-menu-item>
             </mdui-select>
             <mdui-text-field

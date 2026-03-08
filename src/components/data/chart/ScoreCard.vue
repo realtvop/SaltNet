@@ -225,6 +225,9 @@
     .constant-pill[difficulty="5"] {
         background: var(--difficulty-5-color);
     }
+    .constant-pill[difficulty="10"] {
+        background: var(--difficulty-10-color);
+    }
 
     .song-jacket-section {
         flex: 0 0 40%;
@@ -323,6 +326,9 @@
     }
     .pill-section.level[difficulty="5"] {
         background: var(--difficulty-5-color);
+    }
+    .pill-section.level[difficulty="10"] {
+        background: var(--difficulty-10-color);
     }
 
     .pill-section.points {
@@ -460,5 +466,9 @@
     .mdui-theme-light .constant-pill[difficulty="5"],
     .mdui-theme-light .pill-section.level[difficulty="5"] {
         background: #ee78f6 !important;
+    }
+    .mdui-theme-light .constant-pill[difficulty="10"],
+    .mdui-theme-light .pill-section.level[difficulty="10"] {
+        background: #ff6b9b !important;
     }
 </style>
