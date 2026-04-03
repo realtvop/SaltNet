@@ -1,5 +1,6 @@
 import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@/components/data/music/type";
 import type { DivingFishMusicChart, DivingFishResponse, MusicDataResponse } from "./type";
+import { isBanquetGenre, UTAGE_GRADE } from "@/components/data/chart/difficulty";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
@@ -40,6 +41,7 @@ export function convertDFMusicList(data: MusicDataResponse) {
     const chartList: Record<number, Chart> = {};
 
     for (const item of data) {
+        const isBanquetMusic = isBanquetGenre(item.basic_info.genre);
         const id = Number(item.id);
         const musicInfo: MusicInfo = {
             id,
@@ -66,7 +68,7 @@ export function convertDFMusicList(data: MusicDataResponse) {
                 notes: dfChart.notes,
                 charter: dfChart.charter,
                 level: item.level[index],
-                grade: index,
+                grade: isBanquetMusic ? UTAGE_GRADE : index,
                 constant: item.ds[index],
                 deluxeScoreMax: deluxeScoreMax * 3,
                 stat: dfChart.stats || undefined,

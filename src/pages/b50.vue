@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed, onMounted } from "vue";
+    import { ref, computed, onMounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
@@ -20,18 +20,24 @@
     const userId = ref(route.params.id as string);
     const error = ref<string | null>(null);
     const pending = ref(false);
+    const renderHostMounted = ref(false);
     const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
     async function buildMusicChartMap() {
-        const musicInfo = await getMusicInfoAsync();
-        if (!musicInfo) return;
-        const map = new Map();
-        for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
-            // key: `${song_id}-${level_index}`
-            map.set(`${chart.music.id}-${chart.info.grade}`, chart);
+        pending.value = true;
+        try {
+            const musicInfo = await getMusicInfoAsync();
+            if (!musicInfo) return;
+            const map = new Map();
+            for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
+                // key: `${song_id}-${level_index}`
+                map.set(`${chart.music.id}-${chart.info.grade}`, chart);
+            }
+            musicChartMap.value = map;
+        } finally {
+            pending.value = false;
         }
-        musicChartMap.value = map;
     }
 
     onMounted(() => {
@@ -194,6 +200,12 @@
         });
     }
 
+    async function ensureRenderHostReady() {
+        if (renderHostMounted.value) return;
+        renderHostMounted.value = true;
+        await nextTick();
+    }
+
     function generateRenderUrl(endpoint: string): string {
         const params = new URLSearchParams();
 
@@ -282,8 +294,9 @@
 
         const copyAction = {
             text: "复制",
-            onClick: () =>
-                getB50Png()
+            onClick: async () => {
+                await ensureRenderHostReady();
+                return getB50Png()
                     .then((dataUrl: string) => {
                         return fetch(dataUrl)
                             .then(response => {
@@ -302,13 +315,15 @@
                     })
                     .catch(() => {
                         snackbar({ message: "复制失败，请检查浏览器权限或稍后重试。" });
-                    }),
+                    });
+            },
         };
 
         const downloadAction = {
             text: "下载",
-            onClick: () =>
-                getB50Png().then((dataUrl: string) => {
+            onClick: async () => {
+                await ensureRenderHostReady();
+                return getB50Png().then((dataUrl: string) => {
                     const link = document.createElement("a");
                     link.href = dataUrl;
                     const formattedTime = new Date().toLocaleString("zh-CN", {
@@ -321,7 +336,8 @@
                     });
                     link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                     link.click();
-                }),
+                });
+            },
         };
 
         const onlineRenderAction = {
@@ -426,8 +442,13 @@
             </p>
         </div>
 
+        <div v-else class="error-message">
+            <h2>无法加载玩家数据</h2>
+            <p>未能获取到有效的玩家信息，是不是还没有添加用户？</p>
+        </div>
+
         <B50ToRender
-            v-if="player && player.data"
+            v-if="renderHostMounted && player && player.data"
             :b50SdCharts="b50SdCharts"
             :b50DxCharts="b50DxCharts"
             :playerName="getUserDisplayName(player)"
@@ -440,11 +461,6 @@
             :playerRating="displayedRating"
             style="display: none"
         />
-
-        <div v-else class="error-message">
-            <h2>无法加载玩家数据</h2>
-            <p>未能获取到有效的玩家信息，是不是还没有添加用户？</p>
-        </div>
     </div>
 
     <ChartInfoDialog

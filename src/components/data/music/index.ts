@@ -19,7 +19,7 @@ import {
 import MusicSort from "./sort.json";
 
 // Cache key for localForage
-const MUSIC_CACHE_KEY = "saltnet_music_cache";
+const MUSIC_CACHE_KEY = "saltnet_music_cache_v2";
 
 // Module-level state for loaded music data
 let musicData: SavedMusicList | null = null;
@@ -80,7 +80,9 @@ async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMu
 
     const filteredData = filterMusicByRegion(rawData, region);
     const converted = convertSaltNetMusicList(filteredData, region, latestVersionName);
-    await enrichWithLocalChartStats(converted);
+    void enrichWithLocalChartStats(converted).catch(error => {
+        console.error("Failed to enrich chart stats:", error);
+    });
 
     // Save to cache in background
     saveToCache(converted, region);
@@ -132,7 +134,9 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
             musicList: cached.musicList,
             chartList: cached.chartList,
         };
-        await enrichWithLocalChartStats(musicData);
+        void enrichWithLocalChartStats(musicData).catch(error => {
+            console.error("Failed to enrich cached chart stats:", error);
+        });
         currentRegion = region;
 
         // Start background refresh

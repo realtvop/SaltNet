@@ -65,17 +65,22 @@
             </mdui-chip>
         </div>
 
-        <mdui-tabs :value="expandedValue.toString()" placement="top" full-width v-if="chart">
+        <mdui-tabs
+            :value="expandedChartId !== null ? expandedChartId.toString() : ''"
+            placement="top"
+            full-width
+            v-if="chart"
+        >
             <mdui-tab
                 v-for="chartInfo of singleLevel ? [chart] : chart.music?.charts"
-                :key="chartInfo.info.grade"
-                :value="chartInfo.info.grade.toString()"
-                @click="expandedValue = chartInfo.info.grade"
+                :key="chartInfo.id"
+                :value="chartInfo.id.toString()"
+                @click="expandedChartId = chartInfo.id"
             >
                 <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
                 <div class="tab-header" slot="icon">
                     <span class="difficulty-badge" :class="`difficulty-${chartInfo.info.grade}`">
-                        {{ ["BAS", "ADV", "EXP", "MAS", "ReM"][chartInfo.info.grade] }}
+                        {{ getChartDifficultyBadgeLabel(chartInfo.info.grade) }}
                     </span>
                 </div>
             </mdui-tab>
@@ -214,21 +219,11 @@
                                     :value="fav.name"
                                     @click="toggleFavorite(fav, currentChart)"
                                     :style="{
-                                        backgroundColor: fav.charts.some(
-                                            ({ i, d }) =>
-                                                i === currentChart.music.id && d === expandedValue
-                                        )
+                                        backgroundColor: isFavoriteChart(fav, currentChart)
                                             ? 'rgba(var(--mdui-color-primary),12%)'
                                             : '',
                                     }"
-                                    :icon="
-                                        fav.charts.some(
-                                            ({ i, d }) =>
-                                                i === currentChart.music.id && d === expandedValue
-                                        )
-                                            ? 'check'
-                                            : ''
-                                    "
+                                    :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
                                 >
                                     {{ fav.name }}
                                 </mdui-menu-item>
@@ -385,8 +380,10 @@
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { getCoverURL } from "@/components/integrations/assets";
+    import { getChartDifficultyBadgeLabel } from "./difficulty";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
+    import { findDetailedScoreForChart } from "./scoreLookup";
 
     const shared = useShared();
 
@@ -414,7 +411,7 @@
     const ratingDisplayMode = ref<RatingDisplayMode>(
         shared.appSettings.defaultChartRatingDisplayMode
     );
-    const expandedValue = ref<number>(0);
+    const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
 
     // 存储每个难度对应的好友成绩
@@ -458,7 +455,7 @@
 
             if (!props.chart?.music?.charts) return;
 
-            expandedValue.value = props.chart.info.grade || 0;
+            expandedChartId.value = props.chart.id;
 
             if (shared.users.length > 0) {
                 // If targetUserId is provided, use that user, otherwise use the first user (current user)
@@ -505,8 +502,7 @@
                     );
                     if (!uname) return;
 
-                    const key = `${props.chart!.music.id}-${chartInfo.info.grade}`;
-                    const detail = user.data?.detailed?.[key];
+                    const detail = findDetailedScoreForChart(user.data?.detailed, chartInfo);
 
                     if (detail) {
                         chartFriends.push({
@@ -546,25 +542,24 @@
                     }
                 });
 
-                chartFriendsScoresMap.value.set(chartInfo.info.grade, chartFriends);
+                chartFriendsScoresMap.value.set(chartInfo.id, chartFriends);
             });
         }
     );
 
     const currentChart = computed(() => {
-        if (!props.chart) return null as unknown as Chart;
-        if (props.chart.info.grade === expandedValue.value) return props.chart;
-        return props.chart.music.charts.find(
-            chart => chart.info.grade === expandedValue.value
-        ) as Chart;
+        if (!props.chart) return null;
+        if (props.chart.id === expandedChartId.value) return props.chart;
+        return props.chart.music.charts.find(chart => chart.id === expandedChartId.value) ?? null;
     });
     const currentChartScore = computed(() => {
-        if (!props.chart) return null;
-        if (props.chart.info.grade === expandedValue.value && props.chart.score)
-            return props.chart.score;
+        if (!props.chart || !currentChart.value) return null;
+        if (props.chart.id === currentChart.value.id && props.chart.score) return props.chart.score;
         if (!currentUser.value || !currentUser.value.data.detailed) return null;
-        const score =
-            currentUser.value.data.detailed[`${props.chart.music.id}-${expandedValue.value}`];
+        const score = findDetailedScoreForChart(
+            currentUser.value.data.detailed,
+            currentChart.value
+        );
         if (!score) return null;
         return chartScoreFromDF(score);
     });
@@ -616,13 +611,13 @@
         for (const chartInfo of props.chart.music.charts) {
             try {
                 const position = await getChartPositionFromCache(chartInfo, chartInfo.info.level);
-                chartPositionMap.value.set(chartInfo.info.grade, position);
+                chartPositionMap.value.set(chartInfo.id, position);
             } catch (error) {
                 console.error(
                     `Failed to get position for chart ${chartInfo.music.id}-${chartInfo.info.grade}:`,
                     error
                 );
-                chartPositionMap.value.set(chartInfo.info.grade, "-");
+                chartPositionMap.value.set(chartInfo.id, "-");
             }
         }
     }
@@ -727,7 +722,7 @@
     const currentUserLowestRaInChartOrSection = computed(() => {
         if (!props.chart) return null;
 
-        const chart = props.chart.score ? props.chart.score.deluxeRating : null;
+        const chart = currentChartScore.value ? currentChartScore.value.deluxeRating : null;
         const section = currentUserLowestRaInSection.value;
 
         if (!chart || !section) return chart || section;
@@ -736,8 +731,8 @@
 
     // 指定难度的好友成绩
     const chartFriendsScores = computed(() => {
-        if (!props.chart) return [];
-        return chartFriendsScoresMap.value.get(currentChart.value.info.grade) || [];
+        if (!currentChart.value) return [];
+        return chartFriendsScoresMap.value.get(currentChart.value.id) || [];
     });
 
     // 获取当前谱面在对应难度的项目位置
@@ -745,7 +740,7 @@
         if (!props.chart) return "-";
 
         // 从缓存的Map中获取项目位置
-        return chartPositionMap.value.get(chartInfo.info.grade) || "-";
+        return chartPositionMap.value.get(chartInfo.id) || "-";
     }
 
     // 切换收藏状态
@@ -769,6 +764,13 @@
                 d: chartLevel,
             } as FavoriteChart);
         }
+    }
+
+    function isFavoriteChart(favoriteList: FavoriteList, chartInfo: Chart | null): boolean {
+        if (!chartInfo) return false;
+        return favoriteList.charts.some(
+            chart => chart.i === chartInfo.music.id && chart.d === chartInfo.info.grade
+        );
     }
 
     // 新增收藏夹
@@ -1326,6 +1328,10 @@
         background: linear-gradient(45deg, #ffffff, #f5f5f5);
         color: #333;
         border: 2px solid #9c27b0;
+    }
+
+    .difficulty-10 {
+        background: linear-gradient(45deg, #ff5d91, #ff8a65);
     }
 
     .level-info {
