@@ -93,14 +93,20 @@ async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMu
 /**
  * Main function to load music data with caching strategy:
  * - When DB is enabled: Use caching with background refresh
- * - When DB is disabled: Always fetch from local JSON without caching
+ * - When DB is disabled: Reuse in-memory data in current session
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
-    // When DB is disabled, always fetch from local JSON without caching
+    // When DB is disabled, reuse in-memory data for current session
     if (!isDBEnabled) {
+        const region = getSaltNetRegion();
+        if (musicData && currentRegion === region && !forceRefresh) {
+            return musicData;
+        }
+
         const localData = await fetchLocalMusicList();
         if (localData) {
             musicData = localData;
+            currentRegion = region;
         }
         return musicData;
     }

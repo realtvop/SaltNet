@@ -11,9 +11,16 @@ import { convertDFMusicList } from "@/components/integrations/diving-fish";
 import { isDBEnabled } from "@/components/data/user/database";
 import { getChartStatsIdentity } from "@/components/data/chart/chartIdentity";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
+import localForage from "localforage";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
 let localChartStatsMapPromise: Promise<Map<string, ChartStats> | null> | null = null;
+const LOCAL_CHART_STATS_CACHE_KEY = "localChartStatsCacheV1";
+
+type LocalChartStatsCache = {
+    verBuildTime: number;
+    entries: Array<[string, ChartStats]>;
+};
 
 // Types matching the SaltNet database API response
 export interface SaltNetChartNotes {
@@ -243,6 +250,22 @@ async function getLocalChartStatsMap(): Promise<Map<string, ChartStats> | null> 
     if (localChartStatsMapPromise) return localChartStatsMapPromise;
 
     localChartStatsMapPromise = (async () => {
+        const currentBuildTime = Number.parseInt(window.spec?.currentVersionBuildTime || "0", 10);
+        try {
+            const cached = await localForage.getItem<LocalChartStatsCache>(
+                LOCAL_CHART_STATS_CACHE_KEY
+            );
+            if (
+                cached &&
+                cached.verBuildTime === currentBuildTime &&
+                Array.isArray(cached.entries)
+            ) {
+                return new Map(cached.entries);
+            }
+        } catch (error) {
+            console.error("Failed to load local chart stats cache:", error);
+        }
+
         const localData = await fetchLocalMusicList();
         if (!localData) return null;
 
@@ -251,6 +274,15 @@ async function getLocalChartStatsMap(): Promise<Map<string, ChartStats> | null> 
             if (!chart.info.stat) continue;
             statsMap.set(getChartStatsIdentity(chart), chart.info.stat);
         }
+
+        const cacheToSave: LocalChartStatsCache = {
+            verBuildTime: currentBuildTime,
+            entries: Array.from(statsMap.entries()),
+        };
+        localForage.setItem(LOCAL_CHART_STATS_CACHE_KEY, cacheToSave).catch(error => {
+            console.error("Failed to save local chart stats cache:", error);
+        });
+
         return statsMap;
     })();
 

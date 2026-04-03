@@ -391,7 +391,6 @@
 <template>
     <div class="player-profile">
         <div v-if="pending" class="loading-message">
-            <div class="loading-spinner"></div>
             <p>加载中，请稍候...</p>
         </div>
 
@@ -486,25 +485,6 @@
         text-align: center;
         margin-top: 50px;
         color: var(--text-secondary-color);
-    }
-
-    .loading-spinner {
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top: 4px solid var(--accent-color, #fff);
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-    }
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
     }
 
     .player-b50 {
