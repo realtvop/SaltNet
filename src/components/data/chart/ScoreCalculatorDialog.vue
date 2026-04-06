@@ -318,11 +318,12 @@
 <style scoped>
     .calculator-content {
         padding: 1rem;
+        margin-top: 1rem;
     }
 
     .score-mode-select {
         margin-bottom: 1rem;
-        margin-top: -2.5rem;
+        /* margin-top: 0.5rem; */
     }
 
     .score-table {
