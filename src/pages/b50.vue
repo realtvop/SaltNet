@@ -14,6 +14,7 @@
     import { dialog, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
+    import { isUtageGrade } from "@/components/data/chart/difficulty";
 
     const route = useRoute();
     const shared = useShared();
@@ -72,7 +73,8 @@
         const records = getSourceRecords(useFitDiff);
         const charts = records
             .map(record => convertDFRecordToChart(record, useFitDiff))
-            .filter((chart): chart is Chart => chart !== null);
+            .filter((chart): chart is Chart => chart !== null)
+            .filter(chart => !isUtageGrade(chart.info.grade));
 
         const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);

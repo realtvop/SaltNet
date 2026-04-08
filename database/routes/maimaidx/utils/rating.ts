@@ -83,6 +83,11 @@ export async function calculateUserB50Rating(
     const newScores: number[] = [];
 
     for (const score of scores) {
+        // 排除宴会场曲目
+        if (score.chart.type === "utage" || score.chart.difficulty === "utage") {
+            continue;
+        }
+
         if (score.chart.versions.includes(latestVersion.id)) {
             newScores.push(score.rating);
         } else {
