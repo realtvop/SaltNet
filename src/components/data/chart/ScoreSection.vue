@@ -151,7 +151,7 @@
     .score-grid.rendering {
         grid-template-columns: repeat(5, 210px) !important;
         justify-content: center !important;
-        gap: 15px !important;
+        gap: 12px !important;
         margin-top: 20px !important;
     }
     .section-title.rendering {
