@@ -423,6 +423,7 @@
         border: none;
         box-shadow: none;
         flex-grow: 0.4;
+        position: relative;
     }
 
     .fc-achievement,
@@ -486,17 +487,24 @@
         font-size: 12px;
     }
 
-    .no-dx-score .rank-achievement {
-        flex-direction: column;
-        gap: 1px;
-        height: auto;
-        flex-grow: 0.5;
-    }
-
+    .no-dx-score .rank-achievement,
     .no-dx-score .fc-achievement,
     .no-dx-score .sync-achievement {
-        width: 26px;
-        height: 26px;
+        width: 22.5px;
+        height: 22.5px;
+    }
+
+    .dxscore-stars-mini {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        gap: 0.5px;
+        position: absolute;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
     }
 
     .achievement-icon {
