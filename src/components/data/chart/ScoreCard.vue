@@ -164,14 +164,14 @@
                         v-for="_ in dxScoreStars"
                         v-if="dxScoreStars !== null"
                     />
-                    <span
-                        v-if="data.score?.deluxeScore !== undefined"
-                        class="dxscore-label"
-                    >{{
-                        typeof data.score?.achievements === "number" // not the best way to tell 'if played', but works
-                            ? data.score?.deluxeScore
-                            : '-'
-                    }} / {{ data.info.deluxeScoreMax }}</span>
+                    <span v-if="data.score?.deluxeScore !== undefined" class="dxscore-label">
+                        {{
+                            typeof data.score?.achievements === "number" // not the best way to tell 'if played', but works
+                                ? data.score?.deluxeScore
+                                : "-"
+                        }}
+                        / {{ data.info.deluxeScoreMax }}
+                    </span>
                     <span v-if="dxScoreStars !== null">&nbsp;&nbsp;</span>
                 </div>
             </div>
@@ -424,7 +424,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .dxscore {
         font-size: xx-small;
         display: flex;
@@ -442,7 +442,6 @@
         height: 1em;
         width: auto;
     }
-    
 
     .achievement-icon {
         width: 100%;

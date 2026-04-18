@@ -854,7 +854,9 @@
         return getDeluxeScoreTier(currentScore, maxScore);
     });
 
-    const dxScoreStarsImg = computed(() => { return getDeluxeScoreStarsImg(dxScoreStarsCount.value) });
+    const dxScoreStarsImg = computed(() => {
+        return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
+    });
 </script>
 
 <style scoped>

@@ -299,7 +299,7 @@
             onClick: async () => {
                 var rendering_snackbar = snackbar({
                     message: "正在渲染 B50...",
-                    autoCloseDelay: 0
+                    autoCloseDelay: 0,
                 });
                 await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
                 await ensureRenderHostReady();
@@ -333,7 +333,7 @@
             onClick: async () => {
                 var rendering_snackbar = snackbar({
                     message: "正在渲染 B50...",
-                    autoCloseDelay: 0
+                    autoCloseDelay: 0,
                 });
                 await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
                 await ensureRenderHostReady();
