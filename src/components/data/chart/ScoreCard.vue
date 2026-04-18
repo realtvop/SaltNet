@@ -141,6 +141,13 @@
                             :src="`/icons/${data.score?.rankRate?.replace('p', 'plus')}.png`"
                             v-if="data.score?.rankRate"
                         />
+                        <div class="dxscore-stars-mini" v-if="!showDxScoreNum && dxScoreStars !== null">
+                            <img
+                                class="dxscore-star-mini"
+                                :src="getDeluxeScoreStarsImg(dxScoreStars)"
+                                v-for="_ in dxScoreStars"
+                            />
+                        </div>
                     </div>
                     <div class="fc-achievement">
                         <img
@@ -444,6 +451,18 @@
         width: auto;
     }
 
+    .dxscore-stars-mini {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .dxscore-star-mini {
+        height: 7px;
+        width: auto;
+    }
+
     .no-dx-score .result-header {
         height: 15px;
     }
@@ -467,11 +486,17 @@
         font-size: 12px;
     }
 
-    .no-dx-score .rank-achievement,
+    .no-dx-score .rank-achievement {
+        flex-direction: column;
+        gap: 1px;
+        height: auto;
+        flex-grow: 0.5;
+    }
+
     .no-dx-score .fc-achievement,
     .no-dx-score .sync-achievement {
-        width: 22.5px;
-        height: 22.5px;
+        width: 26px;
+        height: 26px;
     }
 
     .achievement-icon {
