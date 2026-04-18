@@ -74,6 +74,7 @@
                         :data="score"
                         :rating="score.score?.deluxeRating"
                         :rendering="props.rendering"
+                        :showDxScoreNum="true"
                     />
                 </div>
             </div>

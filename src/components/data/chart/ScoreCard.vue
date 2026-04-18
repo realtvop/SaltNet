@@ -6,13 +6,14 @@
     import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
     import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
 
-    const { data, rating, cover, compact, compactFilter, rendering } = defineProps<{
+    const { data, rating, cover, compact, compactFilter, rendering, showDxScoreNum } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
         compact?: "rankRate" | "comboStatus" | "syncStatus";
         compactFilter?: RankRate | ComboStatus | SyncStatus;
         rendering?: boolean;
+        showDxScoreNum?: boolean;
     }>();
     const { isDarkMode } = useShared();
 
@@ -59,7 +60,7 @@
 </script>
 
 <template>
-    <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering }">
+    <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering, 'no-dx-score': !showDxScoreNum }">
         <mdui-card
             :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card-minimized"
@@ -156,7 +157,7 @@
                         />
                     </div>
                 </div>
-                <div class="dxscore">
+                <div class="dxscore" v-if="showDxScoreNum">
                     <span v-if="dxScoreStars !== null">&nbsp;</span>
                     <img
                         class="dxscore-star"
@@ -441,6 +442,36 @@
     .dxscore-star {
         height: 1em;
         width: auto;
+    }
+
+    .no-dx-score .result-header {
+        height: 15px;
+    }
+
+    .no-dx-score .pill-section {
+        font-size: 9px;
+        line-height: normal;
+    }
+
+    .no-dx-score .song-name {
+        font-size: 10.5px;
+        margin-top: 1.5px;
+    }
+
+    .no-dx-score .achievement {
+        font-size: 19.5px;
+        margin-bottom: 1.5px;
+    }
+
+    .no-dx-score .percentage-mark {
+        font-size: 12px;
+    }
+
+    .no-dx-score .rank-achievement,
+    .no-dx-score .fc-achievement,
+    .no-dx-score .sync-achievement {
+        width: 22.5px;
+        height: 22.5px;
     }
 
     .achievement-icon {
