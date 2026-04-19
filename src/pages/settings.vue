@@ -32,6 +32,13 @@
                     <mdui-menu-item value="完整">全部</mdui-menu-item>
                 </mdui-select>
             </div>
+            <div class="setting-row">
+                <span class="setting-label">在 B50 卡片显示 DX 分数</span>
+                <mdui-switch
+                    :checked="shared.appSettings.showDxScoreInB50"
+                    @change="handleShowDxScoreInB50Change"
+                />
+            </div>
         </mdui-card>
     </div>
 </template>
@@ -142,6 +149,11 @@
         if (!value) return;
         shared.appSettings.defaultChartRatingDisplayMode = value;
     }
+
+    function handleShowDxScoreInB50Change(event: Event) {
+        const target = event.target as HTMLInputElement;
+        shared.appSettings.showDxScoreInB50 = target.checked;
+    }
 </script>
 
 <style scoped>
@@ -171,6 +183,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
+        padding: 10px 0;
     }
     .setting-label {
         color: rgb(var(--mdui-color-on-surface));

@@ -441,12 +441,14 @@
                 title="旧版本成绩"
                 :scores="b50SdCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <ScoreSection
                 v-if="b50DxCharts.length"
                 title="新版本成绩"
                 :scores="b50DxCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <p
                 v-if="!(b50SdCharts.length || b50DxCharts.length)"

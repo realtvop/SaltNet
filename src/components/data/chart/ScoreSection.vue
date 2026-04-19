@@ -12,6 +12,7 @@
             chart: Chart | null;
         };
         rendering?: boolean;
+        showDxScoreNum?: boolean;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -74,7 +75,7 @@
                         :data="score"
                         :rating="score.score?.deluxeRating"
                         :rendering="props.rendering"
-                        :showDxScoreNum="true"
+                        :showDxScoreNum="props.showDxScoreNum"
                     />
                 </div>
             </div>
