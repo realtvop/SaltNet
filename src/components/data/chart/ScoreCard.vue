@@ -4,14 +4,16 @@
     import { getCoverURL } from "@/components/integrations/assets";
     import { useShared } from "@/components/app/shared";
     import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
+    import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
 
-    const { data, rating, cover, compact, compactFilter, rendering } = defineProps<{
+    const { data, rating, cover, compact, compactFilter, rendering, showDxScoreNum } = defineProps<{
         data: Chart;
         rating?: number | string;
         cover?: string;
         compact?: "rankRate" | "comboStatus" | "syncStatus";
         compactFilter?: RankRate | ComboStatus | SyncStatus;
         rendering?: boolean;
+        showDxScoreNum?: boolean;
     }>();
     const { isDarkMode } = useShared();
 
@@ -49,11 +51,19 @@
         return null;
     });
 
+    const dxScoreStars = computed<number | null>(() => {
+        if (!data.score?.deluxeScore) return null;
+        return getDeluxeScoreTier(data.score.deluxeScore, data.info.deluxeScoreMax);
+    });
+
     const emit = defineEmits(["click"]);
 </script>
 
 <template>
-    <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering }">
+    <div
+        class="maimai-card-wrapper"
+        :class="{ 'mdui-theme-light': rendering, 'no-dx-score': !showDxScoreNum }"
+    >
         <mdui-card
             :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card-minimized"
@@ -134,6 +144,16 @@
                             :src="`/icons/${data.score?.rankRate?.replace('p', 'plus')}.png`"
                             v-if="data.score?.rankRate"
                         />
+                        <div
+                            class="dxscore-stars-mini"
+                            v-if="!showDxScoreNum && dxScoreStars !== null"
+                        >
+                            <img
+                                class="dxscore-star-mini"
+                                :src="getDeluxeScoreStarsImg(dxScoreStars)"
+                                v-for="_ in dxScoreStars"
+                            />
+                        </div>
                     </div>
                     <div class="fc-achievement">
                         <img
@@ -150,6 +170,24 @@
                         />
                     </div>
                 </div>
+                <div class="dxscore" v-if="showDxScoreNum">
+                    <span v-if="dxScoreStars !== null">&nbsp;</span>
+                    <img
+                        class="dxscore-star"
+                        :src="`${getDeluxeScoreStarsImg(dxScoreStars)}`"
+                        v-for="_ in dxScoreStars"
+                        v-if="dxScoreStars !== null"
+                    />
+                    <span v-if="data.score?.deluxeScore !== undefined" class="dxscore-label">
+                        {{
+                            typeof data.score?.achievements === "number" // not the best way to tell 'if played', but works
+                                ? data.score?.deluxeScore
+                                : "-"
+                        }}
+                        / {{ data.info.deluxeScoreMax }}
+                    </span>
+                    <span v-if="dxScoreStars !== null">&nbsp;&nbsp;</span>
+                </div>
             </div>
         </mdui-card>
     </div>
@@ -159,7 +197,7 @@
     .maimai-card-wrapper {
         width: 100%;
         max-width: none;
-        padding: 5px;
+        padding: 5px 5px;
         box-sizing: border-box;
         background-color: #00000000;
     }
@@ -264,7 +302,7 @@
     }
 
     .result-header {
-        height: 15px;
+        height: 12px;
         flex-shrink: 0;
     }
 
@@ -283,9 +321,10 @@
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        font-size: 9px;
+        font-size: 9.5px;
         text-align: center;
         padding: 0 2.25px;
+        line-height: 1;
     }
 
     .pill-section.charttype {
@@ -337,9 +376,9 @@
     }
 
     .song-name {
-        font-size: 10.5px;
+        font-size: 9px;
         font-weight: bold;
-        margin-top: 1.5px;
+        margin-top: 1.3px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -351,10 +390,10 @@
     }
 
     .achievement {
-        font-size: 19.5px;
+        font-size: 16.5px;
         font-weight: bold;
         line-height: 1;
-        margin-bottom: 1.5px;
+        margin-bottom: 1.3px;
         flex-shrink: 0;
         white-space: nowrap;
         overflow: hidden;
@@ -365,7 +404,7 @@
     }
 
     .percentage-mark {
-        font-size: 12px;
+        font-size: 11.5px;
     }
 
     .achievement-badges {
@@ -378,8 +417,8 @@
     .rank-achievement,
     .fc-achievement,
     .sync-achievement {
-        width: 22.5px;
-        height: 22.5px;
+        width: 19.5px;
+        height: 19.5px;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -390,6 +429,7 @@
         border: none;
         box-shadow: none;
         flex-grow: 0.4;
+        position: relative;
     }
 
     .fc-achievement,
@@ -398,6 +438,79 @@
         border-radius: 50%;
         position: relative;
         overflow: hidden;
+    }
+
+    .dxscore {
+        font-size: xx-small;
+        display: flex;
+        align-items: center;
+        margin-top: 0.2em;
+        line-height: 1;
+    }
+
+    .dxscore-label {
+        margin-left: auto;
+        line-height: 1;
+    }
+
+    .dxscore-star {
+        height: 1em;
+        width: auto;
+    }
+
+    .dxscore-stars-mini {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .dxscore-star-mini {
+        height: 7px;
+        width: auto;
+    }
+
+    .no-dx-score .result-header {
+        height: 15px;
+    }
+
+    .no-dx-score .pill-section {
+        font-size: 9px;
+        line-height: normal;
+    }
+
+    .no-dx-score .song-name {
+        font-size: 10.5px;
+        margin-top: 1.5px;
+    }
+
+    .no-dx-score .achievement {
+        font-size: 19.5px;
+        margin-bottom: 1.5px;
+    }
+
+    .no-dx-score .percentage-mark {
+        font-size: 12px;
+    }
+
+    .no-dx-score .rank-achievement,
+    .no-dx-score .fc-achievement,
+    .no-dx-score .sync-achievement {
+        width: 22.5px;
+        height: 22.5px;
+    }
+
+    .dxscore-stars-mini {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        gap: 0.5px;
+        position: absolute;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
     }
 
     .achievement-icon {

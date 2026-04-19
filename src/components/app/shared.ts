@@ -14,6 +14,7 @@ const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
+    showDxScoreInB50: boolean;
 };
 
 // MARK: shared
@@ -39,6 +40,7 @@ export const useShared = defineStore("shared", () => {
     const musicDataLoading = ref<boolean>(false);
     const appSettings = ref<AppSettings>({
         defaultChartRatingDisplayMode: "简洁",
+        showDxScoreInB50: false,
     });
 
     const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
@@ -122,6 +124,7 @@ export const useShared = defineStore("shared", () => {
                 defaultChartRatingDisplayMode:
                     v.defaultChartRatingDisplayMode ??
                     appSettings.value.defaultChartRatingDisplayMode,
+                showDxScoreInB50: v.showDxScoreInB50 ?? appSettings.value.showDxScoreInB50,
             };
         });
 

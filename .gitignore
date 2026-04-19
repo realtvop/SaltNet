@@ -26,3 +26,4 @@ dist-ssr
 
 .pnpm-store
 package-lock.json
+bun.lock

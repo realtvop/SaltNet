@@ -12,6 +12,7 @@
             chart: Chart | null;
         };
         rendering?: boolean;
+        showDxScoreNum?: boolean;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -74,6 +75,7 @@
                         :data="score"
                         :rating="score.score?.deluxeRating"
                         :rendering="props.rendering"
+                        :showDxScoreNum="props.showDxScoreNum"
                     />
                 </div>
             </div>
@@ -151,7 +153,7 @@
     .score-grid.rendering {
         grid-template-columns: repeat(5, 210px) !important;
         justify-content: center !important;
-        gap: 15px !important;
+        gap: 12px !important;
         margin-top: 20px !important;
     }
     .section-title.rendering {
