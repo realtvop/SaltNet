@@ -60,7 +60,10 @@
 </script>
 
 <template>
-    <div class="maimai-card-wrapper" :class="{ 'mdui-theme-light': rendering, 'no-dx-score': !showDxScoreNum }">
+    <div
+        class="maimai-card-wrapper"
+        :class="{ 'mdui-theme-light': rendering, 'no-dx-score': !showDxScoreNum }"
+    >
         <mdui-card
             :variant="rendering ? 'elevated' : isDarkMode ? 'filled' : 'elevated'"
             class="maimai-result-card-minimized"
@@ -141,7 +144,10 @@
                             :src="`/icons/${data.score?.rankRate?.replace('p', 'plus')}.png`"
                             v-if="data.score?.rankRate"
                         />
-                        <div class="dxscore-stars-mini" v-if="!showDxScoreNum && dxScoreStars !== null">
+                        <div
+                            class="dxscore-stars-mini"
+                            v-if="!showDxScoreNum && dxScoreStars !== null"
+                        >
                             <img
                                 class="dxscore-star-mini"
                                 :src="getDeluxeScoreStarsImg(dxScoreStars)"
