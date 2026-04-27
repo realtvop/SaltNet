@@ -388,9 +388,7 @@
     function startBindingLXNS() {
         if (props.isEditingNewUser) saveUser();
         setTimeout(async () => {
-            const url = await initLXNSOAuth(
-                props.isEditingNewUser ? props.userIndex! - 1 : props.userIndex!
-            );
+            const url = await initLXNSOAuth(props.userIndex!);
             window.location.href = url;
         }, 0);
     }
