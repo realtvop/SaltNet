@@ -47,3 +47,18 @@ export interface LXNSResponse<T> {
     data: T;
     success: boolean;
 }
+
+export interface LXNSUploadScore {
+    id: number;
+    type: "standard" | "dx";
+    level_index: number;
+    achievements: number;
+    fc: string | null;
+    fs: string | null;
+    dx_score: number;
+    play_time?: string;
+}
+
+export interface LXNSUploadScoreRequest {
+    scores: LXNSUploadScore[];
+}

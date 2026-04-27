@@ -8,6 +8,7 @@ import type { UpdateUserResponse } from "@/components/data/user/update/updateUse
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
+import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
 import { toHalfWidth } from "@/utils";
 import { migrateB50, migrateRecordList } from "./migrateData";
 
@@ -143,6 +144,10 @@ async function fromInGame(user: User, qrCodeInput?: string) {
         if (user.divingFish.importToken) {
             info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
             uploadToDivingFish(data.divingFishData, user.divingFish.importToken);
+        }
+        if (user.lxns?.auth?.accessToken) {
+            info(`正在同步 ${getUserDisplayName(user)} 的数据到落雪`);
+            uploadToLXNS(data.divingFishData, user);
         }
         return {
             userId: data.userId || user.inGame.id,
@@ -320,6 +325,16 @@ function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
         })
         .catch(e => {
             info(`上传到水鱼失败：${e.toString()}`, e.toString());
+        });
+}
+
+function uploadToLXNS(data: DivingFishFullRecord[], user: User) {
+    return uploadScoresToLXNS(user, data)
+        .then(() => {
+            info(`同步到落雪成功`);
+        })
+        .catch(e => {
+            info(`同步到落雪失败：${e.toString()}`, e.toString());
         });
 }
 

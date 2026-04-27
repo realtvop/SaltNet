@@ -18,7 +18,7 @@ export async function fetchLXNSApi<APIRespType>(
             {
                 ...init,
                 headers: {
-                    // ...init?.headers,
+                    ...init?.headers,
                     Authorization: `${tokenType} ${accessToken}`,
                 },
             }
