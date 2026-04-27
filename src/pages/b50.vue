@@ -297,6 +297,11 @@
         const copyAction = {
             text: "复制",
             onClick: async () => {
+                var rendering_snackbar = snackbar({
+                    message: "正在渲染 B50...",
+                    autoCloseDelay: 0,
+                });
+                await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
                 await ensureRenderHostReady();
                 return getB50Png()
                     .then((dataUrl: string) => {
@@ -313,9 +318,11 @@
                             });
                     })
                     .then(() => {
+                        rendering_snackbar.open = false;
                         snackbar({ message: "B50 图片已成功复制到剪贴板!" });
                     })
                     .catch(() => {
+                        rendering_snackbar.open = false;
                         snackbar({ message: "复制失败，请检查浏览器权限或稍后重试。" });
                     });
             },
@@ -324,6 +331,11 @@
         const downloadAction = {
             text: "下载",
             onClick: async () => {
+                var rendering_snackbar = snackbar({
+                    message: "正在渲染 B50...",
+                    autoCloseDelay: 0,
+                });
+                await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
                 await ensureRenderHostReady();
                 return getB50Png().then((dataUrl: string) => {
                     const link = document.createElement("a");
@@ -338,6 +350,7 @@
                     });
                     link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                     link.click();
+                    rendering_snackbar.open = false;
                 });
             },
         };
@@ -428,12 +441,14 @@
                 title="旧版本成绩"
                 :scores="b50SdCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <ScoreSection
                 v-if="b50DxCharts.length"
                 title="新版本成绩"
                 :scores="b50DxCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <p
                 v-if="!(b50SdCharts.length || b50DxCharts.length)"

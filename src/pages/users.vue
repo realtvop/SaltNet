@@ -471,7 +471,7 @@
     <BindUserDialog
         v-model="isDialogVisible"
         :user="currentUserToEdit"
-        :user-index="editingUserIndex || shared.users.length"
+        :user-index="editingUserIndex ?? shared.users.length"
         :is-editing-new-user="editingUserIndex === null"
         :is-first-user="editingUserIndex === null && shared.users.length === 0"
         @save="handleUserSave"

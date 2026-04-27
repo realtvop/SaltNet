@@ -384,6 +384,7 @@
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";
+    import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
 
     const shared = useShared();
 
@@ -850,21 +851,11 @@
 
         if (!currentScore || !maxScore) return 0;
 
-        const percentage = (currentScore / maxScore) * 100;
-
-        if (percentage >= 99) return 6;
-        else if (percentage >= 97) return 5;
-        else if (percentage >= 95) return 4;
-        else if (percentage >= 93) return 3;
-        else if (percentage >= 90) return 2;
-        else if (percentage >= 85) return 1;
-        return 0;
+        return getDeluxeScoreTier(currentScore, maxScore);
     });
 
     const dxScoreStarsImg = computed(() => {
-        if (dxScoreStarsCount.value < 3) return "/icons/star1.png";
-        if (dxScoreStarsCount.value < 5) return "/icons/star2.png";
-        return "/icons/star3.png";
+        return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
 </script>
 
