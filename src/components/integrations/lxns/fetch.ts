@@ -1,6 +1,6 @@
 import type { User } from "@/components/data/user";
-import { refreshLXNSOAuthToken } from "./oauth";
 import type { LXNSResponse } from "./type";
+import { refreshLXNSOAuthToken } from "./token";
 
 export async function fetchLXNSApi<APIRespType>(
     user: User,

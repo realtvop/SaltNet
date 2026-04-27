@@ -1,8 +1,9 @@
 import { useShared } from "@/components/app/shared";
-import type { User } from "@/components/data/user";
-import { jwtDecode } from "jwt-decode";
-import type { LXNSResponse } from "./type";
+import type { LXNSAuth, LXNSResponse } from "./type";
+import { applyLXNSAuth } from "./token";
 import { snackbar } from "mdui";
+
+export { refreshLXNSOAuthToken } from "./token";
 
 export async function initLXNSOAuth(userIndex: number): Promise<string> {
     const codeVerifier = generateCodeVerifier();
@@ -51,55 +52,13 @@ async function getLXNSOAuthToken(code: string): Promise<LXNSAuth> {
         tokenType: data.data.token_type,
     };
 }
-export async function refreshLXNSOAuthToken(user: User): Promise<LXNSAuth> {
-    if (!user.lxns?.auth?.refreshToken) throw new Error("No refresh token available");
-
-    const resp = await fetch("https://maimai.lxns.net/api/v0/oauth/token", {
-        method: "POST",
-        body: new URLSearchParams({
-            grant_type: "refresh_token",
-            refresh_token: user.lxns?.auth?.refreshToken || "",
-            client_id: import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID,
-        }),
-    });
-    const data = (await resp.json()) as LXNSResponse<LXNSTokenData>;
-    const auth = {
-        accessToken: data.data.access_token,
-        refreshToken: data.data.refresh_token,
-        tokenType: data.data.token_type,
-    };
-
-    const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
-        auth.accessToken!
-    );
-    user.lxns = {
-        auth: {
-            ...auth,
-            expiresAt: exp * 1000,
-        },
-        name,
-        id,
-    };
-
-    return auth;
-}
 
 function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
     const shared = useShared();
     const user = shared.users[userIndex];
 
     if (!user) throw new Error("User not found");
-    const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
-        auth.accessToken!
-    );
-    user.lxns = {
-        auth: {
-            ...auth,
-            expiresAt: exp * 1000,
-        },
-        name,
-        id,
-    };
+    applyLXNSAuth(user, auth);
     snackbar({
         message: "落雪绑定成功！",
         autoCloseDelay: 500,
@@ -114,12 +73,6 @@ export async function handleLXNSOAuthCallback(code: string): Promise<void> {
     saveLXNSAuth(userIndex, auth);
     window.sessionStorage.removeItem("lxns_oauth_user_index");
     window.sessionStorage.removeItem("lxns_oauth_code_verifier");
-}
-export interface LXNSAuth {
-    accessToken: string | null;
-    refreshToken: string | null;
-    tokenType: string | null;
-    expiresAt?: number | null;
 }
 
 function base64UrlEncode(arrayBuffer: ArrayBuffer): string {

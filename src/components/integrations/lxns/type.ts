@@ -1,5 +1,12 @@
 import type { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
 
+export interface LXNSAuth {
+    accessToken: string | null;
+    refreshToken: string | null;
+    tokenType: string | null;
+    expiresAt?: number | null;
+}
+
 export interface LXNSScore {
     achievements: number;
     dx_rating: number;

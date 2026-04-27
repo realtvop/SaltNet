@@ -7,6 +7,7 @@ import type {
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { toHalfWidth } from "@/utils";
 import { migrateB50, migrateRecordList } from "./migrateData";
 
@@ -17,7 +18,17 @@ self.onmessage = event => {
         let status = "success";
         let message = "";
         try {
-            if (user.inGame.enabled) {
+            if (user.lxns?.auth?.accessToken) {
+                fromLXNS(user).then(data => {
+                    result = data;
+                    self.postMessage({
+                        type: `updateUserResult::${user.uid}`,
+                        result,
+                        status,
+                        message,
+                    });
+                });
+            } else if (user.inGame.enabled) {
                 fromInGame(user, qrCode).then(data => {
                     result = data;
                     self.postMessage({
@@ -75,6 +86,26 @@ self.onmessage = event => {
         }
     }
 };
+
+async function fromLXNS(user: User) {
+    info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
+    try {
+        const data = await fetchLXNSScore(user);
+        info(`从落雪获取用户信息成功：${getUserDisplayName(user)}`);
+        return {
+            rating: data.rating,
+            name: data.name,
+            b50: data.b50,
+            detailed: data.scores,
+            updateTime: data.updateTime,
+            lxns: user.lxns,
+        };
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        info(`从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`, errorMsg);
+        return null;
+    }
+}
 
 async function fromDivingFish(user: User) {
     info(`正在从水鱼获取用户信息：${user.divingFish.name}`);

@@ -1,4 +1,4 @@
-import { convertDetailed, type User } from "@/components/data/user";
+import { convertDetailed, type User } from "@/components/data/user/type";
 import type { DivingFishB50, DivingFishFullRecord } from "../diving-fish/type";
 import type { LXNSScore, LXNSUser } from "./type";
 import { getMusicInfoAsync } from "@/components/data/music";
