@@ -138,6 +138,16 @@ export interface DivingFishB50 {
     sd: DivingFishFullRecord[]; // Best 35 Old Version (based on is_new)
 }
 
+// Response from /player/records (Import-Token auth, full records)
+export interface DivingFishRecordsResponse {
+    additional_rating: number;
+    nickname: string;
+    plate: string | null;
+    rating: number;
+    records: DivingFishFullRecord[];
+    username: string;
+}
+
 // Structure for a single chart score (used by /query/player, kept for potential compatibility or future use)
 export interface DivingFishMusicChart {
     achievements: number;

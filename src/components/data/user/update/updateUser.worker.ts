@@ -1,5 +1,9 @@
 // src/utils/updateUserWorker.ts
-import { fetchPlayerData } from "@/components/integrations/diving-fish";
+import {
+    fetchPlayerData,
+    fetchPlayerRecordsByImportToken,
+    calculateB50FromRecords,
+} from "@/components/integrations/diving-fish";
 import type {
     DivingFishFullRecord,
     DivingFishResponse,
@@ -31,6 +35,16 @@ self.onmessage = event => {
                 });
             } else if (user.inGame.enabled) {
                 fromInGame(user, qrCode).then(data => {
+                    result = data;
+                    self.postMessage({
+                        type: `updateUserResult::${user.uid}`,
+                        result,
+                        status,
+                        message,
+                    });
+                });
+            } else if (user.divingFish.importToken) {
+                fromDivingFishByImportToken(user).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -181,6 +195,28 @@ async function fromDFLikeInGame(user: User) {
         };
     } else {
         return await fromDivingFish(user);
+    }
+}
+
+async function fromDivingFishByImportToken(user: User) {
+    info(`正在从水鱼获取用户信息（Import-Token）：${getUserDisplayName(user)}`);
+    try {
+        const data = await fetchPlayerRecordsByImportToken(
+            user.divingFish.importToken as string
+        );
+        const b50 = await calculateB50FromRecords(data.records);
+        info(`从水鱼获取用户信息成功：${getUserDisplayName(user)}`);
+        return {
+            rating: data.rating,
+            name: toHalfWidth(data.nickname),
+            b50,
+            detailed: convertDetailed(data.records),
+            updateTime: Date.now(),
+        };
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        info(`从水鱼获取用户信息失败：${errorMsg}`, errorMsg);
+        return null;
     }
 }
 
