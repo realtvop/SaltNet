@@ -8,12 +8,12 @@ import type { Music, MusicInfo, Chart, ChartInfo, SavedMusicList } from "./type"
 import { ChartType, type MusicGenre, type MusicOrigin } from "../maiTypes";
 import type { ChartStats, MusicDataResponse } from "@/components/integrations/diving-fish/type";
 import { convertDFMusicList } from "@/components/integrations/diving-fish";
-import { isDBEnabled } from "@/components/data/user/database";
 import { getChartStatsIdentity } from "@/components/data/chart/chartIdentity";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 import localForage from "localforage";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
+export const isDBEnabled = !!import.meta.env.VITE_DB_URL;
 let localChartStatsMapPromise: Promise<Map<string, ChartStats> | null> | null = null;
 const LOCAL_CHART_STATS_CACHE_KEY = "localChartStatsCacheV1";
 
@@ -323,5 +323,3 @@ export async function fetchLocalMusicList(): Promise<SavedMusicList | null> {
         return null;
     }
 }
-
-export { isDBEnabled };

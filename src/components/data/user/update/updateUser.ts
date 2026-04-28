@@ -1,8 +1,6 @@
 import { getUserDisplayName, type User, convertDetailed } from "@/components/data/user/type";
 import { snackbar, alert, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
-import { toHalfWidth } from "@/utils";
 import {
     getSaltNetB50,
     getSaltNetRecords,
@@ -36,8 +34,10 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
         const { result: data } = event.data;
         if (data) {
             const user = pendingUsers[type.slice(18)];
+            const { lxns, ...nextData } = data;
 
-            user.data = { ...user.data, ...data };
+            user.data = { ...user.data, ...nextData };
+            if (lxns) user.lxns = { ...user.lxns, ...lxns };
             if (data.userId) user.inGame.id = data.userId;
             if (
                 user.inGame.id &&
@@ -71,12 +71,6 @@ export function updateUserWithWorker(user: User) {
         user.uid = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
     }
     const userUid = user.uid;
-
-    // LXNS uses useShared which is not supported in workers, handle it on main thread
-    if (user.lxns?.auth?.accessToken) {
-        updateFromLXNS(user);
-        return;
-    }
 
     // SaltNet-only user: user has saltnetDB but no other data sources
     const hasOnlySaltNet =
@@ -136,48 +130,8 @@ export function updateUserWithWorker(user: User) {
     }
 
     pendingUsers[userUid] = user;
+    console.log(1)
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
-}
-
-async function updateFromLXNS(user: User) {
-    snackbar({
-        message: `正在从落雪获取用户信息：${getUserDisplayName(user)}`,
-        placement: "bottom",
-        autoCloseDelay: 1500,
-    });
-    try {
-        const data = await fetchLXNSScore(user);
-        if (data) {
-            user.data = {
-                ...user.data,
-                rating: data.rating,
-                name: toHalfWidth(data.name),
-                b50: data.b50,
-                detailed: data.scores,
-                updateTime: data.updateTime,
-            };
-            snackbar({
-                message: `从落雪获取用户信息成功：${getUserDisplayName(user)}`,
-                placement: "bottom",
-                autoCloseDelay: 1500,
-            });
-        } else {
-            snackbar({
-                message: `从落雪获取 ${getUserDisplayName(user)} 信息失败`,
-                placement: "bottom",
-                autoCloseDelay: 3000,
-            });
-        }
-    } catch (e) {
-        const errorMsg = e?.toString?.() || "Unknown error";
-        snackbar({
-            message: `从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`,
-            placement: "bottom",
-            autoCloseDelay: 3000,
-            action: "复制错误",
-            onActionClick: () => navigator.clipboard.writeText(errorMsg),
-        });
-    }
 }
 
 /**

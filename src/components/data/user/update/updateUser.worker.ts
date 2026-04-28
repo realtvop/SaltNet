@@ -1,5 +1,9 @@
 // src/utils/updateUserWorker.ts
-import { fetchPlayerData } from "@/components/integrations/diving-fish";
+import {
+    fetchPlayerData,
+    fetchPlayerRecordsByImportToken,
+    calculateB50FromRecords,
+} from "@/components/integrations/diving-fish";
 import type {
     DivingFishFullRecord,
     DivingFishResponse,
@@ -7,8 +11,10 @@ import type {
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
+import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
 import { toHalfWidth } from "@/utils";
-import { migrateB50, migrateRecordList } from "./migrateData";
+import { migrateB50, migrateRecordList, supplementRecordList, supplementB50 } from "./migrateData";
 
 self.onmessage = event => {
     const { type, user, qrCode } = event.data;
@@ -17,8 +23,28 @@ self.onmessage = event => {
         let status = "success";
         let message = "";
         try {
-            if (user.inGame.enabled) {
+            if (user.lxns?.auth?.accessToken) {
+                fromLXNS(user).then(data => {
+                    result = data;
+                    self.postMessage({
+                        type: `updateUserResult::${user.uid}`,
+                        result,
+                        status,
+                        message,
+                    });
+                });
+            } else if (user.inGame.enabled) {
                 fromInGame(user, qrCode).then(data => {
+                    result = data;
+                    self.postMessage({
+                        type: `updateUserResult::${user.uid}`,
+                        result,
+                        status,
+                        message,
+                    });
+                });
+            } else if (user.divingFish.importToken) {
+                fromDivingFishByImportToken(user).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -76,6 +102,26 @@ self.onmessage = event => {
     }
 };
 
+async function fromLXNS(user: User) {
+    info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
+    try {
+        const data = await fetchLXNSScore(user);
+        info(`从落雪获取用户信息成功：${getUserDisplayName(user)}`);
+        return {
+            rating: data.rating,
+            name: data.name,
+            b50: data.b50,
+            detailed: data.scores,
+            updateTime: data.updateTime,
+            lxns: user.lxns,
+        };
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        info(`从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`, errorMsg);
+        return null;
+    }
+}
+
 async function fromDivingFish(user: User) {
     info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
     return fetchPlayerData(user.divingFish.name as string)
@@ -101,33 +147,71 @@ async function fromInGame(user: User, qrCodeInput?: string) {
         info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
         return null;
     }
+    const isFastUpdate = !qrCode;
     const data: UpdateUserResponse | null = await fetchInGameData(
         user.inGame.id as number,
         "",
         qrCode ?? undefined
     );
-    if (data) {
-        info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
-        const divingFishData = migrateRecordList(user.data.detailed, data.divingFishData);
-        if (user.divingFish.importToken) {
-            info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
-            uploadToDivingFish(data.divingFishData, user.divingFish.importToken);
-        }
-        return {
-            userId: data.userId || user.inGame.id,
-            rating: data.rating,
-            name: toHalfWidth(data.userName),
-            b50: migrateB50(user.data.detailed, data.b50),
-            detailed: convertDetailed(divingFishData),
-            updateTime: Date.now(),
-            items: data.items || [],
-            characters: data.characters || [],
-            info: data.info,
-        };
-    } else {
+    if (!data) {
         info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败`);
         return null;
     }
+    info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
+
+    let supplementRecords: DivingFishFullRecord[] | null = null;
+    if (isFastUpdate) {
+        if (user.lxns?.auth?.accessToken) {
+            info(`正在从落雪补充 ${getUserDisplayName(user)} 的数据`);
+            try {
+                const lxnsResult = await fetchLXNSScore(user);
+                supplementRecords = lxnsResult.scores ? Object.values(lxnsResult.scores) : null;
+                if (supplementRecords) info(`从落雪补充数据成功`);
+            } catch (e) {
+                const errorMsg = e?.toString?.() || "Unknown error";
+                info(`从落雪补充数据失败：${errorMsg}`, errorMsg);
+            }
+        }
+        if (!supplementRecords && user.divingFish?.importToken) {
+            info(`正在从水鱼补充 ${getUserDisplayName(user)} 的数据`);
+            try {
+                const dfResult = await fetchPlayerRecordsByImportToken(user.divingFish.importToken);
+                supplementRecords = dfResult.records;
+                info(`从水鱼补充数据成功`);
+            } catch (e) {
+                const errorMsg = e?.toString?.() || "Unknown error";
+                info(`从水鱼补充数据失败：${errorMsg}`, errorMsg);
+            }
+        }
+    }
+
+    const mergedData = supplementRecords
+        ? supplementRecordList(data.divingFishData, supplementRecords)
+        : data.divingFishData;
+    const divingFishData = migrateRecordList(user.data.detailed, mergedData);
+
+    if (user.divingFish.importToken) {
+        info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
+        uploadToDivingFish(data.divingFishData, user.divingFish.importToken);
+    }
+    if (user.lxns?.auth?.accessToken) {
+        info(`正在同步 ${getUserDisplayName(user)} 的数据到落雪`);
+        uploadToLXNS(data.divingFishData, user);
+    }
+
+    const mergedB50 = supplementRecords ? supplementB50(data.b50, supplementRecords) : data.b50;
+
+    return {
+        userId: data.userId || user.inGame.id,
+        rating: data.rating,
+        name: toHalfWidth(data.userName),
+        b50: migrateB50(user.data.detailed, mergedB50),
+        detailed: convertDetailed(divingFishData),
+        updateTime: Date.now(),
+        items: data.items || [],
+        characters: data.characters || [],
+        info: data.info,
+    };
 }
 async function fromDFLikeInGame(user: User) {
     info(`正在从水鱼获取用户详细信息：${getUserDisplayName(user)}`);
@@ -145,6 +229,26 @@ async function fromDFLikeInGame(user: User) {
         };
     } else {
         return await fromDivingFish(user);
+    }
+}
+
+async function fromDivingFishByImportToken(user: User) {
+    info(`正在从水鱼获取用户信息（Import-Token）：${getUserDisplayName(user)}`);
+    try {
+        const data = await fetchPlayerRecordsByImportToken(user.divingFish.importToken as string);
+        const b50 = await calculateB50FromRecords(data.records);
+        info(`从水鱼获取用户信息成功：${getUserDisplayName(user)}`);
+        return {
+            rating: data.rating,
+            name: toHalfWidth(data.nickname),
+            b50,
+            detailed: convertDetailed(data.records),
+            updateTime: Date.now(),
+        };
+    } catch (e) {
+        const errorMsg = e?.toString?.() || "Unknown error";
+        info(`从水鱼获取用户信息失败：${errorMsg}`, errorMsg);
+        return null;
     }
 }
 
@@ -289,6 +393,16 @@ function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
         })
         .catch(e => {
             info(`上传到水鱼失败：${e.toString()}`, e.toString());
+        });
+}
+
+function uploadToLXNS(data: DivingFishFullRecord[], user: User) {
+    return uploadScoresToLXNS(user, data)
+        .then(() => {
+            info(`同步到落雪成功`);
+        })
+        .catch(e => {
+            info(`同步到落雪失败：${e.toString()}`, e.toString());
         });
 }
 

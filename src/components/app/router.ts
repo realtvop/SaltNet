@@ -15,7 +15,7 @@ import OAuthCallbackPage from "../../pages/oauth-callback.vue";
 
 import { useRouterStore } from "../../stores/router";
 import { useDialogStore } from "../../stores/dialog";
-import { isDBEnabled } from "../data/user/database";
+const isDBEnabled = !!import.meta.env.VITE_DB_URL;
 
 const routes = [
     { path: "/", component: IndexPage },
