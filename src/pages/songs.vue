@@ -614,7 +614,7 @@
     });
 
     const overallStats = computed(() => {
-        if (groupBy.value !== "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
+        if (groupBy.value !== "none" || category.value !== Category.InGame)
             return null;
 
         const charts = itemsToRender.value;
@@ -1189,7 +1189,7 @@
                 </div>
             </div>
             <div v-else class="score-grid-wrapper">
-                <div class="overall-stats" v-if="overallStats && (overallStats.sss || overallStats.sssp || overallStats.fc || overallStats.ap || overallStats.fsdx)">
+                <div class="stats-info" v-if="overallStats && (overallStats.sss || overallStats.sssp || overallStats.fc || overallStats.ap || overallStats.fsdx)" style="justify-content:center;padding:10px 0 5px;width:100%">
                     <span class="stat-item" v-if="overallStats.sss">SSS:{{ overallStats.sss }}</span>
                     <span class="stat-item" v-if="overallStats.sssp">SSS+:{{ overallStats.sssp }}</span>
                     <span class="stat-item" v-if="overallStats.fc">FC:{{ overallStats.fc }}</span>
@@ -1414,16 +1414,6 @@
 
     .stat-item {
         white-space: nowrap;
-    }
-
-    .overall-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        justify-content: center;
-        padding: 10px 0 5px;
-        font-size: 0.9rem;
-        color: var(--text-secondary-color, #888);
     }
 
     @media (min-width: 1254px) {
