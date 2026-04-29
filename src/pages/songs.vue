@@ -634,7 +634,6 @@
             if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
         });
 
-        if (!sss && !sssp && !fc && !ap && !fsdx) return null;
         return { sss, sssp, fc, ap, fsdx };
     });
 
@@ -1190,7 +1189,7 @@
                 </div>
             </div>
             <div v-else class="score-grid-wrapper">
-                <div class="overall-stats" v-if="overallStats">
+                <div class="overall-stats" v-if="overallStats && (overallStats.sss || overallStats.sssp || overallStats.fc || overallStats.ap || overallStats.fsdx)">
                     <span class="stat-item" v-if="overallStats.sss">SSS:{{ overallStats.sss }}</span>
                     <span class="stat-item" v-if="overallStats.sssp">SSS+:{{ overallStats.sssp }}</span>
                     <span class="stat-item" v-if="overallStats.fc">FC:{{ overallStats.fc }}</span>
