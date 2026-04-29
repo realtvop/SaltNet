@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -54,7 +54,6 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
-    const constantFilterEnabled = ref(false);
     const groupBy = ref<"none" | "constant">("none");
     const groupByOptions = [
         { value: "none", label: "无" },
@@ -254,27 +253,6 @@
         };
     }
 
-    const rangeMax = computed(() => {
-        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
-            return 9;
-        else {
-            if (selectedDifficulty.value.endsWith("+")) return 9;
-            else return 5;
-        }
-    });
-
-    const rangeMin = computed(() => {
-        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
-            return 0;
-        else {
-            if (selectedDifficulty.value.endsWith("+")) return 6;
-            else return 0;
-        }
-    });
-
-    const rangeUpperValue = ref(rangeMax.value);
-    const rangeLowerValue = ref(rangeMin.value);
-
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
@@ -289,10 +267,7 @@
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) =>
-                        chart.info.level === selectedDifficulty.value &&
-                        Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value &&
-                        Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value
+                    (chart: Chart) => chart.info.level === selectedDifficulty.value
                 );
             }
         } else if (category.value === Category.Banquet) {
@@ -903,40 +878,15 @@
             },
         });
     }
-
-    function rangeChange(event: Event) {
-        const target = event.target as HTMLInputElement;
-        const value = target.value;
-        rangeLowerValue.value = Number(value[0]);
-        rangeUpperValue.value = Number(value[1]);
-    }
-
-    async function resetSlider() {
-        // 等待 rangeMin 和 rangeMax 改变并更新到 DOM
-        await nextTick();
-        // 先更新 rangeLowerValue 和 rangeUpperValue 的值
-        rangeLowerValue.value = rangeMin.value;
-        rangeUpperValue.value = rangeMax.value;
-        // 然后更新滑块的值
-        const slider = document.querySelector(".rangeSlider");
-        if (slider) {
-            (slider as unknown as { value: number[] }).value = [rangeMin.value, rangeMax.value];
-        }
-    }
 </script>
 
 <template>
-    <div
-        class="songs-page"
-        :class="{
-            'songs-page-fixed': userId,
-            'songs-page-with-detailed-filter':
-                constantFilterEnabled &&
-                category === Category.InGame &&
-                selectedDifficulty != 'ALL' &&
-                !(Number(selectedDifficulty) < 6),
-        }"
-    >
+        <div
+            class="songs-page"
+            :class="{
+                'songs-page-fixed': userId,
+            }"
+        >
         <!-- [游戏排序]难度选单 -->
         <div class="category-bar">
             <mdui-dropdown>
@@ -977,7 +927,6 @@
                     @click="
                         () => {
                             selectedTab[category] = tab;
-                            resetSlider();
                         }
                     "
                 >
@@ -1085,56 +1034,29 @@
             ></mdui-text-field>
         </div>
         <div v-else class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="groupBy"
+                @change="onGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in groupByOptions"
+                    :key="option.value"
+                    :value="option.value"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
             <mdui-text-field
                 clearable
                 icon="search"
                 label="搜索"
                 placeholder="曲名 别名 id 曲师 谱师"
                 @input="query = $event.target.value"
+                style="flex: 1"
                 id="search-input"
             ></mdui-text-field>
-            <mdui-button-icon
-                :icon="constantFilterEnabled ? 'keyboard_arrow_down' : 'keyboard_arrow_left'"
-                @click="constantFilterEnabled = !constantFilterEnabled"
-            ></mdui-button-icon>
-        </div>
-        <div
-            v-if="
-                constantFilterEnabled &&
-                category === Category.InGame &&
-                selectedDifficulty != 'ALL' &&
-                !(Number(selectedDifficulty) < 6)
-            "
-            class="detailed-filter"
-        >
-            <div class="detailed-filter-row">
-                <div class="detailed-filter-section">
-                    <div class="detailed-filter-card">定数筛选:</div>
-                    <mdui-range-slider
-                        :min="rangeMin"
-                        :max="rangeMax"
-                        :step="1"
-                        @input="rangeChange"
-                        class="rangeSlider"
-                    ></mdui-range-slider>
-                </div>
-                <div class="detailed-filter-section">
-                    <div class="detailed-filter-card">分类:</div>
-                    <mdui-select
-                        style="width: 6rem"
-                        :value="groupBy"
-                        @change="onGroupByChange"
-                    >
-                        <mdui-menu-item
-                            v-for="option in groupByOptions"
-                            :key="option.value"
-                            :value="option.value"
-                        >
-                            {{ option.label }}
-                        </mdui-menu-item>
-                    </mdui-select>
-                </div>
-            </div>
         </div>
 
         <div
@@ -1254,17 +1176,6 @@
     .songs-page {
         padding-top: calc(48px + 64px); /* category-bar + search-input height */
     }
-    .songs-page-with-detailed-filter {
-        padding-top: calc(
-            48px + 64px + 48px
-        ); /* category-bar + search-input + detailed-filter height */
-    }
-
-    @media (max-width: 600px) {
-        .songs-page-with-detailed-filter {
-            padding-top: calc(48px + 64px + 96px);
-        }
-    }
     .songs-page-fixed {
         @media (min-aspect-ratio: 1.001/1) {
             margin-left: -16px;
@@ -1352,63 +1263,6 @@
         .card-container {
             padding-bottom: 1rem;
         }
-    }
-
-    .detailed-filter {
-        position: fixed;
-        top: calc(56px + 48px + 64px);
-        left: 0;
-        right: 0;
-        z-index: 98;
-        display: flex;
-        align-items: center;
-        padding: 5px 20px;
-        min-height: 48px;
-        height: auto;
-        box-sizing: border-box;
-        background: rgb(var(--mdui-color-background));
-    }
-
-    @media (min-aspect-ratio: 1.001/1) {
-        .detailed-filter {
-            left: 80px; /* navigation rail width */
-        }
-    }
-
-    .detailed-filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        width: 100%;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .detailed-filter-section {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .detailed-filter-section:first-child {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .detailed-filter-card {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        width: 8rem;
-    }
-
-    .rangeSlider {
-        flex: 1 1 0%;
-        padding: 0 25px;
-    }
-
-    .rangeSlider::part(label)::before {
-        content: ".";
     }
 
     .score-grid-wrapper {
