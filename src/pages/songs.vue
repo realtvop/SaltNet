@@ -603,6 +603,31 @@
         return result;
     });
 
+    const overallStats = computed(() => {
+        if (groupBy.value !== "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
+            return null;
+
+        const charts = itemsToRender.value;
+        if (!charts.length) return null;
+
+        let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
+        charts.forEach(chart => {
+            const s = chart.score;
+            if (s?.achievements != null) {
+                if (s.achievements >= 100.5) sssp++;
+                else if (s.achievements >= 100.0) sss++;
+                if (s.achievements >= 100.0) {
+                    if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
+                    if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+                    if ([SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
+                }
+            }
+        });
+
+        if (!sss && !sssp && !fc && !ap && !fsdx) return null;
+        return { sss, sssp, fc, ap, fsdx };
+    });
+
     // 加载更多项目
     const loadMore = () => {
         const remainingItems = itemsToRender.value.length - visibleItemsCount.value;
@@ -1108,7 +1133,7 @@
                     <h2 v-else class="section-title">
                         {{ group.title }}
                         <span class="section-count">
-                            {{ group.count }}
+                            ALL: {{ group.count }}
                         </span>
                         <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
                             <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
@@ -1155,6 +1180,13 @@
                 </div>
             </div>
             <div v-else class="score-grid-wrapper">
+                <div class="overall-stats" v-if="overallStats">
+                    <span class="stat-item" v-if="overallStats.sss">SSS:{{ overallStats.sss }}</span>
+                    <span class="stat-item" v-if="overallStats.sssp">SSS+:{{ overallStats.sssp }}</span>
+                    <span class="stat-item" v-if="overallStats.fc">FC:{{ overallStats.fc }}</span>
+                    <span class="stat-item" v-if="overallStats.ap">AP:{{ overallStats.ap }}</span>
+                    <span class="stat-item" v-if="overallStats.fsdx">FSDX:{{ overallStats.fsdx }}</span>
+                </div>
                 <div class="score-grid">
                     <ScoreCard
                         v-if="
@@ -1373,6 +1405,16 @@
 
     .stat-item {
         white-space: nowrap;
+    }
+
+    .overall-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+        padding: 10px 0 5px;
+        font-size: 0.9rem;
+        color: var(--text-secondary-color, #888);
     }
 
     @media (min-width: 1254px) {
