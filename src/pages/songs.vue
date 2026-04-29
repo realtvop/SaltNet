@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, onMounted, computed, watch, onUnmounted } from "vue";
+    import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
     import type { Chart, ChartScore } from "@/components/data/music/type";
@@ -136,6 +136,16 @@
         if (charts.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * charts.length);
         return charts[randomIndex];
+    }
+
+    function scrollToConstant(constant: string) {
+        visibleItemsCount.value = itemsToRender.value.length;
+        nextTick(() => {
+            const el = document.getElementById("const-" + constant);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth" });
+            }
+        });
     }
     const randomChartDummy = {
         music: {
@@ -1068,9 +1078,40 @@
                 <div
                     v-for="group in visibleGroupedItems"
                     :key="group.title"
+                    :id="'const-' + group.title"
                     class="score-section"
                 >
-                    <h2 class="section-title">
+                    <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
+                        <h2 slot="trigger" class="section-title">
+                            {{ group.title }}
+                            <span
+                                class="section-count"
+                                v-if="maxVisibleItems < itemsToRender.length"
+                            >
+                                ({{ group.visibleCount }}/{{ group.count }})
+                            </span>
+                            <span class="section-count" v-else>
+                                ({{ group.count }})
+                            </span>
+                            <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
+                                <span class="stat-item" v-if="group.stats.sss">SSS:{{ group.stats.sss }}</span>
+                                <span class="stat-item" v-if="group.stats.sssp">SSS+:{{ group.stats.sssp }}</span>
+                                <span class="stat-item" v-if="group.stats.fc">FC:{{ group.stats.fc }}</span>
+                                <span class="stat-item" v-if="group.stats.ap">AP:{{ group.stats.ap }}</span>
+                                <span class="stat-item" v-if="group.stats.fsdx">FSDX:{{ group.stats.fsdx }}</span>
+                            </span>
+                        </h2>
+                        <mdui-menu>
+                            <mdui-menu-item
+                                v-for="target in groupedItems"
+                                :key="'jump-' + target.title"
+                                @click="scrollToConstant(target.title)"
+                            >
+                                {{ target.title }}
+                            </mdui-menu-item>
+                        </mdui-menu>
+                    </mdui-dropdown>
+                    <h2 v-else class="section-title">
                         {{ group.title }}
                         <span
                             class="section-count"
@@ -1309,6 +1350,7 @@
         margin: 0 auto;
         padding: 0;
         box-sizing: border-box;
+        scroll-margin-top: 180px;
     }
 
     .section-title {
@@ -1323,6 +1365,7 @@
         flex-wrap: wrap;
         gap: 15px;
         color: var(--text-primary-color, inherit);
+        cursor: pointer;
     }
 
     .section-count {
