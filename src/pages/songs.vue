@@ -563,7 +563,7 @@
             if (groupBy.value === "constant") return Number(b[0]) - Number(a[0]);
             const orderA = maimaiVersionsCN.indexOf(a[0]);
             const orderB = maimaiVersionsCN.indexOf(b[0]);
-            return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+            return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
         };
 
         return Object.entries(groups)
