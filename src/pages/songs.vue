@@ -54,10 +54,11 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
-    const groupBy = ref<"none" | "constant">("none");
+    const groupBy = ref<"none" | "constant" | "version">("none");
     const groupByOptions = [
         { value: "none", label: "无" },
         { value: "constant", label: "细分定数" },
+        { value: "version", label: "版本" },
     ];
 
     function onGroupByChange(event: Event) {
@@ -551,13 +552,22 @@
 
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
-            const key = chart.info.constant.toFixed(1);
+            const key = groupBy.value === "version"
+                ? (chart.music.info.from as unknown as string)
+                : chart.info.constant.toFixed(1);
             if (!groups[key]) groups[key] = [];
             groups[key].push(chart);
         });
 
+        const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
+            if (groupBy.value === "constant") return Number(b[0]) - Number(a[0]);
+            const orderA = maimaiVersionsCN.indexOf(a[0]);
+            const orderB = maimaiVersionsCN.indexOf(b[0]);
+            return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+        };
+
         return Object.entries(groups)
-            .sort((a, b) => Number(b[0]) - Number(a[0]))
+            .sort(sortFn)
             .map(([key, items]) => {
                 let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
                 items.forEach(chart => {
