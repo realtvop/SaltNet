@@ -1114,14 +1114,23 @@
                     v-for="group in visibleGroupedItems"
                     :key="group.title"
                     :id="'const-' + group.title"
-                    class="score-section"
+                    class="group-wrapper"
                 >
-                    <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
-                        <h2 slot="trigger" class="section-title">
-                            {{ group.title }}
-                            <span class="section-count">
-                                ALL: {{ group.count }}
-                            </span>
+                    <div class="score-section" style="max-width:1300px;margin:0 auto;padding:0 20px;box-sizing:border-box">
+                        <h2 class="section-title">
+                            <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
+                                <span slot="trigger" style="cursor:pointer">{{ group.title }}</span>
+                                <mdui-menu>
+                                    <mdui-menu-item
+                                        v-for="target in groupedItems"
+                                        :key="'jump-' + target.title"
+                                        @click="scrollToConstant(target.title)"
+                                    >
+                                        {{ target.title }}
+                                    </mdui-menu-item>
+                                </mdui-menu>
+                            </mdui-dropdown>
+                            <span v-else class="section-count">{{ group.title }}</span>
                             <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
                                 <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
                                 <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
@@ -1130,56 +1139,24 @@
                                 <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
                             </span>
                         </h2>
-                        <mdui-menu>
-                            <mdui-menu-item
-                                v-for="target in groupedItems"
-                                :key="'jump-' + target.title"
-                                @click="scrollToConstant(target.title)"
-                            >
-                                {{ target.title }}
-                            </mdui-menu-item>
-                        </mdui-menu>
-                    </mdui-dropdown>
-                    <h2 v-else class="section-title">
-                        {{ group.title }}
-                        <span class="section-count">
-                            ALL: {{ group.count }}
-                        </span>
-                        <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
-                            <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
-                            <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
-                            <span class="stat-item" v-if="group.stats.fc">FC: {{ group.stats.fc }}</span>
-                            <span class="stat-item" v-if="group.stats.ap">AP: {{ group.stats.ap }}</span>
-                            <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
-                        </span>
-                    </h2>
-                    <div class="score-grid-wrapper">
-                        <div class="score-grid">
-                            <ScoreCard
-                                cover="/icons/random.png"
-                                :data="randomChartDummy"
-                                @click="
-                                    () => {
-                                        const chart = group.items[Math.floor(Math.random() * group.items.length)];
-                                        if (chart) openChartInfoDialog(chart);
-                                    }
-                                "
-                            />
-                            <div
-                                v-for="(chart, index) in group.items"
-                                :key="`score-cell-${group.title}-${index}`"
-                                class="score-cell"
-                                :class="{ 'score-cell-compact': category in versionPlates }"
-                            >
-                                <ScoreCard
-                                    :data="chart"
-                                    @click="openChartInfoDialog(chart)"
-                                    :compact="compactMode"
-                                    :compact-filter="compactFilter"
-                                />
-                            </div>
-                        </div>
+                        <ScoreCard
+                            cover="/icons/random.png"
+                            :data="randomChartDummy"
+                            @click="
+                                () => {
+                                    const chart = group.items[Math.floor(Math.random() * group.items.length)];
+                                    if (chart) openChartInfoDialog(chart);
+                                }
+                            "
+                        />
                     </div>
+                    <ScoreSection
+                        title=""
+                        :scores="group.items"
+                        :chartInfoDialog="chartInfoDialog"
+                        hideStats
+                        hideTitle
+                    />
                 </div>
                 <div
                     v-if="maxVisibleItems < itemsToRender.length"
@@ -1374,12 +1351,7 @@
         width: 100%;
     }
 
-    .score-section {
-        width: 100%;
-        max-width: 1300px;
-        margin: 0 auto;
-        padding: 0;
-        box-sizing: border-box;
+    .group-wrapper {
         scroll-margin-top: 180px;
     }
 

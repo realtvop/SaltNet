@@ -14,6 +14,7 @@
         rendering?: boolean;
         showDxScoreNum?: boolean;
         hideStats?: boolean;
+        hideTitle?: boolean;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -54,7 +55,7 @@
 
 <template>
     <div :class="{ 'score-section': true, rendering: props.rendering }">
-        <h2 :class="{ 'section-title': true, rendering: props.rendering }">
+        <h2 :class="{ 'section-title': true, rendering: props.rendering }" v-if="!hideTitle">
             {{ title }}
             <span :class="{ 'stats-info': true, rendering: props.rendering }" v-if="stats && !hideStats">
                 <span class="stat-item">{{ stats.total }}</span>
