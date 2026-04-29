@@ -5,6 +5,7 @@
     import type { Chart, ChartScore } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
+    import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
@@ -1395,6 +1396,18 @@
         gap: 15px;
         color: var(--text-primary-color, inherit);
         cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .section-title {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        .stats-info {
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
     }
 
     .section-count {
