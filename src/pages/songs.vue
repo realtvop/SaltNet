@@ -1084,21 +1084,15 @@
                     <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
                         <h2 slot="trigger" class="section-title">
                             {{ group.title }}
-                            <span
-                                class="section-count"
-                                v-if="maxVisibleItems < itemsToRender.length"
-                            >
-                                ({{ group.visibleCount }}/{{ group.count }})
-                            </span>
-                            <span class="section-count" v-else>
-                                ({{ group.count }})
+                            <span class="section-count">
+                                ALL: {{ group.count }}
                             </span>
                             <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
-                                <span class="stat-item" v-if="group.stats.sss">SSS:{{ group.stats.sss }}</span>
-                                <span class="stat-item" v-if="group.stats.sssp">SSS+:{{ group.stats.sssp }}</span>
-                                <span class="stat-item" v-if="group.stats.fc">FC:{{ group.stats.fc }}</span>
-                                <span class="stat-item" v-if="group.stats.ap">AP:{{ group.stats.ap }}</span>
-                                <span class="stat-item" v-if="group.stats.fsdx">FSDX:{{ group.stats.fsdx }}</span>
+                                <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
+                                <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
+                                <span class="stat-item" v-if="group.stats.fc">FC: {{ group.stats.fc }}</span>
+                                <span class="stat-item" v-if="group.stats.ap">AP: {{ group.stats.ap }}</span>
+                                <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
                             </span>
                         </h2>
                         <mdui-menu>
@@ -1113,21 +1107,15 @@
                     </mdui-dropdown>
                     <h2 v-else class="section-title">
                         {{ group.title }}
-                        <span
-                            class="section-count"
-                            v-if="maxVisibleItems < itemsToRender.length"
-                        >
-                            ({{ group.visibleCount }}/{{ group.count }})
-                        </span>
-                        <span class="section-count" v-else>
-                            ({{ group.count }})
+                        <span class="section-count">
+                            {{ group.count }}
                         </span>
                         <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
-                            <span class="stat-item" v-if="group.stats.sss">SSS:{{ group.stats.sss }}</span>
-                            <span class="stat-item" v-if="group.stats.sssp">SSS+:{{ group.stats.sssp }}</span>
-                            <span class="stat-item" v-if="group.stats.fc">FC:{{ group.stats.fc }}</span>
-                            <span class="stat-item" v-if="group.stats.ap">AP:{{ group.stats.ap }}</span>
-                            <span class="stat-item" v-if="group.stats.fsdx">FSDX:{{ group.stats.fsdx }}</span>
+                            <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
+                            <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
+                            <span class="stat-item" v-if="group.stats.fc">FC: {{ group.stats.fc }}</span>
+                            <span class="stat-item" v-if="group.stats.ap">AP: {{ group.stats.ap }}</span>
+                            <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
                         </span>
                     </h2>
                     <div class="score-grid-wrapper">
