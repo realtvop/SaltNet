@@ -55,6 +55,15 @@
         // verBuildTime: 0,
     };
     const constantFilterEnabled = ref(false);
+    const groupBy = ref<"none" | "constant">("none");
+    const groupByOptions = [
+        { value: "none", label: "无" },
+        { value: "constant", label: "细分定数" },
+    ];
+
+    function onGroupByChange(event: Event) {
+        handleSelectChange(event, groupBy);
+    }
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
@@ -548,6 +557,67 @@
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
+    const groupedItems = computed(() => {
+        if (groupBy.value === "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
+            return null;
+
+        const charts = itemsToRender.value;
+        if (!charts.length) return null;
+
+        const groups: Record<string, Chart[]> = {};
+        charts.forEach(chart => {
+            const key = chart.info.constant.toFixed(1);
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(chart);
+        });
+
+        return Object.entries(groups)
+            .sort((a, b) => Number(b[0]) - Number(a[0]))
+            .map(([key, items]) => {
+                let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
+                items.forEach(chart => {
+                    const s = chart.score;
+                    if (s?.achievements != null) {
+                        if (s.achievements >= 100.5) sssp++;
+                        else if (s.achievements >= 100.0) sss++;
+                        if (s.achievements >= 100.0) {
+                            if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
+                            if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+                            if ([SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
+                        }
+                    }
+                });
+                return {
+                    title: key,
+                    count: items.length,
+                    stats: { sss, sssp, fc, ap, fsdx },
+                    items
+                };
+            });
+    });
+
+    const visibleGroupedItems = computed(() => {
+        if (!groupedItems.value) return null;
+
+        let remaining = maxVisibleItems.value;
+        const result: { title: string; count: number; stats: { sss: number; sssp: number; fc: number; ap: number; fsdx: number }; visibleCount: number; items: Chart[] }[] = [];
+
+        for (const group of groupedItems.value) {
+            if (remaining <= 0) break;
+            const take = Math.min(remaining, group.items.length);
+            result.push({
+                title: group.title,
+                count: group.count,
+                stats: group.stats,
+                visibleCount: take,
+                items: group.items.slice(0, take)
+            });
+            remaining -= take;
+        }
+
+        return result;
+    });
+
     // 加载更多项目
     const loadMore = () => {
         const remainingItems = itemsToRender.value.length - visibleItemsCount.value;
@@ -583,11 +653,13 @@
     watch(selectedDifficulty, () => {
         visibleItemsCount.value = getLoadSize();
         query.value = "";
+        groupBy.value = "none";
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     watch(category, newCategory => {
+        groupBy.value = "none";
         // 切换分类时，重置到该分类的默认选项
         if (newCategory === Category.InGame) {
             selectedTab.value[Category.InGame] = "ALL";
@@ -625,6 +697,13 @@
 
     // 监听难度筛选变化，重新计算可视项目数
     watch(difficultyFilter, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: "instant" });
+    });
+
+    // 监听分组变化，重新计算可视项目数
+    watch(groupBy, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -1028,14 +1107,34 @@
             "
             class="detailed-filter"
         >
-            <div class="detailed-filter-card">定数筛选:</div>
-            <mdui-range-slider
-                :min="rangeMin"
-                :max="rangeMax"
-                :step="1"
-                @input="rangeChange"
-                class="rangeSlider"
-            ></mdui-range-slider>
+            <div class="detailed-filter-row">
+                <div class="detailed-filter-section">
+                    <div class="detailed-filter-card">定数筛选:</div>
+                    <mdui-range-slider
+                        :min="rangeMin"
+                        :max="rangeMax"
+                        :step="1"
+                        @input="rangeChange"
+                        class="rangeSlider"
+                    ></mdui-range-slider>
+                </div>
+                <div class="detailed-filter-section">
+                    <div class="detailed-filter-card">分类:</div>
+                    <mdui-select
+                        style="width: 6rem"
+                        :value="groupBy"
+                        @change="onGroupByChange"
+                    >
+                        <mdui-menu-item
+                            v-for="option in groupByOptions"
+                            :key="option.value"
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </mdui-menu-item>
+                    </mdui-select>
+                </div>
+            </div>
         </div>
 
         <div
@@ -1043,7 +1142,68 @@
             :class="{ 'card-container-fixed': userId }"
             v-if="chartListFiltered"
         >
-            <div class="score-grid-wrapper">
+            <div v-if="visibleGroupedItems" class="grouped-container">
+                <div
+                    v-for="group in visibleGroupedItems"
+                    :key="group.title"
+                    class="score-section"
+                >
+                    <h2 class="section-title">
+                        {{ group.title }}
+                        <span
+                            class="section-count"
+                            v-if="maxVisibleItems < itemsToRender.length"
+                        >
+                            ({{ group.visibleCount }}/{{ group.count }})
+                        </span>
+                        <span class="section-count" v-else>
+                            ({{ group.count }})
+                        </span>
+                        <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
+                            <span class="stat-item" v-if="group.stats.sss">SSS:{{ group.stats.sss }}</span>
+                            <span class="stat-item" v-if="group.stats.sssp">SSS+:{{ group.stats.sssp }}</span>
+                            <span class="stat-item" v-if="group.stats.fc">FC:{{ group.stats.fc }}</span>
+                            <span class="stat-item" v-if="group.stats.ap">AP:{{ group.stats.ap }}</span>
+                            <span class="stat-item" v-if="group.stats.fsdx">FSDX:{{ group.stats.fsdx }}</span>
+                        </span>
+                    </h2>
+                    <div class="score-grid-wrapper">
+                        <div class="score-grid">
+                            <ScoreCard
+                                cover="/icons/random.png"
+                                :data="randomChartDummy"
+                                @click="
+                                    () => {
+                                        const chart = group.items[Math.floor(Math.random() * group.items.length)];
+                                        if (chart) openChartInfoDialog(chart);
+                                    }
+                                "
+                            />
+                            <div
+                                v-for="(chart, index) in group.items"
+                                :key="`score-cell-${group.title}-${index}`"
+                                class="score-cell"
+                                :class="{ 'score-cell-compact': category in versionPlates }"
+                            >
+                                <ScoreCard
+                                    :data="chart"
+                                    @click="openChartInfoDialog(chart)"
+                                    :compact="compactMode"
+                                    :compact-filter="compactFilter"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    v-if="maxVisibleItems < itemsToRender.length"
+                    class="loading-indicator"
+                >
+                    <div class="loading-text">正在加载更多...</div>
+                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                </div>
+            </div>
+            <div v-else class="score-grid-wrapper">
                 <div class="score-grid">
                     <ScoreCard
                         v-if="
@@ -1098,6 +1258,12 @@
         padding-top: calc(
             48px + 64px + 48px
         ); /* category-bar + search-input + detailed-filter height */
+    }
+
+    @media (max-width: 600px) {
+        .songs-page-with-detailed-filter {
+            padding-top: calc(48px + 64px + 96px);
+        }
     }
     .songs-page-fixed {
         @media (min-aspect-ratio: 1.001/1) {
@@ -1195,10 +1361,10 @@
         right: 0;
         z-index: 98;
         display: flex;
-        justify-content: center;
         align-items: center;
         padding: 5px 20px;
-        height: 48px;
+        min-height: 48px;
+        height: auto;
         box-sizing: border-box;
         background: rgb(var(--mdui-color-background));
     }
@@ -1207,6 +1373,26 @@
         .detailed-filter {
             left: 80px; /* navigation rail width */
         }
+    }
+
+    .detailed-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        width: 100%;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .detailed-filter-section {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .detailed-filter-section:first-child {
+        flex: 1;
+        min-width: 0;
     }
 
     .detailed-filter-card {
@@ -1257,6 +1443,51 @@
 
     .score-cell-compact {
         width: 100px;
+    }
+
+    .grouped-container {
+        width: 100%;
+    }
+
+    .score-section {
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .section-title {
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        text-align: left;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 15px;
+        color: var(--text-primary-color, inherit);
+    }
+
+    .section-count {
+        font-size: 0.9rem;
+        font-weight: normal;
+        color: var(--text-secondary-color, #888);
+    }
+
+    .stats-info {
+        font-size: 0.9rem;
+        font-weight: normal;
+        color: var(--text-secondary-color, #888);
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .stat-item {
+        white-space: nowrap;
     }
 
     @media (min-width: 1254px) {
