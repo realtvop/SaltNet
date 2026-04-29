@@ -565,12 +565,12 @@
                     if (s?.achievements != null) {
                         if (s.achievements >= 100.5) sssp++;
                         else if (s.achievements >= 100.0) sss++;
-                        if (s.achievements >= 100.0) {
-                            if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
-                            if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
-                            if ([SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
-                        }
                     }
+                    if (s?.comboStatus) {
+                        if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
+                        if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+                    }
+                    if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
                 });
                 return {
                     title: key,
@@ -616,12 +616,12 @@
             if (s?.achievements != null) {
                 if (s.achievements >= 100.5) sssp++;
                 else if (s.achievements >= 100.0) sss++;
-                if (s.achievements >= 100.0) {
-                    if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
-                    if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
-                    if ([SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
-                }
             }
+            if (s?.comboStatus) {
+                if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
+                if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+            }
+            if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
         });
 
         if (!sss && !sssp && !fc && !ap && !fsdx) return null;
