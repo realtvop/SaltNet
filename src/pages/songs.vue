@@ -55,11 +55,14 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
-    const groupBy = ref<"none" | "constant" | "version">("none");
+    const groupBy = ref<"none" | "constant" | "version" | "rank" | "combo" | "sync">("none");
     const groupByOptions = [
         { value: "none", label: "无" },
         { value: "constant", label: "细分定数" },
         { value: "version", label: "版本" },
+        { value: "rank", label: "Rank" },
+        { value: "combo", label: "Combo" },
+        { value: "sync", label: "Sync" },
     ];
 
     function onGroupByChange(event: Event) {
@@ -561,6 +564,26 @@
         return { sss, sssp, fc, ap, fsdx };
     }
 
+    const rankOrder = [RankRate.sssp, RankRate.sss, RankRate.ssp, RankRate.ss, RankRate.sp, RankRate.s, RankRate.aaa, RankRate.aa, RankRate.a, RankRate.bbb, RankRate.bb, RankRate.b, RankRate.c, RankRate.d];
+    const comboOrder = [ComboStatus.AllPerfectPlus, ComboStatus.AllPerfect, ComboStatus.FullComboPlus, ComboStatus.FullCombo, ComboStatus.None];
+    const syncOrder = [SyncStatus.FullSyncDXPlus, SyncStatus.FullSyncDX, SyncStatus.FullSyncPlus, SyncStatus.FullSync, SyncStatus.Sync, SyncStatus.None];
+
+    const rankDisplayNames: Record<string, string> = {
+        [RankRate.sssp]: "SSS+", [RankRate.sss]: "SSS", [RankRate.ssp]: "SS+", [RankRate.ss]: "SS",
+        [RankRate.sp]: "S+", [RankRate.s]: "S", [RankRate.aaa]: "AAA", [RankRate.aa]: "AA",
+        [RankRate.a]: "A", [RankRate.bbb]: "BBB", [RankRate.bb]: "BB", [RankRate.b]: "B",
+        [RankRate.c]: "C", [RankRate.d]: "D", "": "未游玩",
+    };
+    const comboDisplayNames: Record<string, string> = {
+        [ComboStatus.AllPerfectPlus]: "All Perfect+", [ComboStatus.AllPerfect]: "All Perfect",
+        [ComboStatus.FullComboPlus]: "Full Combo+", [ComboStatus.FullCombo]: "Full Combo", [ComboStatus.None]: "无",
+    };
+    const syncDisplayNames: Record<string, string> = {
+        [SyncStatus.FullSyncDXPlus]: "Full Sync DX+", [SyncStatus.FullSyncDX]: "Full Sync DX",
+        [SyncStatus.FullSyncPlus]: "Full Sync+", [SyncStatus.FullSync]: "Full Sync",
+        [SyncStatus.Sync]: "Sync", [SyncStatus.None]: "无",
+    };
+
     const groupedItems = computed(() => {
         if (groupBy.value === "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
             return null;
@@ -570,25 +593,51 @@
 
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
-            const key = groupBy.value === "version"
-                ? (chart.music.info.from as unknown as string)
-                : chart.info.constant.toFixed(1);
+            let key: string;
+            if (groupBy.value === "version") {
+                key = chart.music.info.from as unknown as string;
+            } else if (groupBy.value === "constant") {
+                key = chart.info.constant.toFixed(1);
+            } else if (groupBy.value === "rank") {
+                key = (chart.score?.rankRate as string) || "";
+            } else if (groupBy.value === "combo") {
+                key = (chart.score?.comboStatus as string) || "";
+            } else {
+                key = (chart.score?.syncStatus as string) || "";
+            }
             if (!groups[key]) groups[key] = [];
             groups[key].push(chart);
         });
 
         const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
             if (groupBy.value === "constant") return Number(b[0]) - Number(a[0]);
-            const orderA = maimaiVersionsCN.indexOf(a[0]);
-            const orderB = maimaiVersionsCN.indexOf(b[0]);
-            return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
+            if (groupBy.value === "version") {
+                const orderA = maimaiVersionsCN.indexOf(a[0]);
+                const orderB = maimaiVersionsCN.indexOf(b[0]);
+                return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
+            }
+            if (groupBy.value === "rank") {
+                const ia = rankOrder.indexOf(a[0] as RankRate), ib = rankOrder.indexOf(b[0] as RankRate);
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+            }
+            if (groupBy.value === "combo") {
+                const ia = comboOrder.indexOf(a[0] as ComboStatus), ib = comboOrder.indexOf(b[0] as ComboStatus);
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+            }
+            const ia = syncOrder.indexOf(a[0] as SyncStatus), ib = syncOrder.indexOf(b[0] as SyncStatus);
+            return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
         };
+
+        const displayNames = groupBy.value === "rank" ? rankDisplayNames
+            : groupBy.value === "combo" ? comboDisplayNames
+            : groupBy.value === "sync" ? syncDisplayNames
+            : null;
 
         return Object.entries(groups)
             .sort(sortFn)
             .map(([key, items]) => {
                 return {
-                    title: key,
+                    title: displayNames ? (displayNames[key] || key) : key,
                     count: items.length,
                     stats: countChartStats(items),
                     items
