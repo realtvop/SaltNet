@@ -78,6 +78,12 @@ export const useShared = defineStore("shared", () => {
     handleScreenSizeChange();
 
     darkModeMediaQuery.addEventListener("change", event => (isDarkMode.value = !!event.matches));
+
+    let resolveUsersLoaded: () => void;
+    const usersLoaded = new Promise<void>(r => {
+        resolveUsersLoaded = r;
+    });
+
     localForage.getItem<User[]>("users").then((v: User[] | null) => {
         if (Array.isArray(v)) {
             const migratedUsers = v.map(user => {
@@ -102,6 +108,7 @@ export const useShared = defineStore("shared", () => {
             });
             users.value = migratedUsers;
         }
+        resolveUsersLoaded!();
     });
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;
@@ -190,6 +197,7 @@ export const useShared = defineStore("shared", () => {
 
     return {
         users,
+        usersLoaded,
         chartsSort,
         favorites,
         isUpdated,

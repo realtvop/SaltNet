@@ -1,7 +1,9 @@
 <script setup lang="ts">
     import { useRoute, useRouter } from "vue-router";
+    import { snackbar } from "mdui";
     import TopAppBar from "@/components/app/TopAppBar.vue";
     import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
+    import { useShared } from "./components/app/shared";
     import { initializeMusicData } from "@/components/data/music";
 
     const route = useRoute();
@@ -19,12 +21,25 @@
     }
 
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
-        const code = searchParams.get("code")!;
-        const state = searchParams.get("state") || "";
-        handleLXNSOAuthCallback(code, state).catch(() => {
-            // OAuth error is already handled by the callback
-        });
+    if (searchParams.has("lxns_auth_complete")) {
+        if (searchParams.has("error")) {
+            const errorDesc = searchParams.get("error_description") || searchParams.get("error");
+            snackbar({ message: `落雪授权失败: ${errorDesc}`, autoCloseDelay: 3000 });
+        } else if (searchParams.has("code")) {
+            const code = searchParams.get("code")!;
+            const state = searchParams.get("state") || "";
+            const shared = useShared();
+            shared.usersLoaded.then(() => {
+                handleLXNSOAuthCallback(code, state).catch((err: Error) => {
+                    snackbar({
+                        message: err.message || "落雪绑定失败，请重试",
+                        autoCloseDelay: 3000,
+                    });
+                });
+            });
+        } else {
+            snackbar({ message: "落雪授权回调参数缺失", autoCloseDelay: 3000 });
+        }
     }
     if (searchParams.size) router.replace({ path: route.path, query: {} });
 

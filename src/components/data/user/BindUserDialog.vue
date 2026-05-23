@@ -186,6 +186,7 @@
     import { confirm, prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
+    import { useShared } from "@/components/app/shared";
 
     import SignupDialog from "./database/SignupDialog.vue";
     import SigninDialog from "./database/SigninDialog.vue";
@@ -201,6 +202,7 @@
 
     const emit = defineEmits(["update:modelValue", "save", "delete", "saltnet-login"]);
 
+    const shared = useShared();
     const dialogRef = ref<any>(null);
     const isSignupDialogOpen = ref(false);
     const isSigninDialogOpen = ref(false);
@@ -389,12 +391,16 @@
             });
     }
 
-    function startBindingLXNS() {
-        if (props.isEditingNewUser) saveUser();
-        setTimeout(async () => {
-            const url = await initLXNSOAuth(props.userIndex!);
-            window.location.href = url;
-        }, 0);
+    async function startBindingLXNS() {
+        let targetIndex: number;
+        if (props.isEditingNewUser) {
+            saveUser();
+            targetIndex = shared.users.length - 1;
+        } else {
+            targetIndex = props.userIndex!;
+        }
+        const url = await initLXNSOAuth(targetIndex);
+        window.location.href = url;
     }
     function unbindLXNS() {
         confirm({
