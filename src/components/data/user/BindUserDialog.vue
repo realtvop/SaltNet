@@ -249,9 +249,13 @@
         { immediate: true, deep: true }
     );
 
+    // Refresh token assumed valid for 30 days after access token expiration
+    const REFRESH_TOKEN_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+
     const userLXNSBindStatus = computed(() => {
         if (!localUser.value.lxns || !localUser.value.lxns.auth) return false;
-        if (localUser.value.lxns.auth.expiresAt! + 2592e6 > Date.now()) return true;
+        if (localUser.value.lxns.auth.expiresAt! + REFRESH_TOKEN_LIFETIME_MS > Date.now())
+            return true;
         return false;
     });
 

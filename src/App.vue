@@ -21,7 +21,8 @@
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.has("lxns_auth_complete") && searchParams.has("code")) {
         const code = searchParams.get("code")!;
-        handleLXNSOAuthCallback(code).catch(() => {
+        const state = searchParams.get("state") || "";
+        handleLXNSOAuthCallback(code, state).catch(() => {
             // OAuth error is already handled by the callback
         });
     }
