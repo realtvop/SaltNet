@@ -79,16 +79,9 @@
         const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);
 
-        if (useFitDiff) {
-            return {
-                old: sortCharts(oldCharts, 35),
-                newer: sortCharts(newCharts, 15),
-            };
-        }
-
         return {
-            old: oldCharts.slice(0, 35),
-            newer: newCharts.slice(0, 15),
+            old: sortCharts(oldCharts, 35),
+            newer: sortCharts(newCharts, 15),
         };
     });
 
@@ -152,7 +145,9 @@
             ? Object.values(player.value.data.detailed)
             : [];
 
-        if (useFitDiff && detailedRecords.length) return detailedRecords;
+        if (detailedRecords.length) return detailedRecords;
+
+        if (useFitDiff) return [];
 
         const b50Records = player.value?.data?.b50;
         if (!b50Records) return [];
