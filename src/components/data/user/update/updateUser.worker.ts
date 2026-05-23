@@ -23,8 +23,8 @@ self.onmessage = event => {
         let status = "success";
         let message = "";
         try {
-            if (user.lxns?.auth?.accessToken) {
-                fromLXNS(user).then(data => {
+            if (user.inGame.enabled) {
+                fromInGame(user, qrCode).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
@@ -33,8 +33,8 @@ self.onmessage = event => {
                         message,
                     });
                 });
-            } else if (user.inGame.enabled) {
-                fromInGame(user, qrCode).then(data => {
+            } else if (user.lxns?.auth?.accessToken) {
+                fromLXNS(user).then(data => {
                     result = data;
                     self.postMessage({
                         type: `updateUserResult::${user.uid}`,
