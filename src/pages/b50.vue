@@ -450,6 +450,8 @@
                 style="text-align: center; color: orange; margin-top: 20px"
             >
                 未更新成绩或成绩更新失败，请到“用户”更新成绩
+                <br />
+                也可能是正在加载谱面信息，如已更新成绩请稍等
             </p>
         </div>
 
