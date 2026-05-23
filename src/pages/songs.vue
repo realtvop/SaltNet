@@ -600,10 +600,11 @@
     const groupedItems = computed(() => {
         const isInGame = category.value === Category.InGame && groupBy.value !== "none" && selectedDifficulty.value !== "ALL";
         const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
+        const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
 
-        if (!isInGame && !isVersion) return null;
+        if (!isInGame && !isVersion && !isFavorite) return null;
 
-        const activeGroupBy = isVersion ? versionGroupBy.value : groupBy.value;
+        const activeGroupBy = (isVersion || isFavorite) ? versionGroupBy.value : groupBy.value;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -1110,10 +1111,7 @@
             </div>
         </div>
         <div
-            v-else-if="
-                (category === Category.InGame && selectedDifficulty === 'ALL') ||
-                category === Category.Favorite
-            "
+            v-else-if="category === Category.InGame && selectedDifficulty === 'ALL'"
             class="search-input"
         >
             <mdui-select
@@ -1126,6 +1124,45 @@
                     v-for="option in difficultyFilterOptions"
                     :key="option.grade"
                     :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
+        </div>
+        <div v-else-if="category === Category.Favorite" class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
+            >
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="versionGroupBy"
+                @change="onVersionGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in versionGroupByOptions"
+                    :key="option.value"
+                    :value="option.value"
                 >
                     {{ option.label }}
                 </mdui-menu-item>
@@ -1232,7 +1269,7 @@
                                 </mdui-menu>
                             </mdui-dropdown>
                             <span v-else class="section-count">{{ group.title }}</span>
-                            <span class="stats-info" v-if="['rank', 'combo', 'sync', 'difficulty'].includes(category === Category.Version ? versionGroupBy : groupBy)">
+                            <span class="stats-info" v-if="['rank', 'combo', 'sync', 'difficulty'].includes((category === Category.Version || category === Category.Favorite) ? versionGroupBy : groupBy)">
                                 <span class="stat-item">{{ group.count }}</span>
                             </span>
                             <span class="stats-info" v-else-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
