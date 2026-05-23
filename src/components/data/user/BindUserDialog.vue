@@ -394,7 +394,24 @@
     async function startBindingLXNS() {
         let targetIndex: number;
         if (props.isEditingNewUser) {
-            saveUser();
+            shared.users.push({
+                remark: localUser.value.remark ?? null,
+                divingFish: {
+                    name: localUser.value.divingFish?.name ?? null,
+                    importToken: localUser.value.divingFish?.importToken ?? null,
+                },
+                lxns: { auth: null, name: null, id: null },
+                inGame: {
+                    id: localUser.value.inGame?.id ?? null,
+                    enabled: localUser.value.inGame?.enabled ?? false,
+                    useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
+                },
+                saltnetUsername: localUser.value.saltnetUsername ?? null,
+                settings: {
+                    manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
+                },
+                data: { updateTime: null, name: null, rating: null },
+            });
             targetIndex = shared.users.length - 1;
         } else {
             targetIndex = props.userIndex!;
