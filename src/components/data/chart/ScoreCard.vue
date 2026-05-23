@@ -526,6 +526,22 @@
         left: unset;
         transform: none;
     }
+
+    @media (max-width: 499px) {
+        .achievement {
+            font-size: 14px;
+            overflow: visible;
+        }
+        .percentage-mark {
+            font-size: 10px;
+        }
+        .no-dx-score .achievement {
+            font-size: 16px;
+        }
+        .no-dx-score .percentage-mark {
+            font-size: 11px;
+        }
+    }
 </style>
 
 <style>
