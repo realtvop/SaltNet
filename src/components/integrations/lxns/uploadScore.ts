@@ -4,13 +4,14 @@ import type { LXNSUploadScore, LXNSUploadScoreRequest } from "./type";
 import { fetchLXNSApi } from "./fetch";
 
 function DF2LXNS(score: DivingFishFullRecord): LXNSUploadScore {
-    const isDX = score.type === "DX";
-    const rawId = isDX ? score.song_id - 10000 : score.song_id;
+    const isDX = score.song_id > 1_0000 && score.song_id < 10_0000;
+    const isUtage = score.song_id > 10_0000;
+    const rawId = isDX ? score.song_id - 1_0000 : score.song_id;
 
     return {
         id: rawId,
-        type: isDX ? "dx" : "standard",
-        level_index: score.level_index,
+        type: isDX ? "dx" : isUtage ? "utage" : "standard",
+        level_index: isUtage ? 0 : score.level_index,
         achievements: score.achievements,
         fc: score.fc || null,
         fs: score.fs || null,
