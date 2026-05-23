@@ -1139,16 +1139,6 @@
                                 <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
                             </span>
                         </h2>
-                        <ScoreCard
-                            cover="/icons/random.png"
-                            :data="randomChartDummy"
-                            @click="
-                                () => {
-                                    const chart = group.items[Math.floor(Math.random() * group.items.length)];
-                                    if (chart) openChartInfoDialog(chart);
-                                }
-                            "
-                        />
                     </div>
                     <ScoreSection
                         title=""
@@ -1156,7 +1146,20 @@
                         :chartInfoDialog="chartInfoDialog"
                         hideStats
                         hideTitle
-                    />
+                    >
+                        <template #prepend>
+                            <ScoreCard
+                                cover="/icons/random.png"
+                                :data="randomChartDummy"
+                                @click="
+                                    () => {
+                                        const chart = group.items[Math.floor(Math.random() * group.items.length)];
+                                        if (chart) openChartInfoDialog(chart);
+                                    }
+                                "
+                            />
+                        </template>
+                    </ScoreSection>
                 </div>
                 <div
                     v-if="maxVisibleItems < itemsToRender.length"

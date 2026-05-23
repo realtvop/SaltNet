@@ -67,6 +67,7 @@
         </h2>
         <div :class="{ 'score-grid-wrapper': true, rendering: props.rendering }">
             <div :class="{ 'score-grid': true, rendering: props.rendering }">
+                <slot name="prepend" />
                 <div
                     v-for="(score, index) in scores"
                     :key="`score-cell-${index}`"
