@@ -50,7 +50,7 @@ export interface LXNSResponse<T> {
 
 export interface LXNSUploadScore {
     id: number;
-    type: "standard" | "dx";
+    type: "standard" | "dx" | "utage";
     level_index: number;
     achievements: number;
     fc: string | null;

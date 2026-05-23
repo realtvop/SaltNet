@@ -79,16 +79,9 @@
         const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);
 
-        if (useFitDiff) {
-            return {
-                old: sortCharts(oldCharts, 35),
-                newer: sortCharts(newCharts, 15),
-            };
-        }
-
         return {
-            old: oldCharts.slice(0, 35),
-            newer: newCharts.slice(0, 15),
+            old: sortCharts(oldCharts, 35),
+            newer: sortCharts(newCharts, 15),
         };
     });
 
@@ -152,7 +145,9 @@
             ? Object.values(player.value.data.detailed)
             : [];
 
-        if (useFitDiff && detailedRecords.length) return detailedRecords;
+        if (detailedRecords.length) return detailedRecords;
+
+        if (useFitDiff) return [];
 
         const b50Records = player.value?.data?.b50;
         if (!b50Records) return [];
@@ -455,6 +450,8 @@
                 style="text-align: center; color: orange; margin-top: 20px"
             >
                 未更新成绩或成绩更新失败，请到“用户”更新成绩
+                <br />
+                也可能是正在加载谱面信息，如已更新成绩请稍等
             </p>
         </div>
 
