@@ -1170,7 +1170,10 @@
                                 </mdui-menu>
                             </mdui-dropdown>
                             <span v-else class="section-count">{{ group.title }}</span>
-                            <span class="stats-info" v-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
+                            <span class="stats-info" v-if="groupBy === 'rank' || groupBy === 'combo' || groupBy === 'sync'">
+                                <span class="stat-item">{{ group.count }}</span>
+                            </span>
+                            <span class="stats-info" v-else-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
                                 <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
                                 <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
                                 <span class="stat-item" v-if="group.stats.fc">FC: {{ group.stats.fc }}</span>
