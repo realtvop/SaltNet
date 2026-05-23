@@ -15,7 +15,7 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
-    import { getDifficultyFilterOptions, UTAGE_GRADE } from "@/components/data/chart/difficulty";
+    import { getDifficultyFilterOptions, getChartDifficultyFullLabel, UTAGE_GRADE } from "@/components/data/chart/difficulty";
     import { findDetailedScoreForChart } from "@/components/data/chart/scoreLookup";
     import { handleSelectChange } from "@/utils";
 
@@ -67,6 +67,19 @@
 
     function onGroupByChange(event: Event) {
         handleSelectChange(event, groupBy);
+    }
+
+    const versionGroupBy = ref<"none" | "difficulty" | "rank" | "combo" | "sync">("none");
+    const versionGroupByOptions = [
+        { value: "none", label: "无" },
+        { value: "difficulty", label: "难度" },
+        { value: "rank", label: "Rank" },
+        { value: "combo", label: "Combo" },
+        { value: "sync", label: "Sync" },
+    ];
+
+    function onVersionGroupByChange(event: Event) {
+        handleSelectChange(event, versionGroupBy);
     }
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
@@ -585,8 +598,12 @@
     };
 
     const groupedItems = computed(() => {
-        if (groupBy.value === "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
-            return null;
+        const isInGame = category.value === Category.InGame && groupBy.value !== "none" && selectedDifficulty.value !== "ALL";
+        const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
+
+        if (!isInGame && !isVersion) return null;
+
+        const activeGroupBy = isVersion ? versionGroupBy.value : groupBy.value;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -594,13 +611,15 @@
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
             let key: string;
-            if (groupBy.value === "version") {
+            if (activeGroupBy === "version") {
                 key = chart.music.info.from as unknown as string;
-            } else if (groupBy.value === "constant") {
+            } else if (activeGroupBy === "constant") {
                 key = chart.info.constant.toFixed(1);
-            } else if (groupBy.value === "rank") {
+            } else if (activeGroupBy === "difficulty") {
+                key = String(chart.info.grade);
+            } else if (activeGroupBy === "rank") {
                 key = (chart.score?.rankRate as string) || "";
-            } else if (groupBy.value === "combo") {
+            } else if (activeGroupBy === "combo") {
                 key = (chart.score?.comboStatus as string) || "";
             } else {
                 key = (chart.score?.syncStatus as string) || "";
@@ -610,17 +629,18 @@
         });
 
         const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
-            if (groupBy.value === "constant") return Number(b[0]) - Number(a[0]);
-            if (groupBy.value === "version") {
+            if (activeGroupBy === "constant") return Number(b[0]) - Number(a[0]);
+            if (activeGroupBy === "version") {
                 const orderA = maimaiVersionsCN.indexOf(a[0]);
                 const orderB = maimaiVersionsCN.indexOf(b[0]);
                 return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
             }
-            if (groupBy.value === "rank") {
+            if (activeGroupBy === "difficulty") return Number(a[0]) - Number(b[0]);
+            if (activeGroupBy === "rank") {
                 const ia = rankOrder.indexOf(a[0] as RankRate), ib = rankOrder.indexOf(b[0] as RankRate);
                 return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             }
-            if (groupBy.value === "combo") {
+            if (activeGroupBy === "combo") {
                 const ia = comboOrder.indexOf(a[0] as ComboStatus), ib = comboOrder.indexOf(b[0] as ComboStatus);
                 return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             }
@@ -628,16 +648,20 @@
             return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
         };
 
-        const displayNames = groupBy.value === "rank" ? rankDisplayNames
-            : groupBy.value === "combo" ? comboDisplayNames
-            : groupBy.value === "sync" ? syncDisplayNames
+        const displayNames = activeGroupBy === "rank" ? rankDisplayNames
+            : activeGroupBy === "combo" ? comboDisplayNames
+            : activeGroupBy === "sync" ? syncDisplayNames
             : null;
 
         return Object.entries(groups)
             .sort(sortFn)
             .map(([key, items]) => {
+                let title: string;
+                if (displayNames) title = displayNames[key] || key;
+                else if (activeGroupBy === "difficulty") title = getChartDifficultyFullLabel(Number(key));
+                else title = key;
                 return {
-                    title: displayNames ? (displayNames[key] || key) : key,
+                    title,
                     count: items.length,
                     stats: countChartStats(items),
                     items
@@ -1088,7 +1112,6 @@
         <div
             v-else-if="
                 (category === Category.InGame && selectedDifficulty === 'ALL') ||
-                category === Category.Version ||
                 category === Category.Favorite
             "
             class="search-input"
@@ -1103,6 +1126,45 @@
                     v-for="option in difficultyFilterOptions"
                     :key="option.grade"
                     :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
+        </div>
+        <div v-else-if="category === Category.Version" class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
+            >
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="versionGroupBy"
+                @change="onVersionGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in versionGroupByOptions"
+                    :key="option.value"
+                    :value="option.value"
                 >
                     {{ option.label }}
                 </mdui-menu-item>
@@ -1170,7 +1232,7 @@
                                 </mdui-menu>
                             </mdui-dropdown>
                             <span v-else class="section-count">{{ group.title }}</span>
-                            <span class="stats-info" v-if="groupBy === 'rank' || groupBy === 'combo' || groupBy === 'sync'">
+                            <span class="stats-info" v-if="['rank', 'combo', 'sync', 'difficulty'].includes(category === Category.Version ? versionGroupBy : groupBy)">
                                 <span class="stat-item">{{ group.count }}</span>
                             </span>
                             <span class="stats-info" v-else-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
