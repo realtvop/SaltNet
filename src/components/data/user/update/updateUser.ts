@@ -130,7 +130,7 @@ export function updateUserWithWorker(user: User) {
     }
 
     pendingUsers[userUid] = user;
-    console.log(1)
+    console.log(1);
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
 }
 

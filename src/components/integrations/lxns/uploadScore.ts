@@ -29,13 +29,9 @@ export async function uploadScoresToLXNS(
 
     const uploadScores = scores.map(DF2LXNS);
 
-    await fetchLXNSApi<unknown>(
-        user,
-        "scores",
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ scores: uploadScores } as LXNSUploadScoreRequest),
-        }
-    );
+    await fetchLXNSApi<unknown>(user, "scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scores: uploadScores } as LXNSUploadScoreRequest),
+    });
 }

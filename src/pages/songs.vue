@@ -15,7 +15,11 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
-    import { getDifficultyFilterOptions, getChartDifficultyFullLabel, UTAGE_GRADE } from "@/components/data/chart/difficulty";
+    import {
+        getDifficultyFilterOptions,
+        getChartDifficultyFullLabel,
+        UTAGE_GRADE,
+    } from "@/components/data/chart/difficulty";
     import { findDetailedScoreForChart } from "@/components/data/chart/scoreLookup";
     import { handleSelectChange } from "@/utils";
 
@@ -561,7 +565,11 @@
     );
 
     function countChartStats(charts: Chart[]) {
-        let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
+        let sss = 0,
+            sssp = 0,
+            fc = 0,
+            ap = 0,
+            fsdx = 0;
         charts.forEach(chart => {
             const s = chart.score;
             if (s?.achievements != null) {
@@ -569,42 +577,109 @@
                 else if (s.achievements >= 100.0) sss++;
             }
             if (s?.comboStatus) {
-                if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
-                if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+                if (
+                    [ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(
+                        s.comboStatus as ComboStatus
+                    )
+                )
+                    ap++;
+                if (
+                    [
+                        ComboStatus.FullCombo,
+                        ComboStatus.FullComboPlus,
+                        ComboStatus.AllPerfect,
+                        ComboStatus.AllPerfectPlus,
+                    ].includes(s.comboStatus as ComboStatus)
+                )
+                    fc++;
             }
-            if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
+            if (
+                s?.syncStatus &&
+                [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(
+                    s.syncStatus as SyncStatus
+                )
+            )
+                fsdx++;
         });
         return { sss, sssp, fc, ap, fsdx };
     }
 
-    const rankOrder = [RankRate.sssp, RankRate.sss, RankRate.ssp, RankRate.ss, RankRate.sp, RankRate.s, RankRate.aaa, RankRate.aa, RankRate.a, RankRate.bbb, RankRate.bb, RankRate.b, RankRate.c, RankRate.d];
-    const comboOrder = [ComboStatus.AllPerfectPlus, ComboStatus.AllPerfect, ComboStatus.FullComboPlus, ComboStatus.FullCombo, ComboStatus.None];
-    const syncOrder = [SyncStatus.FullSyncDXPlus, SyncStatus.FullSyncDX, SyncStatus.FullSyncPlus, SyncStatus.FullSync, SyncStatus.Sync, SyncStatus.None];
+    const rankOrder = [
+        RankRate.sssp,
+        RankRate.sss,
+        RankRate.ssp,
+        RankRate.ss,
+        RankRate.sp,
+        RankRate.s,
+        RankRate.aaa,
+        RankRate.aa,
+        RankRate.a,
+        RankRate.bbb,
+        RankRate.bb,
+        RankRate.b,
+        RankRate.c,
+        RankRate.d,
+    ];
+    const comboOrder = [
+        ComboStatus.AllPerfectPlus,
+        ComboStatus.AllPerfect,
+        ComboStatus.FullComboPlus,
+        ComboStatus.FullCombo,
+        ComboStatus.None,
+    ];
+    const syncOrder = [
+        SyncStatus.FullSyncDXPlus,
+        SyncStatus.FullSyncDX,
+        SyncStatus.FullSyncPlus,
+        SyncStatus.FullSync,
+        SyncStatus.Sync,
+        SyncStatus.None,
+    ];
 
     const rankDisplayNames: Record<string, string> = {
-        [RankRate.sssp]: "SSS+", [RankRate.sss]: "SSS", [RankRate.ssp]: "SS+", [RankRate.ss]: "SS",
-        [RankRate.sp]: "S+", [RankRate.s]: "S", [RankRate.aaa]: "AAA", [RankRate.aa]: "AA",
-        [RankRate.a]: "A", [RankRate.bbb]: "BBB", [RankRate.bb]: "BB", [RankRate.b]: "B",
-        [RankRate.c]: "C", [RankRate.d]: "D", "": "未游玩",
+        [RankRate.sssp]: "SSS+",
+        [RankRate.sss]: "SSS",
+        [RankRate.ssp]: "SS+",
+        [RankRate.ss]: "SS",
+        [RankRate.sp]: "S+",
+        [RankRate.s]: "S",
+        [RankRate.aaa]: "AAA",
+        [RankRate.aa]: "AA",
+        [RankRate.a]: "A",
+        [RankRate.bbb]: "BBB",
+        [RankRate.bb]: "BB",
+        [RankRate.b]: "B",
+        [RankRate.c]: "C",
+        [RankRate.d]: "D",
+        "": "未游玩",
     };
     const comboDisplayNames: Record<string, string> = {
-        [ComboStatus.AllPerfectPlus]: "All Perfect+", [ComboStatus.AllPerfect]: "All Perfect",
-        [ComboStatus.FullComboPlus]: "Full Combo+", [ComboStatus.FullCombo]: "Full Combo", [ComboStatus.None]: "无",
+        [ComboStatus.AllPerfectPlus]: "All Perfect+",
+        [ComboStatus.AllPerfect]: "All Perfect",
+        [ComboStatus.FullComboPlus]: "Full Combo+",
+        [ComboStatus.FullCombo]: "Full Combo",
+        [ComboStatus.None]: "无",
     };
     const syncDisplayNames: Record<string, string> = {
-        [SyncStatus.FullSyncDXPlus]: "Full Sync DX+", [SyncStatus.FullSyncDX]: "Full Sync DX",
-        [SyncStatus.FullSyncPlus]: "Full Sync+", [SyncStatus.FullSync]: "Full Sync",
-        [SyncStatus.Sync]: "Sync", [SyncStatus.None]: "无",
+        [SyncStatus.FullSyncDXPlus]: "Full Sync DX+",
+        [SyncStatus.FullSyncDX]: "Full Sync DX",
+        [SyncStatus.FullSyncPlus]: "Full Sync+",
+        [SyncStatus.FullSync]: "Full Sync",
+        [SyncStatus.Sync]: "Sync",
+        [SyncStatus.None]: "无",
     };
 
     const groupedItems = computed(() => {
-        const isInGame = category.value === Category.InGame && groupBy.value !== "none" && selectedDifficulty.value !== "ALL";
+        const isInGame =
+            category.value === Category.InGame &&
+            groupBy.value !== "none" &&
+            selectedDifficulty.value !== "ALL";
         const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
         const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
 
         if (!isInGame && !isVersion && !isFavorite) return null;
 
-        const activeGroupBy = (isVersion || isFavorite) ? versionGroupBy.value : groupBy.value;
+        const activeGroupBy = isVersion || isFavorite ? versionGroupBy.value : groupBy.value;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -638,34 +713,42 @@
             }
             if (activeGroupBy === "difficulty") return Number(a[0]) - Number(b[0]);
             if (activeGroupBy === "rank") {
-                const ia = rankOrder.indexOf(a[0] as RankRate), ib = rankOrder.indexOf(b[0] as RankRate);
+                const ia = rankOrder.indexOf(a[0] as RankRate),
+                    ib = rankOrder.indexOf(b[0] as RankRate);
                 return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             }
             if (activeGroupBy === "combo") {
-                const ia = comboOrder.indexOf(a[0] as ComboStatus), ib = comboOrder.indexOf(b[0] as ComboStatus);
+                const ia = comboOrder.indexOf(a[0] as ComboStatus),
+                    ib = comboOrder.indexOf(b[0] as ComboStatus);
                 return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             }
-            const ia = syncOrder.indexOf(a[0] as SyncStatus), ib = syncOrder.indexOf(b[0] as SyncStatus);
+            const ia = syncOrder.indexOf(a[0] as SyncStatus),
+                ib = syncOrder.indexOf(b[0] as SyncStatus);
             return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
         };
 
-        const displayNames = activeGroupBy === "rank" ? rankDisplayNames
-            : activeGroupBy === "combo" ? comboDisplayNames
-            : activeGroupBy === "sync" ? syncDisplayNames
-            : null;
+        const displayNames =
+            activeGroupBy === "rank"
+                ? rankDisplayNames
+                : activeGroupBy === "combo"
+                  ? comboDisplayNames
+                  : activeGroupBy === "sync"
+                    ? syncDisplayNames
+                    : null;
 
         return Object.entries(groups)
             .sort(sortFn)
             .map(([key, items]) => {
                 let title: string;
                 if (displayNames) title = displayNames[key] || key;
-                else if (activeGroupBy === "difficulty") title = getChartDifficultyFullLabel(Number(key));
+                else if (activeGroupBy === "difficulty")
+                    title = getChartDifficultyFullLabel(Number(key));
                 else title = key;
                 return {
                     title,
                     count: items.length,
                     stats: countChartStats(items),
-                    items
+                    items,
                 };
             });
     });
@@ -674,7 +757,13 @@
         if (!groupedItems.value) return null;
 
         let remaining = maxVisibleItems.value;
-        const result: { title: string; count: number; stats: { sss: number; sssp: number; fc: number; ap: number; fsdx: number }; visibleCount: number; items: Chart[] }[] = [];
+        const result: {
+            title: string;
+            count: number;
+            stats: { sss: number; sssp: number; fc: number; ap: number; fsdx: number };
+            visibleCount: number;
+            items: Chart[];
+        }[] = [];
 
         for (const group of groupedItems.value) {
             if (remaining <= 0) break;
@@ -684,7 +773,7 @@
                 count: group.count,
                 stats: group.stats,
                 visibleCount: take,
-                items: group.items.slice(0, take)
+                items: group.items.slice(0, take),
             });
             remaining -= take;
         }
@@ -693,8 +782,7 @@
     });
 
     const overallStats = computed(() => {
-        if (groupBy.value !== "none" || category.value !== Category.InGame)
-            return null;
+        if (groupBy.value !== "none" || category.value !== Category.InGame) return null;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -990,12 +1078,12 @@
 </script>
 
 <template>
-        <div
-            class="songs-page"
-            :class="{
-                'songs-page-fixed': userId,
-            }"
-        >
+    <div
+        class="songs-page"
+        :class="{
+            'songs-page-fixed': userId,
+        }"
+    >
         <!-- [游戏排序]难度选单 -->
         <div class="category-bar">
             <mdui-dropdown>
@@ -1254,10 +1342,20 @@
                     :id="'const-' + group.title"
                     class="group-wrapper"
                 >
-                    <div class="score-section" style="max-width:1300px;margin:0 auto;padding:0 20px;box-sizing:border-box">
+                    <div
+                        class="score-section"
+                        style="
+                            max-width: 1300px;
+                            margin: 0 auto;
+                            padding: 0 20px;
+                            box-sizing: border-box;
+                        "
+                    >
                         <h2 class="section-title">
                             <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
-                                <span slot="trigger" style="cursor:pointer">{{ group.title }}</span>
+                                <span slot="trigger" style="cursor: pointer">
+                                    {{ group.title }}
+                                </span>
                                 <mdui-menu>
                                     <mdui-menu-item
                                         v-for="target in groupedItems"
@@ -1269,15 +1367,44 @@
                                 </mdui-menu>
                             </mdui-dropdown>
                             <span v-else class="section-count">{{ group.title }}</span>
-                            <span class="stats-info" v-if="['rank', 'combo', 'sync', 'difficulty'].includes((category === Category.Version || category === Category.Favorite) ? versionGroupBy : groupBy)">
+                            <span
+                                class="stats-info"
+                                v-if="
+                                    ['rank', 'combo', 'sync', 'difficulty'].includes(
+                                        category === Category.Version ||
+                                            category === Category.Favorite
+                                            ? versionGroupBy
+                                            : groupBy
+                                    )
+                                "
+                            >
                                 <span class="stat-item">{{ group.count }}</span>
                             </span>
-                            <span class="stats-info" v-else-if="group.stats.sss || group.stats.sssp || group.stats.fc || group.stats.ap || group.stats.fsdx">
-                                <span class="stat-item" v-if="group.stats.sss">SSS: {{ group.stats.sss }}</span>
-                                <span class="stat-item" v-if="group.stats.sssp">SSS+: {{ group.stats.sssp }}</span>
-                                <span class="stat-item" v-if="group.stats.fc">FC: {{ group.stats.fc }}</span>
-                                <span class="stat-item" v-if="group.stats.ap">AP: {{ group.stats.ap }}</span>
-                                <span class="stat-item" v-if="group.stats.fsdx">FSDX: {{ group.stats.fsdx }}</span>
+                            <span
+                                class="stats-info"
+                                v-else-if="
+                                    group.stats.sss ||
+                                    group.stats.sssp ||
+                                    group.stats.fc ||
+                                    group.stats.ap ||
+                                    group.stats.fsdx
+                                "
+                            >
+                                <span class="stat-item" v-if="group.stats.sss">
+                                    SSS: {{ group.stats.sss }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.sssp">
+                                    SSS+: {{ group.stats.sssp }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.fc">
+                                    FC: {{ group.stats.fc }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.ap">
+                                    AP: {{ group.stats.ap }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.fsdx">
+                                    FSDX: {{ group.stats.fsdx }}
+                                </span>
                             </span>
                         </h2>
                     </div>
@@ -1294,7 +1421,10 @@
                                 :data="randomChartDummy"
                                 @click="
                                     () => {
-                                        const chart = group.items[Math.floor(Math.random() * group.items.length)];
+                                        const chart =
+                                            group.items[
+                                                Math.floor(Math.random() * group.items.length)
+                                            ];
                                         if (chart) openChartInfoDialog(chart);
                                     }
                                 "
@@ -1302,21 +1432,35 @@
                         </template>
                     </ScoreSection>
                 </div>
-                <div
-                    v-if="maxVisibleItems < itemsToRender.length"
-                    class="loading-indicator"
-                >
+                <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
                     <div class="loading-text">正在加载更多...</div>
                     <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
                 </div>
             </div>
             <div v-else class="score-grid-wrapper">
-                <div class="stats-info" v-if="overallStats && (overallStats.sss || overallStats.sssp || overallStats.fc || overallStats.ap || overallStats.fsdx)" style="justify-content:center;padding:10px 0 5px;width:100%">
-                    <span class="stat-item" v-if="overallStats.sss">SSS:{{ overallStats.sss }}</span>
-                    <span class="stat-item" v-if="overallStats.sssp">SSS+:{{ overallStats.sssp }}</span>
+                <div
+                    class="stats-info"
+                    v-if="
+                        overallStats &&
+                        (overallStats.sss ||
+                            overallStats.sssp ||
+                            overallStats.fc ||
+                            overallStats.ap ||
+                            overallStats.fsdx)
+                    "
+                    style="justify-content: center; padding: 10px 0 5px; width: 100%"
+                >
+                    <span class="stat-item" v-if="overallStats.sss">
+                        SSS:{{ overallStats.sss }}
+                    </span>
+                    <span class="stat-item" v-if="overallStats.sssp">
+                        SSS+:{{ overallStats.sssp }}
+                    </span>
                     <span class="stat-item" v-if="overallStats.fc">FC:{{ overallStats.fc }}</span>
                     <span class="stat-item" v-if="overallStats.ap">AP:{{ overallStats.ap }}</span>
-                    <span class="stat-item" v-if="overallStats.fsdx">FSDX:{{ overallStats.fsdx }}</span>
+                    <span class="stat-item" v-if="overallStats.fsdx">
+                        FSDX:{{ overallStats.fsdx }}
+                    </span>
                 </div>
                 <div class="score-grid">
                     <ScoreCard
