@@ -544,6 +544,23 @@
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
+    function countChartStats(charts: Chart[]) {
+        let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
+        charts.forEach(chart => {
+            const s = chart.score;
+            if (s?.achievements != null) {
+                if (s.achievements >= 100.5) sssp++;
+                else if (s.achievements >= 100.0) sss++;
+            }
+            if (s?.comboStatus) {
+                if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
+                if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
+            }
+            if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
+        });
+        return { sss, sssp, fc, ap, fsdx };
+    }
+
     const groupedItems = computed(() => {
         if (groupBy.value === "none" || category.value !== Category.InGame || selectedDifficulty.value === "ALL")
             return null;
@@ -570,23 +587,10 @@
         return Object.entries(groups)
             .sort(sortFn)
             .map(([key, items]) => {
-                let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
-                items.forEach(chart => {
-                    const s = chart.score;
-                    if (s?.achievements != null) {
-                        if (s.achievements >= 100.5) sssp++;
-                        else if (s.achievements >= 100.0) sss++;
-                    }
-                    if (s?.comboStatus) {
-                        if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
-                        if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
-                    }
-                    if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
-                });
                 return {
                     title: key,
                     count: items.length,
-                    stats: { sss, sssp, fc, ap, fsdx },
+                    stats: countChartStats(items),
                     items
                 };
             });
@@ -621,21 +625,7 @@
         const charts = itemsToRender.value;
         if (!charts.length) return null;
 
-        let sss = 0, sssp = 0, fc = 0, ap = 0, fsdx = 0;
-        charts.forEach(chart => {
-            const s = chart.score;
-            if (s?.achievements != null) {
-                if (s.achievements >= 100.5) sssp++;
-                else if (s.achievements >= 100.0) sss++;
-            }
-            if (s?.comboStatus) {
-                if ([ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) ap++;
-                if ([ComboStatus.FullCombo, ComboStatus.FullComboPlus, ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(s.comboStatus as ComboStatus)) fc++;
-            }
-            if (s?.syncStatus && [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(s.syncStatus as SyncStatus)) fsdx++;
-        });
-
-        return { sss, sssp, fc, ap, fsdx };
+        return countChartStats(charts);
     });
 
     // 加载更多项目

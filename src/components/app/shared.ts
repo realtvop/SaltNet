@@ -84,32 +84,39 @@ export const useShared = defineStore("shared", () => {
         resolveUsersLoaded = r;
     });
 
-    localForage.getItem<User[]>("users").then((v: User[] | null) => {
-        if (Array.isArray(v)) {
-            const migratedUsers = v.map(user => {
-                const hasValidInGameId =
-                    typeof user.inGame?.id === "number" &&
-                    Number.isFinite(user.inGame.id) &&
-                    user.inGame.id.toString().length === 8;
+    localForage
+        .getItem<User[]>("users")
+        .then((v: User[] | null) => {
+            if (Array.isArray(v)) {
+                const migratedUsers = v.map(user => {
+                    const hasValidInGameId =
+                        typeof user.inGame?.id === "number" &&
+                        Number.isFinite(user.inGame.id) &&
+                        user.inGame.id.toString().length === 8;
 
-                const migratedInGame = {
-                    ...user.inGame,
-                    enabled: Boolean(user.inGame?.enabled ?? hasValidInGameId),
-                    useFastUpdate: Boolean(user.inGame?.useFastUpdate ?? false),
-                };
-                const migratedSettings = {
-                    manuallyUpdate: user.settings?.manuallyUpdate ?? false,
-                };
-                return {
-                    ...user,
-                    inGame: migratedInGame,
-                    settings: migratedSettings,
-                };
-            });
-            users.value = migratedUsers;
-        }
-        resolveUsersLoaded!();
-    });
+                    const migratedInGame = {
+                        ...user.inGame,
+                        enabled: Boolean(user.inGame?.enabled ?? hasValidInGameId),
+                        useFastUpdate: Boolean(user.inGame?.useFastUpdate ?? false),
+                    };
+                    const migratedSettings = {
+                        manuallyUpdate: user.settings?.manuallyUpdate ?? false,
+                    };
+                    return {
+                        ...user,
+                        inGame: migratedInGame,
+                        settings: migratedSettings,
+                    };
+                });
+                users.value = migratedUsers;
+            }
+        })
+        .catch((err: unknown) => {
+            console.error("Failed to load users:", err);
+        })
+        .finally(() => {
+            resolveUsersLoaded!();
+        });
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;
     });
