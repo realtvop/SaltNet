@@ -1448,7 +1448,7 @@
                             overallStats.ap ||
                             overallStats.fsdx)
                     "
-                    style="justify-content: center; padding: 10px 0 5px; width: 100%"
+                    style="justify-content: center; padding: 5px 0 10px 0; width: 100%"
                 >
                     <span class="stat-item" v-if="overallStats.sss">
                         SSS:{{ overallStats.sss }}
@@ -1604,13 +1604,16 @@
     .score-grid-wrapper {
         width: 100%;
         overflow: visible;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
     }
 
     .score-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, 210px);
         gap: 15px;
-        margin-top: 20px;
         width: 100%;
         justify-content: center;
         box-sizing: border-box;
@@ -1730,19 +1733,11 @@
     }
 
     @media (max-width: 499px) {
-        .score-grid-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            height: auto;
-            overflow: visible;
-        }
         .score-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             transform: none;
             width: 100%;
-            margin: 0;
             justify-content: center;
         }
         .score-grid:has(.score-cell-compact) {
