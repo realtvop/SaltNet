@@ -1,12 +1,13 @@
 <script setup lang="ts">
     import { ref, computed, onMounted, nextTick } from "vue";
-    import { useRoute } from "vue-router";
+    import { useRoute, useRouter } from "vue-router";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import type { Chart } from "@/components/data/music/type";
     import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+    import { ComboStatus } from "@/components/data/maiTypes";
     import { getMusicInfoAsync } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import B50ToRender from "@/components/rendering/b50.vue";
@@ -17,6 +18,7 @@
     import { isUtageGrade } from "@/components/data/chart/difficulty";
 
     const route = useRoute();
+    const router = useRouter();
     const shared = useShared();
     const userId = ref(route.params.id as string);
     const error = ref<string | null>(null);
@@ -57,6 +59,37 @@
         return false;
     });
 
+    type ComboFilterMode = "ap" | "fc" | null;
+
+    const comboFilterMode = computed((): ComboFilterMode => {
+        const queryValue = route.query.combo_filter;
+        if (typeof queryValue === "string") {
+            const lower = queryValue.toLowerCase();
+            if (lower === "ap" || lower === "fc") return lower;
+        }
+        return null;
+    });
+
+    const modeLabel = computed(() => {
+        if (comboFilterMode.value === "ap") return "AP50";
+        if (comboFilterMode.value === "fc") return "FC50";
+        if (isFitDiffMode.value) return "拟合 B50";
+        return null;
+    });
+
+    function setMode(mode: "fit" | "ap" | "fc") {
+        const query: Record<string, string> = {};
+        if (mode === "fit") query.fit_diff = "y";
+        else query.combo_filter = mode;
+        router.replace({ query });
+    }
+
+    function clearMode() {
+        router.replace({ query: {} });
+    }
+
+    const hasDetailedData = computed(() => !!player.value?.data?.detailed);
+
     const errorMessage = computed(() => {
         if (!error.value) return "";
         const msg =
@@ -70,7 +103,11 @@
         if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
 
         const useFitDiff = isFitDiffMode.value;
-        const records = getSourceRecords(useFitDiff);
+        const comboFilter = comboFilterMode.value;
+
+        let records = getSourceRecords(useFitDiff || !!comboFilter);
+        records = filterByComboStatus(records, comboFilter);
+
         const charts = records
             .map(record => convertDFRecordToChart(record, useFitDiff))
             .filter((chart): chart is Chart => chart !== null)
@@ -140,19 +177,32 @@
         };
     }
 
-    function getSourceRecords(useFitDiff: boolean): DivingFishFullRecord[] {
+    function getSourceRecords(requireDetailed: boolean): DivingFishFullRecord[] {
         const detailedRecords = player.value?.data?.detailed
             ? Object.values(player.value.data.detailed)
             : [];
 
         if (detailedRecords.length) return detailedRecords;
 
-        if (useFitDiff) return [];
+        if (requireDetailed) return [];
 
         const b50Records = player.value?.data?.b50;
         if (!b50Records) return [];
 
         return [...(b50Records.sd ?? []), ...(b50Records.dx ?? [])];
+    }
+
+    function filterByComboStatus(
+        records: DivingFishFullRecord[],
+        mode: ComboFilterMode
+    ): DivingFishFullRecord[] {
+        if (!mode) return records;
+        if (mode === "ap") {
+            return records.filter(
+                r => r.fc === ComboStatus.AllPerfect || r.fc === ComboStatus.AllPerfectPlus
+            );
+        }
+        return records.filter(r => r.fc !== ComboStatus.None);
     }
 
     function sortCharts(charts: Chart[], limit: number): Chart[] {
@@ -343,7 +393,8 @@
                         minute: "2-digit",
                         hour12: false,
                     });
-                    link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                    const filePrefix = modeLabel.value ?? "B50";
+                    link.download = `${filePrefix}_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                     link.click();
                     rendering_snackbar.open = false;
                 });
@@ -430,6 +481,26 @@
                     <RatingPlate v-if="displayedRating" :ra="displayedRating" />
                 </div>
                 <mdui-button-icon icon="download" @click="downloadB50Png"></mdui-button-icon>
+            </div>
+            <div v-if="hasDetailedData" class="mode-selector">
+                <mdui-chip
+                    :elevated="isFitDiffMode"
+                    @click="isFitDiffMode ? clearMode() : setMode('fit')"
+                >
+                    拟合 B50
+                </mdui-chip>
+                <mdui-chip
+                    :elevated="comboFilterMode === 'ap'"
+                    @click="comboFilterMode === 'ap' ? clearMode() : setMode('ap')"
+                >
+                    AP50
+                </mdui-chip>
+                <mdui-chip
+                    :elevated="comboFilterMode === 'fc'"
+                    @click="comboFilterMode === 'fc' ? clearMode() : setMode('fc')"
+                >
+                    FC50
+                </mdui-chip>
             </div>
             <ScoreSection
                 v-if="b50SdCharts.length"
@@ -541,6 +612,14 @@
         font-size: 0.9em;
         color: var(--mdui-color-on-surface-variant);
         font-weight: normal;
+    }
+
+    .mode-selector {
+        display: flex;
+        gap: 8px;
+        padding: 0 20px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
     }
 
     .error-message {
