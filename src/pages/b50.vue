@@ -484,19 +484,19 @@
             </div>
             <div v-if="hasDetailedData" class="mode-selector">
                 <mdui-chip
-                    :elevated="isFitDiffMode"
+                    :selected="isFitDiffMode"
                     @click="isFitDiffMode ? clearMode() : setMode('fit')"
                 >
                     拟合 B50
                 </mdui-chip>
                 <mdui-chip
-                    :elevated="comboFilterMode === 'ap'"
+                    :selected="comboFilterMode === 'ap'"
                     @click="comboFilterMode === 'ap' ? clearMode() : setMode('ap')"
                 >
                     AP50
                 </mdui-chip>
                 <mdui-chip
-                    :elevated="comboFilterMode === 'fc'"
+                    :selected="comboFilterMode === 'fc'"
                     @click="comboFilterMode === 'fc' ? clearMode() : setMode('fc')"
                 >
                     FC50
