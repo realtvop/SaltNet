@@ -87,11 +87,6 @@
         // if (index == 0) return router.push("/b50");
         router.push(`/b50/${index}`);
     };
-    const goToUserFittedDetails = (index: number) => {
-        // if (index == 0) return router.push("/b50");
-        router.push(`/b50/${index}?fit_diff=y`);
-    };
-
     const goToUserSongs = (index: number) => {
         router.push(`/songs/${index}`);
     };
@@ -403,13 +398,6 @@
                         >
                             上传成绩到 SaltNet
                             <mdui-icon slot="icon" name="cloud_upload"></mdui-icon>
-                        </mdui-menu-item>
-                        <mdui-menu-item
-                            @click="goToUserFittedDetails(index)"
-                            v-if="user.data.detailed"
-                        >
-                            查看拟合 B50
-                            <mdui-icon slot="icon" name="stacked_bar_chart"></mdui-icon>
                         </mdui-menu-item>
                         <mdui-menu-item
                             @click="goToUserSongs(index)"
