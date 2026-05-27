@@ -262,41 +262,62 @@
         );
     }
 
+    function promptUpdateBeforeBackup(user: User, headline: string, description: string) {
+        return confirm({
+            headline,
+            description,
+            confirmText: "更新",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: () => {
+                updateUser(user);
+            },
+        }).catch(() => undefined);
+    }
+
     async function exportUserBackupHandler(user: User) {
-        let abortBackup = false;
         if (!user.inGame.id) return snackbar({ message: "你怎么进来的！", autoCloseDelay: 2000 });
-        if (!user.data.updateTime)
-            return confirm({
-                headline: `用户 ${getUserDisplayName(user)} 尚未更新过数据，无法导出备份`,
-                description: "是否现在更新？(更新后需手动重新导出备份)",
-                confirmText: "更新",
-                cancelText: "取消",
-                closeOnEsc: true,
-                closeOnOverlayClick: true,
-                onOpen: markDialogOpen,
-                onClose: markDialogClosed,
-                onConfirm: () => {
-                    updateUser(user);
-                },
-            });
+        if (!user.data.updateTime) {
+            await promptUpdateBeforeBackup(
+                user,
+                `用户 ${getUserDisplayName(user)} 尚未更新过数据，无法导出备份`,
+                "是否现在更新？(更新后需手动重新导出备份)"
+            );
+            return;
+        }
+        if (!user.data.detailed || !Object.keys(user.data.detailed).length) {
+            await promptUpdateBeforeBackup(
+                user,
+                `用户 ${getUserDisplayName(user)} 缺少完整成绩数据，无法导出备份`,
+                "是否现在更新？(更新后需手动重新导出备份)"
+            );
+            return;
+        }
         if (!user.data.characters || !user.data.characters.length) {
+            let exportScoreOnly = false;
             await confirm({
                 headline: `用户 ${getUserDisplayName(user)} 的数据${user.data.characters ? "可能" : ""}不完整`,
                 description:
                     "直接导出会缺少收藏品数据，是否执行完整更新？(更新后需手动重新执行导出备份，也可只导出成绩数据)",
                 confirmText: "更新",
-                cancelText: "取消",
+                cancelText: "仅导出成绩",
                 closeOnEsc: true,
                 closeOnOverlayClick: true,
                 onOpen: markDialogOpen,
                 onClose: markDialogClosed,
                 onConfirm: () => {
                     updateUser(user);
-                    abortBackup = true;
                 },
-            });
+                onCancel: () => {
+                    exportScoreOnly = true;
+                },
+            }).catch(() => undefined);
+            if (!exportScoreOnly) return;
         }
-        if (!abortBackup) exportUserBackup(user);
+        exportUserBackup(user);
     }
 </script>
 
