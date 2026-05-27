@@ -1685,6 +1685,12 @@
             margin-left: 5px;
             font-size: 0.8rem;
         }
+        .score-section {
+            padding: 0 !important;
+        }
+        :deep(.score-section) {
+            padding: 0 !important;
+        }
     }
 
     .section-count {
