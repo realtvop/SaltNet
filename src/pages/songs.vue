@@ -73,9 +73,10 @@
         handleSelectChange(event, groupBy);
     }
 
-    const versionGroupBy = ref<"none" | "difficulty" | "rank" | "combo" | "sync">("none");
+    const versionGroupBy = ref<"none" | "level" | "difficulty" | "rank" | "combo" | "sync">("none");
     const versionGroupByOptions = [
         { value: "none", label: "无" },
+        { value: "level", label: "等级" },
         { value: "difficulty", label: "难度" },
         { value: "rank", label: "Rank" },
         { value: "combo", label: "Combo" },
@@ -141,11 +142,15 @@
         handleSelectChange(event, plateFinishSort);
     }
 
+    const levelFilter = ref<string>("ALL");
+
+    function onLevelFilterChange(event: Event) {
+        handleSelectChange(event, levelFilter);
+    }
+
     const difficultyFilter = ref(3);
     const difficultyFilterOptions = computed(() =>
-        getDifficultyFilterOptions(
-            category.value === Category.Version || category.value === Category.Favorite
-        )
+        getDifficultyFilterOptions(category.value === Category.Favorite)
     );
 
     function onDifficultyFilterChange(event: Event) {
@@ -321,11 +326,12 @@
 
             const targetVersion =
                 versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) =>
-                    (chart.music.info.from as unknown as string) === targetVersion &&
-                    chart.info.grade === difficultyFilter.value
-            );
+            filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => {
+                const matchVersion = (chart.music.info.from as unknown as string) === targetVersion;
+                if (!matchVersion) return false;
+                if (levelFilter.value === "ALL") return true;
+                return chart.info.level === levelFilter.value;
+            });
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
             const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
@@ -410,20 +416,16 @@
             filteredCharts = [];
         }
 
-        const allChartsReferenceGrade =
-            category.value === Category.Banquet
-                ? UTAGE_GRADE
-                : category.value === Category.Version || category.value === Category.Favorite
-                  ? difficultyFilter.value
-                  : category.value === Category.InGame && selectedDifficulty.value === "ALL"
-                    ? difficultyFilter.value
-                    : (filteredCharts[0]?.info.grade ?? 3);
-        const allCharts: Chart[] = shared.chartsSort.charts.filter(
-            (chart: Chart) => chart.info.grade === allChartsReferenceGrade
-        );
+        const allChartsByGrade: Record<number, Chart[]> = {};
+        [0, 1, 2, 3, 4, 10].forEach(grade => {
+            allChartsByGrade[grade] = shared.chartsSort.charts.filter(
+                (chart: Chart) => chart.info.grade === grade
+            );
+        });
 
         // 先给所有符合难度条件的曲目添加原始排序索引
         const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
+            const gradeCharts = allChartsByGrade[chart.info.grade] || [];
             if (!chart.score) {
                 chart.score = {
                     rankRate: "" as any,
@@ -434,8 +436,8 @@
                     deluxeRating: 0,
                     index: {
                         all: {
-                            index: allCharts.length - allCharts.indexOf(chart),
-                            total: allCharts.length,
+                            index: gradeCharts.length - gradeCharts.indexOf(chart),
+                            total: gradeCharts.length,
                         },
                         difficult: {
                             index: filteredCharts.length - index,
@@ -446,8 +448,8 @@
             } else {
                 chart.score.index = {
                     all: {
-                        index: allCharts.length - allCharts.indexOf(chart),
-                        total: allCharts.length,
+                        index: gradeCharts.length - gradeCharts.indexOf(chart),
+                        total: gradeCharts.length,
                     },
                     difficult: {
                         index: filteredCharts.length - index,
@@ -687,7 +689,9 @@
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
             let key: string;
-            if (activeGroupBy === "version") {
+            if (activeGroupBy === "level") {
+                key = chart.info.level;
+            } else if (activeGroupBy === "version") {
                 key = chart.music.info.from as unknown as string;
             } else if (activeGroupBy === "constant") {
                 key = chart.info.constant.toFixed(1);
@@ -705,6 +709,11 @@
         });
 
         const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
+            if (activeGroupBy === "level") {
+                const ia = difficulties.indexOf(a[0]);
+                const ib = difficulties.indexOf(b[0]);
+                return ib - ia;
+            }
             if (activeGroupBy === "constant") return Number(b[0]) - Number(a[0]);
             if (activeGroupBy === "version") {
                 const orderA = maimaiVersionsCN.indexOf(a[0]);
@@ -842,6 +851,7 @@
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         } else if (newCategory === Category.Version) {
             selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
+            levelFilter.value = "ALL";
         } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
@@ -869,6 +879,13 @@
 
     // 监听难度筛选变化，重新计算可视项目数
     watch(difficultyFilter, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: "instant" });
+    });
+
+    // 监听等级筛选变化，重新计算可视项目数
+    watch(levelFilter, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -1268,16 +1285,12 @@
         <div v-else-if="category === Category.Version" class="search-input">
             <mdui-select
                 style="width: 4.1rem"
-                label="难度"
-                :value="difficultyFilter.toString()"
-                @change="onDifficultyFilterChange"
+                label="等级"
+                :value="levelFilter"
+                @change="onLevelFilterChange"
             >
-                <mdui-menu-item
-                    v-for="option in difficultyFilterOptions"
-                    :key="option.grade"
-                    :value="option.grade.toString()"
-                >
-                    {{ option.label }}
+                <mdui-menu-item v-for="option in difficulties" :key="option" :value="option">
+                    {{ option }}
                 </mdui-menu-item>
             </mdui-select>
             <mdui-select
@@ -1304,6 +1317,7 @@
                 id="search-input"
             ></mdui-text-field>
         </div>
+
         <div v-else class="search-input">
             <mdui-select
                 style="width: 4.1rem"
