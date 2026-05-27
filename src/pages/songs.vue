@@ -1366,7 +1366,7 @@
                         "
                     >
                         <h2 class="section-title">
-                            <mdui-dropdown v-if="groupedItems && groupedItems.length > 1">
+                            <mdui-dropdown v-if="groupedItems">
                                 <span slot="trigger" style="cursor: pointer">
                                     {{ group.title }}
                                 </span>
@@ -1380,7 +1380,6 @@
                                     </mdui-menu-item>
                                 </mdui-menu>
                             </mdui-dropdown>
-                            <span v-else class="section-count">{{ group.title }}</span>
                             <span
                                 class="stats-info"
                                 v-if="
