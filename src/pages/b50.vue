@@ -59,6 +59,14 @@
         return false;
     });
 
+    const isNb50Mode = computed(() => {
+        const queryValue = route.query.nb50;
+        if (typeof queryValue === "string") return queryValue.toLowerCase() === "y";
+        if (Array.isArray(queryValue))
+            return queryValue.some(item => typeof item === "string" && item.toLowerCase() === "y");
+        return false;
+    });
+
     type ComboFilterMode = "ap" | "fc" | null;
 
     const comboFilterMode = computed((): ComboFilterMode => {
@@ -73,13 +81,15 @@
     const modeLabel = computed(() => {
         if (comboFilterMode.value === "ap") return "AP50";
         if (comboFilterMode.value === "fc") return "FC50";
+        if (isNb50Mode.value) return "牛逼 50";
         if (isFitDiffMode.value) return "拟合 B50";
         return null;
     });
 
-    function setMode(mode: "fit" | "ap" | "fc") {
+    function setMode(mode: "fit" | "ap" | "fc" | "nb") {
         const query: Record<string, string> = {};
         if (mode === "fit") query.fit_diff = "y";
+        else if (mode === "nb") query.nb50 = "y";
         else query.combo_filter = mode;
         router.replace({ query });
     }
@@ -102,16 +112,25 @@
     const chartsByNewness = computed(() => {
         if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
 
-        const useFitDiff = isFitDiffMode.value;
+        const useFitDiff = isFitDiffMode.value || isNb50Mode.value;
         const comboFilter = comboFilterMode.value;
 
         let records = getSourceRecords(useFitDiff || !!comboFilter);
         records = filterByComboStatus(records, comboFilter);
 
-        const charts = records
+        let charts = records
             .map(record => convertDFRecordToChart(record, useFitDiff))
             .filter((chart): chart is Chart => chart !== null)
             .filter(chart => !isUtageGrade(chart.info.grade));
+
+        if (isNb50Mode.value) {
+            charts = charts.filter(chart => {
+                const fitDiff = chart.info.stat?.fit_diff;
+                const constant = chart.info.constant;
+                if (typeof fitDiff !== "number" || typeof constant !== "number") return false;
+                return fitDiff > constant;
+            });
+        }
 
         const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);
@@ -501,6 +520,9 @@
                 >
                     FC50
                 </mdui-chip>
+                <mdui-chip :selected="isNb50Mode" @click="isNb50Mode ? clearMode() : setMode('nb')">
+                    牛逼 50
+                </mdui-chip>
             </div>
             <ScoreSection
                 v-if="b50SdCharts.length"
@@ -619,7 +641,7 @@
         gap: 8px;
         padding: 0 20px;
         margin-bottom: 16px;
-        flex-wrap: wrap;
+        overflow-x: scroll;
     }
 
     .error-message {
