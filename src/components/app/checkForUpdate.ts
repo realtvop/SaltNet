@@ -10,7 +10,7 @@ declare global {
 }
 
 export function checkForUpdate() {
-    fetch("/latest.json")
+    fetch(`/latest.json?t=${Date.now()}`)
         .then(r => r.text())
         .then(t => JSON.parse(t))
         .then(l => {
