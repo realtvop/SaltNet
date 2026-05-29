@@ -112,10 +112,10 @@
     const chartsByNewness = computed(() => {
         if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
 
-        const useFitDiff = isFitDiffMode.value || isNb50Mode.value;
+        const useFitDiff = isFitDiffMode.value;
         const comboFilter = comboFilterMode.value;
 
-        let records = getSourceRecords(useFitDiff || !!comboFilter);
+        let records = getSourceRecords(useFitDiff || isNb50Mode.value || !!comboFilter);
         records = filterByComboStatus(records, comboFilter);
 
         let charts = records
