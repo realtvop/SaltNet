@@ -1,34 +1,50 @@
-import { ScoreCoefficient } from "./ScoreCoefficient";
+import { isRatingCoefficientBoundary, ScoreCoefficient } from "./ScoreCoefficient";
 import { get_min_ach } from "./utils";
 import { getRankRateByAchievement, type RankRate } from "@/components/data/maiTypes";
 
-export function getDetailedRatingsByConstant(
-    ds: number,
-    achievements?: number
-): Array<{ ds: number; achievements: number; rating: number; rank: RankRate }> {
-    let min_idx = 5;
-    let min_ach4 = Math.round(get_min_ach(min_idx) * 10000);
-    let max_idx = 13;
-    let max_ach4 = Math.round(get_min_ach(max_idx + 1) * 10000);
-    let more_ra: Array<{ ds: number; achievements: number; rating: number; rank: RankRate }> = [];
-    for (let curr_ach4 = min_ach4; curr_ach4 < max_ach4; curr_ach4 += 2500) {
-        let curr_min_ra = new ScoreCoefficient(curr_ach4 / 10000).ra(ds);
-        if (curr_min_ra > new ScoreCoefficient((curr_ach4 - 1) / 10000).ra(ds)) {
-            more_ra.push({
-                ds: ds,
-                achievements: curr_ach4 / 10000,
-                rating: curr_min_ra,
-                rank: getRankRateByAchievement(curr_ach4 / 10000),
-            });
-        }
-        let curr_max_ra = new ScoreCoefficient((curr_ach4 + 2499) / 10000).ra(ds);
-        if (curr_max_ra > curr_min_ra) {
-            let l = curr_ach4,
-                r = curr_ach4 + 2499,
+interface DetailedRating {
+    ds: number;
+    achievements: number;
+    rating: number;
+    rank: RankRate;
+}
+
+interface DetailedRatingWithAchievement4 extends DetailedRating {
+    achievement4: number;
+}
+
+const ACHIEVEMENT_SCALE = 10_000;
+const HALF_PERCENT_ACHIEVEMENT4 = 5_000;
+const RATING_STAGE_STEP_ACHIEVEMENT4 = 2_500;
+
+export function getDetailedRatingsByConstant(ds: number, achievements?: number): DetailedRating[] {
+    const min_idx = 5;
+    const min_ach4 = Math.round(get_min_ach(min_idx) * ACHIEVEMENT_SCALE);
+    const max_idx = 13;
+    const max_ach4 = Math.round(get_min_ach(max_idx + 1) * ACHIEVEMENT_SCALE);
+    let more_ra: DetailedRatingWithAchievement4[] = [];
+    const getRating = (achievement4: number) =>
+        new ScoreCoefficient(achievement4 / ACHIEVEMENT_SCALE).ra(ds);
+
+    for (
+        let curr_ach4 = min_ach4;
+        curr_ach4 < max_ach4;
+        curr_ach4 += RATING_STAGE_STEP_ACHIEVEMENT4
+    ) {
+        const curr_max_ach4 = Math.min(
+            curr_ach4 + RATING_STAGE_STEP_ACHIEVEMENT4 - 1,
+            max_ach4 - 1
+        );
+        let next_ach4 = curr_ach4;
+        let previous_ra = getRating(curr_ach4 - 1);
+
+        while (next_ach4 <= curr_max_ach4 && getRating(curr_max_ach4) > previous_ra) {
+            let l = next_ach4,
+                r = curr_max_ach4,
                 ans = r;
             while (r >= l) {
                 let mid = Math.floor((r + l) / 2);
-                if (new ScoreCoefficient(mid / 10000).ra(ds) > curr_min_ra) {
+                if (getRating(mid) > previous_ra) {
                     ans = mid;
                     r = mid - 1;
                 } else {
@@ -37,26 +53,28 @@ export function getDetailedRatingsByConstant(
             }
             more_ra.push({
                 ds: ds,
-                achievements: ans / 10000,
-                rating: curr_max_ra,
-                rank: getRankRateByAchievement(ans / 10000),
+                achievements: ans / ACHIEVEMENT_SCALE,
+                achievement4: ans,
+                rating: getRating(ans),
+                rank: getRankRateByAchievement(ans / ACHIEVEMENT_SCALE),
             });
+            previous_ra = getRating(ans);
+            next_ach4 = ans + 1;
         }
     }
     more_ra.sort((a, b) => b.achievements - a.achievements);
-    more_ra = more_ra.filter(
-        (item, index) =>
-            item.achievements % 0.5 === 0 || more_ra[index + 1].achievements % 0.5 === 0
-    );
+    more_ra = more_ra.filter((item, index) => {
+        const nextItem = more_ra[index + 1];
+        return (
+            item.achievement4 % HALF_PERCENT_ACHIEVEMENT4 === 0 ||
+            (nextItem?.achievement4 ?? -1) % HALF_PERCENT_ACHIEVEMENT4 === 0 ||
+            isRatingCoefficientBoundary(item.achievement4)
+        );
+    });
 
     // 如果提供了achievements参数，过滤出achievements高于输入值的数据，并向下多取一个项目
     if (achievements !== undefined) {
-        const filteredItems: Array<{
-            ds: number;
-            achievements: number;
-            rating: number;
-            rank: RankRate;
-        }> = [];
+        const filteredItems: DetailedRatingWithAchievement4[] = [];
         let foundFirstLower = false;
 
         for (let i = 0; i < more_ra.length; i++) {
@@ -72,5 +90,10 @@ export function getDetailedRatingsByConstant(
         more_ra = filteredItems;
     }
 
-    return more_ra;
+    return more_ra.map(item => ({
+        ds: item.ds,
+        achievements: item.achievements,
+        rating: item.rating,
+        rank: item.rank,
+    }));
 }
