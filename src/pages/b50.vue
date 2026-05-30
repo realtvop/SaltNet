@@ -221,7 +221,14 @@
                 r => r.fc === ComboStatus.AllPerfect || r.fc === ComboStatus.AllPerfectPlus
             );
         }
-        return records.filter(r => r.fc !== ComboStatus.None);
+        return records.filter(r =>
+            [
+                ComboStatus.FullCombo,
+                ComboStatus.FullComboPlus,
+                ComboStatus.AllPerfect,
+                ComboStatus.AllPerfectPlus,
+            ].includes(r.fc)
+        );
     }
 
     function sortCharts(charts: Chart[], limit: number): Chart[] {

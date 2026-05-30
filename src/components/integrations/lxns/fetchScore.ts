@@ -4,6 +4,7 @@ import type { LXNSScore, LXNSUser } from "./type";
 import { calculateB50FromRecords } from "../diving-fish";
 import { fetchLXNSApi } from "./fetch";
 import { toHalfWidth } from "@/utils";
+import { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
 
 function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
     return {
@@ -17,8 +18,8 @@ function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
         }[score.type] as "SD" | "DX",
         dxScore: score.dx_score,
         ds: 0, // LXNS does not provide ds
-        fc: score.fc,
-        fs: score.fs,
+        fc: score.fc ?? ComboStatus.None,
+        fs: score.fs ?? SyncStatus.None,
         achievements: score.achievements,
         ra: Math.floor(score.dx_rating),
         rate: score.rate,

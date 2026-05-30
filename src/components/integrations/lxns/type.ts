@@ -12,8 +12,8 @@ export interface LXNSScore {
     dx_rating: number;
     dx_score: number;
     dx_star: number;
-    fc: ComboStatus;
-    fs: SyncStatus;
+    fc: ComboStatus | null;
+    fs: SyncStatus | null;
     id: number;
     level: string;
     level_index: number;
