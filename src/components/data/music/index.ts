@@ -52,18 +52,41 @@ async function loadFromCache(): Promise<CachedMusicData | null> {
 /**
  * Save music data to cache
  */
-async function saveToCache(data: SavedMusicList, region: string): Promise<void> {
+async function saveToCache(
+    data: SavedMusicList,
+    region: string,
+    verBuildTime?: string
+): Promise<void> {
     try {
         const cacheData: CachedMusicData = {
             musicList: data.musicList,
             chartList: data.chartList,
             region,
             cachedAt: Date.now(),
+            verBuildTime,
         };
         await localForage.setItem(MUSIC_CACHE_KEY, cacheData);
     } catch (error) {
         console.error("Failed to save music cache:", error);
     }
+}
+
+/**
+ * Restore chart-to-music references after loading cached data.
+ */
+function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
+    for (const musicId in cached.musicList) {
+        const music = cached.musicList[musicId];
+        for (const chart of music.charts) {
+            chart.music = music;
+            cached.chartList[chart.id] = chart;
+        }
+    }
+
+    return {
+        musicList: cached.musicList,
+        chartList: cached.chartList,
+    };
 }
 
 /**
@@ -96,17 +119,30 @@ async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMu
  * - When DB is disabled: Reuse in-memory data in current session
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
-    // When DB is disabled, reuse in-memory data for current session
+    // When DB is disabled, cache the bundled JSON by build version.
     if (!isDBEnabled) {
         const region = getSaltNetRegion();
         if (musicData && currentRegion === region && !forceRefresh) {
             return musicData;
         }
 
+        if (import.meta.env.PROD && !forceRefresh) {
+            const cached = await loadFromCache();
+            const verBuildTime = window.spec?.currentVersionBuildTime || "0";
+            if (cached && cached.region === region && cached.verBuildTime === verBuildTime) {
+                musicData = restoreCachedMusicData(cached);
+                currentRegion = region;
+                return musicData;
+            }
+        }
+
         const localData = await fetchLocalMusicList();
         if (localData) {
             musicData = localData;
             currentRegion = region;
+            if (import.meta.env.PROD) {
+                saveToCache(localData, region, window.spec?.currentVersionBuildTime || "0");
+            }
         }
         return musicData;
     }
@@ -127,19 +163,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
     // Try to load from cache first
     const cached = await loadFromCache();
     if (cached && cached.region === region && !forceRefresh) {
-        // Restore circular references (chartList items lose their music reference in JSON)
-        for (const musicId in cached.musicList) {
-            const music = cached.musicList[musicId];
-            for (const chart of music.charts) {
-                chart.music = music;
-                cached.chartList[chart.id] = chart;
-            }
-        }
-
-        musicData = {
-            musicList: cached.musicList,
-            chartList: cached.chartList,
-        };
+        musicData = restoreCachedMusicData(cached);
         void enrichWithLocalChartStats(musicData).catch(error => {
             console.error("Failed to enrich cached chart stats:", error);
         });
