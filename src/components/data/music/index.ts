@@ -264,4 +264,5 @@ export const maimaiVersionsCN = [
     "舞萌DX 2023",
     "舞萌DX 2024",
     "舞萌DX 2025",
+    "舞萌DX 2026",
 ];
