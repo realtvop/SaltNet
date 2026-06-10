@@ -808,13 +808,14 @@
         }
     };
 
+    const getPreloadThreshold = () => Math.max(600, Math.floor(window.innerHeight * 1.5));
+
     // 滚动事件处理（使用 window 滚动）
     const handleScroll = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
-        // 检查是否接近底部（距离底部200px时触发）
-        if (scrollTop + windowHeight >= documentHeight - 200) {
+        if (scrollTop + windowHeight >= documentHeight - getPreloadThreshold()) {
             loadMore();
         }
     };

@@ -5,7 +5,7 @@ export interface VirtualScrollOptions {
     items: ComputedRef<any[]>;
     /** 返回网格配置：列数和卡片高度 */
     getGridConfig?: () => { columns: number; cardHeight: number };
-    /** 触发加载的距离阈值，默认 200 */
+    /** 触发加载的最小距离阈值，默认 200 */
     threshold?: number;
     /** 每次加载的页数倍数，默认 2 */
     pagesPerLoad?: number;
@@ -59,6 +59,9 @@ export function useVirtualScroll(options: VirtualScrollOptions): VirtualScrollRe
 
     const visibleItemsCount = ref(0);
 
+    const getPreloadThreshold = (): number =>
+        Math.max(threshold, Math.floor(window.innerHeight * 1.5));
+
     /**
      * 根据屏幕尺寸计算每次加载的项目数
      */
@@ -96,7 +99,7 @@ export function useVirtualScroll(options: VirtualScrollOptions): VirtualScrollRe
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
 
-        if (scrollTop + windowHeight >= documentHeight - threshold) {
+        if (scrollTop + windowHeight >= documentHeight - getPreloadThreshold()) {
             loadMore();
         }
     };
