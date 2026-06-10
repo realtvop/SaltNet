@@ -142,12 +142,6 @@
         handleSelectChange(event, plateFinishSort);
     }
 
-    const levelFilter = ref<string>("ALL");
-
-    function onLevelFilterChange(event: Event) {
-        handleSelectChange(event, levelFilter);
-    }
-
     const difficultyFilter = ref(3);
     const difficultyFilterOptions = computed(() =>
         getDifficultyFilterOptions(category.value === Category.Favorite)
@@ -329,8 +323,7 @@
             filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => {
                 const matchVersion = (chart.music.info.from as unknown as string) === targetVersion;
                 if (!matchVersion) return false;
-                if (levelFilter.value === "ALL") return true;
-                return chart.info.level === levelFilter.value;
+                return chart.info.grade === difficultyFilter.value;
             });
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
@@ -852,7 +845,7 @@
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         } else if (newCategory === Category.Version) {
             selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
-            levelFilter.value = "ALL";
+            if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
         } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
@@ -880,13 +873,6 @@
 
     // 监听难度筛选变化，重新计算可视项目数
     watch(difficultyFilter, () => {
-        visibleItemsCount.value = getLoadSize();
-        // 滚动到顶部
-        window.scrollTo({ top: 0, behavior: "instant" });
-    });
-
-    // 监听等级筛选变化，重新计算可视项目数
-    watch(levelFilter, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -1286,12 +1272,16 @@
         <div v-else-if="category === Category.Version" class="search-input">
             <mdui-select
                 style="width: 4.1rem"
-                label="等级"
-                :value="levelFilter"
-                @change="onLevelFilterChange"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
             >
-                <mdui-menu-item v-for="option in difficulties" :key="option" :value="option">
-                    {{ option }}
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
                 </mdui-menu-item>
             </mdui-select>
             <mdui-select
