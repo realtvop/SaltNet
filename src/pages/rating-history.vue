@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed } from "vue";
+    import { computed, ref } from "vue";
     import { useRoute, useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
     import { getUserDisplayName, type RatingHistoryEntry } from "@/components/data/user/type";
@@ -18,10 +18,14 @@
 
     const chart = computed(() => buildChart(history.value));
 
+    const hoveredIndex = ref<number | null>(null);
+
     type ChartPoint = {
         x: number;
         y: number;
         entry: RatingHistoryEntry;
+        triggerX: number;
+        triggerWidth: number;
     };
 
     type ChartModel = {
@@ -107,7 +111,28 @@
             x: xFor(entry.time, index),
             y: yFor(entry.rating),
             entry,
+            triggerX: 0,
+            triggerWidth: 0,
         }));
+
+        for (let i = 0; i < points.length; i++) {
+            let leftBoundary = padding.left;
+            let rightBoundary = padding.left + plotWidth;
+
+            if (points.length > 1) {
+                if (i === 0) {
+                    rightBoundary = (points[0].x + points[1].x) / 2;
+                } else if (i === points.length - 1) {
+                    leftBoundary = (points[i - 1].x + points[i].x) / 2;
+                } else {
+                    leftBoundary = (points[i - 1].x + points[i].x) / 2;
+                    rightBoundary = (points[i].x + points[i + 1].x) / 2;
+                }
+            }
+
+            points[i].triggerX = leftBoundary;
+            points[i].triggerWidth = rightBoundary - leftBoundary;
+        }
         const path = points
             .map(
                 (point, index) =>
@@ -211,6 +236,15 @@
                                 />
                             </linearGradient>
                         </defs>
+                        <!-- Guideline when hovered -->
+                        <line
+                            v-if="hoveredIndex !== null"
+                            :x1="chart.points[hoveredIndex].x"
+                            :x2="chart.points[hoveredIndex].x"
+                            :y1="chart.padding.top"
+                            :y2="chart.padding.top + chart.plotHeight"
+                            class="hover-guideline"
+                        />
                         <g class="grid">
                             <line
                                 v-for="tick in chart.ratingTicks"
@@ -252,17 +286,48 @@
                         <!-- 数据点 -->
                         <g>
                             <circle
-                                v-for="point in chart.points"
+                                v-for="(point, index) in chart.points"
                                 :key="`${point.entry.time}-${point.entry.rating}`"
                                 class="chart-point"
+                                :class="{ 'chart-point-active': hoveredIndex === index }"
                                 :cx="point.x"
                                 :cy="point.y"
-                                r="5"
+                                r="4"
+                            />
+                        </g>
+                        <!-- Tooltip group -->
+                        <g v-if="hoveredIndex !== null" class="chart-tooltip-group">
+                            <rect
+                                :x="chart.points[hoveredIndex].x - 30"
+                                :y="chart.points[hoveredIndex].y - 30"
+                                width="60"
+                                height="22"
+                                rx="4"
+                                class="tooltip-bg"
+                            />
+                            <text
+                                :x="chart.points[hoveredIndex].x"
+                                :y="chart.points[hoveredIndex].y - 15"
+                                text-anchor="middle"
+                                class="tooltip-text"
                             >
-                                <title>
-                                    {{ `${formatTime(point.entry.time)} - ${point.entry.rating}` }}
-                                </title>
-                            </circle>
+                                {{ chart.points[hoveredIndex].entry.rating }}
+                            </text>
+                        </g>
+                        <!-- Invisible interaction triggers -->
+                        <g>
+                            <rect
+                                v-for="(point, idx) in chart.points"
+                                :key="`trigger-${idx}`"
+                                :x="point.triggerX"
+                                :y="chart.padding.top"
+                                :width="point.triggerWidth"
+                                :height="chart.plotHeight"
+                                fill="transparent"
+                                style="cursor: default"
+                                @mouseenter="hoveredIndex = idx"
+                                @mouseleave="hoveredIndex = null"
+                            />
                         </g>
                     </svg>
                 </div>
@@ -418,18 +483,34 @@
     .chart-point {
         fill: rgb(var(--mdui-color-surface-container-high));
         stroke: rgb(var(--mdui-color-primary));
-        stroke-width: 2;
-        transition:
-            r 0.2s,
-            fill 0.2s,
-            stroke-width 0.2s;
-        cursor: pointer;
+        stroke-width: 1.5;
+        cursor: default;
+        pointer-events: none;
     }
 
-    .chart-point:hover {
-        r: 7;
+    .chart-point-active {
         fill: rgb(var(--mdui-color-primary));
-        stroke-width: 3;
+        stroke: rgb(var(--mdui-color-primary));
+    }
+
+    .hover-guideline {
+        stroke: rgb(var(--mdui-color-primary));
+        stroke-width: 1;
+        stroke-dasharray: 3 3;
+        pointer-events: none;
+    }
+
+    .tooltip-bg {
+        fill: rgb(var(--mdui-color-inverse-surface));
+        pointer-events: none;
+    }
+
+    .tooltip-text {
+        fill: rgb(var(--mdui-color-inverse-on-surface));
+        font-size: 11px;
+        font-weight: bold;
+        font-family: inherit;
+        pointer-events: none;
     }
 
     /* history-card styles */
