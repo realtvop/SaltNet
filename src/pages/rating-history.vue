@@ -20,6 +20,28 @@
 
     const hoveredIndex = ref<number | null>(null);
 
+    const activeTooltip = computed(() => {
+        if (hoveredIndex.value === null || !chart.value.points.length) return null;
+        const point = chart.value.points[hoveredIndex.value];
+        const tooltipWidth = 110;
+        const tooltipHeight = 38;
+
+        const x = Math.max(
+            8,
+            Math.min(chart.value.width - tooltipWidth - 8, point.x - tooltipWidth / 2)
+        );
+        const y = point.y - tooltipHeight - 10 < 8 ? point.y + 12 : point.y - tooltipHeight - 10;
+
+        return {
+            x,
+            y,
+            width: tooltipWidth,
+            height: tooltipHeight,
+            rating: point.entry.rating,
+            time: formatTimeMobile(point.entry.time),
+        };
+    });
+
     type ChartPoint = {
         x: number;
         y: number;
@@ -296,22 +318,30 @@
                             />
                         </g>
                         <!-- Tooltip group -->
-                        <g v-if="hoveredIndex !== null" class="chart-tooltip-group">
+                        <g v-if="activeTooltip" class="chart-tooltip-group">
                             <rect
-                                :x="chart.points[hoveredIndex].x - 30"
-                                :y="chart.points[hoveredIndex].y - 30"
-                                width="60"
-                                height="22"
-                                rx="4"
+                                :x="activeTooltip.x"
+                                :y="activeTooltip.y"
+                                :width="activeTooltip.width"
+                                :height="activeTooltip.height"
+                                rx="6"
                                 class="tooltip-bg"
                             />
                             <text
-                                :x="chart.points[hoveredIndex].x"
-                                :y="chart.points[hoveredIndex].y - 15"
+                                :x="activeTooltip.x + activeTooltip.width / 2"
+                                :y="activeTooltip.y + 15"
                                 text-anchor="middle"
-                                class="tooltip-text"
+                                class="tooltip-text-rating"
                             >
-                                {{ chart.points[hoveredIndex].entry.rating }}
+                                Rating: {{ activeTooltip.rating }}
+                            </text>
+                            <text
+                                :x="activeTooltip.x + activeTooltip.width / 2"
+                                :y="activeTooltip.y + 29"
+                                text-anchor="middle"
+                                class="tooltip-text-date"
+                            >
+                                {{ activeTooltip.time }}
                             </text>
                         </g>
                         <!-- Invisible interaction triggers -->
@@ -505,10 +535,18 @@
         pointer-events: none;
     }
 
-    .tooltip-text {
+    .tooltip-text-rating {
         fill: rgb(var(--mdui-color-inverse-on-surface));
         font-size: 11px;
-        font-weight: bold;
+        font-weight: 700;
+        font-family: inherit;
+        pointer-events: none;
+    }
+
+    .tooltip-text-date {
+        fill: rgb(var(--mdui-color-inverse-on-surface));
+        font-size: 9px;
+        opacity: 0.8;
         font-family: inherit;
         pointer-events: none;
     }
