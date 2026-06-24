@@ -2,13 +2,18 @@ import type { RatingHistoryEntry, User } from "./type";
 
 export function normalizeRatingHistory(user: User): RatingHistoryEntry[] {
     const history = Array.isArray(user.data.ratingHistory)
-        ? user.data.ratingHistory.filter(
-              entry =>
-                  typeof entry.time === "number" &&
-                  Number.isFinite(entry.time) &&
-                  typeof entry.rating === "number" &&
-                  Number.isFinite(entry.rating)
-          )
+        ? user.data.ratingHistory
+              .filter(
+                  entry =>
+                      typeof entry.time === "number" &&
+                      Number.isFinite(entry.time) &&
+                      typeof entry.rating === "number" &&
+                      Number.isFinite(entry.rating)
+              )
+              .map(entry => ({
+                  time: entry.time,
+                  rating: entry.rating,
+              }))
         : [];
 
     if (!history.length && typeof user.data.rating === "number") {

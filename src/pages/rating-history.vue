@@ -189,78 +189,84 @@
             </div>
 
             <!-- 统计图 -->
-            <div class="chart-container" v-if="history.length">
-                <svg
-                    class="rating-chart"
-                    :viewBox="`0 0 ${chart.width} ${chart.height}`"
-                    role="img"
-                    aria-label="Rating 时间趋势折线图"
-                >
-                    <defs>
-                        <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop
-                                offset="0%"
-                                stop-color="rgb(var(--mdui-color-primary))"
-                                stop-opacity="0.25"
+            <mdui-card variant="outlined" class="chart-card" v-if="history.length">
+                <div class="chart-container">
+                    <svg
+                        class="rating-chart"
+                        :viewBox="`0 0 ${chart.width} ${chart.height}`"
+                        role="img"
+                        aria-label="Rating 时间趋势折线图"
+                    >
+                        <defs>
+                            <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop
+                                    offset="0%"
+                                    stop-color="rgb(var(--mdui-color-primary))"
+                                    stop-opacity="0.25"
+                                />
+                                <stop
+                                    offset="100%"
+                                    stop-color="rgb(var(--mdui-color-primary))"
+                                    stop-opacity="0.0"
+                                />
+                            </linearGradient>
+                        </defs>
+                        <g class="grid">
+                            <line
+                                v-for="tick in chart.ratingTicks"
+                                :key="tick"
+                                :x1="chart.padding.left"
+                                :x2="chart.padding.left + chart.plotWidth"
+                                :y1="chart.yFor(tick)"
+                                :y2="chart.yFor(tick)"
                             />
-                            <stop
-                                offset="100%"
-                                stop-color="rgb(var(--mdui-color-primary))"
-                                stop-opacity="0.0"
-                            />
-                        </linearGradient>
-                    </defs>
-                    <g class="grid">
-                        <line
-                            v-for="tick in chart.ratingTicks"
-                            :key="tick"
-                            :x1="chart.padding.left"
-                            :x2="chart.padding.left + chart.plotWidth"
-                            :y1="chart.yFor(tick)"
-                            :y2="chart.yFor(tick)"
+                        </g>
+                        <g class="axis-labels">
+                            <text
+                                v-for="tick in chart.ratingTicks"
+                                :key="`label-${tick}`"
+                                :x="chart.padding.left - 10"
+                                :y="chart.yFor(tick) + 4"
+                                text-anchor="end"
+                            >
+                                {{ tick }}
+                            </text>
+                            <text
+                                v-for="label in chart.labels"
+                                :key="`${label.x}-${label.text}`"
+                                :x="label.x"
+                                :y="chart.height - 12"
+                                :text-anchor="label.anchor"
+                            >
+                                {{ label.text }}
+                            </text>
+                        </g>
+                        <!-- 渐变填充区域 -->
+                        <path
+                            class="area-fill"
+                            :d="chart.areaPath"
+                            fill="url(#chart-area-gradient)"
                         />
-                    </g>
-                    <g class="axis-labels">
-                        <text
-                            v-for="tick in chart.ratingTicks"
-                            :key="`label-${tick}`"
-                            :x="chart.padding.left - 10"
-                            :y="chart.yFor(tick) + 4"
-                            text-anchor="end"
-                        >
-                            {{ tick }}
-                        </text>
-                        <text
-                            v-for="label in chart.labels"
-                            :key="`${label.x}-${label.text}`"
-                            :x="label.x"
-                            :y="chart.height - 12"
-                            :text-anchor="label.anchor"
-                        >
-                            {{ label.text }}
-                        </text>
-                    </g>
-                    <!-- 渐变填充区域 -->
-                    <path class="area-fill" :d="chart.areaPath" fill="url(#chart-area-gradient)" />
-                    <!-- 折线 -->
-                    <path class="trend-line" :d="chart.path" />
-                    <!-- 数据点 -->
-                    <g>
-                        <circle
-                            v-for="point in chart.points"
-                            :key="`${point.entry.time}-${point.entry.rating}`"
-                            class="chart-point"
-                            :cx="point.x"
-                            :cy="point.y"
-                            r="5"
-                        >
-                            <title>
-                                {{ `${formatTime(point.entry.time)} - ${point.entry.rating}` }}
-                            </title>
-                        </circle>
-                    </g>
-                </svg>
-            </div>
+                        <!-- 折线 -->
+                        <path class="trend-line" :d="chart.path" />
+                        <!-- 数据点 -->
+                        <g>
+                            <circle
+                                v-for="point in chart.points"
+                                :key="`${point.entry.time}-${point.entry.rating}`"
+                                class="chart-point"
+                                :cx="point.x"
+                                :cy="point.y"
+                                r="5"
+                            >
+                                <title>
+                                    {{ `${formatTime(point.entry.time)} - ${point.entry.rating}` }}
+                                </title>
+                            </circle>
+                        </g>
+                    </svg>
+                </div>
+            </mdui-card>
 
             <!-- 暂无历史记录的空状态 -->
             <div class="empty-state" v-else>
@@ -352,6 +358,14 @@
         font-size: 0.9em;
         color: rgb(var(--mdui-color-on-surface-variant));
         font-weight: normal;
+    }
+
+    /* chart card styles */
+    .chart-card {
+        border-radius: 16px !important;
+        border: 1px solid rgb(var(--mdui-color-outline-variant)) !important;
+        background-color: rgb(var(--mdui-color-surface-container-low)) !important;
+        box-shadow: none !important;
     }
 
     /* chart-card styles */

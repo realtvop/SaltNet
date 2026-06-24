@@ -18,6 +18,10 @@ type AppSettings = {
     showDxScoreInB50: boolean;
 };
 
+function toStorageValue<T>(value: T): T {
+    return JSON.parse(JSON.stringify(toRaw(value))) as T;
+}
+
 // MARK: shared
 export const useShared = defineStore("shared", () => {
     const users = ref<User[]>([]);
@@ -164,7 +168,7 @@ export const useShared = defineStore("shared", () => {
         users,
         (newUsers: User[]) => {
             if (!newUsers) return;
-            localForage.setItem("users", toRaw(newUsers)).catch((err: unknown) => {
+            localForage.setItem("users", toStorageValue(newUsers)).catch((err: unknown) => {
                 console.error("Failed to save users:", err);
             });
         },
