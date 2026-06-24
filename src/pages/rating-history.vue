@@ -23,7 +23,7 @@
     const activeTooltip = computed(() => {
         if (hoveredIndex.value === null || !chart.value.points.length) return null;
         const point = chart.value.points[hoveredIndex.value];
-        const tooltipWidth = 110;
+        const tooltipWidth = 75;
         const tooltipHeight = 38;
 
         const x = Math.max(
@@ -333,7 +333,7 @@
                                 text-anchor="middle"
                                 class="tooltip-text-rating"
                             >
-                                Rating: {{ activeTooltip.rating }}
+                                {{ activeTooltip.rating }}
                             </text>
                             <text
                                 :x="activeTooltip.x + activeTooltip.width / 2"
