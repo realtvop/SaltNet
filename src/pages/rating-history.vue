@@ -18,17 +18,6 @@
 
     const chart = computed(() => buildChart(history.value));
 
-    const summary = computed(() => {
-        if (!history.value.length) return null;
-        const first = history.value[0];
-        const last = history.value[history.value.length - 1];
-        return {
-            first,
-            last,
-            delta: last.rating - first.rating,
-        };
-    });
-
     type ChartPoint = {
         x: number;
         y: number;
@@ -42,6 +31,7 @@
         plotWidth: number;
         plotHeight: number;
         path: string;
+        areaPath: string;
         points: ChartPoint[];
         pointString: string;
         ratingTicks: number[];
@@ -53,15 +43,13 @@
         return new Date(time).toLocaleString();
     }
 
-    function formatDelta(delta: number) {
-        if (delta > 0) return `+${delta}`;
-        return `${delta}`;
-    }
-
-    function getPreviousDelta(indexInReversed: number) {
-        const originalIndex = history.value.length - 1 - indexInReversed;
-        if (originalIndex <= 0) return null;
-        return history.value[originalIndex].rating - history.value[originalIndex - 1].rating;
+    function formatTimeMobile(time: number) {
+        const date = new Date(time);
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        const hh = String(date.getHours()).padStart(2, "0");
+        const mm = String(date.getMinutes()).padStart(2, "0");
+        return `${m}-${d} ${hh}:${mm}`;
     }
 
     function buildChart(entries: RatingHistoryEntry[]): ChartModel {
@@ -80,6 +68,7 @@
                 plotWidth,
                 plotHeight,
                 path: "",
+                areaPath: "",
                 points: [],
                 pointString: "",
                 ratingTicks: [],
@@ -125,6 +114,15 @@
                     `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
             )
             .join(" ");
+
+        const bottomY = padding.top + plotHeight;
+        const areaPath =
+            points.length > 0
+                ? `M ${points[0].x.toFixed(2)} ${bottomY.toFixed(2)} ` +
+                  points.map(p => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ") +
+                  ` L ${points[points.length - 1].x.toFixed(2)} ${bottomY.toFixed(2)} Z`
+                : "";
+
         const pointString = points
             .map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`)
             .join(" ");
@@ -149,6 +147,7 @@
             plotWidth,
             plotHeight,
             path,
+            areaPath,
             points,
             pointString,
             ratingTicks,
@@ -168,47 +167,49 @@
 <template>
     <div class="rating-history-page">
         <template v-if="user">
-            <section class="header-section">
-                <div>
-                    <p class="eyebrow">Rating 历史</p>
-                    <h1>{{ getUserDisplayName(user, "未知用户") }}</h1>
+            <!-- 用户信息 -->
+            <div class="player-header">
+                <div class="player-info">
+                    <div class="player-name-container">
+                        <span class="player-name">
+                            {{ getUserDisplayName(user, "未知用户") }}
+                        </span>
+                        <span
+                            v-if="
+                                user.remark &&
+                                (user.data.name ?? user.divingFish?.name ?? user.inGame?.name)
+                            "
+                            class="player-original-name"
+                        >
+                            {{ user.data.name ?? user.divingFish?.name ?? user.inGame?.name }}
+                        </span>
+                    </div>
+                    <RatingPlate v-if="typeof currentRating === 'number'" :ra="currentRating" />
                 </div>
-                <RatingPlate
-                    v-if="typeof currentRating === 'number'"
-                    :ra="currentRating"
-                    class="current-rating"
-                />
-            </section>
+            </div>
 
-            <section class="stats-row">
-                <div class="stat-block">
-                    <span class="stat-label">记录数</span>
-                    <strong>{{ history.length }}</strong>
-                </div>
-                <div class="stat-block">
-                    <span class="stat-label">首次记录</span>
-                    <strong>{{ summary ? summary.first.rating : "无" }}</strong>
-                </div>
-                <div class="stat-block">
-                    <span class="stat-label">累计变化</span>
-                    <strong
-                        :class="{
-                            positive: (summary?.delta ?? 0) > 0,
-                            negative: (summary?.delta ?? 0) < 0,
-                        }"
-                    >
-                        {{ summary ? formatDelta(summary.delta) : "无" }}
-                    </strong>
-                </div>
-            </section>
-
-            <section class="chart-section" v-if="history.length">
+            <!-- 统计图 -->
+            <div class="chart-container" v-if="history.length">
                 <svg
                     class="rating-chart"
                     :viewBox="`0 0 ${chart.width} ${chart.height}`"
                     role="img"
                     aria-label="Rating 时间趋势折线图"
                 >
+                    <defs>
+                        <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                                offset="0%"
+                                stop-color="rgb(var(--mdui-color-primary))"
+                                stop-opacity="0.25"
+                            />
+                            <stop
+                                offset="100%"
+                                stop-color="rgb(var(--mdui-color-primary))"
+                                stop-opacity="0.0"
+                            />
+                        </linearGradient>
+                    </defs>
                     <g class="grid">
                         <line
                             v-for="tick in chart.ratingTicks"
@@ -239,8 +240,11 @@
                             {{ label.text }}
                         </text>
                     </g>
-                    <polyline class="area-line" :points="chart.pointString" />
+                    <!-- 渐变填充区域 -->
+                    <path class="area-fill" :d="chart.areaPath" fill="url(#chart-area-gradient)" />
+                    <!-- 折线 -->
                     <path class="trend-line" :d="chart.path" />
+                    <!-- 数据点 -->
                     <g>
                         <circle
                             v-for="point in chart.points"
@@ -256,42 +260,48 @@
                         </circle>
                     </g>
                 </svg>
-            </section>
+            </div>
 
-            <section class="empty-state" v-else>
-                <mdui-icon name="show_chart"></mdui-icon>
-                <p>还没有 Rating 历史。下次更新成绩时会自动记录变化。</p>
-            </section>
+            <!-- 暂无历史记录的空状态 -->
+            <div class="empty-state" v-else>
+                <mdui-icon name="show_chart" class="empty-icon"></mdui-icon>
+                <p class="empty-text">还没有 Rating 历史。下次更新成绩时会自动记录变化。</p>
+            </div>
 
-            <section class="history-list" v-if="history.length">
-                <div
-                    class="history-row"
-                    v-for="(entry, index) in reversedHistory"
-                    :key="`${entry.time}-${entry.rating}`"
-                >
-                    <div>
-                        <strong>{{ entry.rating }}</strong>
-                        <span
-                            v-if="getPreviousDelta(index) !== null"
-                            class="delta"
-                            :class="{
-                                positive: Number(getPreviousDelta(index)) > 0,
-                                negative: Number(getPreviousDelta(index)) < 0,
-                            }"
-                        >
-                            {{ formatDelta(Number(getPreviousDelta(index))) }}
-                        </span>
-                    </div>
-                    <time>{{ formatTime(entry.time) }}</time>
-                </div>
-            </section>
+            <!-- 历史记录表 -->
+            <div class="table-responsive" v-if="history.length">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th class="col-time">时间</th>
+                            <th class="col-rating">Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="entry in reversedHistory" :key="`${entry.time}-${entry.rating}`">
+                            <td class="col-time">
+                                <span class="time-desktop">{{ formatTime(entry.time) }}</span>
+                                <span class="time-mobile">
+                                    {{ formatTimeMobile(entry.time) }}
+                                </span>
+                            </td>
+                            <td class="col-rating font-mono">
+                                <strong>{{ entry.rating }}</strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </template>
 
-        <section class="empty-state" v-else>
-            <mdui-icon name="person_off"></mdui-icon>
-            <p>找不到这个用户。</p>
-            <mdui-button variant="tonal" @click="router.push('/users')">返回用户列表</mdui-button>
-        </section>
+        <!-- 找不到用户时的空状态 -->
+        <div class="empty-state" v-else>
+            <mdui-icon name="person_off" class="empty-icon"></mdui-icon>
+            <p class="empty-text">找不到这个用户。</p>
+            <mdui-button variant="tonal" @click="router.push('/users')" class="back-btn">
+                返回用户列表
+            </mdui-button>
+        </div>
     </div>
 </template>
 
@@ -299,79 +309,68 @@
     .rating-history-page {
         width: min(100%, 960px);
         margin: 0 auto;
-        padding-bottom: calc(3.5rem + 32px);
+        padding: 16px 16px calc(3.5rem + 32px) 16px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
     }
 
-    .header-section,
-    .stats-row,
-    .chart-section,
-    .history-list,
-    .empty-state {
-        width: 100%;
+    /* player-header styles matching b50 page */
+    .player-header {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        flex-direction: row;
+        margin-bottom: 8px;
+        gap: 1.5rem;
+        padding: 8px 12px 16px 12px;
+        justify-content: space-between;
         box-sizing: border-box;
     }
 
-    .header-section {
+    .player-info {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 12px 2px 18px;
+        gap: 1.5rem;
     }
 
-    .eyebrow {
-        margin: 0 0 4px;
-        color: rgb(var(--mdui-color-primary));
-        font-size: 0.85rem;
-        font-weight: 700;
+    .player-name-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
 
-    h1 {
-        margin: 0;
-        font-size: 1.8rem;
-        line-height: 1.2;
-        word-break: break-word;
+    .player-name {
+        font-size: 2em;
+        font-weight: bold;
+        color: rgb(var(--mdui-color-on-surface));
     }
 
-    .current-rating {
-        flex: 0 0 auto;
-    }
-
-    .stats-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        margin-bottom: 12px;
-    }
-
-    .stat-block,
-    .chart-section,
-    .history-row,
-    .empty-state {
-        background: rgb(var(--mdui-color-surface-container));
-        border: 1px solid rgb(var(--mdui-color-outline-variant));
-        border-radius: 8px;
-    }
-
-    .stat-block {
-        padding: 12px;
-        min-width: 0;
-    }
-
-    .stat-label {
-        display: block;
-        margin-bottom: 6px;
+    .player-original-name {
+        font-size: 0.9em;
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.85rem;
+        font-weight: normal;
     }
 
-    .stat-block strong {
-        font-size: 1.25rem;
-    }
-
-    .chart-section {
-        padding: 12px;
+    /* chart-card styles */
+    .chart-container {
+        padding: 12px 20px 20px;
         overflow-x: auto;
+        width: 100%;
+        box-sizing: border-box;
+        scrollbar-width: thin;
+        scrollbar-color: rgb(var(--mdui-color-outline-variant)) transparent;
+    }
+
+    .chart-container::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .chart-container::-webkit-scrollbar-thumb {
+        background: rgb(var(--mdui-color-outline-variant));
+        border-radius: 3px;
     }
 
     .rating-chart {
@@ -384,107 +383,166 @@
     .grid line {
         stroke: rgb(var(--mdui-color-outline-variant));
         stroke-width: 1;
+        stroke-dasharray: 4 4;
+        opacity: 0.7;
     }
 
     .axis-labels text {
         fill: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 13px;
-    }
-
-    .area-line {
-        fill: none;
-        stroke: rgba(var(--mdui-color-primary), 0.18);
-        stroke-width: 14;
-        stroke-linecap: round;
-        stroke-linejoin: round;
+        font-size: 12px;
+        font-family: inherit;
     }
 
     .trend-line {
         fill: none;
         stroke: rgb(var(--mdui-color-primary));
-        stroke-width: 3;
+        stroke-width: 3.5;
         stroke-linecap: round;
         stroke-linejoin: round;
     }
 
     .chart-point {
-        fill: rgb(var(--mdui-color-primary));
-        stroke: rgb(var(--mdui-color-surface-container));
+        fill: rgb(var(--mdui-color-surface-container-high));
+        stroke: rgb(var(--mdui-color-primary));
         stroke-width: 2;
+        transition:
+            r 0.2s,
+            fill 0.2s,
+            stroke-width 0.2s;
+        cursor: pointer;
     }
 
-    .history-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 12px;
+    .chart-point:hover {
+        r: 7;
+        fill: rgb(var(--mdui-color-primary));
+        stroke-width: 3;
     }
 
-    .history-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 14px;
+    /* history-card styles */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
     }
 
-    .history-row strong {
-        font-size: 1.15rem;
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
     }
 
-    .delta {
-        margin-left: 8px;
-        color: rgb(var(--mdui-color-on-surface-variant));
+    .history-table th,
+    .history-table td {
+        padding: 14px 20px;
+        border-bottom: 1px solid rgb(var(--mdui-color-outline-variant));
+    }
+
+    .history-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .history-table th {
+        font-size: 0.85rem;
         font-weight: 700;
-    }
-
-    .positive {
-        color: rgb(var(--mdui-color-primary));
-    }
-
-    .negative {
-        color: rgb(var(--mdui-color-error));
-    }
-
-    time {
         color: rgb(var(--mdui-color-on-surface-variant));
-        text-align: right;
+        background-color: rgba(var(--mdui-color-outline-variant), 0.15);
     }
 
+    .col-time {
+        text-align: left;
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .history-table td.col-time {
+        font-size: 0.9rem;
+    }
+
+    .col-rating {
+        font-size: 1.15rem;
+        text-align: right;
+        color: rgb(var(--mdui-color-on-surface));
+    }
+
+    .font-mono {
+        font-family: Monaco, "JetBrains Mono", monospace;
+    }
+
+    /* time responsive switch */
+    .time-mobile {
+        display: none;
+    }
+
+    .time-desktop {
+        display: inline;
+    }
+
+    /* empty and error state styles */
     .empty-state {
         display: flex;
-        min-height: 220px;
+        min-height: 180px;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 14px;
-        padding: 24px;
+        gap: 12px;
+        padding: 32px 20px;
         text-align: center;
-        color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .empty-state mdui-icon {
-        font-size: 42px;
+    .empty-icon {
+        font-size: 48px;
         color: rgb(var(--mdui-color-primary));
     }
 
-    @media (max-width: 640px) {
-        .header-section {
-            align-items: flex-start;
+    .empty-text {
+        margin: 0;
+        font-size: 0.95rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        max-width: 400px;
+        line-height: 1.5;
+    }
+
+    .back-btn {
+        margin-top: 8px;
+    }
+
+    /* Responsive Adaptation */
+    @media (max-width: 600px) {
+        .rating-history-page {
+            padding: 8px 8px calc(3.5rem + 16px) 8px;
+            gap: 12px;
+        }
+
+        .player-header {
             flex-direction: column;
-        }
-
-        .stats-row {
-            grid-template-columns: 1fr;
-        }
-
-        .history-row {
             align-items: flex-start;
-            flex-direction: column;
+            padding: 8px 4px 12px 4px;
+            gap: 12px;
         }
 
-        time {
-            text-align: left;
+        .player-name {
+            font-size: 1.6em;
+        }
+
+        .chart-container {
+            padding: 8px 12px 16px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 10px 12px;
+        }
+        .col-rating {
+            font-size: 1rem;
+        }
+        .time-mobile {
+            display: inline;
+        }
+
+        .time-desktop {
+            display: none;
+        }
+
+        .history-table td.col-time {
+            font-size: 0.8rem;
         }
     }
 </style>
