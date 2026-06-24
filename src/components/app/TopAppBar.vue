@@ -14,7 +14,8 @@
             v-if="
                 ['/settings', '/nearcade', '/about', '/me'].includes(route.path) ||
                 route.path.startsWith('/b50/') ||
-                route.path.startsWith('/songs/')
+                route.path.startsWith('/songs/') ||
+                route.path.startsWith('/rating-history/')
             "
             class="icon-btn"
             @click="router.back"

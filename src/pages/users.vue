@@ -90,6 +90,9 @@
     const goToUserSongs = (index: number) => {
         router.push(`/songs/${index}`);
     };
+    const goToRatingHistory = (index: number) => {
+        router.push(`/rating-history/${index}`);
+    };
 
     function showUserInfo(user: User) {
         const info = user.data.info as UserInfo;
@@ -430,6 +433,10 @@
                         <mdui-menu-item @click="showUserInfo(user)">
                             查看用户信息
                             <mdui-icon slot="icon" name="info"></mdui-icon>
+                        </mdui-menu-item>
+                        <mdui-menu-item @click="goToRatingHistory(index)">
+                            Rating 历史
+                            <mdui-icon slot="icon" name="show_chart"></mdui-icon>
                         </mdui-menu-item>
 
                         <!-- <mdui-menu-item @click="previewStockedTickets(user)" v-if="user.inGame?.id">

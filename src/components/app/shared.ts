@@ -8,6 +8,7 @@ import type { NearcadeData } from "../integrations/nearcade/type";
 import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
 import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import { setRegionGetter } from "@/components/data/music";
+import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
@@ -106,6 +107,10 @@ export const useShared = defineStore("shared", () => {
                         ...user,
                         inGame: migratedInGame,
                         settings: migratedSettings,
+                        data: {
+                            ...user.data,
+                            ratingHistory: normalizeRatingHistory(user),
+                        },
                     };
                 });
                 users.value = migratedUsers;

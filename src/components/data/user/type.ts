@@ -35,12 +35,18 @@ export interface User {
         updateTime: number | null;
         name: string | null;
         rating: number | null;
+        ratingHistory?: RatingHistoryEntry[];
         b50?: DivingFishB50;
         detailed?: DetailedData;
         items?: UserItem[][];
         characters?: UserCharacter[];
         info?: UserInfo;
     };
+}
+
+export interface RatingHistoryEntry {
+    time: number;
+    rating: number;
 }
 export interface ChartsSortCached {
     identifier: {

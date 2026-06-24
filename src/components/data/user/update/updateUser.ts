@@ -1,4 +1,5 @@
 import { getUserDisplayName, type User, convertDetailed } from "@/components/data/user/type";
+import { appendRatingHistory } from "@/components/data/user/ratingHistory";
 import { snackbar, alert, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
 import {
@@ -35,6 +36,7 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
         if (data) {
             const user = pendingUsers[type.slice(18)];
             const { lxns, ...nextData } = data;
+            appendRatingHistory(user, nextData.rating, nextData.updateTime);
 
             user.data = { ...user.data, ...nextData };
             if (lxns) user.lxns = { ...user.lxns, ...lxns };
@@ -254,13 +256,16 @@ async function downloadFromSaltNet(user: User) {
 
         const { b50, totalRating } = convertB50Data(b50Data);
 
+        const updateTime = Date.now();
+        appendRatingHistory(user, totalRating, updateTime);
+
         user.data = {
             ...user.data,
             rating: totalRating,
             name: user.saltnetDB.username,
             b50,
             detailed: convertDetailed(allRecords.map(saltNetToDivingFish)),
-            updateTime: Date.now(),
+            updateTime,
         };
 
         snackbar({
@@ -318,13 +323,16 @@ async function downloadFromSaltNetByUsername(user: User) {
 
         const { b50, totalRating } = convertB50Data(b50Data);
 
+        const updateTime = Date.now();
+        appendRatingHistory(user, totalRating, updateTime);
+
         user.data = {
             ...user.data,
             rating: totalRating,
             name: username,
             b50,
             ...(allRecords && { detailed: convertDetailed(allRecords.map(saltNetToDivingFish)) }),
-            updateTime: Date.now(),
+            updateTime,
         };
 
         snackbar({

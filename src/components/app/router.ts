@@ -9,6 +9,7 @@ import SettingsPage from "../../pages/settings.vue";
 import SongsPage from "../../pages/songs.vue";
 import CollectionsPage from "../../pages/collections.vue";
 import RenderingPage from "../../pages/b50ToRender.vue";
+import RatingHistoryPage from "../../pages/rating-history.vue";
 import ShopPage from "../../pages/Shop.vue";
 import MePage from "../../pages/me.vue";
 import OAuthCallbackPage from "../../pages/oauth-callback.vue";
@@ -25,6 +26,7 @@ const routes = [
     { path: "/b50", component: UserPage },
     { path: "/b50/render", component: RenderingPage },
     { path: "/b50/:id", component: UserPage, props: true },
+    { path: "/rating-history/:id", component: RatingHistoryPage, props: true },
     { path: "/settings", component: SettingsPage },
     { path: "/about", component: AboutPage },
     { path: "/collections", component: CollectionsPage },
