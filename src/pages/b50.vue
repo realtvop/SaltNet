@@ -28,12 +28,6 @@
     const pending = ref(false);
     const musicChartMap = ref<Map<string, Chart>>(new Map());
 
-    interface B50RenderJobResponse {
-        id: string;
-        url: string;
-        expiresIn: number;
-    }
-
     // 构建高效查找表
     async function buildMusicChartMap() {
         pending.value = true;
@@ -291,11 +285,11 @@
     }
 
     function downloadB50Png() {
-        async function createRenderJob(): Promise<B50RenderJobResponse> {
+        async function renderOnlineBlob(): Promise<Blob> {
             const rendererUrl = getRendererBaseUrl();
             if (!rendererUrl) throw new Error("未配置 Takumi 渲染服务地址");
 
-            const response = await fetch(`${rendererUrl}/render/b50/jobs`, {
+            const response = await fetch(`${rendererUrl}/render/b50.png`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -308,7 +302,11 @@
                 throw new Error(data?.error || `渲染服务请求失败: ${response.status}`);
             }
 
-            return response.json();
+            const blob = await response.blob();
+            if (!blob.type.startsWith("image/png")) {
+                throw new Error("渲染服务返回了无效的图片数据");
+            }
+            return blob;
         }
 
         async function renderLocalBlob(): Promise<Blob> {
@@ -384,17 +382,18 @@
             text: "在线",
             onClick: async () => {
                 const renderingSnackbar = snackbar({
-                    message: "正在创建渲染任务...",
+                    message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
                 try {
-                    const job = await createRenderJob();
+                    const blob = await renderOnlineBlob();
+                    const url = URL.createObjectURL(blob);
                     renderingSnackbar.open = false;
-                    window.open(job.url, "_blank");
+                    window.open(url, "_blank");
                 } catch (err) {
                     renderingSnackbar.open = false;
                     snackbar({
-                        message: err instanceof Error ? err.message : "创建渲染任务失败。",
+                        message: err instanceof Error ? err.message : "在线渲染失败。",
                     });
                 }
             },

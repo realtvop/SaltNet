@@ -5,10 +5,9 @@ import {
     loadB50RenderFonts,
 } from "../../shared/rendering/b50-fonts";
 import { B50_RENDER_SIZE, B50RenderImage } from "../../shared/rendering/b50-image";
-import { getImageCacheSeconds, getTtlSeconds } from "./env";
+import { getImageCacheSeconds } from "./env";
 import type { RenderEnv } from "./env";
 import { parseB50Payload } from "./payload";
-import { createRenderId, getPayloadKey, isValidRenderId, RenderPayloadStore } from "./storage";
 
 export interface RenderContext {
     request: Request;
@@ -31,13 +30,8 @@ export async function handleRenderRequest(context: RenderContext): Promise<Respo
         return withCors(json({ ok: true, service: "saltnet-render-service" }));
     }
 
-    if (context.request.method === "POST" && pathname === "/render/b50/jobs") {
-        return withCors(await createB50RenderJob(context, url));
-    }
-
-    const match = pathname.match(/^\/render\/b50\/([a-z0-9]{32,64})\.png$/);
-    if (context.request.method === "GET" && match) {
-        return withCors(await renderB50Image(context, match[1]));
+    if (context.request.method === "POST" && pathname === "/render/b50.png") {
+        return withCors(await renderB50Image(context));
     }
 
     return withCors(json({ error: "Not found" }, { status: 404 }));
@@ -52,7 +46,7 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
     });
 }
 
-async function createB50RenderJob(context: RenderContext, url: URL): Promise<Response> {
+async function renderB50Image(context: RenderContext): Promise<Response> {
     let body: unknown;
     try {
         body = await context.request.json();
@@ -60,34 +54,14 @@ async function createB50RenderJob(context: RenderContext, url: URL): Promise<Res
         return json({ error: "Request body must be JSON" }, { status: 400 });
     }
 
+    let payload: ReturnType<typeof parseB50Payload>;
     try {
-        const payload = parseB50Payload(body);
-        const id = createRenderId();
-        const store = new RenderPayloadStore(context.env);
-        await store.set(getPayloadKey(id), JSON.stringify(payload), getTtlSeconds(context.env));
-
-        return json(
-            {
-                id,
-                url: `${url.origin}/render/b50/${id}.png`,
-                expiresIn: getTtlSeconds(context.env),
-            },
-            { status: 201 }
-        );
+        payload = parseB50Payload(body);
     } catch (error) {
         return json({ error: getErrorMessage(error) }, { status: 400 });
     }
-}
-
-async function renderB50Image(context: RenderContext, id: string): Promise<Response> {
-    if (!isValidRenderId(id)) return json({ error: "Invalid render id" }, { status: 400 });
 
     try {
-        const store = new RenderPayloadStore(context.env);
-        const stored = await store.get(getPayloadKey(id));
-        if (!stored) return json({ error: "Render payload expired or not found" }, { status: 404 });
-
-        const payload = parseB50Payload(JSON.parse(stored));
         return context.renderB50Response
             ? context.renderB50Response(payload, context.env)
             : renderTakumiB50Response(payload, context.env);
