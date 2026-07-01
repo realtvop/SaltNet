@@ -10,10 +10,15 @@
     import { ComboStatus } from "@/components/data/maiTypes";
     import { getMusicInfoAsync } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
+    import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
     import { isUtageGrade } from "@/components/data/chart/difficulty";
+    import type {
+        B50RenderChart as B50RenderChartPayload,
+        B50RenderPayload,
+    } from "../../shared/rendering/b50-payload";
 
     const route = useRoute();
     const router = useRouter();
@@ -22,31 +27,6 @@
     const error = ref<string | null>(null);
     const pending = ref(false);
     const musicChartMap = ref<Map<string, Chart>>(new Map());
-
-    interface B50RenderChartPayload {
-        songId: number;
-        title: string;
-        type: string;
-        levelIndex: number;
-        ds: number;
-        achievements: number | null;
-        fc: string;
-        fs: string;
-        rate: string;
-        ra: number;
-        deluxeScore?: number;
-        deluxeScoreMax?: number;
-    }
-
-    interface B50RenderPayload {
-        playerName: string;
-        playerSecondaryName?: string | null;
-        playerRating?: number | null;
-        modeLabel?: string | null;
-        showDxScore: boolean;
-        sd: B50RenderChartPayload[];
-        dx: B50RenderChartPayload[];
-    }
 
     interface B50RenderJobResponse {
         id: string;
@@ -294,13 +274,10 @@
     }
 
     function downloadB50Png() {
-        const rendererUrl = getRendererBaseUrl();
-        if (!rendererUrl) {
-            snackbar({ message: "未配置 Takumi 渲染服务地址" });
-            return;
-        }
-
         async function createRenderJob(): Promise<B50RenderJobResponse> {
+            const rendererUrl = getRendererBaseUrl();
+            if (!rendererUrl) throw new Error("未配置 Takumi 渲染服务地址");
+
             const response = await fetch(`${rendererUrl}/render/b50/jobs`, {
                 method: "POST",
                 headers: {
@@ -323,16 +300,21 @@
             return response.blob();
         }
 
+        async function renderLocalBlob(): Promise<Blob> {
+            return renderB50WithTakumi(buildB50RenderPayload());
+        }
+
         const copyAction = {
             text: "复制",
-            onClick: async () => {
+            onClick: async (useCloud: boolean) => {
                 const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
                 try {
-                    const job = await createRenderJob();
-                    const blob = await fetchRenderedBlob(job.url);
+                    const blob = useCloud
+                        ? await createRenderJob().then(job => fetchRenderedBlob(job.url))
+                        : await renderLocalBlob();
                     const clipboardItem = new ClipboardItem({ "image/png": blob });
                     await navigator.clipboard.write([clipboardItem]);
                     renderingSnackbar.open = false;
@@ -351,15 +333,16 @@
 
         const downloadAction = {
             text: "下载",
-            onClick: async () => {
+            onClick: async (useCloud: boolean) => {
                 const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
 
                 try {
-                    const job = await createRenderJob();
-                    const blob = await fetchRenderedBlob(job.url);
+                    const blob = useCloud
+                        ? await createRenderJob().then(job => fetchRenderedBlob(job.url))
+                        : await renderLocalBlob();
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     link.href = url;
@@ -385,8 +368,13 @@
             },
         };
 
+        const localAction = {
+            text: "本地",
+            onClick: () => showSaveOptions(false),
+        };
+
         const onlineRenderAction = {
-            text: "在线",
+            text: "云端",
             onClick: async () => {
                 const renderingSnackbar = snackbar({
                     message: "正在创建渲染任务...",
@@ -405,10 +393,31 @@
             },
         };
 
+        function showSaveOptions(useCloud: boolean) {
+            dialog({
+                headline: useCloud ? "Takumi 云端渲染" : "Takumi 本地渲染",
+                description: "选择保存方式",
+                actions: [
+                    { text: "取消" },
+                    { text: "复制", onClick: () => copyAction.onClick(useCloud) },
+                    { text: "下载", onClick: () => downloadAction.onClick(useCloud) },
+                ],
+                closeOnEsc: true,
+                closeOnOverlayClick: true,
+                onOpen: markDialogOpen,
+                onClose: markDialogClosed,
+            });
+        }
+
         dialog({
             headline: "生成 B50 图片",
-            description: "由 Takumi 云端渲染服务生成图片",
-            actions: [{ text: "取消" }, copyAction, downloadAction, onlineRenderAction],
+            description: "请选择 Takumi 渲染方式",
+            actions: [
+                { text: "取消" },
+                localAction,
+                { text: "云端保存", onClick: () => showSaveOptions(true) },
+                onlineRenderAction,
+            ],
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
