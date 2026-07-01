@@ -460,6 +460,8 @@ const styles = {
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
+        textShadow:
+            "-1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 -1.5px 0 #fff, 0 1.5px 0 #fff, -1.5px 0 0 #fff, 1.5px 0 0 #fff",
     } satisfies CSSProperties,
     secondary: {
         marginTop: 4,
@@ -470,6 +472,8 @@ const styles = {
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
+        textShadow:
+            "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff, -1px 0 0 #fff, 1px 0 0 #fff",
     } satisfies CSSProperties,
     mode: {
         border: "1px solid rgba(35, 47, 62, .16)",
@@ -490,11 +494,15 @@ const styles = {
         fontSize: 16,
         fontWeight: 800,
         marginBottom: -2,
+        textShadow:
+            "-1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 -1.5px 0 #fff, 0 1.5px 0 #fff, -1.5px 0 0 #fff, 1.5px 0 0 #fff",
     } satisfies CSSProperties,
     url: {
         fontSize: 13,
         color: "#4d5660",
         fontWeight: 700,
+        textShadow:
+            "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff, -1px 0 0 #fff, 1px 0 0 #fff",
     } satisfies CSSProperties,
     logo: {
         width: 48,
@@ -528,6 +536,8 @@ const styles = {
         fontSize: 24,
         lineHeight: 1.2,
         fontWeight: "bold",
+        textShadow:
+            "-1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 -1.5px 0 #fff, 0 1.5px 0 #fff, -1.5px 0 0 #fff, 1.5px 0 0 #fff",
     } satisfies CSSProperties,
     stats: {
         display: "inline-flex",
@@ -535,6 +545,8 @@ const styles = {
         flexWrap: "wrap",
         fontSize: 14.4,
         fontWeight: 700,
+        textShadow:
+            "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff, -1px 0 0 #fff, 1px 0 0 #fff",
     } satisfies CSSProperties,
     grid: {
         display: "grid",
