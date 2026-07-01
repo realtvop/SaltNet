@@ -425,7 +425,7 @@ const styles = {
         padding: "20px 30px 40px",
         color: "#222",
         backgroundColor: "#eef6fb",
-        backgroundImage: `url("${siteOrigin}/b50_background.png")`,
+        backgroundImage: `linear-gradient(rgba(255,255,255,.30), rgba(255,255,255,.35)), url("${siteOrigin}/b50_background.png")`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         fontFamily: '"Noto Sans SC", "Noto Sans JP", "Noto Sans TC", sans-serif',
