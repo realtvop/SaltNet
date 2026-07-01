@@ -13,7 +13,9 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "noUncheckedSideEffectImports": true
+        "noUncheckedSideEffectImports": true,
+        "jsx": "react-jsx",
+        "jsxImportSource": "react"
     },
-    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "shared/**/*.ts", "shared/**/*.tsx"]
 }

@@ -20,9 +20,12 @@ importers:
       pinia:
         specifier: ^3.0.3
         version: 3.0.4(typescript@5.7.3)(vue@3.5.25(typescript@5.7.3))
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
       takumi-js:
         specifier: rc
-        version: 2.0.0-rc.1
+        version: 2.0.0-rc.1(react@19.2.7)
       vue:
         specifier: ^3.5.13
         version: 3.5.25(typescript@5.7.3)
@@ -36,6 +39,9 @@ importers:
       '@types/node':
         specifier: ^22.14.1
         version: 22.19.3
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
       '@vitejs/plugin-legacy':
         specifier: ^7.2.1
         version: 7.2.1(terser@5.44.1)(vite@7.3.0(@types/node@22.19.3)(terser@5.44.1)(tsx@4.22.4)(yaml@2.8.2))
@@ -112,13 +118,19 @@ importers:
 
   render-service:
     dependencies:
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
       takumi-js:
         specifier: rc
-        version: 2.0.0-rc.1
+        version: 2.0.0-rc.1(react@19.2.7)
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20260701.0
         version: 4.20260701.1
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
       typescript:
         specifier: ~5.7.2
         version: 5.7.3
@@ -1948,6 +1960,9 @@ packages:
   '@types/node@22.19.3':
     resolution: {integrity: sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA==}
 
+  '@types/react@19.2.17':
+    resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
+
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
@@ -3557,6 +3572,10 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  react@19.2.7:
+    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
+    engines: {node: '>=0.10.0'}
 
   redis-errors@1.2.0:
     resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
@@ -5607,9 +5626,9 @@ snapshots:
   '@takumi-rs/core-win32-x64-msvc@2.0.0-rc.1':
     optional: true
 
-  '@takumi-rs/core@2.0.0-rc.1':
+  '@takumi-rs/core@2.0.0-rc.1(react@19.2.7)':
     dependencies:
-      '@takumi-rs/helpers': 2.0.0-rc.1
+      '@takumi-rs/helpers': 2.0.0-rc.1(react@19.2.7)
       csstype: 3.2.3
     optionalDependencies:
       '@takumi-rs/core-darwin-arm64': 2.0.0-rc.1
@@ -5624,11 +5643,13 @@ snapshots:
       - react
       - react-dom
 
-  '@takumi-rs/helpers@2.0.0-rc.1': {}
+  '@takumi-rs/helpers@2.0.0-rc.1(react@19.2.7)':
+    optionalDependencies:
+      react: 19.2.7
 
-  '@takumi-rs/wasm@2.0.0-rc.1':
+  '@takumi-rs/wasm@2.0.0-rc.1(react@19.2.7)':
     dependencies:
-      '@takumi-rs/helpers': 2.0.0-rc.1
+      '@takumi-rs/helpers': 2.0.0-rc.1(react@19.2.7)
       csstype: 3.2.3
     transitivePeerDependencies:
       - react
@@ -5676,6 +5697,10 @@ snapshots:
   '@types/node@22.19.3':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/react@19.2.17':
+    dependencies:
+      csstype: 3.2.3
 
   '@types/trusted-types@2.0.7': {}
 
@@ -7589,6 +7614,8 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
+  react@19.2.7: {}
+
   redis-errors@1.2.0: {}
 
   redis-parser@3.0.0:
@@ -7840,11 +7867,11 @@ snapshots:
 
   systemjs@6.15.1: {}
 
-  takumi-js@2.0.0-rc.1:
+  takumi-js@2.0.0-rc.1(react@19.2.7):
     dependencies:
-      '@takumi-rs/core': 2.0.0-rc.1
-      '@takumi-rs/helpers': 2.0.0-rc.1
-      '@takumi-rs/wasm': 2.0.0-rc.1
+      '@takumi-rs/core': 2.0.0-rc.1(react@19.2.7)
+      '@takumi-rs/helpers': 2.0.0-rc.1(react@19.2.7)
+      '@takumi-rs/wasm': 2.0.0-rc.1(react@19.2.7)
     transitivePeerDependencies:
       - react
       - react-dom

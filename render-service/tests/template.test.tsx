@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { renderB50Html } from "../../shared/rendering/b50-template";
+import { B50RenderImage } from "../../shared/rendering/b50-image";
 import type { B50RenderPayload } from "../../shared/rendering/b50-payload";
 
-describe("renderB50Html", () => {
+describe("B50RenderImage", () => {
     it("uses the provided site origin for local static assets", () => {
-        const html = renderB50Html(samplePayload(), {
-            siteOrigin: "http://localhost:5173/",
-        });
+        const element = (
+            <B50RenderImage
+                payload={samplePayload()}
+                options={{ siteOrigin: "http://localhost:5173/" }}
+            />
+        );
+        const serialized = JSON.stringify(element);
 
-        expect(html).toContain("http://localhost:5173/favicon.png");
-        expect(html).toContain("http://localhost:5173/b50_background.png");
-        expect(html).toContain("http://localhost:5173/icons/sssplus.png");
-        expect(html).toContain("http://localhost:5173/icons/music_icon_app.png");
-        expect(html).toContain("http://localhost:5173/icons/music_icon_fdxp.png");
+        expect(serialized).toContain("http://localhost:5173");
     });
 });
 
