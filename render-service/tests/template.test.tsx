@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { B50RenderImage } from "../../shared/rendering/b50-image";
+import {
+    B50_DESIGN_SIZE,
+    B50_RENDER_SCALE,
+    B50_RENDER_SIZE,
+    B50RenderImage,
+} from "../../shared/rendering/b50-image";
 import type { B50RenderPayload } from "../../shared/rendering/b50-payload";
 
 describe("B50RenderImage", () => {
+    it("keeps the legacy 2x PNG output resolution", () => {
+        expect(B50_DESIGN_SIZE).toEqual({ width: 1175, height: 1365 });
+        expect(B50_RENDER_SCALE).toBe(2);
+        expect(B50_RENDER_SIZE).toEqual({ width: 2350, height: 2730 });
+    });
+
     it("uses the provided site origin for local static assets", () => {
         const element = (
             <B50RenderImage
