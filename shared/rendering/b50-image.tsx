@@ -275,32 +275,42 @@ function RatingPlate({ rating }: { rating: number }) {
     const href = (plates as Record<string, string>)[plateId] ?? plates["01"];
 
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="125px"
-            height="25px"
-            style={{ marginLeft: 5 }}
+        <div
+            style={{ position: "relative", width: 125, height: 25, display: "flex", marginLeft: 5 }}
         >
-            <image href={href} x="0" y="0" height="1.5em" />
-            {Array.from({ length: 5 }, (_, idx) => {
-                const i = idx + 1;
-                const charIndex = ratingStr.length - (6 - i);
-                const char = charIndex >= 0 ? ratingStr[charIndex] : "";
-                return (
-                    <text
-                        key={i}
-                        x={`${5.2 + (i - 1) * 0.8}em`}
-                        y="1.45em"
-                        textAnchor="middle"
-                        fontFamily="Monaco, 'JetBrains Mono', Monospaced, monospace"
-                        fontSize="0.75em"
-                        fill="#FCD41B"
-                    >
-                        {char}
-                    </text>
-                );
-            })}
-        </svg>
+            <img
+                src={href}
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: 125,
+                    height: 25,
+                }}
+            />
+            <div
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 55,
+                    width: 65,
+                    height: 25,
+                    color: "#fcd41b",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    letterSpacing: 2.2,
+                    lineHeight: "23px",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    boxSizing: "border-box",
+                    paddingRight: 2,
+                }}
+            >
+                {ratingStr}
+            </div>
+        </div>
     );
 }
 
