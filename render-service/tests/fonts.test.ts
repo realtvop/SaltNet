@@ -21,7 +21,7 @@ describe("B50 render fonts", () => {
             "Noto Sans SC",
             "Noto Sans JP",
             "Noto Sans TC",
-            "JetBrains Mono",
+            "Noto Sans Mono",
         ]);
     });
 });

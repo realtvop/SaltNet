@@ -1,5 +1,6 @@
 export interface RenderEnv {
     RENDER_IMAGE_CACHE_SECONDS?: string;
+    ASSETS?: Fetcher;
 }
 
 export function getImageCacheSeconds(env: RenderEnv): number {

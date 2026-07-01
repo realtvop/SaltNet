@@ -18,7 +18,31 @@ export interface RenderContext {
     ) => Promise<Response>;
 }
 
+let assetsFetcher: Fetcher | undefined;
+
+// Intercept fetch globally to route static asset calls internally via env.ASSETS.
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
+    // Check if it's requesting one of the static assets
+    const isAsset = urlStr.includes("/favicon.png") || urlStr.includes("/b50_background.png") || urlStr.includes("/icons/");
+
+    if (isAsset && assetsFetcher) {
+        try {
+            const url = new URL(urlStr, "http://assets.local");
+            const assetPath = url.pathname;
+            return await assetsFetcher.fetch(new Request(`http://assets.local${assetPath}`, init));
+        } catch (error) {
+            console.error("Error fetching local static asset:", error);
+        }
+    }
+
+    return originalFetch(input, init);
+};
+
 export async function handleRenderRequest(context: RenderContext): Promise<Response> {
+    assetsFetcher = context.env.ASSETS;
     const url = new URL(context.request.url);
     const pathname = normalizePathname(url.pathname);
 
