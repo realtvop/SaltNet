@@ -296,7 +296,8 @@ function RatingPlate({ rating }: { rating: number }) {
                     width: 65,
                     height: 25,
                     color: "#fcd41b",
-                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                    fontFamily:
+                        '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                     fontSize: 16,
                     fontWeight: 900,
                     letterSpacing: 2.2,

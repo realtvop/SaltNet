@@ -1,7 +1,7 @@
 import type { Font } from "takumi-js";
 
 const GOOGLE_FONTS_CSS_URL =
-    "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;800;900&family=Noto+Sans+TC:wght@400;700;800;900&display=swap";
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;800;900&family=Noto+Sans+JP:wght@400;700;800;900&family=Noto+Sans+TC:wght@400;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap";
 
 let fontPromise: Promise<Font[]> | null = null;
 
