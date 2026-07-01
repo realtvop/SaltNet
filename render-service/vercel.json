@@ -1,9 +1,4 @@
 {
-    "functions": {
-        "api/render/[...path].ts": {
-            "runtime": "edge"
-        }
-    },
     "routes": [
         {
             "src": "/(.*)",
