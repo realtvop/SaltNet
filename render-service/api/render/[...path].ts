@@ -1,5 +1,5 @@
-import { handleRenderRequest } from "../../src/http";
-import type { RenderEnv } from "../../src/env";
+import { handleRenderRequest } from "../../src/http.js";
+import type { RenderEnv } from "../../src/env.js";
 
 export const config = {
     runtime: "nodejs",

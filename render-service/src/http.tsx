@@ -3,11 +3,11 @@ import {
     B50_FONT_FAMILIES,
     B50_RENDER_LANG,
     loadB50RenderFonts,
-} from "../../shared/rendering/b50-fonts";
-import { B50_RENDER_SIZE, B50RenderImage } from "../../shared/rendering/b50-image";
-import { getImageCacheSeconds } from "./env";
-import type { RenderEnv } from "./env";
-import { decompressPayload, parseB50Payload } from "./payload";
+} from "../../shared/rendering/b50-fonts.js";
+import { B50_RENDER_SIZE, B50RenderImage } from "../../shared/rendering/b50-image.js";
+import { getImageCacheSeconds } from "./env.js";
+import type { RenderEnv } from "./env.js";
+import { decompressPayload, parseB50Payload } from "./payload.js";
 
 export interface RenderContext {
     request: Request;

@@ -1,1 +1,1 @@
-export * from "../../shared/rendering/b50-payload";
+export * from "../../shared/rendering/b50-payload.js";

@@ -1,5 +1,5 @@
-import { handleRenderRequest } from "./http";
-import type { RenderEnv } from "./env";
+import { handleRenderRequest } from "./http.js";
+import type { RenderEnv } from "./env.js";
 
 export default {
     fetch(request: Request, env: RenderEnv): Promise<Response> {
