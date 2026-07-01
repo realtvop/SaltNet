@@ -9,7 +9,7 @@ const B50_RENDER_FONTS = [
 
 export async function renderB50WithTakumi(payload: B50RenderPayload): Promise<Blob> {
     const { render } = await import("takumi-js");
-    const png = await render(renderB50Html(payload), {
+    const png = await render(renderB50Html(payload, { siteOrigin: window.location.origin }), {
         ...B50_RENDER_SIZE,
         format: "png",
         fonts: B50_RENDER_FONTS,
