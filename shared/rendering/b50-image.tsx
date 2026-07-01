@@ -295,18 +295,18 @@ function RatingPlate({ rating }: { rating: number }) {
                 const i = idx + 1;
                 const charIndex = ratingStr.length - (6 - i);
                 const char = charIndex >= 0 ? ratingStr[charIndex] : "";
-                const leftPos = 58 + (i - 1) * 9.8;
+                const leftPos = 58.3 + (i - 1) * 9.6;
                 return (
                     <div
                         key={i}
                         style={{
                             position: "absolute",
-                            top: 1.75,
+                            top: 1 ,
                             left: leftPos,
                             width: 12,
                             height: 24,
                             color: "#fcd41b",
-                            fontFamily: "Monaco, 'JetBrains Mono', Monospaced, monospace",
+                            fontFamily: "'Noto Sans Mono'",
                             fontSize: 12,
                             fontWeight: 900,
                             display: "flex",
