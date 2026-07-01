@@ -35,8 +35,7 @@ export function parseB50Payload(value: unknown): B50RenderPayload {
             : readString(value.playerSecondaryName, "playerSecondaryName", 64);
     const playerRating =
         value.playerRating == null ? null : readFiniteNumber(value.playerRating, "playerRating");
-    const modeLabel =
-        value.modeLabel == null ? null : readString(value.modeLabel, "modeLabel", 24);
+    const modeLabel = value.modeLabel == null ? null : readString(value.modeLabel, "modeLabel", 24);
     const showDxScore = Boolean(value.showDxScore);
     const sd = readCharts(value.sd, "sd", 35);
     const dx = readCharts(value.dx, "dx", 15);

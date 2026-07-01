@@ -3,16 +3,15 @@ import { B50_RENDER_SIZE, renderB50Html } from "./b50-template";
 import { getImageCacheSeconds, getTtlSeconds } from "./env";
 import type { RenderEnv } from "./env";
 import { parseB50Payload } from "./payload";
-import {
-    createRenderId,
-    getPayloadKey,
-    isValidRenderId,
-    RenderPayloadStore,
-} from "./storage";
+import { createRenderId, getPayloadKey, isValidRenderId, RenderPayloadStore } from "./storage";
 
 export interface RenderContext {
     request: Request;
     env: RenderEnv;
+    renderB50Response?: (
+        payload: ReturnType<typeof parseB50Payload>,
+        env: RenderEnv
+    ) => Promise<Response>;
 }
 
 export async function handleRenderRequest(context: RenderContext): Promise<Response> {
@@ -84,23 +83,32 @@ async function renderB50Image(context: RenderContext, id: string): Promise<Respo
         if (!stored) return json({ error: "Render payload expired or not found" }, { status: 404 });
 
         const payload = parseB50Payload(JSON.parse(stored));
-        const response = new ImageResponse(renderB50Html(payload), {
-            ...B50_RENDER_SIZE,
-            format: "png",
-            fonts: [
-                "https://fonts.gstatic.com/s/notosanssc/v39/k3kJo84MPvpLmixcA63oeALZTYKL2wv287Sb.otf",
-                "https://fonts.gstatic.com/s/notosansjp/v55/-F6jfjtqLzI2JPCgQBnw7HFQoggM-FNthvIU.otf",
-                "https://fonts.gstatic.com/s/notosanstc/v38/-nF7OG829Oofr2wohFbTp9i9WyEJIfNZ1g.woff2",
-            ],
-            headers: {
-                "cache-control": `public, max-age=${getImageCacheSeconds(context.env)}`,
-            },
-        });
-        await response.ready;
-        return response;
+        return context.renderB50Response
+            ? context.renderB50Response(payload, context.env)
+            : renderTakumiB50Response(payload, context.env);
     } catch (error) {
         return json({ error: getErrorMessage(error) }, { status: 500 });
     }
+}
+
+async function renderTakumiB50Response(
+    payload: ReturnType<typeof parseB50Payload>,
+    env: RenderEnv
+): Promise<Response> {
+    const response = new ImageResponse(renderB50Html(payload), {
+        ...B50_RENDER_SIZE,
+        format: "png",
+        fonts: [
+            "https://fonts.gstatic.com/s/notosanssc/v39/k3kJo84MPvpLmixcA63oeALZTYKL2wv287Sb.otf",
+            "https://fonts.gstatic.com/s/notosansjp/v55/-F6jfjtqLzI2JPCgQBnw7HFQoggM-FNthvIU.otf",
+            "https://fonts.gstatic.com/s/notosanstc/v38/-nF7OG829Oofr2wohFbTp9i9WyEJIfNZ1g.woff2",
+        ],
+        headers: {
+            "cache-control": `public, max-age=${getImageCacheSeconds(env)}`,
+        },
+    });
+    await response.ready;
+    return response;
 }
 
 function normalizePathname(pathname: string): string {
