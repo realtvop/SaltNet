@@ -292,13 +292,13 @@ function RatingPlate({ rating }: { rating: number }) {
                 const i = idx + 1;
                 const charIndex = ratingStr.length - (6 - i);
                 const char = charIndex >= 0 ? ratingStr[charIndex] : "";
-                const leftPos = 58 + (i - 1) * 9.6;
+                const leftPos = 58 + (i - 1) * 9.8;
                 return (
                     <div
                         key={i}
                         style={{
                             position: "absolute",
-                            top: 1,
+                            top: 1.75,
                             left: leftPos,
                             width: 12,
                             height: 24,
