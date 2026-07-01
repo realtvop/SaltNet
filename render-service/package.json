@@ -9,7 +9,9 @@
         "check": "tsc --noEmit",
         "test": "vitest run"
     },
-    "dependencies": {},
+    "dependencies": {
+        "takumi-js": "rc"
+    },
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20260701.0",
         "typescript": "~5.7.2",

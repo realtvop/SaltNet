@@ -10,9 +10,7 @@
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-        "isolatedModules": true,
-        "jsx": "react-jsx",
-        "jsxImportSource": "react"
+        "isolatedModules": true
     },
     "include": ["src", "api", "tests"]
 }
