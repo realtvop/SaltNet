@@ -288,29 +288,37 @@ function RatingPlate({ rating }: { rating: number }) {
                     height: 25,
                 }}
             />
-            <div
+            <svg
+                width={125}
+                height={25}
                 style={{
                     position: "absolute",
                     top: 0,
-                    left: 55,
-                    width: 65,
+                    left: 0,
+                    width: 125,
                     height: 25,
-                    color: "#fcd41b",
-                    fontFamily:
-                        '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                    fontSize: 16,
-                    fontWeight: 900,
-                    letterSpacing: 2.2,
-                    lineHeight: "23px",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    boxSizing: "border-box",
-                    paddingRight: 2,
                 }}
             >
-                {ratingStr}
-            </div>
+                {Array.from({ length: 5 }, (_, idx) => {
+                    const i = idx + 1;
+                    const charIndex = ratingStr.length - (6 - i);
+                    const char = charIndex >= 0 ? ratingStr[charIndex] : "";
+                    const xPos = 65 + (i - 1) * 10;
+                    return (
+                        <text
+                            key={i}
+                            x={xPos}
+                            y={18}
+                            textAnchor="middle"
+                            fontFamily="Monaco, 'JetBrains Mono', Monospaced, monospace"
+                            fontSize={12.5}
+                            fill="#FCD41B"
+                        >
+                            {char}
+                        </text>
+                    );
+                })}
+            </svg>
         </div>
     );
 }
