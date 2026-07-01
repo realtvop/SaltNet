@@ -1,3 +1,13 @@
+packages:
+    - "."
+    - "database"
+    - "render-service"
+
 allowBuilds:
     core-js: true
     esbuild: true
+    sharp: true
+    workerd: true
+
+minimumReleaseAgeExclude:
+    - "@cloudflare/workers-types@4.20260701.1"

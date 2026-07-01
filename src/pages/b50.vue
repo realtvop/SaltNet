@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed, onMounted, nextTick } from "vue";
+    import { ref, computed, onMounted } from "vue";
     import { useRoute, useRouter } from "vue-router";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
@@ -10,12 +10,15 @@
     import { ComboStatus } from "@/components/data/maiTypes";
     import { getMusicInfoAsync } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
-    import B50ToRender from "@/components/rendering/b50.vue";
-    import domtoimage from "dom-to-image-more";
+    import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
     import { isUtageGrade } from "@/components/data/chart/difficulty";
+    import type {
+        B50RenderChart as B50RenderChartPayload,
+        B50RenderPayload,
+    } from "../../shared/rendering/b50-payload";
 
     const route = useRoute();
     const router = useRouter();
@@ -23,7 +26,6 @@
     const userId = ref(route.params.id as string);
     const error = ref<string | null>(null);
     const pending = ref(false);
-    const renderHostMounted = ref(false);
     const musicChartMap = ref<Map<string, Chart>>(new Map());
 
     // 构建高效查找表
@@ -265,73 +267,6 @@
         return Math.round(value * 10) / 10;
     }
 
-    function getB50Png() {
-        return domtoimage.toPng(document.getElementById("player-b50-for-rendering"), {
-            scale: 2,
-            width: 1175,
-            height: 1365,
-        });
-    }
-
-    async function ensureRenderHostReady() {
-        if (renderHostMounted.value) return;
-        renderHostMounted.value = true;
-        await nextTick();
-    }
-
-    function generateRenderUrl(endpoint: string): string {
-        const params = new URLSearchParams();
-
-        const sdData = b50SdCharts.value.map(chart => ({
-            song_id: chart.music.info.id,
-            title: chart.music.info.title,
-            type: chart.music.info.type,
-            level_index: chart.info.grade,
-            ds: chart.info.constant,
-            achievements: chart.score?.achievements,
-            fc: chart.score?.comboStatus,
-            fs: chart.score?.syncStatus,
-            rate: chart.score?.rankRate,
-            ra: chart.score?.deluxeRating,
-        }));
-
-        const dxData = b50DxCharts.value.map(chart => ({
-            song_id: chart.music.info.id,
-            title: chart.music.info.title,
-            type: chart.music.info.type,
-            level_index: chart.info.grade,
-            ds: chart.info.constant,
-            achievements: chart.score?.achievements,
-            fc: chart.score?.comboStatus,
-            fs: chart.score?.syncStatus,
-            rate: chart.score?.rankRate,
-            ra: chart.score?.deluxeRating,
-        }));
-
-        params.append("s", JSON.stringify(sdData));
-        params.append("d", JSON.stringify(dxData));
-        params.append("n", getUserDisplayName(player.value));
-
-        const secondaryName =
-            player.value?.remark &&
-            (player.value?.data?.name ??
-                player.value?.divingFish?.name ??
-                player.value?.inGame?.name)
-                ? (player.value.data?.name ??
-                  player.value.divingFish?.name ??
-                  player.value.inGame?.name)
-                : "";
-        if (secondaryName) {
-            params.append("o", secondaryName);
-        }
-
-        if (displayedRating.value) {
-            params.append("r", displayedRating.value.toString());
-        }
-
-        return `${endpoint}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Fsalt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
-    }
-
     function isIOSDevice(): boolean {
         const ua = navigator.userAgent;
         // iPadOS may report as MacIntel — detect via touch points in that case
@@ -350,67 +285,72 @@
     }
 
     function downloadB50Png() {
-        function onlineRenderAndDownload() {
-            const renderOriginUrl = generateRenderUrl(
-                import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL
-            );
-            window.open(renderOriginUrl, "_blank");
+        async function renderOnlineBlob(): Promise<Blob> {
+            const rendererUrl = getRendererBaseUrl();
+            if (!rendererUrl) throw new Error("未配置 Takumi 渲染服务地址");
+
+            const response = await fetch(`${rendererUrl}/render/b50.png`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(buildB50RenderPayload()),
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => null);
+                throw new Error(data?.error || `渲染服务请求失败: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            if (!blob.type.startsWith("image/png")) {
+                throw new Error("渲染服务返回了无效的图片数据");
+            }
+            return blob;
         }
 
-        const isSupported = isLocalRenderSupported();
-
-        const baseActions = [
-            {
-                text: "取消",
-            },
-        ];
+        async function renderLocalBlob(): Promise<Blob> {
+            return renderB50WithTakumi(buildB50RenderPayload());
+        }
 
         const copyAction = {
             text: "复制",
             onClick: async () => {
-                var rendering_snackbar = snackbar({
+                const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
-                await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
-                await ensureRenderHostReady();
-                return getB50Png()
-                    .then((dataUrl: string) => {
-                        return fetch(dataUrl)
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error("获取图片数据失败");
-                                }
-                                return response.blob();
-                            })
-                            .then(blob => {
-                                const clipboardItem = new ClipboardItem({ "image/png": blob });
-                                return navigator.clipboard.write([clipboardItem]);
-                            });
-                    })
-                    .then(() => {
-                        rendering_snackbar.open = false;
-                        snackbar({ message: "B50 图片已成功复制到剪贴板!" });
-                    })
-                    .catch(() => {
-                        rendering_snackbar.open = false;
-                        snackbar({ message: "复制失败，请检查浏览器权限或稍后重试。" });
+                try {
+                    const blob = await renderLocalBlob();
+                    const clipboardItem = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([clipboardItem]);
+                    renderingSnackbar.open = false;
+                    snackbar({ message: "B50 图片已成功复制到剪贴板!" });
+                } catch (err) {
+                    renderingSnackbar.open = false;
+                    snackbar({
+                        message:
+                            err instanceof Error
+                                ? err.message
+                                : "复制失败，请检查浏览器权限或稍后重试。",
                     });
+                }
             },
         };
 
         const downloadAction = {
             text: "下载",
             onClick: async () => {
-                var rendering_snackbar = snackbar({
+                const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
-                await new Promise(resolve => setTimeout(resolve, 100)); // ensure animation played completely
-                await ensureRenderHostReady();
-                return getB50Png().then((dataUrl: string) => {
+
+                try {
+                    const blob = await renderLocalBlob();
+                    const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
-                    link.href = dataUrl;
+                    link.href = url;
                     const formattedTime = new Date().toLocaleString("zh-CN", {
                         year: "numeric",
                         month: "2-digit",
@@ -422,19 +362,51 @@
                     const filePrefix = modeLabel.value ?? "B50";
                     link.download = `${filePrefix}_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                     link.click();
-                    rendering_snackbar.open = false;
-                });
+                    URL.revokeObjectURL(url);
+                    renderingSnackbar.open = false;
+                } catch (err) {
+                    renderingSnackbar.open = false;
+                    snackbar({
+                        message: err instanceof Error ? err.message : "下载失败，请稍后重试。",
+                    });
+                }
             },
+        };
+
+        const localAction = {
+            text: "本地",
+            onClick: () => showLocalSaveOptions(),
         };
 
         const onlineRenderAction = {
             text: "在线",
-            onClick: () => onlineRenderAndDownload(),
+            onClick: async () => {
+                const renderingSnackbar = snackbar({
+                    message: "正在渲染 B50...",
+                    autoCloseDelay: 0,
+                });
+                try {
+                    const blob = await renderOnlineBlob();
+                    const url = URL.createObjectURL(blob);
+                    renderingSnackbar.open = false;
+                    window.open(url, "_blank");
+                } catch (err) {
+                    renderingSnackbar.open = false;
+                    snackbar({
+                        message: err instanceof Error ? err.message : "在线渲染失败。",
+                    });
+                }
+            },
         };
 
-        // If local rendering is supported, first ask whether to use local or online rendering.
-        // If local is chosen, show a second dialog allowing copy or download.
-        const showLocalSaveOptions = () => {
+        const isSupported = isLocalRenderSupported();
+        const baseActions = [
+            {
+                text: "取消",
+            },
+        ];
+
+        function showLocalSaveOptions() {
             const localActions = [...baseActions, copyAction, downloadAction];
 
             dialog({
@@ -446,18 +418,11 @@
                 onOpen: markDialogOpen,
                 onClose: markDialogClosed,
             });
-        };
+        }
 
         const mainActions = [
             ...baseActions,
-            ...(isSupported
-                ? [
-                      {
-                          text: "本地",
-                          onClick: () => showLocalSaveOptions(),
-                      },
-                  ]
-                : []),
+            ...(isSupported ? [localAction] : []),
             onlineRenderAction,
         ];
 
@@ -472,6 +437,49 @@
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
         });
+    }
+
+    function buildB50RenderPayload(): B50RenderPayload {
+        return {
+            playerName: getUserDisplayName(player.value),
+            playerSecondaryName: getPlayerSecondaryName(),
+            playerRating: displayedRating.value || null,
+            modeLabel: modeLabel.value ?? "B50",
+            showDxScore: shared.appSettings.showDxScoreInB50,
+            sd: b50SdCharts.value.map(toRenderChartPayload),
+            dx: b50DxCharts.value.map(toRenderChartPayload),
+        };
+    }
+
+    function toRenderChartPayload(chart: Chart): B50RenderChartPayload {
+        return {
+            songId: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            levelIndex: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements ?? null,
+            fc: chart.score?.comboStatus ?? "",
+            fs: chart.score?.syncStatus ?? "",
+            rate: chart.score?.rankRate ?? "",
+            ra: chart.score?.deluxeRating ?? 0,
+            deluxeScore: chart.score?.deluxeScore,
+            deluxeScoreMax: chart.info.deluxeScoreMax,
+        };
+    }
+
+    function getPlayerSecondaryName(): string | null {
+        if (!player.value?.remark) return null;
+        return (
+            player.value.data?.name ??
+            player.value.divingFish?.name ??
+            player.value.inGame?.name ??
+            null
+        );
+    }
+
+    function getRendererBaseUrl(): string {
+        return (import.meta.env.VITE_TAKUMI_RENDERER_URL || "").replace(/\/+$/, "");
     }
 </script>
 
@@ -559,21 +567,6 @@
             <h2>无法加载玩家数据</h2>
             <p>未能获取到有效的玩家信息，是不是还没有添加用户？</p>
         </div>
-
-        <B50ToRender
-            v-if="renderHostMounted && player && player.data"
-            :b50SdCharts="b50SdCharts"
-            :b50DxCharts="b50DxCharts"
-            :playerName="getUserDisplayName(player)"
-            :playerSecondaryName="
-                player.remark &&
-                (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
-                    ? (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
-                    : ''
-            "
-            :playerRating="displayedRating"
-            style="display: none"
-        />
     </div>
 
     <ChartInfoDialog
