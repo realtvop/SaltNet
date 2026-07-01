@@ -273,6 +273,23 @@
         return Math.round(value * 10) / 10;
     }
 
+    function isIOSDevice(): boolean {
+        const ua = navigator.userAgent;
+        // iPadOS may report as MacIntel — detect via touch points in that case
+        const isIpadAsMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+        return /iPad|iPhone|iPod/.test(ua) || isIpadAsMac;
+    }
+
+    function isFirefoxBasedBrowser(): boolean {
+        const ua = navigator.userAgent;
+        return /Firefox\//.test(ua) || (/Gecko\//.test(ua) && !/like Gecko/.test(ua));
+    }
+
+    function isLocalRenderSupported(): boolean {
+        // Disallow local rendering on iOS and Firefox-based browsers; allow all other browsers
+        return !isIOSDevice() && !isFirefoxBasedBrowser();
+    }
+
     function downloadB50Png() {
         async function createRenderJob(): Promise<B50RenderJobResponse> {
             const rendererUrl = getRendererBaseUrl();
@@ -294,27 +311,19 @@
             return response.json();
         }
 
-        async function fetchRenderedBlob(url: string): Promise<Blob> {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`获取渲染图片失败: ${response.status}`);
-            return response.blob();
-        }
-
         async function renderLocalBlob(): Promise<Blob> {
             return renderB50WithTakumi(buildB50RenderPayload());
         }
 
         const copyAction = {
             text: "复制",
-            onClick: async (useCloud: boolean) => {
+            onClick: async () => {
                 const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
                 try {
-                    const blob = useCloud
-                        ? await createRenderJob().then(job => fetchRenderedBlob(job.url))
-                        : await renderLocalBlob();
+                    const blob = await renderLocalBlob();
                     const clipboardItem = new ClipboardItem({ "image/png": blob });
                     await navigator.clipboard.write([clipboardItem]);
                     renderingSnackbar.open = false;
@@ -333,16 +342,14 @@
 
         const downloadAction = {
             text: "下载",
-            onClick: async (useCloud: boolean) => {
+            onClick: async () => {
                 const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
 
                 try {
-                    const blob = useCloud
-                        ? await createRenderJob().then(job => fetchRenderedBlob(job.url))
-                        : await renderLocalBlob();
+                    const blob = await renderLocalBlob();
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     link.href = url;
@@ -370,11 +377,11 @@
 
         const localAction = {
             text: "本地",
-            onClick: () => showSaveOptions(false),
+            onClick: () => showLocalSaveOptions(),
         };
 
         const onlineRenderAction = {
-            text: "云端",
+            text: "在线",
             onClick: async () => {
                 const renderingSnackbar = snackbar({
                     message: "正在创建渲染任务...",
@@ -393,15 +400,20 @@
             },
         };
 
-        function showSaveOptions(useCloud: boolean) {
+        const isSupported = isLocalRenderSupported();
+        const baseActions = [
+            {
+                text: "取消",
+            },
+        ];
+
+        function showLocalSaveOptions() {
+            const localActions = [...baseActions, copyAction, downloadAction];
+
             dialog({
-                headline: useCloud ? "Takumi 云端渲染" : "Takumi 本地渲染",
+                headline: "本地渲染",
                 description: "选择保存方式",
-                actions: [
-                    { text: "取消" },
-                    { text: "复制", onClick: () => copyAction.onClick(useCloud) },
-                    { text: "下载", onClick: () => downloadAction.onClick(useCloud) },
-                ],
+                actions: localActions,
                 closeOnEsc: true,
                 closeOnOverlayClick: true,
                 onOpen: markDialogOpen,
@@ -409,15 +421,18 @@
             });
         }
 
+        const mainActions = [
+            ...baseActions,
+            ...(isSupported ? [localAction] : []),
+            onlineRenderAction,
+        ];
+
         dialog({
             headline: "生成 B50 图片",
-            description: "请选择 Takumi 渲染方式",
-            actions: [
-                { text: "取消" },
-                localAction,
-                { text: "云端保存", onClick: () => showSaveOptions(true) },
-                onlineRenderAction,
-            ],
+            description: isSupported
+                ? "请选择渲染方式"
+                : "本地渲染在 iOS 与基于 Firefox 的浏览器上不可用，请使用其他浏览器或在线渲染",
+            actions: mainActions,
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
