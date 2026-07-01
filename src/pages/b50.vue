@@ -386,7 +386,7 @@
             },
         };
 
-        const isSupported = isLocalRenderSupported();
+        const isSupported = true; //isLocalRenderSupported();
         const baseActions = [
             {
                 text: "取消",
