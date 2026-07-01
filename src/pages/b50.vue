@@ -365,7 +365,7 @@
                 try {
                     const form = document.createElement("form");
                     form.method = "POST";
-                    form.action = `${rendererUrl}/render/b50.png`;
+                    form.action = `${rendererUrl}/render/b50`;
                     form.target = "_blank";
                     form.style.display = "none";
 
