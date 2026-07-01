@@ -1,0 +1,19 @@
+{
+    "name": "saltnet-render-service",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev src/worker.ts",
+        "deploy:cloudflare": "wrangler deploy",
+        "check": "tsc --noEmit",
+        "test": "vitest run"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20260701.0",
+        "typescript": "~5.7.2",
+        "vitest": "^3.2.4",
+        "wrangler": "^4.23.0"
+    }
+}

@@ -1,0 +1,8 @@
+name = "saltnet-render-service"
+main = "src/worker.ts"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+RENDER_PAYLOAD_TTL_SECONDS = "3600"
+RENDER_IMAGE_CACHE_SECONDS = "600"
