@@ -8,7 +8,6 @@ import UsersPage from "../../pages/users.vue";
 import SettingsPage from "../../pages/settings.vue";
 import SongsPage from "../../pages/songs.vue";
 import CollectionsPage from "../../pages/collections.vue";
-import RenderingPage from "../../pages/b50ToRender.vue";
 import RatingHistoryPage from "../../pages/rating-history.vue";
 import ShopPage from "../../pages/Shop.vue";
 import MePage from "../../pages/me.vue";
@@ -24,7 +23,6 @@ const routes = [
     { path: "/songs", component: SongsPage },
     { path: "/songs/:id", component: SongsPage, props: true },
     { path: "/b50", component: UserPage },
-    { path: "/b50/render", component: RenderingPage },
     { path: "/b50/:id", component: UserPage, props: true },
     { path: "/rating-history/:id", component: RatingHistoryPage, props: true },
     { path: "/settings", component: SettingsPage },

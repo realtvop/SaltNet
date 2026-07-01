@@ -51,7 +51,7 @@
 
 <template>
     <mdui-layout>
-        <component :is="TopAppBar" v-if="route.path !== '/b50/render'" />
+        <component :is="TopAppBar" />
         <mdui-navigation-bar
             :value="route.path"
             v-if="!route.path.startsWith('/b50/') && !route.path.startsWith('/songs/')"

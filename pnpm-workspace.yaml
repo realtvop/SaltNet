@@ -1,7 +1,7 @@
 packages:
-  - "."
-  - "database"
-  - "render-service"
+    - "."
+    - "database"
+    - "render-service"
 
 allowBuilds:
     core-js: true
@@ -10,4 +10,4 @@ allowBuilds:
     workerd: true
 
 minimumReleaseAgeExclude:
-  - '@cloudflare/workers-types@4.20260701.1'
+    - "@cloudflare/workers-types@4.20260701.1"
