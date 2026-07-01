@@ -1,6 +1,9 @@
+import * as React from "react";
 import type { CSSProperties } from "react";
 import type { B50RenderChart, B50RenderPayload } from "./b50-payload";
 import plates from "../../src/assets/plates.json";
+
+void React;
 
 const DESIGN_WIDTH = 1175;
 const DESIGN_HEIGHT = 1365;
