@@ -61,7 +61,10 @@ export async function handleRenderRequest(context: RenderContext): Promise<Respo
 
         if (
             (context.request.method === "GET" || context.request.method === "POST") &&
-            (pathname === "/render/b50.png" || pathname === "/render/b50")
+            (pathname === "/render/b50.png" ||
+                pathname === "/render/b50" ||
+                pathname === "/b50.png" ||
+                pathname === "/b50")
         ) {
             return withCors(await renderB50Image(context));
         }

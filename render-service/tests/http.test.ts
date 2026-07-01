@@ -62,6 +62,26 @@ describe("handleRenderRequest", () => {
         expect(await response.text()).toBe("png:Salt");
     });
 
+    it("accepts Vercel route output paths without the render prefix", async () => {
+        const response = await handleRenderRequest({
+            request: new Request("https://render.example.test/b50", {
+                method: "POST",
+                body: JSON.stringify(samplePayload()),
+            }),
+            env,
+            renderB50Response: async payload =>
+                new Response(`png:${payload.playerName}`, {
+                    headers: {
+                        "content-type": "image/png",
+                    },
+                }),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toBe("image/png");
+        expect(await response.text()).toBe("png:Salt");
+    });
+
     it("renders a B50 image from a POST request with form-encoded raw JSON payload", async () => {
         const formData = new FormData();
         formData.append("payload", JSON.stringify(samplePayload()));
