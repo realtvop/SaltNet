@@ -301,7 +301,7 @@ function RatingPlate({ rating }: { rating: number }) {
                         key={i}
                         style={{
                             position: "absolute",
-                            top: 1 ,
+                            top: 1,
                             left: leftPos,
                             width: 12,
                             height: 24,

@@ -23,10 +23,14 @@ let assetsFetcher: Fetcher | undefined;
 // Intercept fetch globally to route static asset calls internally via env.ASSETS.
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const urlStr =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
     // Check if it's requesting one of the static assets
-    const isAsset = urlStr.includes("/favicon.png") || urlStr.includes("/b50_background.png") || urlStr.includes("/icons/");
+    const isAsset =
+        urlStr.includes("/favicon.png") ||
+        urlStr.includes("/b50_background.png") ||
+        urlStr.includes("/icons/");
 
     if (isAsset && assetsFetcher) {
         try {

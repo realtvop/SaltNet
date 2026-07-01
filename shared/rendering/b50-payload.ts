@@ -36,7 +36,9 @@ export function parseB50Payload(value: unknown): B50RenderPayload {
     const playerRating =
         value.playerRating == null ? null : readFiniteNumber(value.playerRating, "playerRating");
     const modeLabel =
-        value.modeLabel == null ? null : readOptionalDisplayString(value.modeLabel, "modeLabel", 24);
+        value.modeLabel == null
+            ? null
+            : readOptionalDisplayString(value.modeLabel, "modeLabel", 24);
     const showDxScore = Boolean(value.showDxScore);
     const sd = readCharts(value.sd, "sd", 35);
     const dx = readCharts(value.dx, "dx", 15);
@@ -105,7 +107,11 @@ function readOptionalString(value: unknown, field: string, maxLength: number): s
     return trimmed;
 }
 
-function readOptionalDisplayString(value: unknown, field: string, maxLength: number): string | null {
+function readOptionalDisplayString(
+    value: unknown,
+    field: string,
+    maxLength: number
+): string | null {
     const trimmed = readOptionalString(value, field, maxLength);
     return trimmed || null;
 }
