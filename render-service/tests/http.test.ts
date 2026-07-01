@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handleRenderRequest } from "../src/http";
 import type { RenderEnv } from "../src/env";
 import type { B50RenderPayload } from "../src/payload";
+import { compressPayload } from "../src/payload";
 
 const env: RenderEnv = {
     RENDER_IMAGE_CACHE_SECONDS: "600",
@@ -26,6 +27,26 @@ describe("handleRenderRequest", () => {
             request: new Request("https://render.example.test/render/b50.png", {
                 method: "POST",
                 body: JSON.stringify(samplePayload()),
+            }),
+            env,
+            renderB50Response: async payload =>
+                new Response(`png:${payload.playerName}`, {
+                    headers: {
+                        "content-type": "image/png",
+                    },
+                }),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toBe("image/png");
+        expect(await response.text()).toBe("png:Salt");
+    });
+
+    it("renders a B50 image from a GET request with compressed payload query parameter", async () => {
+        const compressed = await compressPayload(samplePayload());
+        const response = await handleRenderRequest({
+            request: new Request(`https://render.example.test/render/b50.png?p=${compressed}`, {
+                method: "GET",
             }),
             env,
             renderB50Response: async payload =>
@@ -87,7 +108,9 @@ describe("handleRenderRequest", () => {
             expect(response.status).toBe(204);
             expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
             expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
-            expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization, Accept, Origin, X-Requested-With");
+            expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+                "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+            );
             expect(response.headers.get("Access-Control-Max-Age")).toBe("86400");
         });
 

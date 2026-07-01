@@ -15,9 +15,10 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
     import { isUtageGrade } from "@/components/data/chart/difficulty";
-    import type {
-        B50RenderChart as B50RenderChartPayload,
-        B50RenderPayload,
+    import {
+        type B50RenderChart as B50RenderChartPayload,
+        type B50RenderPayload,
+        compressPayload,
     } from "../../shared/rendering/b50-payload";
 
     const route = useRoute();
@@ -285,30 +286,6 @@
     }
 
     function downloadB50Png() {
-        async function renderOnlineBlob(): Promise<Blob> {
-            const rendererUrl = getRendererBaseUrl();
-            if (!rendererUrl) throw new Error("未配置 Takumi 渲染服务地址");
-
-            const response = await fetch(`${rendererUrl}/render/b50.png`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(buildB50RenderPayload()),
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => null);
-                throw new Error(data?.error || `渲染服务请求失败: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            if (!blob.type.startsWith("image/png")) {
-                throw new Error("渲染服务返回了无效的图片数据");
-            }
-            return blob;
-        }
-
         async function renderLocalBlob(): Promise<Blob> {
             return renderB50WithTakumi(buildB50RenderPayload());
         }
@@ -381,19 +358,23 @@
         const onlineRenderAction = {
             text: "在线",
             onClick: async () => {
+                const rendererUrl = getRendererBaseUrl();
+                if (!rendererUrl) {
+                    snackbar({ message: "未配置 Takumi 渲染服务地址" });
+                    return;
+                }
                 const renderingSnackbar = snackbar({
-                    message: "正在渲染 B50...",
+                    message: "正在生成链接...",
                     autoCloseDelay: 0,
                 });
                 try {
-                    const blob = await renderOnlineBlob();
-                    const url = URL.createObjectURL(blob);
+                    const compressed = await compressPayload(buildB50RenderPayload());
                     renderingSnackbar.open = false;
-                    window.open(url, "_blank");
+                    window.open(`${rendererUrl}/render/b50.png?p=${compressed}`, "_blank");
                 } catch (err) {
                     renderingSnackbar.open = false;
                     snackbar({
-                        message: err instanceof Error ? err.message : "在线渲染失败。",
+                        message: err instanceof Error ? err.message : "生成渲染链接失败。",
                     });
                 }
             },

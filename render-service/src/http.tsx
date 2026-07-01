@@ -7,7 +7,7 @@ import {
 import { B50_RENDER_SIZE, B50RenderImage } from "../../shared/rendering/b50-image";
 import { getImageCacheSeconds } from "./env";
 import type { RenderEnv } from "./env";
-import { parseB50Payload } from "./payload";
+import { decompressPayload, parseB50Payload } from "./payload";
 
 export interface RenderContext {
     request: Request;
@@ -59,17 +59,17 @@ export async function handleRenderRequest(context: RenderContext): Promise<Respo
             return withCors(json({ ok: true, service: "saltnet-render-service" }));
         }
 
-        if (context.request.method === "POST" && pathname === "/render/b50.png") {
+        if (
+            (context.request.method === "GET" || context.request.method === "POST") &&
+            pathname === "/render/b50.png"
+        ) {
             return withCors(await renderB50Image(context));
         }
 
         return withCors(json({ error: "Not found" }, { status: 404 }));
     } catch (error) {
         return withCors(
-            json(
-                { error: `Internal Server Error: ${getErrorMessage(error)}` },
-                { status: 500 }
-            )
+            json({ error: `Internal Server Error: ${getErrorMessage(error)}` }, { status: 500 })
         );
     }
 }
@@ -84,18 +84,35 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
 }
 
 async function renderB50Image(context: RenderContext): Promise<Response> {
-    let body: unknown;
-    try {
-        body = await context.request.json();
-    } catch {
-        return json({ error: "Request body must be JSON" }, { status: 400 });
-    }
-
     let payload: ReturnType<typeof parseB50Payload>;
-    try {
-        payload = parseB50Payload(body);
-    } catch (error) {
-        return json({ error: getErrorMessage(error) }, { status: 400 });
+    const url = new URL(context.request.url);
+    const pParam = url.searchParams.get("p") || url.searchParams.get("payload");
+
+    if (context.request.method === "GET" || pParam) {
+        if (!pParam) {
+            return json({ error: "Missing payload parameter" }, { status: 400 });
+        }
+        try {
+            payload = await decompressPayload(pParam);
+        } catch (error) {
+            return json(
+                { error: `Invalid payload encoding: ${getErrorMessage(error)}` },
+                { status: 400 }
+            );
+        }
+    } else {
+        let body: unknown;
+        try {
+            body = await context.request.json();
+        } catch {
+            return json({ error: "Request body must be JSON" }, { status: 400 });
+        }
+
+        try {
+            payload = parseB50Payload(body);
+        } catch (error) {
+            return json({ error: getErrorMessage(error) }, { status: 400 });
+        }
     }
 
     try {
@@ -136,14 +153,20 @@ function withCors(response: Response): Response {
     try {
         response.headers.set("Access-Control-Allow-Origin", "*");
         response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Origin, X-Requested-With");
+        response.headers.set(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+        );
         response.headers.set("Access-Control-Max-Age", "86400");
         return response;
     } catch {
         const headers = new Headers(response.headers);
         headers.set("Access-Control-Allow-Origin", "*");
         headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Origin, X-Requested-With");
+        headers.set(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Authorization, Accept, Origin, X-Requested-With"
+        );
         headers.set("Access-Control-Max-Age", "86400");
         return new Response(response.body, {
             status: response.status,
@@ -156,4 +179,3 @@ function withCors(response: Response): Response {
 function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : "Unknown error";
 }
-

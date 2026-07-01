@@ -132,3 +132,35 @@ function readInteger(value: unknown, field: string): number {
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+export async function compressPayload(payload: B50RenderPayload): Promise<string> {
+    const str = JSON.stringify(payload);
+    const stream = new Response(str).body;
+    if (!stream) throw new Error("Failed to get body stream");
+    const compressedStream = stream.pipeThrough(new CompressionStream("deflate"));
+    const buffer = await new Response(compressedStream).arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+
+    let binString = "";
+    const len = uint8.byteLength;
+    for (let i = 0; i < len; i++) {
+        binString += String.fromCharCode(uint8[i]);
+    }
+    return btoa(binString).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export async function decompressPayload(base64url: string): Promise<B50RenderPayload> {
+    let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) {
+        base64 += "=";
+    }
+    const binString = atob(base64);
+    const uint8 = Uint8Array.from(binString, m => m.charCodeAt(0));
+
+    const stream = new Response(uint8).body;
+    if (!stream) throw new Error("Failed to get body stream");
+    const decompressedStream = stream.pipeThrough(new DecompressionStream("deflate"));
+    const text = await new Response(decompressedStream).text();
+    const parsed = JSON.parse(text);
+    return parseB50Payload(parsed);
+}
