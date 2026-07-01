@@ -1,4 +1,5 @@
 import { ImageResponse } from "takumi-js/response";
+import { loadB50RenderFonts } from "../../shared/rendering/b50-fonts";
 import { B50_RENDER_SIZE, renderB50Html } from "./b50-template";
 import { getImageCacheSeconds, getTtlSeconds } from "./env";
 import type { RenderEnv } from "./env";
@@ -95,14 +96,11 @@ async function renderTakumiB50Response(
     payload: ReturnType<typeof parseB50Payload>,
     env: RenderEnv
 ): Promise<Response> {
+    const fonts = await loadB50RenderFonts();
     const response = new ImageResponse(renderB50Html(payload), {
         ...B50_RENDER_SIZE,
         format: "png",
-        fonts: [
-            "https://fonts.gstatic.com/s/notosanssc/v39/k3kJo84MPvpLmixcA63oeALZTYKL2wv287Sb.otf",
-            "https://fonts.gstatic.com/s/notosansjp/v55/-F6jfjtqLzI2JPCgQBnw7HFQoggM-FNthvIU.otf",
-            "https://fonts.gstatic.com/s/notosanstc/v38/-nF7OG829Oofr2wohFbTp9i9WyEJIfNZ1g.woff2",
-        ],
+        fonts,
         headers: {
             "cache-control": `public, max-age=${getImageCacheSeconds(env)}`,
         },
