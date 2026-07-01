@@ -464,7 +464,8 @@ const styles = {
     secondary: {
         marginTop: 4,
         fontSize: 15,
-        color: "#58616b",
+        color: "#48515b",
+        fontWeight: 700,
         maxWidth: 520,
         whiteSpace: "nowrap",
         overflow: "hidden",
@@ -492,7 +493,8 @@ const styles = {
     } satisfies CSSProperties,
     url: {
         fontSize: 13,
-        color: "#5d6670",
+        color: "#4d5660",
+        fontWeight: 700,
     } satisfies CSSProperties,
     logo: {
         width: 48,
@@ -532,8 +534,7 @@ const styles = {
         gap: 10,
         flexWrap: "wrap",
         fontSize: 14.4,
-        fontWeight: "normal",
-        color: "#888",
+        fontWeight: 700,
     } satisfies CSSProperties,
     grid: {
         display: "grid",
@@ -715,6 +716,7 @@ const styles = {
         alignItems: "center",
         marginTop: "0.2em",
         lineHeight: 1,
+        fontWeight: 700,
     } satisfies CSSProperties,
     dxScoreLabel: {
         marginLeft: "auto",
