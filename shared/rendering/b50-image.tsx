@@ -288,37 +288,33 @@ function RatingPlate({ rating }: { rating: number }) {
                     height: 25,
                 }}
             />
-            <svg
-                width={125}
-                height={25}
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: 125,
-                    height: 25,
-                }}
-            >
-                {Array.from({ length: 5 }, (_, idx) => {
-                    const i = idx + 1;
-                    const charIndex = ratingStr.length - (6 - i);
-                    const char = charIndex >= 0 ? ratingStr[charIndex] : "";
-                    const xPos = 65 + (i - 1) * 10;
-                    return (
-                        <text
-                            key={i}
-                            x={xPos}
-                            y={18}
-                            textAnchor="middle"
-                            fontFamily="Monaco, 'JetBrains Mono', Monospaced, monospace"
-                            fontSize={12.5}
-                            fill="#FCD41B"
-                        >
-                            {char}
-                        </text>
-                    );
-                })}
-            </svg>
+            {Array.from({ length: 5 }, (_, idx) => {
+                const i = idx + 1;
+                const charIndex = ratingStr.length - (6 - i);
+                const char = charIndex >= 0 ? ratingStr[charIndex] : "";
+                const leftPos = 59 + (i - 1) * 10;
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: leftPos,
+                            width: 12,
+                            height: 25,
+                            color: "#fcd41b",
+                            fontFamily: "Monaco, 'JetBrains Mono', Monospaced, monospace",
+                            fontSize: 12.5,
+                            fontWeight: 900,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                        }}
+                    >
+                        {char}
+                    </div>
+                );
+            })}
         </div>
     );
 }
