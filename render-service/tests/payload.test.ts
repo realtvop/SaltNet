@@ -42,6 +42,23 @@ describe("parseB50Payload", () => {
         expect(payload.sd[0].rate).toBe("");
     });
 
+    it("allows empty player name and chart title", () => {
+        const payload = parseB50Payload({
+            playerName: "   ",
+            showDxScore: false,
+            sd: [
+                {
+                    ...sampleChart(),
+                    title: "",
+                },
+            ],
+            dx: [],
+        });
+
+        expect(payload.playerName).toBe("");
+        expect(payload.sd[0].title).toBe("");
+    });
+
     it("rejects empty chart lists", () => {
         expect(() =>
             parseB50Payload({

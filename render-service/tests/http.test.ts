@@ -133,14 +133,14 @@ describe("handleRenderRequest", () => {
         const response = await handleRenderRequest({
             request: new Request("https://render.example.test/render/b50.png", {
                 method: "POST",
-                body: JSON.stringify({ playerName: "", sd: [], dx: [] }),
+                body: JSON.stringify({ playerName: "", sd: "not-an-array", dx: [] }),
             }),
             env,
         });
 
         expect(response.status).toBe(400);
         await expect(response.json()).resolves.toMatchObject({
-            error: "playerName cannot be empty",
+            error: "sd must be an array",
         });
     });
 

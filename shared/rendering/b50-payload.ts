@@ -28,7 +28,7 @@ export interface B50RenderPayload {
 export function parseB50Payload(value: unknown): B50RenderPayload {
     if (!isRecord(value)) throw new Error("Payload must be an object");
 
-    const playerName = readString(value.playerName, "playerName", 64);
+    const playerName = readOptionalString(value.playerName, "playerName", 64);
     const playerSecondaryName =
         value.playerSecondaryName == null
             ? null
@@ -69,7 +69,7 @@ function readChart(value: unknown, field: string): B50RenderChart {
 
     return {
         songId: readInteger(value.songId, `${field}.songId`),
-        title: readString(value.title, `${field}.title`, 120),
+        title: readOptionalString(value.title, `${field}.title`, 120),
         type: readString(value.type, `${field}.type`, 8),
         levelIndex: readInteger(value.levelIndex, `${field}.levelIndex`),
         ds: readFiniteNumber(value.ds, `${field}.ds`),
