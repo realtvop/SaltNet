@@ -62,6 +62,53 @@ describe("handleRenderRequest", () => {
         expect(await response.text()).toBe("png:Salt");
     });
 
+    it("renders a B50 image from a POST request with form-encoded raw JSON payload", async () => {
+        const formData = new FormData();
+        formData.append("payload", JSON.stringify(samplePayload()));
+
+        const response = await handleRenderRequest({
+            request: new Request("https://render.example.test/render/b50.png", {
+                method: "POST",
+                body: formData,
+            }),
+            env,
+            renderB50Response: async payload =>
+                new Response(`png:${payload.playerName}`, {
+                    headers: {
+                        "content-type": "image/png",
+                    },
+                }),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toBe("image/png");
+        expect(await response.text()).toBe("png:Salt");
+    });
+
+    it("renders a B50 image from a POST request with form-encoded compressed payload", async () => {
+        const compressed = await compressPayload(samplePayload());
+        const formData = new FormData();
+        formData.append("p", compressed);
+
+        const response = await handleRenderRequest({
+            request: new Request("https://render.example.test/render/b50.png", {
+                method: "POST",
+                body: formData,
+            }),
+            env,
+            renderB50Response: async payload =>
+                new Response(`png:${payload.playerName}`, {
+                    headers: {
+                        "content-type": "image/png",
+                    },
+                }),
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toBe("image/png");
+        expect(await response.text()).toBe("png:Salt");
+    });
+
     it("rejects invalid direct render payloads", async () => {
         const response = await handleRenderRequest({
             request: new Request("https://render.example.test/render/b50.png", {

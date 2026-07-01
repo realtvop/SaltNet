@@ -18,7 +18,6 @@
     import {
         type B50RenderChart as B50RenderChartPayload,
         type B50RenderPayload,
-        compressPayload,
     } from "../../shared/rendering/b50-payload";
 
     const route = useRoute();
@@ -357,24 +356,31 @@
 
         const onlineRenderAction = {
             text: "在线",
-            onClick: async () => {
+            onClick: () => {
                 const rendererUrl = getRendererBaseUrl();
                 if (!rendererUrl) {
                     snackbar({ message: "未配置 Takumi 渲染服务地址" });
                     return;
                 }
-                const renderingSnackbar = snackbar({
-                    message: "正在生成链接...",
-                    autoCloseDelay: 0,
-                });
                 try {
-                    const compressed = await compressPayload(buildB50RenderPayload());
-                    renderingSnackbar.open = false;
-                    window.open(`${rendererUrl}/render/b50.png?p=${compressed}`, "_blank");
+                    const form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = `${rendererUrl}/render/b50.png`;
+                    form.target = "_blank";
+                    form.style.display = "none";
+
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "payload";
+                    input.value = JSON.stringify(buildB50RenderPayload());
+
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
                 } catch (err) {
-                    renderingSnackbar.open = false;
                     snackbar({
-                        message: err instanceof Error ? err.message : "生成渲染链接失败。",
+                        message: err instanceof Error ? err.message : "在线渲染失败。",
                     });
                 }
             },

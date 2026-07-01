@@ -87,6 +87,7 @@ async function renderB50Image(context: RenderContext): Promise<Response> {
     let payload: ReturnType<typeof parseB50Payload>;
     const url = new URL(context.request.url);
     const pParam = url.searchParams.get("p") || url.searchParams.get("payload");
+    const contentType = context.request.headers.get("content-type") || "";
 
     if (context.request.method === "GET" || pParam) {
         if (!pParam) {
@@ -99,6 +100,24 @@ async function renderB50Image(context: RenderContext): Promise<Response> {
                 { error: `Invalid payload encoding: ${getErrorMessage(error)}` },
                 { status: 400 }
             );
+        }
+    } else if (contentType.includes("form") || contentType.includes("urlencoded")) {
+        try {
+            const formData = await context.request.formData();
+            const payloadStr = formData.get("p") || formData.get("payload");
+            if (!payloadStr || typeof payloadStr !== "string") {
+                return json({ error: "Missing payload parameter in form data" }, { status: 400 });
+            }
+
+            let parsed: unknown;
+            if (payloadStr.trim().startsWith("{")) {
+                parsed = JSON.parse(payloadStr);
+            } else {
+                parsed = await decompressPayload(payloadStr);
+            }
+            payload = parseB50Payload(parsed);
+        } catch (error) {
+            return json({ error: `Invalid form data: ${getErrorMessage(error)}` }, { status: 400 });
         }
     } else {
         let body: unknown;
