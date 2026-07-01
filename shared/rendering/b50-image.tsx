@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { CSSProperties } from "react";
 import type { B50RenderChart, B50RenderPayload } from "./b50-payload";
-import plates from "../../src/assets/plates.json";
+import plates from "../../src/assets/plates.json" with { type: "json" };
 
 void React;
 

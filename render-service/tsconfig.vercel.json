@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "../shared/rendering/**/*.ts",
+        "../shared/rendering/**/*.tsx"
+    ],
+    "exclude": ["api", "tests"]
+}

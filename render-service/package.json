@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "wrangler dev src/worker.ts",
+        "build": "tsc -p tsconfig.vercel.json",
         "deploy:cloudflare": "wrangler deploy",
         "check": "tsc --noEmit",
         "test": "vitest run"
