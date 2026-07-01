@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { B50RenderChart, B50RenderPayload } from "./b50-payload";
+import plates from "../../src/assets/plates.json";
 
 const WIDTH = 1175;
 const HEIGHT = 1365;
@@ -112,109 +113,177 @@ function ScoreCard({
     showDxScore: boolean;
     siteOrigin: string;
 }) {
+    const isPlayed = typeof chart.achievements === "number";
     const achievement =
         typeof chart.achievements === "number" ? chart.achievements.toFixed(4) : "-";
-    const stars = <DxStars chart={chart} showDxScore={showDxScore} siteOrigin={siteOrigin} />;
+
+    const dxScoreStars =
+        typeof chart.deluxeScore === "number" && typeof chart.deluxeScoreMax === "number"
+            ? getDeluxeScoreTier(chart.deluxeScore, chart.deluxeScoreMax)
+            : null;
+
+    const chartTypeSpanStyle: CSSProperties =
+        chart.type === "DX"
+            ? {
+                  background: "linear-gradient(-20deg, #eb5639 55%, #efb03e 45%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  display: "inline-block",
+              }
+            : {};
+
+    const typeSpan =
+        chart.type === "DX" ? <span style={chartTypeSpanStyle}>{chart.type}</span> : chart.type;
 
     return (
-        <article style={styles.card(showDxScore)}>
-            <img style={styles.cover} src={getCoverUrl(chart.songId)} />
-            <div style={styles.details}>
-                <div style={styles.pill(showDxScore)}>
-                    <span style={{ ...styles.pillPart(showDxScore), ...styles.type(chart.type) }}>
-                        {chart.type}
-                    </span>
-                    <span
-                        style={{
-                            ...styles.pillPart(showDxScore),
-                            ...styles.level(chart.levelIndex),
-                        }}
-                    >
-                        {formatNumber(chart.ds, 1)}
-                    </span>
-                    <span style={{ ...styles.pillPart(showDxScore), ...styles.rating }}>
-                        {Math.round(chart.ra)}
-                    </span>
+        <div style={styles.cardWrapper}>
+            <article style={styles.card(showDxScore)}>
+                <div style={styles.songJacketSection}>
+                    <img
+                        style={styles.songJacketImage}
+                        src={getCoverUrl(chart.songId)}
+                        alt={chart.title}
+                        crossOrigin="anonymous"
+                    />
                 </div>
-                <div style={styles.title(showDxScore)}>{chart.title}</div>
-                <div style={styles.achievement(showDxScore)}>
-                    {achievement}
-                    <span style={styles.percent(showDxScore)}>%</span>
-                </div>
-                <div style={styles.badges}>
-                    <div style={styles.rankBadge(showDxScore)}>
-                        {chart.rate ? (
-                            <img
-                                style={styles.badgeImage}
-                                src={`${siteOrigin}/icons/${chart.rate.replace("p", "plus")}.png`}
-                            />
-                        ) : (
-                            stars
-                        )}
+                <div style={styles.details(showDxScore)}>
+                    <div style={styles.resultHeader(showDxScore)}>
+                        <div style={styles.headerPill(showDxScore)}>
+                            <div style={{ ...styles.pillSection, ...styles.charttype(chart.type) }}>
+                                {typeSpan}
+                            </div>
+                            <div
+                                style={{ ...styles.pillSection, ...styles.level(chart.levelIndex) }}
+                            >
+                                {formatNumber(chart.ds, 1)}
+                            </div>
+                            <div style={{ ...styles.pillSection, ...styles.points }}>
+                                {Math.round(chart.ra)}
+                            </div>
+                        </div>
                     </div>
-                    <div style={styles.roundBadge(showDxScore)}>
-                        {chart.fc ? (
-                            <img
-                                style={styles.badgeImage}
-                                src={`${siteOrigin}/icons/music_icon_${chart.fc}.png`}
-                            />
+                    <div style={styles.songName(showDxScore)}>{chart.title}</div>
+                    <div style={styles.achievement(showDxScore)}>
+                        {achievement}
+                        {isPlayed ? (
+                            <span style={styles.percentageMark(showDxScore)}>%</span>
                         ) : null}
                     </div>
-                    <div style={styles.roundBadge(showDxScore)}>
-                        {chart.fs ? (
-                            <img
-                                style={styles.badgeImage}
-                                src={`${siteOrigin}/icons/music_icon_${chart.fs.replace("sd", "dx")}.png`}
-                            />
-                        ) : null}
+                    <div style={styles.achievementBadges}>
+                        <div style={styles.rankAchievement(showDxScore)}>
+                            {chart.rate ? (
+                                <img
+                                    style={styles.achievementIcon}
+                                    src={`${siteOrigin}/icons/${chart.rate.replace("p", "plus")}.png`}
+                                />
+                            ) : null}
+                            {!showDxScore && dxScoreStars !== null ? (
+                                <div style={styles.dxScoreStarsMini}>
+                                    <DxStars
+                                        tier={dxScoreStars}
+                                        isMini={true}
+                                        siteOrigin={siteOrigin}
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
+                        <div style={styles.fcAchievement(showDxScore)}>
+                            {chart.fc ? (
+                                <img
+                                    style={styles.achievementIcon}
+                                    src={`${siteOrigin}/icons/music_icon_${chart.fc}.png`}
+                                />
+                            ) : null}
+                        </div>
+                        <div style={styles.syncAchievement(showDxScore)}>
+                            {chart.fs ? (
+                                <img
+                                    style={styles.achievementIcon}
+                                    src={`${siteOrigin}/icons/music_icon_${chart.fs.replace("sd", "dx")}.png`}
+                                />
+                            ) : null}
+                        </div>
                     </div>
+                    {showDxScore ? (
+                        <div style={styles.dxScore}>
+                            {dxScoreStars !== null ? <span>&nbsp;</span> : null}
+                            {dxScoreStars !== null ? (
+                                <DxStars
+                                    tier={dxScoreStars}
+                                    isMini={false}
+                                    siteOrigin={siteOrigin}
+                                />
+                            ) : null}
+                            {chart.deluxeScore !== undefined ? (
+                                <span style={styles.dxScoreLabel}>
+                                    {isPlayed ? chart.deluxeScore : "-"} / {chart.deluxeScoreMax}
+                                </span>
+                            ) : null}
+                            {dxScoreStars !== null ? <span>&nbsp;&nbsp;</span> : null}
+                        </div>
+                    ) : null}
                 </div>
-                {showDxScore ? (
-                    <div style={styles.dxScore}>
-                        {stars}
-                        <span style={styles.dxScoreLabel}>
-                            {chart.deluxeScore ?? "-"} / {chart.deluxeScoreMax ?? "-"}
-                        </span>
-                    </div>
-                ) : null}
-            </div>
-        </article>
+            </article>
+        </div>
     );
 }
 
 function DxStars({
-    chart,
-    showDxScore,
+    tier,
+    isMini,
     siteOrigin,
 }: {
-    chart: B50RenderChart;
-    showDxScore: boolean;
+    tier: number;
+    isMini: boolean;
     siteOrigin: string;
 }) {
-    if (typeof chart.deluxeScore !== "number" || typeof chart.deluxeScoreMax !== "number") {
-        return null;
-    }
-
-    const tier = getDeluxeScoreTier(chart.deluxeScore, chart.deluxeScoreMax);
     if (!tier) return null;
 
-    const star = tier < 3 ? "star1" : tier < 5 ? "star2" : "star3";
-    const starStyle = showDxScore ? styles.star : styles.miniStar;
+    const starImg = getDeluxeScoreStarsImg(tier);
+    const starStyle = isMini ? styles.dxScoreStarMini : styles.dxScoreStar;
 
     return (
         <>
             {Array.from({ length: tier }, (_, index) => (
-                <img key={index} style={starStyle} src={`${siteOrigin}/icons/${star}.png`} />
+                <img key={index} style={starStyle} src={`${siteOrigin}${starImg}`} />
             ))}
         </>
     );
 }
 
 function RatingPlate({ rating }: { rating: number }) {
+    const ratingStr = Math.round(rating).toString();
+    const plateId = getPlateId(rating);
+    const href = (plates as Record<string, string>)[plateId] ?? plates["01"];
+
     return (
-        <div style={{ ...styles.ratingPlate, ...styles.ratingPlateColor(getPlateId(rating)) }}>
-            {Math.round(rating).toString()}
-        </div>
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="125px"
+            height="25px"
+            style={{ marginLeft: 5 }}
+        >
+            <image href={href} x="0" y="0" height="1.5em" />
+            {Array.from({ length: 5 }, (_, idx) => {
+                const i = idx + 1;
+                const charIndex = ratingStr.length - (6 - i);
+                const char = charIndex >= 0 ? ratingStr[charIndex] : "";
+                return (
+                    <text
+                        key={i}
+                        x={`${5.2 + (i - 1) * 0.8}em`}
+                        y="1.45em"
+                        textAnchor="middle"
+                        fontFamily="Monaco, 'JetBrains Mono', Monospaced, monospace"
+                        fontSize="0.75em"
+                        fill="#FCD41B"
+                    >
+                        {char}
+                    </text>
+                );
+            })}
+        </svg>
     );
 }
 
@@ -261,6 +330,12 @@ function getDeluxeScoreTier(deluxeScore: number, deluxeScoreMax: number): number
     if (percent >= 0.9) return 2;
     if (percent >= 0.85) return 1;
     return 0;
+}
+
+function getDeluxeScoreStarsImg(tier: number): string {
+    if (tier < 3) return "/icons/star1.png";
+    if (tier < 5) return "/icons/star2.png";
+    return "/icons/star3.png";
 }
 
 function formatNumber(value: number, digits: number): string {
@@ -397,146 +472,207 @@ const styles = {
         display: "flex",
         alignItems: "baseline",
         gap: 15,
-        margin: "0 0 12px",
+        margin: "30px 0 10px",
         fontSize: 24,
         lineHeight: 1.2,
-        fontWeight: 800,
+        fontWeight: "bold",
     } satisfies CSSProperties,
     stats: {
-        display: "flex",
+        display: "inline-flex",
         gap: 10,
         flexWrap: "wrap",
-        fontSize: 14,
-        fontWeight: 400,
-        color: "#47515c",
+        fontSize: 14.4,
+        fontWeight: "normal",
+        color: "#888",
     } satisfies CSSProperties,
     grid: {
         display: "grid",
         gridTemplateColumns: "repeat(5, 210px)",
         gap: 12,
+        marginTop: 20,
+        width: "100%",
         justifyContent: "center",
+        boxSizing: "border-box",
+    } satisfies CSSProperties,
+    cardWrapper: {
+        width: 210,
+        padding: "5px 5px",
+        boxSizing: "border-box",
+        backgroundColor: "transparent",
     } satisfies CSSProperties,
     card: (showDxScore: boolean): CSSProperties => ({
-        width: 210,
+        width: "100%",
         minHeight: showDxScore ? 90 : 85,
         display: "flex",
         overflow: "hidden",
-        borderRadius: 4,
+        borderRadius: 12,
         background: "#f0f0f0",
         boxShadow: "0 1px 3px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.12)",
     }),
-    cover: {
-        width: "40%",
+    songJacketSection: {
+        flex: "0 0 40%",
+        position: "relative",
+    } satisfies CSSProperties,
+    songJacketImage: {
+        width: "100%",
+        height: "100%",
         objectFit: "cover",
         objectPosition: "center",
-        flex: "0 0 40%",
     } satisfies CSSProperties,
-    details: {
-        width: "60%",
+    details: (_showDxScore: boolean): CSSProperties => ({
+        flex: "0 0 60%",
+        padding: 6,
+        color: "#333",
         display: "flex",
         flexDirection: "column",
-        padding: 6,
-        minWidth: 0,
-    } satisfies CSSProperties,
-    pill: (showDxScore: boolean): CSSProperties => ({
-        display: "flex",
+        height: "100%",
+        width: "60%",
+        boxSizing: "border-box",
+    }),
+    resultHeader: (showDxScore: boolean): CSSProperties => ({
         height: showDxScore ? 12 : 15,
-        borderRadius: 8,
-        overflow: "hidden",
-        marginLeft: 2,
-        width: "calc(100% - 2px)",
         flexShrink: 0,
     }),
-    pillPart: (showDxScore: boolean): CSSProperties => ({
+    headerPill: (_showDxScore: boolean): CSSProperties => ({
+        display: "flex",
+        height: "100%",
+        borderRadius: 7.5,
+        overflow: "hidden",
+        marginLeft: "1.5%",
+        width: "97.5%",
+    }),
+    pillSection: {
+        flex: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontWeight: 900,
-        fontSize: showDxScore ? 9.5 : 9,
+        fontWeight: "bold",
+        fontSize: 9.5,
+        textAlign: "center",
+        padding: "0 2.25px",
         lineHeight: 1,
-        padding: "0 3px",
-        color: "#fff",
-    }),
-    type: (chartType: string): CSSProperties => ({
-        flex: 0.5,
+    } satisfies CSSProperties,
+    charttype: (chartType: string): CSSProperties => ({
         background: chartType === "DX" ? "#fff" : "#63acf8",
-        color: chartType === "DX" ? "#eb5639" : "#fff",
+        fontWeight: 1000,
+        flexGrow: 0.5,
+        color: chartType === "DX" ? "transparent" : "#fff",
     }),
     level: (levelIndex: number): CSSProperties => ({
-        flex: 0.75,
+        color: "#fff",
+        flexGrow: 0.75,
         background: difficultyColors[levelIndex] ?? "#96d767",
     }),
-    rating: {
-        flex: 1,
+    points: {
         background: "linear-gradient(90deg, #ff9933 0%, #ff6600 100%)",
+        color: "#fff",
     } satisfies CSSProperties,
-    title: (showDxScore: boolean): CSSProperties => ({
-        marginTop: showDxScore ? 2 : 3,
+    songName: (showDxScore: boolean): CSSProperties => ({
         fontSize: showDxScore ? 9 : 10.5,
-        fontWeight: 800,
+        fontWeight: "bold",
+        marginTop: showDxScore ? 1.3 : 1.5,
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
+        flexShrink: 0,
+        width: "100%",
+        maxWidth: "100%",
+        display: "block",
+        boxSizing: "border-box",
     }),
     achievement: (showDxScore: boolean): CSSProperties => ({
-        margin: "1px 0 2px",
         fontSize: showDxScore ? 16.5 : 19.5,
+        fontWeight: "bold",
         lineHeight: 1,
-        fontWeight: 900,
+        marginBottom: showDxScore ? 1.3 : 1.5,
+        flexShrink: 0,
         whiteSpace: "nowrap",
         overflow: "hidden",
+        width: "100%",
+        maxWidth: "100%",
+        display: "block",
+        boxSizing: "border-box",
     }),
-    percent: (showDxScore: boolean): CSSProperties => ({
+    percentageMark: (showDxScore: boolean): CSSProperties => ({
         fontSize: showDxScore ? 11.5 : 12,
     }),
-    badges: {
+    achievementBadges: {
         display: "flex",
-        alignItems: "center",
         justifyContent: "space-around",
+        alignItems: "center",
+        flexShrink: 0,
     } satisfies CSSProperties,
-    rankBadge: (showDxScore: boolean): CSSProperties => ({
+    rankAchievement: (showDxScore: boolean): CSSProperties => ({
         width: showDxScore ? 19.5 : 22.5,
         height: showDxScore ? 19.5 : 22.5,
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
+        alignItems: "center",
+        background: "transparent",
+        border: "none",
+        boxShadow: "none",
+        flexGrow: 0.4,
         position: "relative",
     }),
-    roundBadge: (showDxScore: boolean): CSSProperties => ({
+    fcAchievement: (showDxScore: boolean): CSSProperties => ({
         width: showDxScore ? 19.5 : 22.5,
         height: showDxScore ? 19.5 : 22.5,
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        position: "relative",
-        borderRadius: "50%",
+        alignItems: "center",
         background: "#ddd",
+        borderRadius: "50%",
+        position: "relative",
         overflow: "hidden",
     }),
-    badgeImage: {
+    syncAchievement: (showDxScore: boolean): CSSProperties => ({
+        width: showDxScore ? 19.5 : 22.5,
+        height: showDxScore ? 19.5 : 22.5,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#ddd",
+        borderRadius: "50%",
+        position: "relative",
+        overflow: "hidden",
+    }),
+    achievementIcon: {
         width: "100%",
         height: "100%",
         objectFit: "contain",
+        position: "absolute",
     } satisfies CSSProperties,
-    miniStar: {
-        width: "auto",
-        height: 7,
-        margin: "0 .5px",
-    } satisfies CSSProperties,
-    dxScore: {
+    dxScoreStarsMini: {
         display: "flex",
         alignItems: "center",
-        marginTop: 2,
-        fontSize: 9,
+        justifyContent: "center",
         lineHeight: 1,
-        minHeight: 10,
+        gap: 0.5,
+        position: "absolute",
+        bottom: -4,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 1,
+    } satisfies CSSProperties,
+    dxScoreStarMini: {
+        height: 7,
+        width: "auto",
+        margin: "0 0.5px",
+    } satisfies CSSProperties,
+    dxScore: {
+        fontSize: 9,
+        display: "flex",
+        alignItems: "center",
+        marginTop: "0.2em",
+        lineHeight: 1,
     } satisfies CSSProperties,
     dxScoreLabel: {
         marginLeft: "auto",
+        lineHeight: 1,
     } satisfies CSSProperties,
-    star: {
+    dxScoreStar: {
+        height: "1em",
         width: "auto",
-        height: 9,
         marginRight: 1,
     } satisfies CSSProperties,
 };
