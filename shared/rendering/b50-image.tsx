@@ -275,47 +275,28 @@ function RatingPlate({ rating }: { rating: number }) {
     const href = (plates as Record<string, string>)[plateId] ?? plates["01"];
 
     return (
-        <div
-            style={{ position: "relative", width: 125, height: 25, display: "flex", marginLeft: 5 }}
-        >
-            <img
-                src={href}
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: 125,
-                    height: 25,
-                }}
-            />
+        <svg xmlns="http://www.w3.org/2000/svg" width="125" height="25" style={{ marginLeft: 5 }}>
+            <image href={href} x="0" y="0" width="125" height="25" />
             {Array.from({ length: 5 }, (_, idx) => {
                 const i = idx + 1;
                 const charIndex = ratingStr.length - (6 - i);
                 const char = charIndex >= 0 ? ratingStr[charIndex] : "";
-                const leftPos = 58 + (i - 1) * 9.6;
+                const xPos = 62.4 + (i - 1) * 9.6;
                 return (
-                    <div
+                    <text
                         key={i}
-                        style={{
-                            position: "absolute",
-                            top: 1,
-                            left: leftPos,
-                            width: 12,
-                            height: 24,
-                            color: "#fcd41b",
-                            fontFamily: "Monaco, 'JetBrains Mono', Monospaced, monospace",
-                            fontSize: 12,
-                            fontWeight: 900,
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                        }}
+                        x={xPos}
+                        y={17.4}
+                        textAnchor="middle"
+                        fontFamily="Monaco, 'JetBrains Mono', Monospaced, monospace"
+                        fontSize={12}
+                        fill="#FCD41B"
                     >
                         {char}
-                    </div>
+                    </text>
                 );
             })}
-        </div>
+        </svg>
     );
 }
 
