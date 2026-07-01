@@ -46,23 +46,32 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 };
 
 export async function handleRenderRequest(context: RenderContext): Promise<Response> {
-    assetsFetcher = context.env.ASSETS;
-    const url = new URL(context.request.url);
-    const pathname = normalizePathname(url.pathname);
+    try {
+        assetsFetcher = context.env.ASSETS;
+        const url = new URL(context.request.url);
+        const pathname = normalizePathname(url.pathname);
 
-    if (context.request.method === "OPTIONS") {
-        return withCors(new Response(null, { status: 204 }));
+        if (context.request.method === "OPTIONS") {
+            return withCors(new Response(null, { status: 204 }));
+        }
+
+        if (context.request.method === "GET" && pathname === "/health") {
+            return withCors(json({ ok: true, service: "saltnet-render-service" }));
+        }
+
+        if (context.request.method === "POST" && pathname === "/render/b50.png") {
+            return withCors(await renderB50Image(context));
+        }
+
+        return withCors(json({ error: "Not found" }, { status: 404 }));
+    } catch (error) {
+        return withCors(
+            json(
+                { error: `Internal Server Error: ${getErrorMessage(error)}` },
+                { status: 500 }
+            )
+        );
     }
-
-    if (context.request.method === "GET" && pathname === "/health") {
-        return withCors(json({ ok: true, service: "saltnet-render-service" }));
-    }
-
-    if (context.request.method === "POST" && pathname === "/render/b50.png") {
-        return withCors(await renderB50Image(context));
-    }
-
-    return withCors(json({ error: "Not found" }, { status: 404 }));
 }
 
 export function json(data: unknown, init: ResponseInit = {}): Response {
@@ -124,17 +133,27 @@ function normalizePathname(pathname: string): string {
 }
 
 function withCors(response: Response): Response {
-    const headers = new Headers(response.headers);
-    headers.set("access-control-allow-origin", "*");
-    headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
-    headers.set("access-control-allow-headers", "content-type, authorization");
-    return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-    });
+    try {
+        response.headers.set("Access-Control-Allow-Origin", "*");
+        response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Origin, X-Requested-With");
+        response.headers.set("Access-Control-Max-Age", "86400");
+        return response;
+    } catch {
+        const headers = new Headers(response.headers);
+        headers.set("Access-Control-Allow-Origin", "*");
+        headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Origin, X-Requested-With");
+        headers.set("Access-Control-Max-Age", "86400");
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+        });
+    }
 }
 
 function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : "Unknown error";
 }
+

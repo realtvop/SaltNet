@@ -71,6 +71,70 @@ describe("handleRenderRequest", () => {
 
         expect(postResponse.status).toBe(404);
         expect(getResponse.status).toBe(404);
+        expect(postResponse.headers.get("Access-Control-Allow-Origin")).toBe("*");
+        expect(getResponse.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    });
+
+    describe("CORS support", () => {
+        it("returns CORS headers on OPTIONS preflight request", async () => {
+            const response = await handleRenderRequest({
+                request: new Request("https://render.example.test/render/b50.png", {
+                    method: "OPTIONS",
+                }),
+                env,
+            });
+
+            expect(response.status).toBe(204);
+            expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+            expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+            expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization, Accept, Origin, X-Requested-With");
+            expect(response.headers.get("Access-Control-Max-Age")).toBe("86400");
+        });
+
+        it("returns CORS headers on GET health check", async () => {
+            const response = await handleRenderRequest({
+                request: new Request("https://render.example.test/health"),
+                env,
+            });
+
+            expect(response.status).toBe(200);
+            expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+            expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+        });
+
+        it("returns CORS headers on request failure (400 Bad Request)", async () => {
+            const response = await handleRenderRequest({
+                request: new Request("https://render.example.test/render/b50.png", {
+                    method: "POST",
+                    body: "invalid-json",
+                }),
+                env,
+            });
+
+            expect(response.status).toBe(400);
+            expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+        });
+
+        it("returns CORS headers on uncaught handler errors (500 Internal Server Error)", async () => {
+            // Mocking context/env behavior to throw by passing invalid request/url
+            const response = await handleRenderRequest({
+                request: {
+                    get url() {
+                        throw new Error("Simulated URL parsing error");
+                    },
+                    get method() {
+                        return "GET";
+                    },
+                } as unknown as Request,
+                env,
+            });
+
+            expect(response.status).toBe(500);
+            expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+            await expect(response.json()).resolves.toMatchObject({
+                error: "Internal Server Error: Simulated URL parsing error",
+            });
+        });
     });
 });
 
