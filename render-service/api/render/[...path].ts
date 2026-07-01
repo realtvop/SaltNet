@@ -8,9 +8,11 @@ export const config = {
     },
 };
 
-export default function handler(request: Request): Promise<Response> {
-    return handleRenderRequest({
-        request,
-        env: process.env as RenderEnv,
-    });
-}
+export default {
+    fetch(request: Request): Promise<Response> {
+        return handleRenderRequest({
+            request,
+            env: process.env as RenderEnv,
+        });
+    },
+};
