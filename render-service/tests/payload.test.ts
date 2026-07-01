@@ -18,6 +18,30 @@ describe("parseB50Payload", () => {
         expect(payload.showDxScore).toBe(true);
     });
 
+    it("allows empty optional display and achievement icon fields", () => {
+        const payload = parseB50Payload({
+            playerName: "Salt",
+            playerSecondaryName: "",
+            modeLabel: "",
+            showDxScore: false,
+            sd: [
+                {
+                    ...sampleChart(),
+                    fc: "",
+                    fs: "",
+                    rate: "",
+                },
+            ],
+            dx: [],
+        });
+
+        expect(payload.playerSecondaryName).toBeNull();
+        expect(payload.modeLabel).toBeNull();
+        expect(payload.sd[0].fc).toBe("");
+        expect(payload.sd[0].fs).toBe("");
+        expect(payload.sd[0].rate).toBe("");
+    });
+
     it("rejects empty chart lists", () => {
         expect(() =>
             parseB50Payload({

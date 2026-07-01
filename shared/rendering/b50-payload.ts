@@ -32,10 +32,11 @@ export function parseB50Payload(value: unknown): B50RenderPayload {
     const playerSecondaryName =
         value.playerSecondaryName == null
             ? null
-            : readString(value.playerSecondaryName, "playerSecondaryName", 64);
+            : readOptionalDisplayString(value.playerSecondaryName, "playerSecondaryName", 64);
     const playerRating =
         value.playerRating == null ? null : readFiniteNumber(value.playerRating, "playerRating");
-    const modeLabel = value.modeLabel == null ? null : readString(value.modeLabel, "modeLabel", 24);
+    const modeLabel =
+        value.modeLabel == null ? null : readOptionalDisplayString(value.modeLabel, "modeLabel", 24);
     const showDxScore = Boolean(value.showDxScore);
     const sd = readCharts(value.sd, "sd", 35);
     const dx = readCharts(value.dx, "dx", 15);
@@ -74,9 +75,9 @@ function readChart(value: unknown, field: string): B50RenderChart {
             value.achievements == null
                 ? null
                 : readFiniteNumber(value.achievements, `${field}.achievements`),
-        fc: value.fc == null ? "" : readString(value.fc, `${field}.fc`, 8),
-        fs: value.fs == null ? "" : readString(value.fs, `${field}.fs`, 8),
-        rate: value.rate == null ? "" : readString(value.rate, `${field}.rate`, 8),
+        fc: value.fc == null ? "" : readOptionalString(value.fc, `${field}.fc`, 8),
+        fs: value.fs == null ? "" : readOptionalString(value.fs, `${field}.fs`, 8),
+        rate: value.rate == null ? "" : readOptionalString(value.rate, `${field}.rate`, 8),
         ra: readFiniteNumber(value.ra, `${field}.ra`),
         deluxeScore:
             value.deluxeScore == null
@@ -95,6 +96,18 @@ function readString(value: unknown, field: string, maxLength: number): string {
     if (!trimmed) throw new Error(`${field} cannot be empty`);
     if (trimmed.length > maxLength) throw new Error(`${field} is too long`);
     return trimmed;
+}
+
+function readOptionalString(value: unknown, field: string, maxLength: number): string {
+    if (typeof value !== "string") throw new Error(`${field} must be a string`);
+    const trimmed = value.trim();
+    if (trimmed.length > maxLength) throw new Error(`${field} is too long`);
+    return trimmed;
+}
+
+function readOptionalDisplayString(value: unknown, field: string, maxLength: number): string | null {
+    const trimmed = readOptionalString(value, field, maxLength);
+    return trimmed || null;
 }
 
 function readFiniteNumber(value: unknown, field: string): number {
