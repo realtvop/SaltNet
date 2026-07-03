@@ -198,6 +198,10 @@
         },
     } as unknown as Chart;
 
+    function yieldToMainThread(): Promise<void> {
+        return new Promise(resolve => window.setTimeout(resolve, 0));
+    }
+
     async function loadChartsWithCache(userData?: User | null) {
         const currentIdentifier = {
             name: userData?.data.name || "unknown",
@@ -227,8 +231,8 @@
         if (!musicInfo) return;
 
         const charts: Chart[] = [];
-        for (const i in musicInfo.chartList) {
-            const chart: Chart = musicInfo.chartList[i];
+        const sourceCharts = Object.values(musicInfo.chartList) as Chart[];
+        for (const [index, chart] of sourceCharts.entries()) {
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
             if (userData?.data?.detailed) {
@@ -255,8 +259,11 @@
                 ...chart,
                 score: chartScore,
             });
+
+            if (index > 0 && index % 200 === 0) await yieldToMainThread();
         }
 
+        await yieldToMainThread();
         charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
@@ -266,6 +273,7 @@
         );
 
         if (userData?.data?.detailed) {
+            await yieldToMainThread();
             charts.sort((a, b) => {
                 const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
                 const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
@@ -886,10 +894,12 @@
     });
 
     onMounted(async () => {
-        await loadPlayerData();
         visibleItemsCount.value = getLoadSize();
         window.addEventListener("resize", handleResize);
         window.addEventListener("scroll", handleScroll);
+        loadPlayerData().catch(error => {
+            console.error("Failed to load charts:", error);
+        });
     });
 
     onUnmounted(() => {
