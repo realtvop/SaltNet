@@ -9,6 +9,7 @@ export const SALTMETA_CN_REGION = "cn";
 export const SALTMETA_DX_ID_OFFSET = 10000;
 const SALTMETA_CHART_ID_MULTIPLIER = 100;
 export const SALTMETA_CURRENT_CN_VERSION = "舞萌DX 2026";
+export const SALTMETA_NEXT_COMPACTED_VERSION = 1;
 
 export type SaltMetaCnVersionInfo = {
     name: string;
@@ -122,6 +123,7 @@ type SaltMetaMusicNextCompacted = [
 ];
 
 export type SaltMetaMusicMetadataNextCompacted = {
+    version: number;
     musics: SaltMetaMusicNextCompacted[];
     versions: SaltMetaVersionCompacted[];
 };
@@ -254,6 +256,12 @@ function expandSaltMetaChart(
 export function convertSaltMetaNextCompactedToNormal(
     compacted: SaltMetaMusicMetadataNextCompacted
 ): SaltMetaMusicMetadataNext {
+    if (compacted.version !== SALTMETA_NEXT_COMPACTED_VERSION) {
+        throw new Error(
+            `SaltMeta next compacted version mismatch. Expected: ${SALTMETA_NEXT_COMPACTED_VERSION}, Got: ${compacted.version}`
+        );
+    }
+
     const versions = compacted.versions.map(([version, word, releaseDate, cnVerOverride]) => ({
         version,
         word,
