@@ -10,7 +10,7 @@ import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
 
 // Cache key for localForage
-const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v1";
+const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v2";
 
 // Module-level state for loaded music data
 let musicData: SavedMusicList | null = null;

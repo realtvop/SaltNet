@@ -231,7 +231,8 @@ function getSaltNetMusicId(saltMetaMusicId: number, chartType: SaltMetaChartType
 }
 
 export function getSaltNetMusicIdForChartType(musicId: number, chartType: string): number {
-    return chartType.toUpperCase() === "DX" ? musicId + SALTMETA_DX_ID_OFFSET : musicId;
+    if (chartType.toUpperCase() !== "DX") return musicId;
+    return musicId >= SALTMETA_DX_ID_OFFSET ? musicId : musicId + SALTMETA_DX_ID_OFFSET;
 }
 
 function normalizeCnVersion(version: string | number): string {
