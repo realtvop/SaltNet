@@ -59,6 +59,7 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
+    let loadChartsRequestId = 0;
     const groupBy = ref<"none" | "constant" | "version" | "rank" | "combo" | "sync">("none");
     const groupByOptions = [
         { value: "none", label: "无" },
@@ -203,6 +204,7 @@
     }
 
     async function loadChartsWithCache(userData?: User | null) {
+        const requestId = ++loadChartsRequestId;
         const currentIdentifier = {
             name: userData?.data.name || "unknown",
             updateTime: userData?.data?.updateTime || 0,
@@ -229,10 +231,12 @@
 
         const musicInfo = await getMusicInfoAsync();
         if (!musicInfo) return;
+        if (requestId !== loadChartsRequestId) return;
 
         const charts: Chart[] = [];
         const sourceCharts = Object.values(musicInfo.chartList) as Chart[];
         for (const [index, chart] of sourceCharts.entries()) {
+            if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
             if (userData?.data?.detailed) {
@@ -264,6 +268,7 @@
         }
 
         await yieldToMainThread();
+        if (requestId !== loadChartsRequestId) return;
         charts.sort(
             (a, b) =>
                 MusicSort.indexOf(b.music.id) +
@@ -274,6 +279,7 @@
 
         if (userData?.data?.detailed) {
             await yieldToMainThread();
+            if (requestId !== loadChartsRequestId) return;
             charts.sort((a, b) => {
                 const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
                 const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
@@ -286,6 +292,7 @@
             });
         }
 
+        if (requestId !== loadChartsRequestId) return;
         shared.chartsSort = {
             identifier: currentIdentifier,
             charts: charts,
@@ -514,8 +521,8 @@
 
     const loadPlayerData = async () => {
         const targetUserId = userId.value ? Number(userId.value) : 0;
-        if (shared.users[targetUserId]) loadChartsWithCache(shared.users[targetUserId]);
-        else loadChartsWithCache();
+        if (shared.users[targetUserId]) await loadChartsWithCache(shared.users[targetUserId]);
+        else await loadChartsWithCache();
     };
 
     function openChartInfoDialog(chart: Chart) {
@@ -900,6 +907,11 @@
         loadPlayerData().catch(error => {
             console.error("Failed to load charts:", error);
         });
+        shared.usersLoaded
+            .then(() => loadPlayerData())
+            .catch(error => {
+                console.error("Failed to load charts after users loaded:", error);
+            });
     });
 
     onUnmounted(() => {
