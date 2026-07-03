@@ -8,6 +8,8 @@ import type {
     RankRate,
 } from "../maiTypes";
 
+export type MaimaidxRegion = "jp" | "cn" | "ex";
+
 export interface Music {
     id: number;
     info: MusicInfo;
@@ -75,6 +77,17 @@ export interface SavedMusicList {
     chartList: Record<number, Chart>;
 }
 
+export interface MusicMetadataState {
+    cnVersions: {
+        name: string;
+        word: string;
+    }[];
+    cnVersionPlates?: {
+        name: string;
+        word: string;
+    }[];
+}
+
 // 用户成绩类型
 export interface UserChartScore {
     achievements: number | null;
@@ -87,6 +100,7 @@ export interface UserChartScore {
 export interface CachedMusicData {
     musicList: Record<number, Music>;
     chartList: Record<number, Chart>;
+    metadata?: MusicMetadataState;
     region: string;
     cachedAt: number;
     verBuildTime?: string;

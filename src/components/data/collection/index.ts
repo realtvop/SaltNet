@@ -12,25 +12,23 @@ import {
 import collections from "./collections.json";
 import additionalCollections from "./additionalCollections.json";
 import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
+import { reactive } from "vue";
+import type { MusicMetadataState, SavedMusicList } from "@/components/data/music/type";
 
-interface LXPlate {
-    id: number;
-    name: string;
-    description: string;
-    genre: string;
-    required?: {
-        difficulties: number[];
-        fc?: "fc" | "ap";
-        fs?: "fsd";
-        rate?: "sss";
-        songs: LXSong[];
-    }[];
-}
-interface LXSong {
-    id: number;
-    title: string;
-    type: "standard" | "dx";
-}
+type VersionPlateCategory = "極" | "将" | "神" | "舞舞";
+
+type VersionPlateGroup = MusicMetadataState["cnVersions"][number] & {
+    versionNames: string[];
+};
+
+type VersionPlateDraft = {
+    group: VersionPlateGroup;
+    index: number;
+    songs: number[];
+    difficulties: number[];
+    id?: number;
+    description?: string;
+};
 
 export const icons: Icon[] = collections.icons.map(icon => ({
     type: CollectionKind.Icon,
@@ -71,40 +69,172 @@ export const genres = {
     ...collections.genres,
     ...additionalCollections.genres,
 };
-function platesToVersionPlates(plates: LXPlate[], type: string): VersionPlate[] {
-    return plates
-        .filter(plate => plate.name.endsWith(type))
-        .map(plate => {
-            const required = plate.required?.[0];
-            const difficulties = required?.difficulties ?? [];
-            if (plate.required?.[1]) difficulties?.push(...plate.required[1].difficulties);
+const versionPlateCategories = ["極", "将", "神", "舞舞"] as const;
 
-            return {
-                type: CollectionKind.Plate,
-                id: plate.id,
-                name: plate.name,
-                description: plate.description,
-                genre: plate.genre,
-                difficulties,
-                condition: {
-                    fc: ComboStatus.FullCombo,
-                    ap: ComboStatus.AllPerfect,
-                    fsd: SyncStatus.FullSyncDX,
-                    sss: RankRate.sss,
-                }[(required?.fc || required?.fs || required?.rate) as "fc" | "ap" | "fsd" | "sss"],
-                songs:
-                    required?.songs?.map(song =>
-                        song.type === "dx" ? song.id + 10000 : song.id
-                    ) ?? [],
-            };
-        });
-}
-export const versionPlates = {
-    極: platesToVersionPlates(collections.plates as LXPlate[], "極"),
-    将: platesToVersionPlates(collections.plates as LXPlate[], "将"),
-    神: platesToVersionPlates(collections.plates as LXPlate[], "神"),
-    舞舞: platesToVersionPlates(collections.plates as LXPlate[], "舞舞"),
+const versionPlateConditions: Record<
+    VersionPlateCategory,
+    {
+        idOffset: number;
+        specialMaiPlateId: number;
+        description: string;
+        condition: ComboStatus | SyncStatus | RankRate;
+    }
+> = {
+    極: {
+        idOffset: 1000,
+        specialMaiPlateId: 6149,
+        description: "FULL COMBO",
+        condition: ComboStatus.FullCombo,
+    },
+    将: {
+        idOffset: 2000,
+        specialMaiPlateId: 6150,
+        description: "RANK SSS",
+        condition: RankRate.sss,
+    },
+    神: {
+        idOffset: 3000,
+        specialMaiPlateId: 6151,
+        description: "ALL PERFECT",
+        condition: ComboStatus.AllPerfect,
+    },
+    舞舞: {
+        idOffset: 4000,
+        specialMaiPlateId: 6152,
+        description: "FULL SYNC DX",
+        condition: SyncStatus.FullSyncDX,
+    },
 };
+
+export const versionPlates = reactive<Record<VersionPlateCategory, VersionPlate[]>>({
+    極: [],
+    将: [],
+    神: [],
+    舞舞: [],
+});
+
+function groupVersionsByWord(versions: MusicMetadataState["cnVersions"]): VersionPlateGroup[] {
+    const groups: VersionPlateGroup[] = [];
+    const byWord = new Map<string, VersionPlateGroup>();
+
+    for (const version of versions) {
+        let group = byWord.get(version.word);
+        if (!group) {
+            group = {
+                ...version,
+                versionNames: [],
+            };
+            byWord.set(version.word, group);
+            groups.push(group);
+        }
+        group.versionNames.push(version.name);
+    }
+
+    return groups;
+}
+
+function getVersionPlateSongs(
+    data: SavedMusicList,
+    versionNames: string[],
+    difficulties: number[] = [0, 1, 2, 3]
+): number[] {
+    const targetVersions = new Set(versionNames);
+    const targetDifficulties = new Set(difficulties);
+    const songs = new Set<number>();
+
+    for (const music of Object.values(data.musicList)) {
+        if (!targetVersions.has(music.info.from as unknown as string)) continue;
+        if (!music.charts.some(chart => targetDifficulties.has(chart.info.grade))) continue;
+        songs.add(music.id);
+    }
+
+    return [...songs];
+}
+
+function getVersionPlateDescription(group: VersionPlateGroup, condition: string): string {
+    const versionLabel =
+        group.versionNames.length > 1
+            ? `${group.versionNames[group.versionNames.length - 1]}までの`
+            : `${group.versionNames[0]} `;
+    return `${versionLabel}全曲/BASIC～MASTER/${condition}`;
+}
+
+function insertSpecialMaiVersionPlateDraft(
+    drafts: VersionPlateDraft[],
+    data: SavedMusicList
+): VersionPlateDraft[] {
+    const insertAfterIndex = drafts.findIndex(({ group }) => group.word === "輝");
+    if (insertAfterIndex === -1) return drafts;
+
+    const versionNames = drafts
+        .slice(0, insertAfterIndex + 1)
+        .flatMap(({ group }) => group.versionNames);
+    const songs = getVersionPlateSongs(data, versionNames, [0, 1, 2, 3, 4]);
+    if (songs.length === 0) return drafts;
+
+    return [
+        ...drafts.slice(0, insertAfterIndex + 1),
+        {
+            group: {
+                name: "舞",
+                word: "舞",
+                versionNames,
+            },
+            index: insertAfterIndex + 1,
+            songs,
+            difficulties: [0, 1, 2, 3, 4],
+            description: "全曲/BASIC～Re:MASTER",
+        },
+        ...drafts.slice(insertAfterIndex + 1).map(draft => ({
+            ...draft,
+            index: draft.index + 1,
+        })),
+    ];
+}
+
+export function updateSaltMetaVersionPlates(
+    versions: MusicMetadataState["cnVersions"],
+    data: SavedMusicList
+): void {
+    const groups = groupVersionsByWord(versions);
+
+    for (const category of versionPlateCategories) {
+        const condition = versionPlateConditions[category];
+        const drafts = insertSpecialMaiVersionPlateDraft(
+            groups.map((group, index) => ({
+                group,
+                index,
+                songs: getVersionPlateSongs(data, group.versionNames),
+                difficulties: [0, 1, 2, 3],
+            })),
+            data
+        );
+        versionPlates[category].splice(
+            0,
+            versionPlates[category].length,
+            ...drafts
+                .filter(({ group, index, songs }) => {
+                    if (songs.length === 0) return false;
+                    return !(category === "将" && index === 0 && group.word === "真");
+                })
+                .map(({ group, index, songs, difficulties, id, description }) => ({
+                    type: CollectionKind.Plate,
+                    id:
+                        group.word === "舞"
+                            ? condition.specialMaiPlateId
+                            : (id ?? condition.idOffset + index),
+                    name: `${group.word}${category}`,
+                    description: description
+                        ? `${description}/${condition.description}`
+                        : getVersionPlateDescription(group, condition.description),
+                    genre: "実績",
+                    difficulties,
+                    condition: condition.condition,
+                    songs,
+                }))
+        );
+    }
+}
 
 export const partners: Partner[] = [
     { id: 1, name: "でらっくま", description: "", type: CollectionKind.Partner },

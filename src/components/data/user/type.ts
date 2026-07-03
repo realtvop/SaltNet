@@ -4,14 +4,13 @@ import type {
     DivingFishFullRecord,
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
-import type { SaltNetDatabaseLogin } from "./database";
 import type { LXNSAuth } from "@/components/integrations/lxns";
 
 export interface User {
     uid?: string;
     remark?: string | null;
-    saltnetDB?: SaltNetDatabaseLogin;
     divingFish: {
         name: string | null;
         importToken?: string | null;
@@ -27,7 +26,7 @@ export interface User {
         enabled?: boolean;
         useFastUpdate?: boolean;
     };
-    saltnetUsername?: string | null; // For non-first users to query by SaltNet username
+
     settings: {
         manuallyUpdate: boolean;
     };
@@ -72,7 +71,10 @@ export type DetailedData = Record<string, DivingFishFullRecord>;
 export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     const result: DetailedData = {};
 
-    for (const item of data) result[`${item.song_id}-${item.level_index}`] = item;
+    for (const item of data) {
+        const musicId = getSaltNetMusicIdForChartType(item.song_id, item.type);
+        result[`${musicId}-${item.level_index}`] = item;
+    }
 
     return result;
 }
@@ -82,7 +84,6 @@ export function getUserDisplayName(user: User, fallback: string = "wmc"): string
 
     return (
         user.remark ??
-        (user.saltnetDB?.username || null) ??
         user.data.name ??
         user.inGame.name ??
         user.divingFish.name ??

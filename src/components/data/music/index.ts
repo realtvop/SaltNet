@@ -1,40 +1,27 @@
 /**
  * Music Data Module
- * Provides music and chart data from SaltNet database with caching,
- * or from local JSON file when DB is disabled (no caching)
+ * Provides music and chart data from SaltMeta with persistent caching.
  */
 
 import localForage from "localforage";
-import type { SavedMusicList, CachedMusicData } from "./type";
-import type { MaimaidxRegion } from "@/components/data/user/database/type";
-import {
-    fetchMusicList,
-    fetchVersionLatests,
-    filterMusicByRegion,
-    convertSaltNetMusicList,
-    fetchLocalMusicList,
-    enrichWithLocalChartStats,
-    isDBEnabled,
-} from "./musicApi";
+import { reactive } from "vue";
+import { updateSaltMetaVersionPlates } from "@/components/data/collection";
+import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type";
+import type { MaimaidxRegion } from "./type";
+import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
 
 // Cache key for localForage
-const MUSIC_CACHE_KEY = "saltnet_music_cache_v2";
+const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v3";
 
 // Module-level state for loaded music data
 let musicData: SavedMusicList | null = null;
+let musicMetadataState: MusicMetadataState | null = null;
 let musicDataPromise: Promise<SavedMusicList | null> | null = null;
 let currentRegion: MaimaidxRegion | null = null;
 
 // Getter to access saltNetAccount from shared without circular import
 let getSaltNetRegion: () => MaimaidxRegion = () => "cn";
-
-/**
- * Set the region getter function (called from shared.ts to avoid circular import)
- */
-export function setRegionGetter(getter: () => MaimaidxRegion): void {
-    getSaltNetRegion = getter;
-}
 
 /**
  * Load music data from cache
@@ -52,18 +39,14 @@ async function loadFromCache(): Promise<CachedMusicData | null> {
 /**
  * Save music data to cache
  */
-async function saveToCache(
-    data: SavedMusicList,
-    region: string,
-    verBuildTime?: string
-): Promise<void> {
+async function saveToCache(data: SavedMusicList, region: string): Promise<void> {
     try {
         const cacheData: CachedMusicData = {
             musicList: data.musicList,
             chartList: data.chartList,
+            metadata: musicMetadataState ?? undefined,
             region,
             cachedAt: Date.now(),
-            verBuildTime,
         };
         await localForage.setItem(MUSIC_CACHE_KEY, cacheData);
     } catch (error) {
@@ -75,115 +58,66 @@ async function saveToCache(
  * Restore chart-to-music references after loading cached data.
  */
 function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
+    const chartList: SavedMusicList["chartList"] = {};
+
     for (const musicId in cached.musicList) {
         const music = cached.musicList[musicId];
         for (const chart of music.charts) {
             chart.music = music;
-            cached.chartList[chart.id] = chart;
+            chartList[chart.id] = chart;
         }
     }
 
     return {
         musicList: cached.musicList,
-        chartList: cached.chartList,
+        chartList,
     };
 }
 
-/**
- * Load music data from API and update cache
- */
-async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMusicList | null> {
-    // Fetch music list and version info in parallel
-    const [rawData, versionLatests] = await Promise.all([fetchMusicList(), fetchVersionLatests()]);
-
-    if (!rawData) return null;
-
-    // Get the latest version name for this region
-    const latestVersionName = versionLatests?.[region]?.name;
-
-    const filteredData = filterMusicByRegion(rawData, region);
-    const converted = convertSaltNetMusicList(filteredData, region, latestVersionName);
-    void enrichWithLocalChartStats(converted).catch(error => {
-        console.error("Failed to enrich chart stats:", error);
-    });
-
-    // Save to cache in background
-    saveToCache(converted, region);
-
-    return converted;
+function applyMusicMetadata(metadata: MusicMetadataState | null, data: SavedMusicList): void {
+    musicMetadataState = metadata;
+    maimaiVersionsCN.splice(
+        0,
+        maimaiVersionsCN.length,
+        ...(metadata?.cnVersions ?? []).map(v => v.name)
+    );
+    updateSaltMetaVersionPlates(metadata?.cnVersionPlates ?? metadata?.cnVersions ?? [], data);
 }
 
 /**
- * Main function to load music data with caching strategy:
- * - When DB is enabled: Use caching with background refresh
- * - When DB is disabled: Reuse in-memory data in current session
+ * Main function to load music data from SaltMeta, with cache fallback.
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
-    // When DB is disabled, cache the bundled JSON by build version.
-    if (!isDBEnabled) {
-        const region = getSaltNetRegion();
-        if (musicData && currentRegion === region && !forceRefresh) {
+    const region = getSaltNetRegion();
+    if (musicData && currentRegion === region && !forceRefresh) {
+        return musicData;
+    }
+
+    if (!forceRefresh) {
+        const cached = await loadFromCache();
+        if (cached && cached.region === region) {
+            musicData = restoreCachedMusicData(cached);
+            applyMusicMetadata(cached.metadata ?? null, musicData);
+            currentRegion = region;
             return musicData;
         }
+    }
 
-        if (import.meta.env.PROD && !forceRefresh) {
-            const cached = await loadFromCache();
-            const verBuildTime = window.spec?.currentVersionBuildTime || "0";
-            if (cached && cached.region === region && cached.verBuildTime === verBuildTime) {
-                musicData = restoreCachedMusicData(cached);
-                currentRegion = region;
-                return musicData;
-            }
-        }
+    const saltMetaData = await fetchSaltMetaMusicList();
+    if (saltMetaData) {
+        musicData = saltMetaData.music;
+        applyMusicMetadata(saltMetaData.metadata, musicData);
+        currentRegion = region;
+        saveToCache(saltMetaData.music, region);
+    }
 
-        const localData = await fetchLocalMusicList();
-        if (localData) {
-            musicData = localData;
+    if (!musicData && forceRefresh) {
+        const cached = await loadFromCache();
+        if (cached && cached.region === region) {
+            musicData = restoreCachedMusicData(cached);
+            applyMusicMetadata(cached.metadata ?? null, musicData);
             currentRegion = region;
-            if (import.meta.env.PROD) {
-                saveToCache(localData, region, window.spec?.currentVersionBuildTime || "0");
-            }
         }
-        return musicData;
-    }
-
-    const region = getSaltNetRegion();
-
-    // Check if we already have data for this region
-    if (musicData && currentRegion === region && !forceRefresh) {
-        // Start background refresh
-        fetchAndConvertMusicData(region).then(freshData => {
-            if (freshData) {
-                musicData = freshData;
-            }
-        });
-        return musicData;
-    }
-
-    // Try to load from cache first
-    const cached = await loadFromCache();
-    if (cached && cached.region === region && !forceRefresh) {
-        musicData = restoreCachedMusicData(cached);
-        void enrichWithLocalChartStats(musicData).catch(error => {
-            console.error("Failed to enrich cached chart stats:", error);
-        });
-        currentRegion = region;
-
-        // Start background refresh
-        fetchAndConvertMusicData(region).then(freshData => {
-            if (freshData) {
-                musicData = freshData;
-            }
-        });
-
-        return musicData;
-    }
-
-    // No cache or region mismatch - fetch from API
-    const freshData = await fetchAndConvertMusicData(region);
-    if (freshData) {
-        musicData = freshData;
-        currentRegion = region;
     }
 
     return musicData;
@@ -221,6 +155,9 @@ export function getMusicInfoSync(): SavedMusicList | null {
  */
 export async function initializeMusicData(): Promise<void> {
     await getMusicInfoAsync();
+    refreshMusicData().catch(() => {
+        // Refresh failures keep the current in-memory/cache data.
+    });
 }
 
 /**
@@ -238,31 +175,12 @@ export async function refreshMusicData(): Promise<SavedMusicList | null> {
  */
 export function clearMusicData(): void {
     musicData = null;
+    musicMetadataState = null;
+    maimaiVersionsCN.splice(0, maimaiVersionsCN.length);
     currentRegion = null;
 }
 
 // Re-export utilities
 export { MusicSort };
 
-export const maimaiVersionsCN = [
-    "maimai",
-    "maimai PLUS",
-    "maimai GreeN",
-    "maimai GreeN PLUS",
-    "maimai ORANGE",
-    "maimai ORANGE PLUS",
-    "maimai PiNK",
-    "maimai PiNK PLUS",
-    "maimai MURASAKi",
-    "maimai MURASAKi PLUS",
-    "maimai MiLK",
-    "maimai MiLK PLUS",
-    "maimai FiNALE",
-    "舞萌DX",
-    "舞萌DX 2021",
-    "舞萌DX 2022",
-    "舞萌DX 2023",
-    "舞萌DX 2024",
-    "舞萌DX 2025",
-    "舞萌DX 2026",
-];
+export const maimaiVersionsCN = reactive<string[]>([]);

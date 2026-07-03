@@ -9,6 +9,7 @@
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
     import { ComboStatus } from "@/components/data/maiTypes";
     import { getMusicInfoAsync } from "@/components/data/music";
+    import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
     import { useShared } from "@/components/app/shared";
     import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar } from "mdui";
@@ -36,7 +37,7 @@
             if (!musicInfo) return;
             const map = new Map();
             for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
-                // key: `${song_id}-${level_index}`
+                // key: `${normalized_song_id}-${level_index}`
                 map.set(`${chart.music.id}-${chart.info.grade}`, chart);
             }
             musicChartMap.value = map;
@@ -162,7 +163,8 @@
         record: DivingFishFullRecord,
         useFitDiff: boolean = false
     ): Chart | null {
-        const baseChart = musicChartMap.value.get(`${record.song_id}-${record.level_index}`);
+        const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
+        const baseChart = musicChartMap.value.get(`${musicId}-${record.level_index}`);
         if (!baseChart) return null;
 
         let rating = record.ra;
@@ -265,23 +267,6 @@
     function normalizeConstant(value?: number | null): number | undefined {
         if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
         return Math.round(value * 10) / 10;
-    }
-
-    function isIOSDevice(): boolean {
-        const ua = navigator.userAgent;
-        // iPadOS may report as MacIntel — detect via touch points in that case
-        const isIpadAsMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-        return /iPad|iPhone|iPod/.test(ua) || isIpadAsMac;
-    }
-
-    function isFirefoxBasedBrowser(): boolean {
-        const ua = navigator.userAgent;
-        return /Firefox\//.test(ua) || (/Gecko\//.test(ua) && !/like Gecko/.test(ua));
-    }
-
-    function isLocalRenderSupported(): boolean {
-        // Disallow local rendering on iOS and Firefox-based browsers; allow all other browsers
-        return !isIOSDevice() && !isFirefoxBasedBrowser();
     }
 
     function downloadB50Png() {

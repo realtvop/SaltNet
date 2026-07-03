@@ -1,17 +1,13 @@
 import { defineStore } from "pinia";
-import { ref, watch, toRaw, computed } from "vue";
+import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
-import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
-import type { MaimaidxRegion } from "@/components/data/user/database/type";
-import { setRegionGetter } from "@/components/data/music";
 import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
@@ -46,33 +42,6 @@ export const useShared = defineStore("shared", () => {
     const appSettings = ref<AppSettings>({
         defaultChartRatingDisplayMode: "简洁",
         showDxScoreInB50: false,
-    });
-
-    const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
-        get: () => users.value[0]?.saltnetDB ?? null,
-        set: (value: SaltNetDatabaseLogin | null) => {
-            if (value) {
-                if (users.value.length === 0) {
-                    users.value.push({
-                        remark: null,
-                        saltnetDB: value,
-                        divingFish: { name: null },
-                        inGame: { id: null, enabled: false, useFastUpdate: false },
-                        lxns: { auth: null, name: null, id: null },
-                        settings: { manuallyUpdate: false },
-                        data: {
-                            updateTime: null,
-                            name: null,
-                            rating: null,
-                        },
-                    });
-                } else {
-                    users.value[0].saltnetDB = value;
-                }
-            } else if (users.value.length > 0) {
-                users.value[0].saltnetDB = undefined;
-            }
-        },
     });
 
     const handleScreenSizeChange = () => {
@@ -129,11 +98,9 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;
     });
-    localForage
-        .getItem<ChartsSortCached>(CHARTS_SORT_CACHE_KEY)
-        .then((v: ChartsSortCached | null) => {
-            if (v) chartsSort.value = v;
-        });
+    localForage.removeItem("chartsSortCachedV2").catch((err: unknown) => {
+        console.error("Failed to remove stale charts sort cache:", err);
+    });
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
@@ -150,19 +117,6 @@ export const useShared = defineStore("shared", () => {
                 showDxScoreInB50: v.showDxScoreInB50 ?? appSettings.value.showDxScoreInB50,
             };
         });
-
-    // Migrate old saltNetAccount to first user's saltnetDB
-    localForage
-        .getItem<SaltNetDatabaseLogin>("saltNetAccount")
-        .then((v: SaltNetDatabaseLogin | null) => {
-            if (v) {
-                saltNetAccount.value = v;
-                localForage.removeItem("saltNetAccount");
-            }
-        });
-
-    // Set up region getter for music module
-    setRegionGetter(() => (saltNetAccount.value?.maimaidxRegion as MaimaidxRegion) ?? "cn");
 
     watch(
         users,
@@ -184,12 +138,6 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
-    watch(chartsSort, (newChartsSort: ChartsSortCached) => {
-        if (!newChartsSort) return;
-        localForage.setItem(CHARTS_SORT_CACHE_KEY, toRaw(newChartsSort)).catch((err: unknown) => {
-            console.error("Failed to save charts sort:", err);
-        });
-    });
     watch(
         nearcadeData,
         (newNearcadeData: NearcadeData) => {
@@ -220,7 +168,6 @@ export const useShared = defineStore("shared", () => {
         isDarkMode,
         isSmallScreen,
         nearcadeData,
-        saltNetAccount,
         musicDataLoading,
         appSettings,
     };

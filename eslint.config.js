@@ -30,5 +30,5 @@ export default antfu({
     },
 
     // 忽略文件
-    ignores: ["dist", "node_modules", "*.md", "public", "database"],
+    ignores: ["dist", "node_modules", "*.md", "public"],
 });

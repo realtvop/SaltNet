@@ -26,51 +26,15 @@
             clearable
         ></mdui-text-field>
 
-        <!-- First user: show SaltNet register/login buttons between remark and tabs -->
-        <div v-if="isDBEnabled && isFirstUser" class="saltnet-buttons">
-            <mdui-button full-width @click="openSigninDialog">登录 SaltNet</mdui-button>
-            <mdui-button full-width variant="tonal" @click="openSignupDialog">
-                注册 SaltNet
-            </mdui-button>
-        </div>
-
         绑定账号：
         <mdui-tabs>
-            <!-- SaltNet tab only for non-first users -->
-            <mdui-tab
-                value="saltnet"
-                v-if="
-                    isDBEnabled &&
-                    !isFirstUser &&
-                    !localUser.inGame?.id &&
-                    !localUser.divingFish?.name &&
-                    !userLXNSBindStatus
-                "
-            >
-                SaltNet
-            </mdui-tab>
-            <mdui-tab-panel slot="panel" value="saltnet" v-if="isDBEnabled && !isFirstUser">
-                <mdui-text-field
-                    label="SaltNet 用户名"
-                    :value="localUser.saltnetUsername ?? ''"
-                    @input="localUser.saltnetUsername = $event.target.value || null"
-                    helper="通过 SaltNet 用户名查询成绩"
-                    autocapitalize="off"
-                    autocomplete="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    clearable
-                ></mdui-text-field>
-            </mdui-tab-panel>
-
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
                     v-if="
                         localUser.divingFish &&
                         !(localUser.inGame && localUser.inGame.id) &&
-                        !userLXNSBindStatus &&
-                        !localUser.saltnetDB?.id
+                        !userLXNSBindStatus
                     "
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
@@ -165,17 +129,6 @@
                 </template>
             </mdui-tab-panel>
         </mdui-tabs>
-
-        <SignupDialog
-            v-if="isDBEnabled"
-            v-model="isSignupDialogOpen"
-            @register-success="handleLoginSuccess"
-        />
-        <SigninDialog
-            v-if="isDBEnabled"
-            v-model="isSigninDialogOpen"
-            @login-success="handleLoginSuccess"
-        />
     </mdui-dialog>
 </template>
 
@@ -188,10 +141,6 @@
     import { initLXNSOAuth } from "@/components/integrations/lxns";
     import { useShared } from "@/components/app/shared";
 
-    import SignupDialog from "./database/SignupDialog.vue";
-    import SigninDialog from "./database/SigninDialog.vue";
-    import { isDBEnabled, type SaltNetDatabaseLogin } from "./database";
-
     const props = defineProps<{
         modelValue: boolean;
         user: User | null;
@@ -200,12 +149,10 @@
         isFirstUser: boolean;
     }>();
 
-    const emit = defineEmits(["update:modelValue", "save", "delete", "saltnet-login"]);
+    const emit = defineEmits(["update:modelValue", "save", "delete"]);
 
     const shared = useShared();
     const dialogRef = ref<any>(null);
-    const isSignupDialogOpen = ref(false);
-    const isSigninDialogOpen = ref(false);
 
     const localUser = ref<Partial<User>>({});
 
@@ -299,7 +246,7 @@
                 enabled: localUser.value.inGame?.enabled ?? false,
                 useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
             },
-            saltnetUsername: localUser.value.saltnetUsername ?? null,
+
             settings: {
                 manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
             },
@@ -316,19 +263,6 @@
         ensureInGame(localUser.value);
         localUser.value.inGame!.enabled = (event.target as HTMLInputElement).checked;
     };
-
-    function openSignupDialog() {
-        isSignupDialogOpen.value = true;
-    }
-
-    function openSigninDialog() {
-        isSigninDialogOpen.value = true;
-    }
-
-    function handleLoginSuccess(data: SaltNetDatabaseLogin) {
-        emit("saltnet-login", data);
-        snackbar({ message: "SaltNet 登录成功！", autoCloseDelay: 1500 });
-    }
 
     const handleSave = () => {
         saveUser();
@@ -406,7 +340,6 @@
                     enabled: localUser.value.inGame?.enabled ?? false,
                     useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
                 },
-                saltnetUsername: localUser.value.saltnetUsername ?? null,
                 settings: {
                     manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
                 },
