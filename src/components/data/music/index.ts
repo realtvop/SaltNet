@@ -1,19 +1,16 @@
 /**
  * Music Data Module
- * Provides music and chart data from SaltNet database with caching,
- * or from local JSON file when DB is disabled (no caching)
+ * Provides music and chart data from SaltMeta with persistent caching.
  */
 
 import localForage from "localforage";
 import type { SavedMusicList, CachedMusicData } from "./type";
 import type { MaimaidxRegion } from "./type";
-import {
-    fetchLocalMusicList,
-} from "./musicApi";
+import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
 
 // Cache key for localForage
-const MUSIC_CACHE_KEY = "saltnet_music_cache_v2";
+const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v1";
 
 // Module-level state for loaded music data
 let musicData: SavedMusicList | null = null;
@@ -41,8 +38,7 @@ async function loadFromCache(): Promise<CachedMusicData | null> {
  */
 async function saveToCache(
     data: SavedMusicList,
-    region: string,
-    verBuildTime?: string
+    region: string
 ): Promise<void> {
     try {
         const cacheData: CachedMusicData = {
@@ -50,7 +46,6 @@ async function saveToCache(
             chartList: data.chartList,
             region,
             cachedAt: Date.now(),
-            verBuildTime,
         };
         await localForage.setItem(MUSIC_CACHE_KEY, cacheData);
     } catch (error) {
@@ -62,22 +57,24 @@ async function saveToCache(
  * Restore chart-to-music references after loading cached data.
  */
 function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
+    const chartList: SavedMusicList["chartList"] = {};
+
     for (const musicId in cached.musicList) {
         const music = cached.musicList[musicId];
         for (const chart of music.charts) {
             chart.music = music;
-            cached.chartList[chart.id] = chart;
+            chartList[chart.id] = chart;
         }
     }
 
     return {
         musicList: cached.musicList,
-        chartList: cached.chartList,
+        chartList,
     };
 }
 
 /**
- * Main function to load music data from local JSON file
+ * Main function to load music data from SaltMeta, with cache fallback.
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
     const region = getSaltNetRegion();
@@ -85,24 +82,30 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         return musicData;
     }
 
-    if (import.meta.env.PROD && !forceRefresh) {
+    if (!forceRefresh) {
         const cached = await loadFromCache();
-        const verBuildTime = window.spec?.currentVersionBuildTime || "0";
-        if (cached && cached.region === region && cached.verBuildTime === verBuildTime) {
+        if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
             currentRegion = region;
             return musicData;
         }
     }
 
-    const localData = await fetchLocalMusicList();
-    if (localData) {
-        musicData = localData;
+    const saltMetaData = await fetchSaltMetaMusicList();
+    if (saltMetaData) {
+        musicData = saltMetaData;
         currentRegion = region;
-        if (import.meta.env.PROD) {
-            saveToCache(localData, region, window.spec?.currentVersionBuildTime || "0");
+        saveToCache(saltMetaData, region);
+    }
+
+    if (!musicData && forceRefresh) {
+        const cached = await loadFromCache();
+        if (cached && cached.region === region) {
+            musicData = restoreCachedMusicData(cached);
+            currentRegion = region;
         }
     }
+
     return musicData;
 }
 
@@ -138,6 +141,9 @@ export function getMusicInfoSync(): SavedMusicList | null {
  */
 export async function initializeMusicData(): Promise<void> {
     await getMusicInfoAsync();
+    refreshMusicData().catch(() => {
+        // Refresh failures keep the current in-memory/cache data.
+    });
 }
 
 /**
