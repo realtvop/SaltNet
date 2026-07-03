@@ -6,6 +6,7 @@ export const SALTMETA_NEXT_COMPACTED_URL =
     "https://meta.salt.realtvop.top/meta.next.compacted.json";
 export const SALTMETA_CN_REGION = "cn";
 export const SALTMETA_DX_ID_OFFSET = 10000;
+const SALTMETA_CHART_ID_MULTIPLIER = 100;
 export const SALTMETA_CURRENT_CN_VERSION = "舞萌DX 2026";
 
 type SaltMetaRegion = "jp" | "intl" | "cn" | "us";
@@ -272,7 +273,7 @@ export function convertSaltMetaNextToSavedMusicList(
 
             const musicId = getSaltNetMusicId(saltMetaMusic.id, saltMetaChart.type);
             const chartGrade = getChartGrade(saltMetaChart);
-            const chartId = musicId * 10 + chartGrade;
+            const chartId = musicId * SALTMETA_CHART_ID_MULTIPLIER + chartGrade;
             const cnVersion = normalizeCnVersion(regionData.version);
             let music = musicList[musicId];
 
