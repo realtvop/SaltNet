@@ -36,10 +36,7 @@ async function loadFromCache(): Promise<CachedMusicData | null> {
 /**
  * Save music data to cache
  */
-async function saveToCache(
-    data: SavedMusicList,
-    region: string
-): Promise<void> {
+async function saveToCache(data: SavedMusicList, region: string): Promise<void> {
     try {
         const cacheData: CachedMusicData = {
             musicList: data.musicList,

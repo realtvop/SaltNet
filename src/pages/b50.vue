@@ -269,10 +269,6 @@
         return Math.round(value * 10) / 10;
     }
 
-
-
-
-
     function downloadB50Png() {
         async function renderLocalBlob(): Promise<Blob> {
             return renderB50WithTakumi(buildB50RenderPayload());

@@ -59,12 +59,7 @@ export type SaltMetaMusicMetadataNext = {
     versions: SaltMetaVersion[];
 };
 
-type SaltMetaVersionCompacted = [
-    string,
-    string,
-    string,
-    number | null,
-];
+type SaltMetaVersionCompacted = [string, string, string, number | null];
 
 type SaltMetaVersionReferenceCompacted = number | ["raw", string | number];
 
@@ -115,11 +110,11 @@ const chartTypeNames = ["sd", "dx", "utage"] as const;
 const categoryToSaltNetGenre: Record<string, MusicGenre> = {
     "POPS＆アニメ": "POPSアニメ" as unknown as MusicGenre,
     "niconico＆ボーカロイド": "niconicoボーカロイド" as unknown as MusicGenre,
-    "東方Project": "東方Project" as unknown as MusicGenre,
+    東方Project: "東方Project" as unknown as MusicGenre,
     "ゲーム＆バラエティ": "ゲームバラエティ" as unknown as MusicGenre,
     maimai: "maimai" as unknown as MusicGenre,
     "オンゲキ＆CHUNITHM": "オンゲキCHUNITHM" as unknown as MusicGenre,
-    "宴会場": "宴会場" as unknown as MusicGenre,
+    宴会場: "宴会場" as unknown as MusicGenre,
 };
 
 const jpDxVersionToCnVersion: Record<string, string> = {
@@ -200,8 +195,17 @@ export function convertSaltMetaNextCompactedToNormal(
     }));
 
     const musics = compacted.musics.map(compactedMusic => {
-        const [id, title, artist, bpm, categoryIndex, isLocked, chartsCompacted, aliasesCn, comment] =
-            compactedMusic;
+        const [
+            id,
+            title,
+            artist,
+            bpm,
+            categoryIndex,
+            isLocked,
+            chartsCompacted,
+            aliasesCn,
+            comment,
+        ] = compactedMusic;
         const category = saltMetaCategories[categoryIndex];
         if (!category) throw new Error(`Category index ${categoryIndex} not found for music ${id}`);
 
