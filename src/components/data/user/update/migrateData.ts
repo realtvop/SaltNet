@@ -3,13 +3,19 @@ import type {
     DivingFishFullRecord,
 } from "@/components/integrations/diving-fish/type";
 import type { DetailedData } from "..";
+import { getSaltNetMusicIdForChartType } from "../../music/saltmeta";
+
+function getRecordKey(record: DivingFishFullRecord): string {
+    const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
+    return `${musicId}-${record.level_index}`;
+}
 
 function migrateRecord(
     existing: DetailedData | undefined,
     incoming: DivingFishFullRecord
 ): DivingFishFullRecord {
     if (!existing) return incoming;
-    const existingRecord = existing[`${incoming.song_id}-${incoming.level_index}`];
+    const existingRecord = existing[getRecordKey(incoming)];
     if (!existingRecord) return incoming;
 
     return {
@@ -43,10 +49,10 @@ export function supplementRecordList(
 ): DivingFishFullRecord[] {
     const supplementMap: DetailedData = {};
     for (const s of supplement) {
-        supplementMap[`${s.song_id}-${s.level_index}`] = s;
+        supplementMap[getRecordKey(s)] = s;
     }
     return incomingList.map(incoming => {
-        const key = `${incoming.song_id}-${incoming.level_index}`;
+        const key = getRecordKey(incoming);
         const sup = supplementMap[key];
         if (!sup) return incoming;
         return {

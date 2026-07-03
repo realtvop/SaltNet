@@ -4,6 +4,7 @@ import type {
     DivingFishFullRecord,
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
 import type { LXNSAuth } from "@/components/integrations/lxns";
 
@@ -70,7 +71,10 @@ export type DetailedData = Record<string, DivingFishFullRecord>;
 export function convertDetailed(data: DivingFishFullRecord[]): DetailedData {
     const result: DetailedData = {};
 
-    for (const item of data) result[`${item.song_id}-${item.level_index}`] = item;
+    for (const item of data) {
+        const musicId = getSaltNetMusicIdForChartType(item.song_id, item.type);
+        result[`${musicId}-${item.level_index}`] = item;
+    }
 
     return result;
 }

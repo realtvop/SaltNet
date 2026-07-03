@@ -1,10 +1,15 @@
 import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "@/components/data/music/type";
 import type { DetailedData } from "@/components/data/user/type";
+import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
 import { isUtageGrade } from "./difficulty";
 
 function isSameConstant(a: number, b: number): boolean {
     return Math.abs(a - b) < 0.05;
+}
+
+function getRecordMusicId(record: DivingFishFullRecord): number {
+    return getSaltNetMusicIdForChartType(record.song_id, record.type);
 }
 
 export function findDetailedScoreForChart(
@@ -14,12 +19,18 @@ export function findDetailedScoreForChart(
     if (!detailed || !chart) return undefined;
 
     const exact = detailed[`${chart.music.id}-${chart.info.grade}`];
-    if (exact) return exact;
+    if (exact && getRecordMusicId(exact) === chart.music.id) return exact;
+
+    const sameChart = Object.values(detailed).find(
+        record =>
+            getRecordMusicId(record) === chart.music.id && record.level_index === chart.info.grade
+    );
+    if (sameChart) return sameChart;
 
     if (!isUtageGrade(chart.info.grade)) return undefined;
 
     const candidates = Object.values(detailed).filter(
-        record => record.song_id === chart.music.id && record.type === "DX"
+        record => getRecordMusicId(record) === chart.music.id && record.type === "DX"
     );
     if (candidates.length === 0) return undefined;
 

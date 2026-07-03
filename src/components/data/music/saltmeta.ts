@@ -225,6 +225,10 @@ function getSaltNetMusicId(saltMetaMusicId: number, chartType: SaltMetaChartType
     return chartType === "sd" ? saltMetaMusicId : saltMetaMusicId + SALTMETA_DX_ID_OFFSET;
 }
 
+export function getSaltNetMusicIdForChartType(musicId: number, chartType: string): number {
+    return chartType.toUpperCase() === "DX" ? musicId + SALTMETA_DX_ID_OFFSET : musicId;
+}
+
 function normalizeCnVersion(version: string | number): string {
     if (typeof version === "number") return `舞萌DX ${version}`;
     return jpDxVersionToCnVersion[version] ?? version;

@@ -9,6 +9,7 @@ import type {
 } from "./type";
 import { isBanquetGenre, UTAGE_GRADE } from "@/components/data/chart/difficulty";
 import { getMusicInfoAsync } from "@/components/data/music";
+import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
@@ -73,7 +74,8 @@ export async function calculateB50FromRecords(
     const oldScores: DivingFishFullRecord[] = [];
 
     for (const record of records) {
-        const music = musicInfo?.musicList[record.song_id];
+        const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
+        const music = musicInfo?.musicList[musicId];
         if (music?.info?.isNew) {
             newScores.push(record);
         } else {
