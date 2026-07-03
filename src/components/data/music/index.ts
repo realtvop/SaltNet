@@ -4,16 +4,19 @@
  */
 
 import localForage from "localforage";
-import type { SavedMusicList, CachedMusicData } from "./type";
+import { reactive } from "vue";
+import { updateSaltMetaVersionPlates } from "@/components/data/collection";
+import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type";
 import type { MaimaidxRegion } from "./type";
 import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
 
 // Cache key for localForage
-const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v2";
+const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v3";
 
 // Module-level state for loaded music data
 let musicData: SavedMusicList | null = null;
+let musicMetadataState: MusicMetadataState | null = null;
 let musicDataPromise: Promise<SavedMusicList | null> | null = null;
 let currentRegion: MaimaidxRegion | null = null;
 
@@ -41,6 +44,7 @@ async function saveToCache(data: SavedMusicList, region: string): Promise<void> 
         const cacheData: CachedMusicData = {
             musicList: data.musicList,
             chartList: data.chartList,
+            metadata: musicMetadataState ?? undefined,
             region,
             cachedAt: Date.now(),
         };
@@ -70,6 +74,16 @@ function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
     };
 }
 
+function applyMusicMetadata(metadata: MusicMetadataState | null, data: SavedMusicList): void {
+    musicMetadataState = metadata;
+    maimaiVersionsCN.splice(
+        0,
+        maimaiVersionsCN.length,
+        ...(metadata?.cnVersions ?? []).map(v => v.name)
+    );
+    updateSaltMetaVersionPlates(metadata?.cnVersionPlates ?? metadata?.cnVersions ?? [], data);
+}
+
 /**
  * Main function to load music data from SaltMeta, with cache fallback.
  */
@@ -83,6 +97,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
+            applyMusicMetadata(cached.metadata ?? null, musicData);
             currentRegion = region;
             return musicData;
         }
@@ -90,15 +105,17 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
 
     const saltMetaData = await fetchSaltMetaMusicList();
     if (saltMetaData) {
-        musicData = saltMetaData;
+        musicData = saltMetaData.music;
+        applyMusicMetadata(saltMetaData.metadata, musicData);
         currentRegion = region;
-        saveToCache(saltMetaData, region);
+        saveToCache(saltMetaData.music, region);
     }
 
     if (!musicData && forceRefresh) {
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
+            applyMusicMetadata(cached.metadata ?? null, musicData);
             currentRegion = region;
         }
     }
@@ -158,31 +175,12 @@ export async function refreshMusicData(): Promise<SavedMusicList | null> {
  */
 export function clearMusicData(): void {
     musicData = null;
+    musicMetadataState = null;
+    maimaiVersionsCN.splice(0, maimaiVersionsCN.length);
     currentRegion = null;
 }
 
 // Re-export utilities
 export { MusicSort };
 
-export const maimaiVersionsCN = [
-    "maimai",
-    "maimai PLUS",
-    "maimai GreeN",
-    "maimai GreeN PLUS",
-    "maimai ORANGE",
-    "maimai ORANGE PLUS",
-    "maimai PiNK",
-    "maimai PiNK PLUS",
-    "maimai MURASAKi",
-    "maimai MURASAKi PLUS",
-    "maimai MiLK",
-    "maimai MiLK PLUS",
-    "maimai FiNALE",
-    "舞萌DX",
-    "舞萌DX 2021",
-    "舞萌DX 2022",
-    "舞萌DX 2023",
-    "舞萌DX 2024",
-    "舞萌DX 2025",
-    "舞萌DX 2026",
-];
+export const maimaiVersionsCN = reactive<string[]>([]);

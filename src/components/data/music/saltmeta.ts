@@ -9,6 +9,11 @@ export const SALTMETA_DX_ID_OFFSET = 10000;
 const SALTMETA_CHART_ID_MULTIPLIER = 100;
 export const SALTMETA_CURRENT_CN_VERSION = "舞萌DX 2026";
 
+export type SaltMetaCnVersionInfo = {
+    name: string;
+    word: string;
+};
+
 type SaltMetaRegion = "jp" | "intl" | "cn" | "us";
 type SaltMetaDifficulty = 0 | 1 | 2 | 3 | 4 | 10;
 type SaltMetaChartType = "sd" | "dx" | "utage";
@@ -119,8 +124,8 @@ const categoryToSaltNetGenre: Record<string, MusicGenre> = {
 };
 
 const jpDxVersionToCnVersion: Record<string, string> = {
-    "maimai でらっくす": "舞萌DX",
-    "maimai でらっくす PLUS": "舞萌DX",
+    maimaiでらっくす: "舞萌DX",
+    "maimaiでらっくす PLUS": "舞萌DX",
     Splash: "舞萌DX 2021",
     "Splash PLUS": "舞萌DX 2021",
     UNiVERSE: "舞萌DX 2022",
@@ -133,6 +138,20 @@ const jpDxVersionToCnVersion: Record<string, string> = {
     "PRiSM PLUS": "舞萌DX 2025",
     CiRCLE: "舞萌DX 2026",
     "CiRCLE PLUS": "舞萌DX 2026",
+};
+
+const legacyVersionToCnVersion: Record<string, string> = {
+    GreeN: "maimai GreeN",
+    "GreeN PLUS": "maimai GreeN PLUS",
+    ORANGE: "maimai ORANGE",
+    "ORANGE PLUS": "maimai ORANGE PLUS",
+    PiNK: "maimai PiNK",
+    "PiNK PLUS": "maimai PiNK PLUS",
+    MURASAKi: "maimai MURASAKi",
+    "MURASAKi PLUS": "maimai MURASAKi PLUS",
+    MiLK: "maimai MiLK",
+    "MiLK PLUS": "maimai MiLK PLUS",
+    FiNALE: "maimai FiNALE",
 };
 
 function expandVersionReference(
@@ -235,9 +254,57 @@ export function getSaltNetMusicIdForChartType(musicId: number, chartType: string
     return musicId >= SALTMETA_DX_ID_OFFSET ? musicId : musicId + SALTMETA_DX_ID_OFFSET;
 }
 
-function normalizeCnVersion(version: string | number): string {
+export function normalizeSaltMetaCnVersion(version: string | number): string {
     if (typeof version === "number") return `舞萌DX ${version}`;
-    return jpDxVersionToCnVersion[version] ?? version;
+    return jpDxVersionToCnVersion[version] ?? legacyVersionToCnVersion[version] ?? version;
+}
+
+export function getSaltMetaCnVersions(
+    metadata: SaltMetaMusicMetadataNext,
+    savedMusicList: SavedMusicList
+): SaltMetaCnVersionInfo[] {
+    const usedVersions = new Set(
+        Object.values(savedMusicList.musicList).map(music => music.info.from as unknown as string)
+    );
+    const versionInfos: SaltMetaCnVersionInfo[] = [];
+    const seen = new Set<string>();
+
+    for (const version of metadata.versions) {
+        const name = normalizeSaltMetaCnVersion(version.cnVerOverride ?? version.version);
+        if (!usedVersions.has(name) || seen.has(name)) continue;
+        seen.add(name);
+        versionInfos.push({
+            name,
+            word: version.word,
+        });
+    }
+
+    for (const version of usedVersions) {
+        if (seen.has(version)) continue;
+        seen.add(version);
+        versionInfos.push({
+            name: version,
+            word: version,
+        });
+    }
+
+    return versionInfos;
+}
+
+export function getSaltMetaCnVersionPlates(
+    metadata: SaltMetaMusicMetadataNext,
+    savedMusicList: SavedMusicList
+): SaltMetaCnVersionInfo[] {
+    const usedVersions = new Set(
+        Object.values(savedMusicList.musicList).map(music => music.info.from as unknown as string)
+    );
+
+    return metadata.versions
+        .map(version => ({
+            name: normalizeSaltMetaCnVersion(version.cnVerOverride ?? version.version),
+            word: version.word,
+        }))
+        .filter(version => usedVersions.has(version.name) && version.word.length > 0);
 }
 
 function getSaltNetChartType(chartType: SaltMetaChartType): ChartType {
@@ -275,7 +342,7 @@ export function convertSaltMetaNextToSavedMusicList(
             const musicId = getSaltNetMusicId(saltMetaMusic.id, saltMetaChart.type);
             const chartGrade = getChartGrade(saltMetaChart);
             const chartId = musicId * SALTMETA_CHART_ID_MULTIPLIER + chartGrade;
-            const cnVersion = normalizeCnVersion(regionData.version);
+            const cnVersion = normalizeSaltMetaCnVersion(regionData.version);
             let music = musicList[musicId];
 
             if (!music) {
