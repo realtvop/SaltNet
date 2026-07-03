@@ -20,7 +20,7 @@
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
-    import { findDetailedScoreForChart } from "@/components/data/chart/scoreLookup";
+    import { createDetailedScoreLookup } from "@/components/data/chart/scoreLookup";
     import { handleSelectChange } from "@/utils";
 
     declare global {
@@ -203,6 +203,25 @@
         return new Promise(resolve => window.setTimeout(resolve, 0));
     }
 
+    const musicSortOrder = new Map<number, number>(MusicSort.map((id, index) => [id, index]));
+
+    function getMusicSortIndex(chart: Chart): number {
+        return musicSortOrder.get(chart.music.id) ?? -1;
+    }
+
+    function getChartBaseScore(chart: Chart): ChartScore {
+        return (
+            chart.score ?? {
+                rankRate: "" as any,
+                achievements: null,
+                comboStatus: "" as any,
+                syncStatus: "" as any,
+                deluxeScore: 0,
+                deluxeRating: 0,
+            }
+        );
+    }
+
     async function loadChartsWithCache(userData?: User | null) {
         const requestId = ++loadChartsRequestId;
         const currentIdentifier = {
@@ -235,12 +254,13 @@
 
         const charts: Chart[] = [];
         const sourceCharts = Object.values(musicInfo.chartList) as Chart[];
+        const detailedLookup = createDetailedScoreLookup(userData?.data?.detailed);
         for (const [index, chart] of sourceCharts.entries()) {
             if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (userData?.data?.detailed) {
-                const d = findDetailedScoreForChart(userData.data.detailed, chart);
+            if (detailedLookup) {
+                const d = detailedLookup.findScoreForChart(chart);
                 if (
                     d &&
                     typeof d.achievements === "number" &&
@@ -271,18 +291,18 @@
         if (requestId !== loadChartsRequestId) return;
         charts.sort(
             (a, b) =>
-                MusicSort.indexOf(b.music.id) +
+                getMusicSortIndex(b) +
                 b.info.grade * 100000 -
-                MusicSort.indexOf(a.music.id) -
+                getMusicSortIndex(a) -
                 a.info.grade * 100000
         );
 
-        if (userData?.data?.detailed) {
+        if (detailedLookup) {
             await yieldToMainThread();
             if (requestId !== loadChartsRequestId) return;
             charts.sort((a, b) => {
-                const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
-                const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
+                const chartDataA = detailedLookup.findScoreForChart(a);
+                const chartDataB = detailedLookup.findScoreForChart(b);
                 const playedA = typeof chartDataA?.achievements === "number";
                 const playedB = typeof chartDataB?.achievements === "number";
                 if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
@@ -425,26 +445,26 @@
         }
 
         const allChartsByGrade: Record<number, Chart[]> = {};
+        const gradeChartPositions = new Map<Chart, number>();
         [0, 1, 2, 3, 4, 10].forEach(grade => {
             allChartsByGrade[grade] = shared.chartsSort.charts.filter(
                 (chart: Chart) => chart.info.grade === grade
             );
+            allChartsByGrade[grade].forEach((chart, index, gradeCharts) => {
+                gradeChartPositions.set(chart, gradeCharts.length - index);
+            });
         });
 
         // 先给所有符合难度条件的曲目添加原始排序索引
         const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
             const gradeCharts = allChartsByGrade[chart.info.grade] || [];
-            if (!chart.score) {
-                chart.score = {
-                    rankRate: "" as any,
-                    achievements: null,
-                    comboStatus: "" as any,
-                    syncStatus: "" as any,
-                    deluxeScore: 0,
-                    deluxeRating: 0,
+            return {
+                ...chart,
+                score: {
+                    ...getChartBaseScore(chart),
                     index: {
                         all: {
-                            index: gradeCharts.length - gradeCharts.indexOf(chart),
+                            index: gradeChartPositions.get(chart) ?? 0,
                             total: gradeCharts.length,
                         },
                         difficult: {
@@ -452,20 +472,8 @@
                             total: filteredCharts.length,
                         },
                     },
-                };
-            } else {
-                chart.score.index = {
-                    all: {
-                        index: gradeCharts.length - gradeCharts.indexOf(chart),
-                        total: gradeCharts.length,
-                    },
-                    difficult: {
-                        index: filteredCharts.length - index,
-                        total: filteredCharts.length,
-                    },
-                };
-            }
-            return chart;
+                },
+            };
         });
 
         let finalFilteredCharts = chartsWithOriginalIndex;
@@ -495,11 +503,20 @@
 
         // 使用原始排序索引而不是重新计算
         const chartsWithIndex = finalFilteredCharts.map((chart, index) => {
-            chart.score!.index!.queried = {
-                index: filteredCharts.length - index,
-                total: filteredCharts.length,
+            return {
+                ...chart,
+                score: {
+                    ...getChartBaseScore(chart),
+                    index: {
+                        all: chart.score.index!.all,
+                        difficult: chart.score.index!.difficult,
+                        queried: {
+                            index: filteredCharts.length - index,
+                            total: filteredCharts.length,
+                        },
+                    },
+                },
             };
-            return chart;
         });
 
         return { [selectedDifficulty.value]: chartsWithIndex };

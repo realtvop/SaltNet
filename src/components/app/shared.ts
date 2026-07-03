@@ -8,7 +8,6 @@ import type { NearcadeData } from "../integrations/nearcade/type";
 import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
@@ -44,8 +43,6 @@ export const useShared = defineStore("shared", () => {
         defaultChartRatingDisplayMode: "简洁",
         showDxScoreInB50: false,
     });
-
-
 
     const handleScreenSizeChange = () => {
         isSmallScreen.value = window.innerWidth < 560;
@@ -101,11 +98,9 @@ export const useShared = defineStore("shared", () => {
     localForage.getItem<FavoriteList[]>("favorites").then((v: FavoriteList[] | null) => {
         if (Array.isArray(v)) favorites.value = v;
     });
-    localForage
-        .getItem<ChartsSortCached>(CHARTS_SORT_CACHE_KEY)
-        .then((v: ChartsSortCached | null) => {
-            if (v) chartsSort.value = v;
-        });
+    localForage.removeItem("chartsSortCachedV2").catch((err: unknown) => {
+        console.error("Failed to remove stale charts sort cache:", err);
+    });
     localForage.getItem<NearcadeData>("nearcadeData").then((v: NearcadeData | null) => {
         if (v) nearcadeData.value = v;
     });
@@ -122,8 +117,6 @@ export const useShared = defineStore("shared", () => {
                 showDxScoreInB50: v.showDxScoreInB50 ?? appSettings.value.showDxScoreInB50,
             };
         });
-
-
 
     watch(
         users,
@@ -145,12 +138,6 @@ export const useShared = defineStore("shared", () => {
         },
         { deep: true }
     );
-    watch(chartsSort, (newChartsSort: ChartsSortCached) => {
-        if (!newChartsSort) return;
-        localForage.setItem(CHARTS_SORT_CACHE_KEY, toRaw(newChartsSort)).catch((err: unknown) => {
-            console.error("Failed to save charts sort:", err);
-        });
-    });
     watch(
         nearcadeData,
         (newNearcadeData: NearcadeData) => {
