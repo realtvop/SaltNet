@@ -1,4 +1,5 @@
 import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "./type";
+import type { ChartStats } from "@/components/integrations/diving-fish/type";
 import { ChartType, MusicGenre, MusicOrigin } from "@/components/data/maiTypes";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 
@@ -31,6 +32,17 @@ type SaltMetaChartRegionData = {
     version: string | number;
 };
 
+type SaltMetaFitDiffDF = {
+    cnt: number;
+    diff: string;
+    fitDiff: number;
+    avg: number;
+    avgDx: number;
+    stdDev: number;
+    dist: number[];
+    fcDist: number[];
+};
+
 type SaltMetaChartNext = {
     type: SaltMetaChartType;
     difficulty: SaltMetaDifficulty;
@@ -44,6 +56,7 @@ type SaltMetaChartNext = {
         total: number;
     };
     regions: Partial<Record<SaltMetaRegion, SaltMetaChartRegionData | null>>;
+    fitDiffDF?: SaltMetaFitDiffDF;
 };
 
 type SaltMetaMusicNext = {
@@ -76,12 +89,24 @@ type SaltMetaChartRegionCompacted = [
     SaltMetaVersionReferenceCompacted,
 ];
 
+type SaltMetaFitDiffDFCompacted = [
+    number,
+    string,
+    number,
+    number,
+    number,
+    number,
+    number[],
+    number[],
+];
+
 type SaltMetaChartNextCompacted = [
     number,
     SaltMetaDifficulty,
     SaltMetaChartRegionCompacted[],
     string,
     [number, number, number | null, number, number],
+    (SaltMetaFitDiffDFCompacted | null)?,
 ];
 
 type SaltMetaMusicNextCompacted = [
@@ -171,7 +196,14 @@ function expandSaltMetaChart(
     versions: SaltMetaVersion[],
     musicId: number
 ): SaltMetaChartNext {
-    const [typeIndex, difficulty, regionEntries, noteDesigner, noteCountsCompacted] = compacted;
+    const [
+        typeIndex,
+        difficulty,
+        regionEntries,
+        noteDesigner,
+        noteCountsCompacted,
+        fitDiffDFCompacted,
+    ] = compacted;
     const type = chartTypeNames[typeIndex];
     if (!type) throw new Error(`Chart type index ${typeIndex} not found for music ${musicId}`);
 
@@ -188,7 +220,7 @@ function expandSaltMetaChart(
     const slide = slideRaw ?? 0;
     const touch = type === "sd" ? null : touchRaw;
 
-    return {
+    const chart: SaltMetaChartNext = {
         type,
         difficulty,
         noteDesigner,
@@ -202,6 +234,21 @@ function expandSaltMetaChart(
         },
         regions,
     };
+    if (fitDiffDFCompacted) {
+        const [cnt, diff, fitDiff, avg, avgDx, stdDev, dist, fcDist] = fitDiffDFCompacted;
+        chart.fitDiffDF = {
+            cnt,
+            diff,
+            fitDiff,
+            avg,
+            avgDx,
+            stdDev,
+            dist,
+            fcDist,
+        };
+    }
+
+    return chart;
 }
 
 export function convertSaltMetaNextCompactedToNormal(
@@ -325,6 +372,22 @@ function getChartGrade(chart: SaltMetaChartNext): number {
     return chart.type === "utage" ? UTAGE_GRADE : chart.difficulty;
 }
 
+function getChartStats(chart: SaltMetaChartNext): ChartStats | undefined {
+    const stat = chart.fitDiffDF;
+    if (!stat) return undefined;
+
+    return {
+        cnt: stat.cnt,
+        diff: stat.diff,
+        fit_diff: stat.fitDiff,
+        avg: stat.avg,
+        avg_dx: stat.avgDx,
+        std_dev: stat.stdDev,
+        dist: stat.dist,
+        fc_dist: stat.fcDist,
+    };
+}
+
 export function convertSaltMetaNextToSavedMusicList(
     metadata: SaltMetaMusicMetadataNext,
     region: typeof SALTMETA_CN_REGION = SALTMETA_CN_REGION
@@ -374,6 +437,7 @@ export function convertSaltMetaNextToSavedMusicList(
                 grade: chartGrade,
                 constant: regionData.internalLevel,
                 deluxeScoreMax,
+                stat: getChartStats(saltMetaChart),
             };
             const chart: Chart = {
                 id: chartId,
