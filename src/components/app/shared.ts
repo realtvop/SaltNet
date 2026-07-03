@@ -1,13 +1,10 @@
 import { defineStore } from "pinia";
-import { ref, watch, toRaw, computed } from "vue";
+import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
-import type { SaltNetDatabaseLogin } from "@/components/data/user/database";
-import type { MaimaidxRegion } from "@/components/data/user/database/type";
-import { setRegionGetter } from "@/components/data/music";
 import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -48,32 +45,7 @@ export const useShared = defineStore("shared", () => {
         showDxScoreInB50: false,
     });
 
-    const saltNetAccount = computed<SaltNetDatabaseLogin | null>({
-        get: () => users.value[0]?.saltnetDB ?? null,
-        set: (value: SaltNetDatabaseLogin | null) => {
-            if (value) {
-                if (users.value.length === 0) {
-                    users.value.push({
-                        remark: null,
-                        saltnetDB: value,
-                        divingFish: { name: null },
-                        inGame: { id: null, enabled: false, useFastUpdate: false },
-                        lxns: { auth: null, name: null, id: null },
-                        settings: { manuallyUpdate: false },
-                        data: {
-                            updateTime: null,
-                            name: null,
-                            rating: null,
-                        },
-                    });
-                } else {
-                    users.value[0].saltnetDB = value;
-                }
-            } else if (users.value.length > 0) {
-                users.value[0].saltnetDB = undefined;
-            }
-        },
-    });
+
 
     const handleScreenSizeChange = () => {
         isSmallScreen.value = window.innerWidth < 560;
@@ -151,18 +123,7 @@ export const useShared = defineStore("shared", () => {
             };
         });
 
-    // Migrate old saltNetAccount to first user's saltnetDB
-    localForage
-        .getItem<SaltNetDatabaseLogin>("saltNetAccount")
-        .then((v: SaltNetDatabaseLogin | null) => {
-            if (v) {
-                saltNetAccount.value = v;
-                localForage.removeItem("saltNetAccount");
-            }
-        });
 
-    // Set up region getter for music module
-    setRegionGetter(() => (saltNetAccount.value?.maimaidxRegion as MaimaidxRegion) ?? "cn");
 
     watch(
         users,
@@ -220,7 +181,6 @@ export const useShared = defineStore("shared", () => {
         isDarkMode,
         isSmallScreen,
         nearcadeData,
-        saltNetAccount,
         musicDataLoading,
         appSettings,
     };

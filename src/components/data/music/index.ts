@@ -6,15 +6,9 @@
 
 import localForage from "localforage";
 import type { SavedMusicList, CachedMusicData } from "./type";
-import type { MaimaidxRegion } from "@/components/data/user/database/type";
+import type { MaimaidxRegion } from "./type";
 import {
-    fetchMusicList,
-    fetchVersionLatests,
-    filterMusicByRegion,
-    convertSaltNetMusicList,
     fetchLocalMusicList,
-    enrichWithLocalChartStats,
-    isDBEnabled,
 } from "./musicApi";
 import MusicSort from "./sort.json";
 
@@ -28,13 +22,6 @@ let currentRegion: MaimaidxRegion | null = null;
 
 // Getter to access saltNetAccount from shared without circular import
 let getSaltNetRegion: () => MaimaidxRegion = () => "cn";
-
-/**
- * Set the region getter function (called from shared.ts to avoid circular import)
- */
-export function setRegionGetter(getter: () => MaimaidxRegion): void {
-    getSaltNetRegion = getter;
-}
 
 /**
  * Load music data from cache
@@ -90,102 +77,32 @@ function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
 }
 
 /**
- * Load music data from API and update cache
- */
-async function fetchAndConvertMusicData(region: MaimaidxRegion): Promise<SavedMusicList | null> {
-    // Fetch music list and version info in parallel
-    const [rawData, versionLatests] = await Promise.all([fetchMusicList(), fetchVersionLatests()]);
-
-    if (!rawData) return null;
-
-    // Get the latest version name for this region
-    const latestVersionName = versionLatests?.[region]?.name;
-
-    const filteredData = filterMusicByRegion(rawData, region);
-    const converted = convertSaltNetMusicList(filteredData, region, latestVersionName);
-    void enrichWithLocalChartStats(converted).catch(error => {
-        console.error("Failed to enrich chart stats:", error);
-    });
-
-    // Save to cache in background
-    saveToCache(converted, region);
-
-    return converted;
-}
-
-/**
- * Main function to load music data with caching strategy:
- * - When DB is enabled: Use caching with background refresh
- * - When DB is disabled: Reuse in-memory data in current session
+ * Main function to load music data from local JSON file
  */
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
-    // When DB is disabled, cache the bundled JSON by build version.
-    if (!isDBEnabled) {
-        const region = getSaltNetRegion();
-        if (musicData && currentRegion === region && !forceRefresh) {
+    const region = getSaltNetRegion();
+    if (musicData && currentRegion === region && !forceRefresh) {
+        return musicData;
+    }
+
+    if (import.meta.env.PROD && !forceRefresh) {
+        const cached = await loadFromCache();
+        const verBuildTime = window.spec?.currentVersionBuildTime || "0";
+        if (cached && cached.region === region && cached.verBuildTime === verBuildTime) {
+            musicData = restoreCachedMusicData(cached);
+            currentRegion = region;
             return musicData;
         }
-
-        if (import.meta.env.PROD && !forceRefresh) {
-            const cached = await loadFromCache();
-            const verBuildTime = window.spec?.currentVersionBuildTime || "0";
-            if (cached && cached.region === region && cached.verBuildTime === verBuildTime) {
-                musicData = restoreCachedMusicData(cached);
-                currentRegion = region;
-                return musicData;
-            }
-        }
-
-        const localData = await fetchLocalMusicList();
-        if (localData) {
-            musicData = localData;
-            currentRegion = region;
-            if (import.meta.env.PROD) {
-                saveToCache(localData, region, window.spec?.currentVersionBuildTime || "0");
-            }
-        }
-        return musicData;
     }
 
-    const region = getSaltNetRegion();
-
-    // Check if we already have data for this region
-    if (musicData && currentRegion === region && !forceRefresh) {
-        // Start background refresh
-        fetchAndConvertMusicData(region).then(freshData => {
-            if (freshData) {
-                musicData = freshData;
-            }
-        });
-        return musicData;
-    }
-
-    // Try to load from cache first
-    const cached = await loadFromCache();
-    if (cached && cached.region === region && !forceRefresh) {
-        musicData = restoreCachedMusicData(cached);
-        void enrichWithLocalChartStats(musicData).catch(error => {
-            console.error("Failed to enrich cached chart stats:", error);
-        });
+    const localData = await fetchLocalMusicList();
+    if (localData) {
+        musicData = localData;
         currentRegion = region;
-
-        // Start background refresh
-        fetchAndConvertMusicData(region).then(freshData => {
-            if (freshData) {
-                musicData = freshData;
-            }
-        });
-
-        return musicData;
+        if (import.meta.env.PROD) {
+            saveToCache(localData, region, window.spec?.currentVersionBuildTime || "0");
+        }
     }
-
-    // No cache or region mismatch - fetch from API
-    const freshData = await fetchAndConvertMusicData(region);
-    if (freshData) {
-        musicData = freshData;
-        currentRegion = region;
-    }
-
     return musicData;
 }
 

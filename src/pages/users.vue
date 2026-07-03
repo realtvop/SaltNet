@@ -4,23 +4,17 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
-    import SignupDialog from "@/components/data/user/database/SignupDialog.vue";
-    import SigninDialog from "@/components/data/user/database/SigninDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { updateUser, uploadScoresToSaltNet, checkLogin } from "@/components/data/user/update";
+    import { updateUser, checkLogin } from "@/components/data/user/update";
     import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
-    import UserCard from "@/components/data/user/database/UserCard.vue";
     import type { LXNSAuth } from "@/components/integrations/lxns";
-    import { isDBEnabled, type SaltNetDatabaseLogin } from "@/components/data/user/database";
     import { exportUserBackup } from "@/components/data/user/exportBackup";
 
     const shared = useShared();
 
     const isDialogVisible = ref(false);
-    const isSignupDialogOpen = ref(false);
-    const isSigninDialogOpen = ref(false);
     const currentUserToEdit = ref<User | null>(null);
     const editingUserIndex = ref<number | null>(null);
 
@@ -49,21 +43,7 @@
         isDialogVisible.value = true;
     };
 
-    const openSignupDialog = () => {
-        isSignupDialogOpen.value = true;
-    };
 
-    const openSigninDialog = () => {
-        isSigninDialogOpen.value = true;
-    };
-
-    const handleLoginSuccess = (data: SaltNetDatabaseLogin) => {
-        shared.saltNetAccount = data;
-        // Auto-sync scores if there's only one user (the first user)
-        if (shared.users.length === 1) {
-            updateUser(shared.users[0]);
-        }
-    };
 
     const openDeleteDialog = (index: number) => {
         confirm({
@@ -137,7 +117,6 @@
             enabled: boolean;
             useFastUpdate: boolean;
         };
-        saltnetUsername?: string | null;
         settings: { manuallyUpdate: boolean };
     }
 
@@ -160,7 +139,6 @@
                     enabled: updatedUserData.inGame.enabled ?? false,
                     useFastUpdate: updatedUserData.inGame.useFastUpdate ?? false,
                 },
-                saltnetUsername: updatedUserData.saltnetUsername ?? null,
                 settings: {
                     manuallyUpdate: updatedUserData.settings?.manuallyUpdate ?? false,
                 },
@@ -203,7 +181,6 @@
                         originalUser.inGame.useFastUpdate ??
                         false,
                 },
-                saltnetUsername: updatedUserData.saltnetUsername ?? originalUser.saltnetUsername,
                 settings: {
                     ...defaultSettings,
                     ...(originalUser.settings ?? {}),
@@ -256,14 +233,7 @@
         }
     };
 
-    function hasNonSaltNetDataSource(user: User): boolean {
-        return !!(
-            user.divingFish?.name ||
-            user.divingFish?.importToken ||
-            user.lxns?.auth ||
-            user.inGame?.id
-        );
-    }
+
 
     function promptUpdateBeforeBackup(user: User, headline: string, description: string) {
         return confirm({
@@ -327,11 +297,7 @@
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
-        <UserCard
-            :logged-in-user="shared.saltNetAccount"
-            @open-signin="openSigninDialog"
-            @open-signup="openSignupDialog"
-        />
+
 
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
@@ -410,19 +376,7 @@
                             查询登录状态
                             <mdui-icon slot="icon" name="remove_red_eye"></mdui-icon>
                         </mdui-menu-item>
-                        <mdui-menu-item
-                            @click="uploadScoresToSaltNet(user)"
-                            v-if="
-                                isDBEnabled &&
-                                !index &&
-                                shared.saltNetAccount &&
-                                hasNonSaltNetDataSource(user) &&
-                                user.data.detailed
-                            "
-                        >
-                            上传成绩到 SaltNet
-                            <mdui-icon slot="icon" name="cloud_upload"></mdui-icon>
-                        </mdui-menu-item>
+
                         <mdui-menu-item
                             @click="goToUserSongs(index)"
                             v-if="index && user.data.detailed"
@@ -491,17 +445,6 @@
         :is-editing-new-user="editingUserIndex === null"
         :is-first-user="editingUserIndex === null && shared.users.length === 0"
         @save="handleUserSave"
-        @saltnet-login="handleLoginSuccess"
-    />
-    <SignupDialog
-        v-if="isDBEnabled"
-        v-model="isSignupDialogOpen"
-        @register-success="handleLoginSuccess"
-    />
-    <SigninDialog
-        v-if="isDBEnabled"
-        v-model="isSigninDialogOpen"
-        @login-success="handleLoginSuccess"
     />
 
     <div class="fab-container">

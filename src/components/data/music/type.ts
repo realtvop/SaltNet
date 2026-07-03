@@ -8,6 +8,8 @@ import type {
     RankRate,
 } from "../maiTypes";
 
+export type MaimaidxRegion = "jp" | "cn" | "ex";
+
 export interface Music {
     id: number;
     info: MusicInfo;

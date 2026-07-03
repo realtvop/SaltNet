@@ -1,6 +1,5 @@
 packages:
     - "."
-    - "database"
     - "render-service"
 
 allowBuilds:
