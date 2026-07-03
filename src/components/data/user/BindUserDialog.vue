@@ -26,12 +26,8 @@
             clearable
         ></mdui-text-field>
 
-
-
         绑定账号：
         <mdui-tabs>
-
-
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
@@ -145,8 +141,6 @@
     import { initLXNSOAuth } from "@/components/integrations/lxns";
     import { useShared } from "@/components/app/shared";
 
-
-
     const props = defineProps<{
         modelValue: boolean;
         user: User | null;
@@ -159,7 +153,6 @@
 
     const shared = useShared();
     const dialogRef = ref<any>(null);
-
 
     const localUser = ref<Partial<User>>({});
 
@@ -270,8 +263,6 @@
         ensureInGame(localUser.value);
         localUser.value.inGame!.enabled = (event.target as HTMLInputElement).checked;
     };
-
-
 
     const handleSave = () => {
         saveUser();

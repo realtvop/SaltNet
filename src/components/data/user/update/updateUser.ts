@@ -60,8 +60,6 @@ export function updateUserWithWorker(user: User) {
     }
     const userUid = user.uid;
 
-
-
     const plainUser: User = JSON.parse(JSON.stringify(user));
     const shouldPromptQrCode = user.inGame?.enabled && !user.inGame?.useFastUpdate;
 
@@ -100,7 +98,6 @@ export function updateUserWithWorker(user: User) {
     updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
 }
 
-
 export function checkLoginWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
     prompt({
@@ -137,5 +134,3 @@ export function previewStockedTicketsWithWorker(user: User) {
 
     updateUserWorker.postMessage({ type: "previewStockedTickets", user: plainUser });
 }
-
-

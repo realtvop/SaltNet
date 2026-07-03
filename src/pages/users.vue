@@ -43,8 +43,6 @@
         isDialogVisible.value = true;
     };
 
-
-
     const openDeleteDialog = (index: number) => {
         confirm({
             headline: `删除绑定的用户：${getUserDisplayName(shared.users[index])}？`,
@@ -233,8 +231,6 @@
         }
     };
 
-
-
     function promptUpdateBeforeBackup(user: User, headline: string, description: string) {
         return confirm({
             headline,
@@ -297,8 +293,6 @@
 <template>
     <div style="height: 10px"></div>
     <div class="user-cards-container">
-
-
         <mdui-card
             :variant="index ? 'elevated' : 'filled'"
             v-for="(user, index) in shared.users"
