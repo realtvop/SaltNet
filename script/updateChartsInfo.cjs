@@ -1,4 +1,6 @@
-// 曲目信息列表更新 用于 Actions 执行
+// 藏品信息列表更新 用于 Actions 执行。
+// 网站曲目数据已切换到运行时加载 SaltMeta next compacted metadata；
+// updateMusicData 仅保留为旧 DivingFish charts.json 生成逻辑的历史参考。
 const fs = require("fs");
 
 const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_data";
@@ -169,5 +171,4 @@ async function updateMusicData() {
     );
 }
 
-updateMusicData();
 updateCollectionData();
