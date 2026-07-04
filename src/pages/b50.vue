@@ -8,7 +8,7 @@
     import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
     import { ComboStatus } from "@/components/data/maiTypes";
-    import { getMusicInfoAsync } from "@/components/data/music";
+    import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";
     import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
     import { useShared } from "@/components/app/shared";
     import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
@@ -457,7 +457,12 @@
 
 <template>
     <div class="player-profile">
-        <div v-if="pending" class="loading-message">
+        <div v-if="isMusicDataLoading" class="songs-loading-container">
+            <mdui-circular-progress></mdui-circular-progress>
+            <div class="loading-text">正在更新谱面列表...</div>
+        </div>
+
+        <div v-else-if="pending" class="loading-message">
             <p>加载中，请稍候...</p>
         </div>
 
@@ -629,5 +634,21 @@
     .error-message h2 {
         color: var(--error-color, #ff6b6b);
         margin-bottom: 10px;
+    }
+
+    .songs-loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 20px;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .songs-loading-container .loading-text {
+        font-size: 16px;
+        color: var(--mdui-color-on-background);
+        opacity: 0.7;
     }
 </style>

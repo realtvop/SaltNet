@@ -4,7 +4,7 @@
  */
 
 import localForage from "localforage";
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import { updateSaltMetaVersionPlates } from "@/components/data/collection";
 import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type";
 import type { MaimaidxRegion } from "./type";
@@ -90,6 +90,7 @@ function applyMusicMetadata(metadata: MusicMetadataState | null, data: SavedMusi
 async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicList | null> {
     const region = getSaltNetRegion();
     if (musicData && currentRegion === region && !forceRefresh) {
+        isMusicDataLoading.value = false;
         return musicData;
     }
 
@@ -99,16 +100,27 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
             musicData = restoreCachedMusicData(cached);
             applyMusicMetadata(cached.metadata ?? null, musicData);
             currentRegion = region;
+            isMusicDataLoading.value = false;
             return musicData;
         }
     }
 
-    const saltMetaData = await fetchSaltMetaMusicList();
-    if (saltMetaData) {
-        musicData = saltMetaData.music;
-        applyMusicMetadata(saltMetaData.metadata, musicData);
-        currentRegion = region;
-        saveToCache(saltMetaData.music, region);
+    if (musicData) {
+        isMusicDataLoading.value = false;
+    } else {
+        isMusicDataLoading.value = true;
+    }
+
+    try {
+        const saltMetaData = await fetchSaltMetaMusicList();
+        if (saltMetaData) {
+            musicData = saltMetaData.music;
+            applyMusicMetadata(saltMetaData.metadata, musicData);
+            currentRegion = region;
+            saveToCache(saltMetaData.music, region);
+        }
+    } finally {
+        isMusicDataLoading.value = false;
     }
 
     if (!musicData && forceRefresh) {
@@ -178,9 +190,11 @@ export function clearMusicData(): void {
     musicMetadataState = null;
     maimaiVersionsCN.splice(0, maimaiVersionsCN.length);
     currentRegion = null;
+    isMusicDataLoading.value = true;
 }
 
 // Re-export utilities
 export { MusicSort };
 
 export const maimaiVersionsCN = reactive<string[]>([]);
+export const isMusicDataLoading = ref<boolean>(true);

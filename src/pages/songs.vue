@@ -7,7 +7,11 @@
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
+    import {
+        getMusicInfoAsync,
+        maimaiVersionsCN,
+        isMusicDataLoading,
+    } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
@@ -1374,10 +1378,14 @@
             ></mdui-text-field>
         </div>
 
+        <div v-if="isMusicDataLoading" class="songs-loading-container">
+            <mdui-circular-progress></mdui-circular-progress>
+            <div class="loading-text">正在更新谱面列表...</div>
+        </div>
         <div
+            v-else-if="chartListFiltered"
             class="card-container"
             :class="{ 'card-container-fixed': userId }"
-            v-if="chartListFiltered"
         >
             <div v-if="visibleGroupedItems" class="grouped-container">
                 <div
@@ -1835,5 +1843,21 @@
     .loading-text {
         color: #666;
         margin-bottom: 10px;
+    }
+
+    .songs-loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        gap: 16px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .songs-loading-container .loading-text {
+        font-size: 16px;
+        color: var(--mdui-color-on-background);
+        opacity: 0.7;
     }
 </style>
