@@ -131,7 +131,9 @@ self.addEventListener("fetch", async function (e) {
     if (urlOri.startsWith("http")) {
         if (urlParsed.path.endsWith("sw.v2.js") ||
             (urlParsed.path.endsWith(".json") && !urlParsed.path.endsWith("manifest.json")) ||
-            urlOri.includes("lxns.net/api") || urlOri.includes("diving-fish.com/api") || ["salt_api_backup.realtvop.top", "api.salt.realtvop.top", "www.googletagmanager.com", "vercel.live", "nearcade.phizone.cn"].includes(urlParsed.host) || urlParsed.host.includes("localhost")
+            urlOri.includes("lxns.net/api") || urlOri.includes("diving-fish.com/api") ||
+            urlParsed.host.includes("fonts.googleapis.com") || urlParsed.host.includes("fonts.gstatic.com") ||
+            ["salt_api_backup.realtvop.top", "api.salt.realtvop.top", "www.googletagmanager.com", "vercel.live", "nearcade.phizone.cn"].includes(urlParsed.host) || urlParsed.host.includes("localhost")
         ) {
             return;
         } else if (urlOri.includes("meta.salt.realtvop.top") || urlOri.includes("jacket.maimai.realtvop.top") || urlOri.includes("collectionimg.maimai.realtvop.top") || urlOri.includes("diving-fish.com/covers")) {
