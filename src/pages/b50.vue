@@ -267,18 +267,6 @@
         return Math.round(value * 10) / 10;
     }
 
-    function isIOSDevice(): boolean {
-        const ua = navigator.userAgent;
-        // iPadOS may report as MacIntel — detect via touch points in that case
-        const isIpadAsMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-        return /iPad|iPhone|iPod/.test(ua) || isIpadAsMac;
-    }
-
-    function isFirefoxBasedBrowser(): boolean {
-        const ua = navigator.userAgent;
-        return /Firefox\//.test(ua) || (/Gecko\//.test(ua) && !/like Gecko/.test(ua));
-    }
-    
     function downloadB50Png() {
         async function renderLocalBlob(): Promise<Blob> {
             return renderB50WithTakumi(buildB50RenderPayload());
