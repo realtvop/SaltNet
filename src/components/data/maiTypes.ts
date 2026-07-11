@@ -64,22 +64,17 @@ export enum MusicOrigin {
     "maimai でらっくす PRiSM",
     "maimai でらっくす PRiSM PLUS",
     "maimai でらっくす CiRCLE",
+    "maimai でらっくす CiRCLE PLUS",
 }
 
 export enum MusicGenre {
-    "舞萌",
-    "流行&动漫",
-    "其他游戏",
-    "niconico & VOCALOID",
-    "niconicoボーカロイド",
-    "东方Project",
-    "音击&中二节奏",
-    "ゲームバラエティ",
-    "POPSアニメ",
-    "maimai",
-    "オンゲキCHUNITHM",
-    "東方Project",
-    "宴会場",
+    "舞萌" = "舞萌",
+    "niconico & VOCALOID" = "niconico & VOCALOID",
+    "音击&中二节奏" = "音击&中二节奏",
+    "其他游戏" = "其他游戏",
+    "流行&动漫" = "流行&动漫",
+    "东方Project" = "东方Project",
+    "宴会場" = "宴会場",
 }
 
 /**

@@ -114,13 +114,13 @@ const saltMetaCategories = [
 const chartTypeNames = ["sd", "dx", "utage"] as const;
 
 const categoryToSaltNetGenre: Record<string, MusicGenre> = {
-    "POPS＆アニメ": "POPSアニメ" as unknown as MusicGenre,
-    "niconico＆ボーカロイド": "niconicoボーカロイド" as unknown as MusicGenre,
-    東方Project: "東方Project" as unknown as MusicGenre,
-    "ゲーム＆バラエティ": "ゲームバラエティ" as unknown as MusicGenre,
-    maimai: "maimai" as unknown as MusicGenre,
-    "オンゲキ＆CHUNITHM": "オンゲキCHUNITHM" as unknown as MusicGenre,
-    宴会場: "宴会場" as unknown as MusicGenre,
+    "POPS＆アニメ": MusicGenre["流行&动漫"],
+    "niconico＆ボーカロイド": MusicGenre["niconico & VOCALOID"],
+    東方Project: MusicGenre["东方Project"],
+    "ゲーム＆バラエティ": MusicGenre["其他游戏"],
+    maimai: MusicGenre["舞萌"],
+    "オンゲキ＆CHUNITHM": MusicGenre["音击&中二节奏"],
+    宴会場: MusicGenre["宴会場"],
 };
 
 const jpDxVersionToCnVersion: Record<string, string> = {

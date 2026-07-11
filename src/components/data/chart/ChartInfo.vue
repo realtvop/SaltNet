@@ -66,7 +66,9 @@
                     @click="copyTextToClipboard(chart?.music?.info.artist || '未知')"
                 >
                     <mdui-icon name="person" class="info-icon"></mdui-icon>
-                    <span class="info-text font-bold artist-text">{{ chart?.music?.info.artist || "未知" }}</span>
+                    <span class="info-text font-bold artist-text">
+                        {{ chart?.music?.info.artist || "未知" }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -951,7 +953,7 @@
         cursor: pointer;
         transition: color 0.2s ease;
     }
-    
+
     .song-info-item.clickable:hover {
         color: rgb(var(--mdui-color-primary));
     }
