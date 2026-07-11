@@ -976,28 +976,29 @@
 
     @media (max-width: 600px) {
         .song-header {
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 1rem;
+            gap: 12px;
+            padding: 12px 1rem;
         }
         .song-cover-container {
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            aspect-ratio: 1 / 1;
+            width: 110px;
+            height: 110px;
+        }
+        .type-pill {
+            top: 4px;
+            left: 4px;
+            padding: 2px 6px;
+            font-size: 0.65rem;
         }
         .song-info {
-            width: 100%;
-            gap: 8px;
+            gap: 6px;
             padding-top: 0;
         }
         .song-info-item {
-            font-size: 0.9rem;
-            gap: 8px;
+            font-size: 0.85rem;
+            gap: 6px;
         }
         .info-icon {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
         }
     }
 
