@@ -30,39 +30,46 @@
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img
-            class="song-cover"
-            :src="chart?.music ? getCoverURL(chart.music.id) : ''"
-            crossorigin="anonymous"
-        />
-
-        <div class="chip-container" v-if="chart?.music" center>
-            <mdui-chip
-                icon="music_note"
-                @click="copyTextToClipboard(chart.music.info.id.toString() || '?')"
-                style="cursor: pointer"
-            >
-                id{{ chart.music.info.id || "?" }}
-            </mdui-chip>
-            <mdui-chip
-                icon="music_note"
-                @click="copyTextToClipboard(chart.music.info.artist || '未知')"
-                style="cursor: pointer"
-            >
-                {{ chart.music.info.artist || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="category" style="cursor: pointer">
-                {{ chart.music.info.genre || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="timer" style="cursor: pointer">
-                {{ chart.music.info.bpm || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="access_time_filled" style="cursor: pointer">
-                {{ chart.music.info.from || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="star" style="cursor: pointer">
-                {{ chart.music.info.type || "未知" }}
-            </mdui-chip>
+        <div class="song-header" v-if="chart?.music">
+            <img
+                class="song-cover"
+                :src="chart?.music ? getCoverURL(chart.music.id) : ''"
+                crossorigin="anonymous"
+            />
+            <div class="song-info">
+                <div
+                    class="song-info-item clickable"
+                    @click="copyTextToClipboard(chart?.music?.info.id?.toString() || '?')"
+                    title="点击复制 ID"
+                >
+                    <mdui-icon name="music_note" class="info-icon"></mdui-icon>
+                    <span class="info-text">ID: {{ chart?.music?.info.id || "?" }}</span>
+                </div>
+                <div
+                    class="song-info-item clickable"
+                    @click="copyTextToClipboard(chart?.music?.info.artist || '未知')"
+                    title="点击复制艺术家"
+                >
+                    <mdui-icon name="person" class="info-icon"></mdui-icon>
+                    <span class="info-text font-bold artist-text">{{ chart?.music?.info.artist || "未知" }}</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="category" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.genre || "未知" }}</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="timer" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.bpm || "未知" }} BPM</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="access_time_filled" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.from || "未知" }}</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="star" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.type || "未知" }}</span>
+                </div>
+            </div>
         </div>
 
         <mdui-tabs
@@ -874,15 +881,92 @@
         display: block;
     }
 
-    .song-cover {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        margin: 0 auto;
-        display: block;
-        max-width: 300px;
+    .song-header {
+        display: flex;
+        flex-direction: row;
+        gap: 24px;
+        padding: 16px 1.5rem;
+        align-items: flex-start;
+    }
 
-        background: image("https://jacket.maimai.realtvop.top/00000.png");
+    .song-cover {
+        width: 300px;
+        height: 300px;
+        aspect-ratio: 1 / 1;
+        border-radius: 8px;
+        flex-shrink: 0;
+        object-fit: cover;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .song-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
+    }
+
+    .song-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        line-height: 1.4;
+    }
+
+    .song-info-item.clickable {
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+    
+    .song-info-item.clickable:hover {
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .info-icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .info-text {
+        word-break: break-word;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .font-bold {
+        font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+        .song-header {
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 1rem;
+        }
+        .song-cover {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+        }
+        .song-info {
+            width: 100%;
+            gap: 8px;
+            padding-top: 0;
+        }
+        .song-info-item {
+            font-size: 0.9rem;
+            gap: 8px;
+        }
+        .info-icon {
+            font-size: 1.15rem;
+        }
     }
 
     .chip-container {
