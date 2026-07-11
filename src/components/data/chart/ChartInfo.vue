@@ -165,7 +165,7 @@
                 <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
                     容错
                 </mdui-button>
-                <mdui-dropdown>
+                <mdui-dropdown @open.stop @close.stop>
                     <mdui-button slot="trigger" variant="tonal" icon="video_library">
                         搜索
                     </mdui-button>
@@ -278,17 +278,28 @@
                 "
             >
                 <h3 style="margin-bottom: 0">Rating 阶段</h3>
-                <mdui-select
-                    v-model="ratingDisplayMode"
-                    style="width: 5em; --mdui-comp-select-menu-container-shape: 8px"
-                    @change="handleDisplayModeChange"
-                >
-                    <mdui-menu-item value="简洁">简洁</mdui-menu-item>
-                    <mdui-menu-item value="吃分" v-if="chartRatingTables.filtered.length > 3">
-                        吃分
-                    </mdui-menu-item>
-                    <mdui-menu-item value="完整">全部</mdui-menu-item>
-                </mdui-select>
+                <mdui-dropdown @open.stop @close.stop>
+                    <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
+                        {{ ratingDisplayMode === "完整" ? "全部" : ratingDisplayMode }}
+                    </mdui-chip>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="mode in availableRatingDisplayModes"
+                            :key="mode"
+                            :value="mode"
+                            @click="ratingDisplayMode = mode"
+                            :style="{
+                                backgroundColor:
+                                    ratingDisplayMode === mode
+                                        ? 'rgba(var(--mdui-color-primary),12%)'
+                                        : '',
+                            }"
+                            :icon="ratingDisplayMode === mode ? 'check' : ''"
+                        >
+                            {{ mode === "完整" ? "全部" : mode }}
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
             </div>
             <mdui-list>
                 <mdui-list-item
@@ -841,20 +852,6 @@
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
         });
-    }
-
-    function handleDisplayModeChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        const value = target.value as RatingDisplayMode;
-
-        if (value) ratingDisplayMode.value = resolveAvailableRatingDisplayMode(value);
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = ratingDisplayMode.value;
-            ratingDisplayMode.value = value;
-            ratingDisplayMode.value = previousValue;
-            // wtf
-        }
     }
 
     watch(
