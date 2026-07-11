@@ -1,96 +1,11 @@
 import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@/components/data/music/type";
-import type {
-    DivingFishMusicChart,
-    DivingFishResponse,
-    DivingFishRecordsResponse,
-    DivingFishFullRecord,
-    DivingFishB50,
-    MusicDataResponse,
-} from "./type";
+import type { DivingFishMusicChart, MusicDataResponse } from "./type";
 import { isBanquetGenre, UTAGE_GRADE } from "@/components/data/chart/difficulty";
-import { getMusicInfoAsync } from "@/components/data/music";
-import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
-
-const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
-
-export async function fetchPlayerData(username: string): Promise<DivingFishResponse> {
-    const requestBody = {
-        username: username,
-        b50: "1",
-    };
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/query/player`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("user not exists");
-            }
-            // 400: user not found, 403: privacy/consent
-            const err = await response.json().catch(() => ({}));
-            if (err && err.message) throw new Error(err.message);
-            throw new Error(`Request failed with status code ${response.status}`);
-        }
-        const data: DivingFishResponse = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Error fetching player data:", error);
-        throw error;
-    }
-}
-
-export async function fetchPlayerRecordsByImportToken(
-    importToken: string
-): Promise<DivingFishRecordsResponse> {
-    const response = await fetch(`${API_BASE_URL}/player/records`, {
-        method: "GET",
-        headers: {
-            "Import-Token": importToken,
-        },
-    });
-
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        if (err && err.message) {
-            throw new Error(err.message);
-        }
-        throw new Error(`Request failed with status code ${response.status}`);
-    }
-
-    return response.json();
-}
-
-export async function calculateB50FromRecords(
-    records: DivingFishFullRecord[]
-): Promise<DivingFishB50> {
-    const musicInfo = await getMusicInfoAsync();
-    const newScores: DivingFishFullRecord[] = [];
-    const oldScores: DivingFishFullRecord[] = [];
-
-    for (const record of records) {
-        const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
-        const music = musicInfo?.musicList[musicId];
-        if (music?.info?.isNew) {
-            newScores.push(record);
-        } else {
-            oldScores.push(record);
-        }
-    }
-
-    newScores.sort((a, b) => b.ra - a.ra);
-    oldScores.sort((a, b) => b.ra - a.ra);
-
-    return {
-        dx: newScores.slice(0, 15),
-        sd: oldScores.slice(0, 35),
-    };
-}
+export {
+    calculateB50FromRecords,
+    fetchPlayerData,
+    fetchPlayerRecordsByImportToken,
+} from "./player";
 
 export function convertDFMusicList(data: MusicDataResponse) {
     const musicList: Record<number, Music> = {};

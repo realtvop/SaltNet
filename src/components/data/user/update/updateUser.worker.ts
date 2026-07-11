@@ -3,7 +3,7 @@ import {
     fetchPlayerData,
     fetchPlayerRecordsByImportToken,
     calculateB50FromRecords,
-} from "@/components/integrations/diving-fish";
+} from "@/components/integrations/diving-fish/player";
 import type {
     DivingFishFullRecord,
     DivingFishResponse,
@@ -13,7 +13,7 @@ import { convertDetailed, getUserDisplayName, type User } from "@/components/dat
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
-import { toHalfWidth } from "@/utils";
+import { toHalfWidth } from "@/utils/toHalfWidth";
 import { migrateB50, migrateRecordList, supplementRecordList, supplementB50 } from "./migrateData";
 
 self.onmessage = event => {
