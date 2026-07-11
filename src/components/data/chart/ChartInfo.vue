@@ -1025,8 +1025,8 @@
             padding: 12px 1rem;
         }
         .song-cover-container {
-            width: 110px;
-            height: 110px;
+            width: 130px;
+            height: 130px;
         }
         .type-pill {
             top: 4px;
