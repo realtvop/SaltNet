@@ -179,6 +179,15 @@
                         >
                             {{ site.name }}
                         </mdui-menu-item>
+                        <mdui-divider></mdui-divider>
+                        <mdui-menu-item
+                            key="simaihub"
+                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
+                            target="_blank"
+                            icon="download"
+                        >
+                            下载谱面
+                        </mdui-menu-item>
                     </mdui-menu>
                 </mdui-dropdown>
                 <mdui-dropdown stay-open-on-click @open.stop @close.stop>
