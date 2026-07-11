@@ -45,30 +45,28 @@
                 <div
                     class="song-info-item clickable"
                     @click="copyTextToClipboard(chart?.music?.info.id?.toString() || '?')"
-                    title="点击复制 ID"
                 >
-                    <mdui-icon name="music_note" class="info-icon"></mdui-icon>
-                    <span class="info-text">ID: {{ chart?.music?.info.id || "?" }}</span>
-                </div>
-                <div
-                    class="song-info-item clickable"
-                    @click="copyTextToClipboard(chart?.music?.info.artist || '未知')"
-                    title="点击复制艺术家"
-                >
-                    <mdui-icon name="person" class="info-icon"></mdui-icon>
-                    <span class="info-text font-bold artist-text">{{ chart?.music?.info.artist || "未知" }}</span>
+                    <mdui-icon name="numbers" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.id || "?" }}</span>
                 </div>
                 <div class="song-info-item">
                     <mdui-icon name="category" class="info-icon"></mdui-icon>
                     <span class="info-text">{{ chart?.music?.info.genre || "未知" }}</span>
                 </div>
                 <div class="song-info-item">
-                    <mdui-icon name="timer" class="info-icon"></mdui-icon>
+                    <mdui-icon name="speed" class="info-icon"></mdui-icon>
                     <span class="info-text">{{ chart?.music?.info.bpm || "未知" }} BPM</span>
                 </div>
                 <div class="song-info-item">
-                    <mdui-icon name="access_time_filled" class="info-icon"></mdui-icon>
+                    <mdui-icon name="calendar_month" class="info-icon"></mdui-icon>
                     <span class="info-text">{{ chart?.music?.info.from || "未知" }}</span>
+                </div>
+                <div
+                    class="song-info-item clickable"
+                    @click="copyTextToClipboard(chart?.music?.info.artist || '未知')"
+                >
+                    <mdui-icon name="person" class="info-icon"></mdui-icon>
+                    <span class="info-text font-bold artist-text">{{ chart?.music?.info.artist || "未知" }}</span>
                 </div>
             </div>
         </div>
