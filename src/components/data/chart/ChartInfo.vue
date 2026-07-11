@@ -31,11 +31,16 @@
         </mdui-top-app-bar>
 
         <div class="song-header" v-if="chart?.music">
-            <img
-                class="song-cover"
-                :src="chart?.music ? getCoverURL(chart.music.id) : ''"
-                crossorigin="anonymous"
-            />
+            <div class="song-cover-container">
+                <img
+                    class="song-cover"
+                    :src="chart?.music ? getCoverURL(chart.music.id) : ''"
+                    crossorigin="anonymous"
+                />
+                <div class="type-pill" :type="chart.music.info.type">
+                    <span>{{ chart.music.info.type }}</span>
+                </div>
+            </div>
             <div class="song-info">
                 <div
                     class="song-info-item clickable"
@@ -64,10 +69,6 @@
                 <div class="song-info-item">
                     <mdui-icon name="access_time_filled" class="info-icon"></mdui-icon>
                     <span class="info-text">{{ chart?.music?.info.from || "未知" }}</span>
-                </div>
-                <div class="song-info-item">
-                    <mdui-icon name="star" class="info-icon"></mdui-icon>
-                    <span class="info-text">{{ chart?.music?.info.type || "未知" }}</span>
                 </div>
             </div>
         </div>
@@ -889,14 +890,45 @@
         align-items: flex-start;
     }
 
-    .song-cover {
+    .song-cover-container {
+        position: relative;
         width: 300px;
         height: 300px;
-        aspect-ratio: 1 / 1;
-        border-radius: 8px;
         flex-shrink: 0;
+    }
+
+    .song-cover {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
         object-fit: cover;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .type-pill {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 10;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-weight: 900;
+        font-size: 0.75rem;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        color: white;
+        background-color: #63acf8;
+    }
+
+    .type-pill[type="DX"] {
+        background-color: white;
+    }
+
+    .type-pill[type="DX"] > span {
+        background: linear-gradient(-20deg, #eb5639 55%, #efb03e 45%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .song-info {
@@ -949,7 +981,7 @@
             gap: 16px;
             padding: 16px 1rem;
         }
-        .song-cover {
+        .song-cover-container {
             width: 100%;
             max-width: 300px;
             height: auto;
