@@ -1,6 +1,7 @@
 import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "./type";
 import { ChartType, MusicGenre, MusicOrigin } from "@/components/data/maiTypes";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
+import type { ChartStats } from "@/components/integrations/diving-fish/type";
 
 export const SALTMETA_NEXT_COMPACTED_URL =
     "https://meta.salt.realtvop.top/meta.next.compacted.json";
@@ -44,6 +45,7 @@ type SaltMetaChartNext = {
         total: number;
     };
     regions: Partial<Record<SaltMetaRegion, SaltMetaChartRegionData | null>>;
+    stats?: ChartStats;
 };
 
 type SaltMetaMusicNext = {
@@ -76,12 +78,24 @@ type SaltMetaChartRegionCompacted = [
     SaltMetaVersionReferenceCompacted,
 ];
 
+type SaltMetaChartStatsCompacted = [
+    number,
+    string,
+    number,
+    number,
+    number,
+    number,
+    number[],
+    number[]
+];
+
 type SaltMetaChartNextCompacted = [
     number,
     SaltMetaDifficulty,
     SaltMetaChartRegionCompacted[],
     string,
     [number, number, number | null, number, number],
+    SaltMetaChartStatsCompacted?
 ];
 
 type SaltMetaMusicNextCompacted = [
@@ -171,7 +185,7 @@ function expandSaltMetaChart(
     versions: SaltMetaVersion[],
     musicId: number
 ): SaltMetaChartNext {
-    const [typeIndex, difficulty, regionEntries, noteDesigner, noteCountsCompacted] = compacted;
+    const [typeIndex, difficulty, regionEntries, noteDesigner, noteCountsCompacted, statsCompacted] = compacted;
     const type = chartTypeNames[typeIndex];
     if (!type) throw new Error(`Chart type index ${typeIndex} not found for music ${musicId}`);
 
@@ -188,6 +202,21 @@ function expandSaltMetaChart(
     const slide = slideRaw ?? 0;
     const touch = type === "sd" ? null : touchRaw;
 
+    let stats: ChartStats | undefined = undefined;
+    if (statsCompacted) {
+        const [cnt, diff, fit_diff, avg, avg_dx, std_dev, dist, fc_dist] = statsCompacted;
+        stats = {
+            cnt,
+            diff,
+            fit_diff,
+            avg,
+            avg_dx,
+            std_dev,
+            dist,
+            fc_dist,
+        };
+    }
+
     return {
         type,
         difficulty,
@@ -201,6 +230,7 @@ function expandSaltMetaChart(
             total: tap + hold + slide + (touch ?? 0) + breakCount,
         },
         regions,
+        stats,
     };
 }
 
@@ -374,6 +404,7 @@ export function convertSaltMetaNextToSavedMusicList(
                 grade: chartGrade,
                 constant: regionData.internalLevel,
                 deluxeScoreMax,
+                stat: saltMetaChart.stats,
             };
             const chart: Chart = {
                 id: chartId,
