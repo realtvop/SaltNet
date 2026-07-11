@@ -892,8 +892,8 @@
 
     .song-cover-container {
         position: relative;
-        width: 300px;
-        height: 300px;
+        width: 180px;
+        height: 180px;
         flex-shrink: 0;
     }
 
