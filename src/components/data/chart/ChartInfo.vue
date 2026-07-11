@@ -252,18 +252,46 @@
                     <span class="info-label">项目位置</span>
                     <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Note 统计</span>
-                    <span class="info-value notes-breakdown">
-                        <span class="note-type">TAP: {{ noteCounts.tap }}</span>
-                        <span class="note-type">HOLD: {{ noteCounts.hold }}</span>
-                        <span class="note-type">SLIDE: {{ noteCounts.slide }}</span>
-                        <span class="note-type" v-if="noteCounts.hasTouch">
-                            TOUCH: {{ noteCounts.touch }}
-                        </span>
-                        <span class="note-type">BREAK: {{ noteCounts.break }}</span>
-                        <span class="note-total">总计: {{ noteCounts.total }}</span>
-                    </span>
+            </div>
+
+            <!-- Note 统计 -->
+            <div class="notes-stats-section">
+                <!-- <h3>Note 统计</h3> -->
+                <div class="notes-table-container">
+                    <table class="notes-custom-table">
+                        <thead>
+                            <tr>
+                                <th>类型</th>
+                                <th>数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>TAP</td>
+                                <td class="num-val">{{ noteCounts.tap }}</td>
+                            </tr>
+                            <tr>
+                                <td>HOLD</td>
+                                <td class="num-val">{{ noteCounts.hold }}</td>
+                            </tr>
+                            <tr>
+                                <td>SLIDE</td>
+                                <td class="num-val">{{ noteCounts.slide }}</td>
+                            </tr>
+                            <tr v-if="noteCounts.hasTouch">
+                                <td>TOUCH</td>
+                                <td class="num-val">{{ noteCounts.touch }}</td>
+                            </tr>
+                            <tr>
+                                <td>BREAK</td>
+                                <td class="num-val">{{ noteCounts.break }}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>总计</strong></td>
+                                <td class="num-val font-bold">{{ noteCounts.total }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1494,23 +1522,84 @@
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .info-value.notes-breakdown {
-        text-align: right;
+    /* Note 统计表格样式 */
+    .notes-stats-section {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding: 0 1rem;
     }
 
-    .note-type {
-        display: block;
-        font-size: 0.875rem;
-        margin-bottom: 2px;
+    @media (max-width: 600px) {
+        .notes-stats-section {
+            padding: 0 1rem;
+        }
     }
 
-    .note-total {
-        display: block;
+    .notes-stats-section h3 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+    }
+
+    .notes-table-container {
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(var(--mdui-color-outline), 0.25);
+    }
+
+    .notes-custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .notes-custom-table th,
+    .notes-custom-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(var(--mdui-color-outline), 0.2);
+    }
+
+    .notes-custom-table th {
+        font-size: 0.85rem;
         font-weight: 600;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        background: rgba(var(--mdui-color-surface-variant), 0.15);
+    }
+
+    .notes-custom-table td {
+        font-size: 0.9rem;
+        color: rgb(var(--mdui-color-on-surface));
+    }
+
+    .notes-custom-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .notes-custom-table tbody tr:nth-child(odd) {
+        background: transparent;
+    }
+
+    .notes-custom-table tbody tr:nth-child(even) {
+        background: rgba(var(--mdui-color-on-surface), 0.08);
+    }
+
+    .notes-custom-table tr.total-row {
+        background: rgba(var(--mdui-color-primary), 0.15) !important;
+    }
+
+    .notes-custom-table tr.total-row td {
         color: rgb(var(--mdui-color-primary));
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
+    }
+
+    .notes-custom-table td.num-val {
+        text-align: right;
+        font-family: Monaco, "JetBrains Mono", monospace;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+    }
+
+    .notes-custom-table td.num-val.font-bold {
+        font-weight: 700;
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */
