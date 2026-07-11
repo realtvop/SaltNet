@@ -182,7 +182,11 @@
                     </mdui-menu>
                 </mdui-dropdown>
                 <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                    <mdui-button slot="trigger" variant="tonal" icon="playlist_add">
+                    <mdui-button
+                        slot="trigger"
+                        variant="tonal"
+                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
+                    >
                         收藏
                     </mdui-button>
                     <mdui-menu>
@@ -866,6 +870,11 @@
 
     const dxScoreStarsImg = computed(() => {
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
+    });
+
+    const isSavedInAnyFavoriteList = computed(() => {
+        if (!currentChart.value) return false;
+        return shared.favorites.some(fav => isFavoriteChart(fav, currentChart.value));
     });
 </script>
 
