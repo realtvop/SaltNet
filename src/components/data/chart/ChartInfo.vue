@@ -96,7 +96,11 @@
 
         <div class="tab-content" v-if="currentChart">
             <!-- 当前用户成绩信息 -->
-            <mdui-card variant="filled" class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
+            <mdui-card
+                variant="filled"
+                class="score-summary"
+                v-if="currentChartScore && currentChartScore.rankRate"
+            >
                 <!-- 第一行：rank图标和achievement百分比 -->
                 <div class="score-row-main">
                     <div class="rank-section">
@@ -157,15 +161,48 @@
                 </div>
             </mdui-card>
 
-            <div class="chart-search-urls">
-                <mdui-chip
-                    v-for="site in getChartSearchUrls(currentChart)"
-                    :href="site.url"
-                    target="_blank"
-                    :icon="site.icon"
-                >
-                    {{ site.name }}
-                </mdui-chip>
+            <div class="chart-search-urls" v-if="currentChart">
+                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
+                    容错
+                </mdui-button>
+                <mdui-dropdown>
+                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
+                        搜索
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="site in getChartSearchUrls(currentChart)"
+                            :key="site.name"
+                            :href="site.url"
+                            target="_blank"
+                            :icon="site.icon"
+                        >
+                            {{ site.name }}
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
+                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
+                    <mdui-button slot="trigger" variant="tonal" icon="playlist_add">
+                        收藏
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="fav in shared.favorites"
+                            :key="fav.name"
+                            :value="fav.name"
+                            @click="toggleFavorite(fav, currentChart)"
+                            :style="{
+                                backgroundColor: isFavoriteChart(fav, currentChart)
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                            }"
+                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
+                        >
+                            {{ fav.name }}
+                        </mdui-menu-item>
+                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
             </div>
 
             <!-- 谱面基本信息 -->
@@ -203,42 +240,7 @@
                     <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">
-                        Note 统计
-                        <br />
-                        <br />
-
-                        <mdui-button
-                            variant="text"
-                            icon="calculate"
-                            @click="showScoreCalculator = true"
-                        >
-                            容错
-                        </mdui-button>
-                        <br />
-                        <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                            <mdui-button slot="trigger" variant="text" icon="playlist_add">
-                                收藏
-                            </mdui-button>
-                            <mdui-menu>
-                                <mdui-menu-item
-                                    v-for="fav in shared.favorites"
-                                    :key="fav.name"
-                                    :value="fav.name"
-                                    @click="toggleFavorite(fav, currentChart)"
-                                    :style="{
-                                        backgroundColor: isFavoriteChart(fav, currentChart)
-                                            ? 'rgba(var(--mdui-color-primary),12%)'
-                                            : '',
-                                    }"
-                                    :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
-                                >
-                                    {{ fav.name }}
-                                </mdui-menu-item>
-                                <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
-                            </mdui-menu>
-                        </mdui-dropdown>
-                    </span>
+                    <span class="info-label">Note 统计</span>
                     <span class="info-value notes-breakdown">
                         <span class="note-type">TAP: {{ noteCounts.tap }}</span>
                         <span class="note-type">HOLD: {{ noteCounts.hold }}</span>
