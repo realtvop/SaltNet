@@ -96,7 +96,7 @@
 
         <div class="tab-content" v-if="currentChart">
             <!-- 当前用户成绩信息 -->
-            <div class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
+            <mdui-card variant="filled" class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
                 <!-- 第一行：rank图标和achievement百分比 -->
                 <div class="score-row-main">
                     <div class="rank-section">
@@ -155,7 +155,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </mdui-card>
 
             <div class="chart-search-urls">
                 <mdui-chip
@@ -1149,23 +1149,16 @@
     }
 
     .score-summary {
-        background: linear-gradient(
-            135deg,
-            rgba(var(--mdui-color-primary), 0.05),
-            rgba(var(--mdui-color-secondary), 0.05)
-        );
-        border: 1px solid rgba(var(--mdui-color-outline), 0.1);
-        border-radius: 16px;
-        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 480px) {
         .score-summary {
             padding: 1rem;
             margin-bottom: 0.5rem;
-            border-radius: 12px;
         }
     }
 
@@ -1205,7 +1198,6 @@
         height: 2.25rem;
         object-fit: cover;
         object-position: center;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     }
 
     @media (max-width: 480px) {
@@ -1270,11 +1262,10 @@
     .dx-score-value {
         font-size: 0.8rem;
         font-weight: 600;
-        color: rgb(var(--mdui-color-secondary));
-        background: rgba(var(--mdui-color-secondary), 0.1);
+        color: rgb(var(--mdui-color-on-surface-variant));
+        background: rgba(var(--mdui-color-on-surface-variant), 0.08);
         padding: 0.15rem 0.4rem;
         border-radius: 4px;
-        border: 1px solid rgba(var(--mdui-color-secondary), 0.2);
         line-height: 1;
         font-family: monospace;
     }
@@ -1314,14 +1305,6 @@
         color: rgb(var(--mdui-color-primary));
         line-height: 1;
         margin-bottom: 0.25rem;
-        background: linear-gradient(
-            135deg,
-            rgb(var(--mdui-color-primary)),
-            rgb(var(--mdui-color-secondary))
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
         word-break: break-all;
     }
 
@@ -1356,7 +1339,6 @@
     .badge-icon {
         height: 2rem;
         object-fit: contain;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     }
 
     .badge-placeholder {
