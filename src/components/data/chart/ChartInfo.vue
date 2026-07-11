@@ -1566,6 +1566,10 @@
         background: rgba(var(--mdui-color-surface-variant), 0.15);
     }
 
+    .notes-custom-table th:last-child {
+        text-align: right;
+    }
+
     .notes-custom-table td {
         font-size: 0.9rem;
         color: rgb(var(--mdui-color-on-surface));
