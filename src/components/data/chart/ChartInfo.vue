@@ -138,7 +138,7 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value">{{ currentChartScore.playCount }} 次</div>
+                            <div class="dx-score-value" v-if="currentChartScore.playCount">{{ currentChartScore.playCount }} 次</div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
@@ -1203,13 +1203,13 @@
     .score-summary {
         display: flex;
         flex-direction: column;
-        padding: 1.25rem 1.25rem 0 1.25rem;
+        padding: 1rem 1.25rem 0 1.25rem;
         /* margin-bottom: 1rem; */
     }
 
     @media (max-width: 480px) {
         .score-summary {
-            padding: 1rem 1rem 0 1rem;
+            padding: 0.75rem 1rem 0 1rem;
             /* margin-bottom: 0.5rem; */
         }
     }
@@ -1229,7 +1229,7 @@
 
     @media (max-width: 480px) {
         .score-row-main {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
     }
 
@@ -1350,7 +1350,7 @@
         font-weight: 700;
         color: rgb(var(--mdui-color-primary));
         line-height: 1;
-        margin-bottom: 0.25rem;
+        /* margin-bottom: 0.25rem; */
         word-break: break-all;
     }
 
