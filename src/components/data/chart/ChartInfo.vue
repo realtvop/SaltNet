@@ -1207,13 +1207,13 @@
     .score-summary {
         display: flex;
         flex-direction: column;
-        padding: 0.25rem 1.25rem 1.25rem 1.25rem;
+        padding: 0.25rem 1.25rem 0.5rem 1.25rem;
         /* margin-bottom: 1rem; */
     }
 
     @media (max-width: 480px) {
         .score-summary {
-            padding: 0 1rem 1rem 1rem;
+            padding: 0 1rem 0.75rem 1rem;
             /* margin-bottom: 0.5rem; */
         }
     }
