@@ -94,7 +94,7 @@
             </mdui-tab>
         </mdui-tabs>
 
-        <div class="tab-content" v-if="currentChart">
+        <div v-if="currentChart">
             <!-- 当前用户成绩信息 -->
             <div
                 class="score-summary"
@@ -1200,20 +1200,16 @@
         gap: 8px;
     }
 
-    .tab-content {
-        padding: 1rem 0;
-    }
-
     .score-summary {
         display: flex;
         flex-direction: column;
-        padding: 0.25rem 1.25rem 0.5rem 1.25rem;
+        padding: 1.25rem 1.25rem 0 1.25rem;
         /* margin-bottom: 1rem; */
     }
 
     @media (max-width: 480px) {
         .score-summary {
-            padding: 0 1rem 0.75rem 1rem;
+            padding: 1rem 1rem 0 1rem;
             /* margin-bottom: 0.5rem; */
         }
     }
@@ -1487,7 +1483,7 @@
         flex-wrap: wrap;
         align-content: center;
         gap: 0.5rem;
-        padding-bottom: 0.5rem;
+        padding: 0.5rem 0;
     }
 
     /* 谱面基本信息样式 */
