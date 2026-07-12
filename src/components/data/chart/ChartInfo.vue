@@ -96,8 +96,7 @@
 
         <div class="tab-content" v-if="currentChart">
             <!-- 当前用户成绩信息 -->
-            <mdui-card
-                variant="filled"
+            <div
                 class="score-summary"
                 v-if="currentChartScore && currentChartScore.rankRate"
             >
@@ -159,8 +158,8 @@
                         </div>
                     </div>
                 </div>
-            </mdui-card>
-            
+            </div>
+
             <div class="chart-search-urls" v-if="currentChart">
                 <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
                     容错
@@ -314,10 +313,9 @@
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 0;
-                    margin-top: 1rem;
                 "
             >
-                <h3 style="margin-bottom: 0">Rating 阶段</h3>
+                <h3 style="margin: 0">Rating 阶段</h3>
                 <mdui-dropdown @open.stop @close.stop>
                     <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
                         {{ ratingDisplayMode === "完整" ? "全部" : ratingDisplayMode }}
@@ -1209,20 +1207,14 @@
     .score-summary {
         display: flex;
         flex-direction: column;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
+        padding: 0.25rem 1.25rem 1.25rem 1.25rem;
+        /* margin-bottom: 1rem; */
     }
 
     @media (max-width: 480px) {
         .score-summary {
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .score-summary {
-            padding: 0.75rem;
+            padding: 0 1rem 1rem 1rem;
+            /* margin-bottom: 0.5rem; */
         }
     }
 
@@ -1353,7 +1345,7 @@
         }
 
         .dx-stars-img {
-            height: 1.2rem;
+            height: 0.8rem;
         }
     }
 
@@ -1369,12 +1361,6 @@
     @media (max-width: 480px) {
         .achievement-percentage {
             font-size: 1.5rem;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .achievement-percentage {
-            font-size: 1.25rem;
         }
     }
 
