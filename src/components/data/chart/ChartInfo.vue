@@ -95,99 +95,6 @@
         </mdui-tabs>
 
         <div class="tab-content" v-if="currentChart">
-            <!-- 谱面基本信息 -->
-            <div class="chart-basic-info">
-                <div class="info-row">
-                    <span class="info-label">谱师</span>
-                    <span
-                        class="info-value"
-                        @click="copyTextToClipboard(currentChart.info.charter)"
-                        style="cursor: pointer"
-                    >
-                        {{ currentChart.info.charter }}
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">拟合定数</span>
-                    <span
-                        class="info-value"
-                        @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
-                        style="cursor: pointer"
-                    >
-                        {{
-                            currentChart.info.stat
-                                ? currentChart.info.stat.fit_diff.toFixed(4)
-                                : "蛤 怎么没数据"
-                        }}
-                    </span>
-                </div>
-                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
-                    <span class="info-label">游玩次数</span>
-                    <span class="info-value">{{ currentChart.score.playCount }}</span>
-                </div> -->
-                <div class="info-row" v-if="getCurrentChartPosition(currentChart)">
-                    <span class="info-label">项目位置</span>
-                    <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
-                </div>
-            </div>
-
-            <div class="chart-search-urls" v-if="currentChart">
-                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
-                    容错
-                </mdui-button>
-                <mdui-dropdown @open.stop @close.stop>
-                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
-                        搜索
-                    </mdui-button>
-                    <mdui-menu>
-                        <mdui-menu-item
-                            v-for="site in getChartSearchUrls(currentChart)"
-                            :key="site.name"
-                            :href="site.url"
-                            target="_blank"
-                            :icon="site.icon"
-                        >
-                            {{ site.name }}
-                        </mdui-menu-item>
-                        <mdui-divider></mdui-divider>
-                        <mdui-menu-item
-                            key="simaihub"
-                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
-                            target="_blank"
-                            icon="download"
-                        >
-                            下载谱面
-                        </mdui-menu-item>
-                    </mdui-menu>
-                </mdui-dropdown>
-                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                    <mdui-button
-                        slot="trigger"
-                        variant="tonal"
-                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
-                    >
-                        收藏
-                    </mdui-button>
-                    <mdui-menu>
-                        <mdui-menu-item
-                            v-for="fav in shared.favorites"
-                            :key="fav.name"
-                            :value="fav.name"
-                            @click="toggleFavorite(fav, currentChart)"
-                            :style="{
-                                backgroundColor: isFavoriteChart(fav, currentChart)
-                                    ? 'rgba(var(--mdui-color-primary),12%)'
-                                    : '',
-                            }"
-                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
-                        >
-                            {{ fav.name }}
-                        </mdui-menu-item>
-                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
-                    </mdui-menu>
-                </mdui-dropdown>
-            </div>
-
             <!-- 当前用户成绩信息 -->
             <mdui-card
                 variant="filled"
@@ -253,47 +160,152 @@
                     </div>
                 </div>
             </mdui-card>
-
-            <!-- Note 统计 -->
-            <div class="notes-stats-section">
-                <!-- <h3>Note 统计</h3> -->
-                <div class="notes-table-container">
-                    <table class="notes-custom-table">
-                        <thead>
-                            <tr>
-                                <th>类型</th>
-                                <th>数量</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>TAP</td>
-                                <td class="num-val">{{ noteCounts.tap }}</td>
-                            </tr>
-                            <tr>
-                                <td>HOLD</td>
-                                <td class="num-val">{{ noteCounts.hold }}</td>
-                            </tr>
-                            <tr>
-                                <td>SLIDE</td>
-                                <td class="num-val">{{ noteCounts.slide }}</td>
-                            </tr>
-                            <tr v-if="noteCounts.hasTouch">
-                                <td>TOUCH</td>
-                                <td class="num-val">{{ noteCounts.touch }}</td>
-                            </tr>
-                            <tr>
-                                <td>BREAK</td>
-                                <td class="num-val">{{ noteCounts.break }}</td>
-                            </tr>
-                            <tr class="total-row">
-                                <td><strong>总计</strong></td>
-                                <td class="num-val font-bold">{{ noteCounts.total }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            
+            <div class="chart-search-urls" v-if="currentChart">
+                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
+                    容错
+                </mdui-button>
+                <mdui-dropdown @open.stop @close.stop>
+                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
+                        搜索
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="site in getChartSearchUrls(currentChart)"
+                            :key="site.name"
+                            :href="site.url"
+                            target="_blank"
+                            :icon="site.icon"
+                        >
+                            {{ site.name }}
+                        </mdui-menu-item>
+                        <mdui-divider></mdui-divider>
+                        <mdui-menu-item
+                            key="simaihub"
+                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
+                            target="_blank"
+                            icon="download"
+                        >
+                            下载谱面
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
+                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
+                    <mdui-button
+                        slot="trigger"
+                        variant="tonal"
+                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
+                    >
+                        收藏
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="fav in shared.favorites"
+                            :key="fav.name"
+                            :value="fav.name"
+                            @click="toggleFavorite(fav, currentChart)"
+                            :style="{
+                                backgroundColor: isFavoriteChart(fav, currentChart)
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                            }"
+                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
+                        >
+                            {{ fav.name }}
+                        </mdui-menu-item>
+                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
             </div>
+
+            <!-- 谱面基本信息 -->
+            <mdui-card class="chart-basic-info" variant="filled" clickable>
+                <mdui-collapse>
+                    <mdui-collapse-item trigger=".chart-basic-info" @open="chartBasicInfoExpanded = true" @close="chartBasicInfoExpanded = false">
+                        <div slot="header" class="chart-basic-info-header">
+                            <span class="info-label">{{ currentChart.info.charter }}</span>
+                            <span v-if="!chartBasicInfoExpanded && currentChart.info.stat">{{ currentChart.info.stat.fit_diff.toFixed(1) }}</span>
+                            <mdui-icon :name="`keyboard_arrow_${chartBasicInfoExpanded ? 'up' : 'down'}`"></mdui-icon>
+                            <!-- <span v-if="getCurrentChartPosition(currentChart) !== '-'">{{ getCurrentChartPosition(currentChart) }}</span> -->
+                        </div>
+                        <div style="height: 1rem;"></div>
+                        <div>
+                            <!-- <div class="info-row">
+                                <span class="info-label">谱师</span>
+                                <span
+                                    class="info-value"
+                                    @click="copyTextToClipboard(currentChart.info.charter)"
+                                    style="cursor: pointer"
+                                >
+                                    {{ currentChart.info.charter }}
+                                </span>
+                            </div> -->
+                            <div class="info-row">
+                                <span class="info-label">拟合定数</span>
+                                <span
+                                    class="info-value"
+                                    @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
+                                    style="cursor: pointer"
+                                >
+                                    {{
+                                        currentChart.info.stat
+                                            ? currentChart.info.stat.fit_diff.toFixed(4)
+                                            : "蛤 怎么没数据"
+                                    }}
+                                </span>
+                            </div>
+                            <!-- <div class="info-row" v-if="currentChart.score?.playCount">
+                                <span class="info-label">游玩次数</span>
+                                <span class="info-value">{{ currentChart.score.playCount }}</span>
+                            </div> -->
+                            <div class="info-row" v-if="getCurrentChartPosition(currentChart) !== '-'">
+                                <span class="info-label">项目位置</span>
+                                <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
+                            </div>
+                        </div>
+                        <!-- Note 统计 -->
+                        <div class="notes-stats-section">
+                            <!-- <h3>Note 统计</h3> -->
+                            <div class="notes-table-container">
+                                <table class="notes-custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>类型</th>
+                                            <th>数量</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>TAP</td>
+                                            <td class="num-val">{{ noteCounts.tap }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>HOLD</td>
+                                            <td class="num-val">{{ noteCounts.hold }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>SLIDE</td>
+                                            <td class="num-val">{{ noteCounts.slide }}</td>
+                                        </tr>
+                                        <tr v-if="noteCounts.hasTouch">
+                                            <td>TOUCH</td>
+                                            <td class="num-val">{{ noteCounts.touch }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>BREAK</td>
+                                            <td class="num-val">{{ noteCounts.break }}</td>
+                                        </tr>
+                                        <tr class="total-row">
+                                            <td><strong>总计</strong></td>
+                                            <td class="num-val font-bold">{{ noteCounts.total }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </mdui-collapse-item>
+                </mdui-collapse>
+            </mdui-card>
 
             <!-- Rating 阶段 -->
             <div
@@ -476,6 +488,7 @@
     );
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
+    const chartBasicInfoExpanded = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
@@ -799,11 +812,11 @@
     });
 
     // 获取当前谱面在对应难度的项目位置
-    function getCurrentChartPosition(chartInfo: Chart): string | null {
-        if (!props.chart) return null;//"-";
+    function getCurrentChartPosition(chartInfo: Chart): string {
+        if (!props.chart) return "-";
 
         // 从缓存的Map中获取项目位置
-        return chartPositionMap.value.get(chartInfo.id) || null;//"-";
+        return chartPositionMap.value.get(chartInfo.id) || "-";
     }
 
     // 切换收藏状态
@@ -1493,10 +1506,15 @@
 
     /* 谱面基本信息样式 */
     .chart-basic-info {
-        background: rgba(var(--mdui-color-surface-variant), 0.1);
-        border-radius: 8px;
+        width: 100%;
         padding: 1rem;
         margin-bottom: 1rem;
+    }
+    .chart-basic-info-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .info-row {
@@ -1526,7 +1544,7 @@
     .notes-stats-section {
         margin-top: 1.5rem;
         margin-bottom: 1rem;
-        padding: 0 1rem;
+        /* padding: 0 1rem; */
     }
 
     @media (max-width: 600px) {
