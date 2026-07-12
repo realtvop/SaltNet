@@ -85,7 +85,7 @@
                 :value="chartInfo.id.toString()"
                 @click="expandedChartId = chartInfo.id"
             >
-                <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
+                <span class="difficulty-constant">{{ chartInfo.info.constant.toFixed(1) }}</span>
                 <div class="tab-header" slot="icon">
                     <span class="difficulty-badge" :class="`difficulty-${chartInfo.info.grade}`">
                         {{ getChartDifficultyBadgeLabel(chartInfo.info.grade) }}
@@ -95,6 +95,99 @@
         </mdui-tabs>
 
         <div class="tab-content" v-if="currentChart">
+            <!-- 谱面基本信息 -->
+            <div class="chart-basic-info">
+                <div class="info-row">
+                    <span class="info-label">谱师</span>
+                    <span
+                        class="info-value"
+                        @click="copyTextToClipboard(currentChart.info.charter)"
+                        style="cursor: pointer"
+                    >
+                        {{ currentChart.info.charter }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">拟合定数</span>
+                    <span
+                        class="info-value"
+                        @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
+                        style="cursor: pointer"
+                    >
+                        {{
+                            currentChart.info.stat
+                                ? currentChart.info.stat.fit_diff.toFixed(4)
+                                : "蛤 怎么没数据"
+                        }}
+                    </span>
+                </div>
+                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
+                    <span class="info-label">游玩次数</span>
+                    <span class="info-value">{{ currentChart.score.playCount }}</span>
+                </div> -->
+                <div class="info-row" v-if="getCurrentChartPosition(currentChart)">
+                    <span class="info-label">项目位置</span>
+                    <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
+                </div>
+            </div>
+
+            <div class="chart-search-urls" v-if="currentChart">
+                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
+                    容错
+                </mdui-button>
+                <mdui-dropdown @open.stop @close.stop>
+                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
+                        搜索
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="site in getChartSearchUrls(currentChart)"
+                            :key="site.name"
+                            :href="site.url"
+                            target="_blank"
+                            :icon="site.icon"
+                        >
+                            {{ site.name }}
+                        </mdui-menu-item>
+                        <mdui-divider></mdui-divider>
+                        <mdui-menu-item
+                            key="simaihub"
+                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
+                            target="_blank"
+                            icon="download"
+                        >
+                            下载谱面
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
+                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
+                    <mdui-button
+                        slot="trigger"
+                        variant="tonal"
+                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
+                    >
+                        收藏
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="fav in shared.favorites"
+                            :key="fav.name"
+                            :value="fav.name"
+                            @click="toggleFavorite(fav, currentChart)"
+                            :style="{
+                                backgroundColor: isFavoriteChart(fav, currentChart)
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                            }"
+                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
+                        >
+                            {{ fav.name }}
+                        </mdui-menu-item>
+                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
+            </div>
+
             <!-- 当前用户成绩信息 -->
             <mdui-card
                 variant="filled"
@@ -160,99 +253,6 @@
                     </div>
                 </div>
             </mdui-card>
-
-            <div class="chart-search-urls" v-if="currentChart">
-                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
-                    容错
-                </mdui-button>
-                <mdui-dropdown @open.stop @close.stop>
-                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
-                        搜索
-                    </mdui-button>
-                    <mdui-menu>
-                        <mdui-menu-item
-                            v-for="site in getChartSearchUrls(currentChart)"
-                            :key="site.name"
-                            :href="site.url"
-                            target="_blank"
-                            :icon="site.icon"
-                        >
-                            {{ site.name }}
-                        </mdui-menu-item>
-                        <mdui-divider></mdui-divider>
-                        <mdui-menu-item
-                            key="simaihub"
-                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
-                            target="_blank"
-                            icon="download"
-                        >
-                            下载谱面
-                        </mdui-menu-item>
-                    </mdui-menu>
-                </mdui-dropdown>
-                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                    <mdui-button
-                        slot="trigger"
-                        variant="tonal"
-                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
-                    >
-                        收藏
-                    </mdui-button>
-                    <mdui-menu>
-                        <mdui-menu-item
-                            v-for="fav in shared.favorites"
-                            :key="fav.name"
-                            :value="fav.name"
-                            @click="toggleFavorite(fav, currentChart)"
-                            :style="{
-                                backgroundColor: isFavoriteChart(fav, currentChart)
-                                    ? 'rgba(var(--mdui-color-primary),12%)'
-                                    : '',
-                            }"
-                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
-                        >
-                            {{ fav.name }}
-                        </mdui-menu-item>
-                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
-                    </mdui-menu>
-                </mdui-dropdown>
-            </div>
-
-            <!-- 谱面基本信息 -->
-            <div class="chart-basic-info">
-                <div class="info-row">
-                    <span class="info-label">谱师</span>
-                    <span
-                        class="info-value"
-                        @click="copyTextToClipboard(currentChart.info.charter)"
-                        style="cursor: pointer"
-                    >
-                        {{ currentChart.info.charter }}
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">拟合定数</span>
-                    <span
-                        class="info-value"
-                        @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
-                        style="cursor: pointer"
-                    >
-                        {{
-                            currentChart.info.stat
-                                ? currentChart.info.stat.fit_diff.toFixed(4)
-                                : "蛤 怎么没数据"
-                        }}
-                    </span>
-                </div>
-                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
-                    <span class="info-label">游玩次数</span>
-                    <span class="info-value">{{ currentChart.score.playCount }}</span>
-                </div> -->
-                <div class="info-row">
-                    <span class="info-label">项目位置</span>
-                    <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
-                </div>
-            </div>
 
             <!-- Note 统计 -->
             <div class="notes-stats-section">
@@ -799,11 +799,11 @@
     });
 
     // 获取当前谱面在对应难度的项目位置
-    function getCurrentChartPosition(chartInfo: Chart): string {
-        if (!props.chart) return "-";
+    function getCurrentChartPosition(chartInfo: Chart): string | null {
+        if (!props.chart) return null;//"-";
 
         // 从缓存的Map中获取项目位置
-        return chartPositionMap.value.get(chartInfo.id) || "-";
+        return chartPositionMap.value.get(chartInfo.id) || null;//"-";
     }
 
     // 切换收藏状态
