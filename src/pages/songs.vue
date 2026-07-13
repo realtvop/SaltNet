@@ -1442,7 +1442,7 @@
                                 "
                             >
                                 <span class="stat-item" v-if="group.stats.sss">
-                                    SSS: {{ group.stats.sss }}
+                                    SSS: {{ group.stats.sss + group.stats.sssp }}
                                 </span>
                                 <span class="stat-item" v-if="group.stats.sssp">
                                     SSS+: {{ group.stats.sssp }}
@@ -1502,7 +1502,7 @@
                     style="justify-content: center; padding: 5px 0 10px 0; width: 100%"
                 >
                     <span class="stat-item" v-if="overallStats.sss">
-                        SSS:{{ overallStats.sss }}
+                        SSS:{{ overallStats.sss + overallStats.sssp }}
                     </span>
                     <span class="stat-item" v-if="overallStats.sssp">
                         SSS+:{{ overallStats.sssp }}
