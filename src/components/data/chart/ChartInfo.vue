@@ -94,7 +94,7 @@
             </mdui-tab>
         </mdui-tabs>
 
-        <div v-if="currentChart">
+        <div v-if="currentChart" style="padding-top: 0.5rem;">
             <!-- 当前用户成绩信息 -->
             <div
                 class="score-summary"
@@ -1203,13 +1203,10 @@
     .score-summary {
         display: flex;
         flex-direction: column;
-        padding: 1rem 1.25rem 0 1.25rem;
+        padding: 0.5rem 1.25rem 0.25rem 1.25rem;
         /* margin-bottom: 1rem; */
-    }
-
-    @media (max-width: 480px) {
-        .score-summary {
-            padding: 0.75rem 1rem 0 1rem;
+        @media (max-width: 480px) {
+            padding: 0.5rem 1rem 0.5rem 1rem;
             /* margin-bottom: 0.5rem; */
         }
     }
@@ -1219,18 +1216,15 @@
         align-items: center;
         justify-content: space-between;
         margin-bottom: 0.5rem;
+        @media (max-width: 480px) {
+            margin-bottom: 0.5rem;
+        }
     }
 
     .score-row-secondary {
         display: flex;
         align-items: center;
         justify-content: space-between;
-    }
-
-    @media (max-width: 480px) {
-        .score-row-main {
-            margin-bottom: 0.25rem;
-        }
     }
 
     .rank-section {
@@ -1490,6 +1484,7 @@
     .chart-basic-info {
         width: 100%;
         padding: 1rem;
+        margin-top: 0.5rem;
         margin-bottom: 1rem;
     }
     .chart-basic-info-header {
