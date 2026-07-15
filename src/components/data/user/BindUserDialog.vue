@@ -186,6 +186,7 @@
     import { confirm, prompt, snackbar } from "mdui";
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
+    import { useShared } from "@/components/app/shared";
 
     import SignupDialog from "./database/SignupDialog.vue";
     import SigninDialog from "./database/SigninDialog.vue";
@@ -201,6 +202,7 @@
 
     const emit = defineEmits(["update:modelValue", "save", "delete", "saltnet-login"]);
 
+    const shared = useShared();
     const dialogRef = ref<any>(null);
     const isSignupDialogOpen = ref(false);
     const isSigninDialogOpen = ref(false);
@@ -249,9 +251,13 @@
         { immediate: true, deep: true }
     );
 
+    // Refresh token assumed valid for 30 days after access token expiration
+    const REFRESH_TOKEN_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+
     const userLXNSBindStatus = computed(() => {
         if (!localUser.value.lxns || !localUser.value.lxns.auth) return false;
-        if (localUser.value.lxns.auth.expiresAt! + 2592e6 > Date.now()) return true;
+        if (localUser.value.lxns.auth.expiresAt! + REFRESH_TOKEN_LIFETIME_MS > Date.now())
+            return true;
         return false;
     });
 
@@ -385,14 +391,33 @@
             });
     }
 
-    function startBindingLXNS() {
-        if (props.isEditingNewUser) saveUser();
-        setTimeout(async () => {
-            const url = await initLXNSOAuth(
-                props.isEditingNewUser ? props.userIndex! - 1 : props.userIndex!
-            );
-            window.location.href = url;
-        }, 0);
+    async function startBindingLXNS() {
+        let targetIndex: number;
+        if (props.isEditingNewUser) {
+            shared.users.push({
+                remark: localUser.value.remark ?? null,
+                divingFish: {
+                    name: localUser.value.divingFish?.name ?? null,
+                    importToken: localUser.value.divingFish?.importToken ?? null,
+                },
+                lxns: { auth: null, name: null, id: null },
+                inGame: {
+                    id: localUser.value.inGame?.id ?? null,
+                    enabled: localUser.value.inGame?.enabled ?? false,
+                    useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
+                },
+                saltnetUsername: localUser.value.saltnetUsername ?? null,
+                settings: {
+                    manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
+                },
+                data: { updateTime: null, name: null, rating: null },
+            });
+            targetIndex = shared.users.length - 1;
+        } else {
+            targetIndex = props.userIndex!;
+        }
+        const url = await initLXNSOAuth(targetIndex);
+        window.location.href = url;
     }
     function unbindLXNS() {
         confirm({

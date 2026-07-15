@@ -12,6 +12,9 @@
             chart: Chart | null;
         };
         rendering?: boolean;
+        showDxScoreNum?: boolean;
+        hideStats?: boolean;
+        hideTitle?: boolean;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -52,9 +55,12 @@
 
 <template>
     <div :class="{ 'score-section': true, rendering: props.rendering }">
-        <h2 :class="{ 'section-title': true, rendering: props.rendering }">
+        <h2 :class="{ 'section-title': true, rendering: props.rendering }" v-if="!hideTitle">
             {{ title }}
-            <span :class="{ 'stats-info': true, rendering: props.rendering }" v-if="stats">
+            <span
+                :class="{ 'stats-info': true, rendering: props.rendering }"
+                v-if="stats && !hideStats"
+            >
                 <span class="stat-item">{{ stats.total }}</span>
                 <span class="stat-item">{{ stats.levelRange }}</span>
                 <span class="stat-item">平均: {{ stats.avg }}</span>
@@ -64,6 +70,7 @@
         </h2>
         <div :class="{ 'score-grid-wrapper': true, rendering: props.rendering }">
             <div :class="{ 'score-grid': true, rendering: props.rendering }">
+                <slot name="prepend" />
                 <div
                     v-for="(score, index) in scores"
                     :key="`score-cell-${index}`"
@@ -74,6 +81,7 @@
                         :data="score"
                         :rating="score.score?.deluxeRating"
                         :rendering="props.rendering"
+                        :showDxScoreNum="props.showDxScoreNum"
                     />
                 </div>
             </div>
@@ -151,7 +159,7 @@
     .score-grid.rendering {
         grid-template-columns: repeat(5, 210px) !important;
         justify-content: center !important;
-        gap: 15px !important;
+        gap: 12px !important;
         margin-top: 20px !important;
     }
     .section-title.rendering {

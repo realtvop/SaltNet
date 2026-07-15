@@ -6,11 +6,21 @@
 import type { MaimaidxRegion } from "@/components/data/user/database/type";
 import type { Music, MusicInfo, Chart, ChartInfo, SavedMusicList } from "./type";
 import { ChartType, type MusicGenre, type MusicOrigin } from "../maiTypes";
-import type { MusicDataResponse } from "@/components/integrations/diving-fish/type";
+import type { ChartStats, MusicDataResponse } from "@/components/integrations/diving-fish/type";
 import { convertDFMusicList } from "@/components/integrations/diving-fish";
-import { isDBEnabled } from "@/components/data/user/database";
+import { getChartStatsIdentity } from "@/components/data/chart/chartIdentity";
+import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
+import localForage from "localforage";
 
 const DB_API_URL = import.meta.env.VITE_DB_URL;
+export const isDBEnabled = !!import.meta.env.VITE_DB_URL;
+let localChartStatsMapPromise: Promise<Map<string, ChartStats> | null> | null = null;
+const LOCAL_CHART_STATS_CACHE_KEY = "localChartStatsCacheV1";
+
+type LocalChartStatsCache = {
+    verBuildTime: number;
+    entries: Array<[string, ChartStats]>;
+};
 
 // Types matching the SaltNet database API response
 export interface SaltNetChartNotes {
@@ -133,7 +143,7 @@ function getDifficultyGrade(difficulty: SaltNetChart["difficulty"]): number {
         expert: 2,
         master: 3,
         remaster: 4,
-        utage: 10,
+        utage: UTAGE_GRADE,
     };
     return gradeMap[difficulty] ?? 3;
 }
@@ -142,7 +152,7 @@ function getDifficultyGrade(difficulty: SaltNetChart["difficulty"]): number {
  * Map SaltNet chart type to ChartType enum
  */
 function getChartType(type: SaltNetChart["type"]): ChartType {
-    if (type === "dx") return ChartType.Deluxe;
+    if (type === "dx" || type === "utage") return ChartType.Deluxe;
     return ChartType.Standard;
 }
 
@@ -163,7 +173,7 @@ export function convertSaltNetMusicList(
         const chartType = firstChart ? getChartType(firstChart.type) : ChartType.Standard;
 
         // Add 1e4 offset for DX type songs
-        const id = item.id + (chartType === ChartType.Deluxe ? 1e4 : 0);
+        const id = item.id + (firstChart?.type === "dx" ? 1e4 : 0);
 
         // Get version info from region
         const versionInfo = firstChart?.versions[region] || "";
@@ -187,10 +197,11 @@ export function convertSaltNetMusicList(
             charts: [],
         };
 
-        for (const saltChart of item.charts) {
+        for (const [chartIndex, saltChart] of item.charts.entries()) {
             const grade = getDifficultyGrade(saltChart.difficulty);
-            // Generate unique chart ID: musicId * 10 + grade
-            const chartId = id * 10 + grade;
+            // Keep the previous chart id shape for normal charts, while allowing multi-utage charts.
+            const chartId =
+                grade === UTAGE_GRADE ? id * 100 + UTAGE_GRADE + chartIndex : id * 10 + grade;
 
             // Calculate deluxe score max from notes
             const notes = saltChart.notes;
@@ -235,6 +246,61 @@ export function convertSaltNetMusicList(
     };
 }
 
+async function getLocalChartStatsMap(): Promise<Map<string, ChartStats> | null> {
+    if (localChartStatsMapPromise) return localChartStatsMapPromise;
+
+    localChartStatsMapPromise = (async () => {
+        const currentBuildTime = Number.parseInt(window.spec?.currentVersionBuildTime || "0", 10);
+        try {
+            const cached = await localForage.getItem<LocalChartStatsCache>(
+                LOCAL_CHART_STATS_CACHE_KEY
+            );
+            if (
+                cached &&
+                cached.verBuildTime === currentBuildTime &&
+                Array.isArray(cached.entries)
+            ) {
+                return new Map(cached.entries);
+            }
+        } catch (error) {
+            console.error("Failed to load local chart stats cache:", error);
+        }
+
+        const localData = await fetchLocalMusicList();
+        if (!localData) return null;
+
+        const statsMap = new Map<string, ChartStats>();
+        for (const chart of Object.values(localData.chartList)) {
+            if (!chart.info.stat) continue;
+            statsMap.set(getChartStatsIdentity(chart), chart.info.stat);
+        }
+
+        const cacheToSave: LocalChartStatsCache = {
+            verBuildTime: currentBuildTime,
+            entries: Array.from(statsMap.entries()),
+        };
+        localForage.setItem(LOCAL_CHART_STATS_CACHE_KEY, cacheToSave).catch(error => {
+            console.error("Failed to save local chart stats cache:", error);
+        });
+
+        return statsMap;
+    })();
+
+    return localChartStatsMapPromise;
+}
+
+export async function enrichWithLocalChartStats(data: SavedMusicList): Promise<void> {
+    const statsMap = await getLocalChartStatsMap();
+    if (!statsMap) return;
+
+    for (const chart of Object.values(data.chartList)) {
+        if (chart.info.stat) continue;
+        const stat = statsMap.get(getChartStatsIdentity(chart));
+        if (!stat) continue;
+        chart.info.stat = stat;
+    }
+}
+
 /**
  * Fetch music data from local JSON file (fallback when DB is disabled)
  * Always fetches fresh data without caching
@@ -257,5 +323,3 @@ export async function fetchLocalMusicList(): Promise<SavedMusicList | null> {
         return null;
     }
 }
-
-export { isDBEnabled };

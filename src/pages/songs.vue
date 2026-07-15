@@ -5,6 +5,7 @@
     import type { Chart, ChartScore } from "@/components/data/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
+    import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import { getMusicInfoAsync, maimaiVersionsCN } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
@@ -14,7 +15,13 @@
     import { checkChartFinish } from "@/components/data/collection/versionPlate";
     import type { VersionPlate } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
-    import { handleSelectChange, handleNumericSelectChange } from "@/utils";
+    import {
+        getDifficultyFilterOptions,
+        getChartDifficultyFullLabel,
+        UTAGE_GRADE,
+    } from "@/components/data/chart/difficulty";
+    import { findDetailedScoreForChart } from "@/components/data/chart/scoreLookup";
+    import { handleSelectChange } from "@/utils";
 
     declare global {
         interface Window {
@@ -52,7 +59,33 @@
         updateTime: 0,
         // verBuildTime: 0,
     };
-    const constantFilterEnabled = ref(false);
+    const groupBy = ref<"none" | "constant" | "version" | "rank" | "combo" | "sync">("none");
+    const groupByOptions = [
+        { value: "none", label: "无" },
+        { value: "constant", label: "细分定数" },
+        { value: "version", label: "版本" },
+        { value: "rank", label: "Rank" },
+        { value: "combo", label: "Combo" },
+        { value: "sync", label: "Sync" },
+    ];
+
+    function onGroupByChange(event: Event) {
+        handleSelectChange(event, groupBy);
+    }
+
+    const versionGroupBy = ref<"none" | "level" | "difficulty" | "rank" | "combo" | "sync">("none");
+    const versionGroupByOptions = [
+        { value: "none", label: "无" },
+        { value: "level", label: "等级" },
+        { value: "difficulty", label: "难度" },
+        { value: "rank", label: "Rank" },
+        { value: "combo", label: "Combo" },
+        { value: "sync", label: "Sync" },
+    ];
+
+    function onVersionGroupByChange(event: Event) {
+        handleSelectChange(event, versionGroupBy);
+    }
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
@@ -110,9 +143,12 @@
     }
 
     const difficultyFilter = ref(3);
+    const difficultyFilterOptions = computed(() =>
+        getDifficultyFilterOptions(category.value === Category.Favorite)
+    );
 
     function onDifficultyFilterChange(event: Event) {
-        handleNumericSelectChange(event, difficultyFilter, -1);
+        handleSelectChange(event, difficultyFilter, value => Number(value));
     }
 
     function getRandomChart() {
@@ -121,6 +157,16 @@
         if (charts.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * charts.length);
         return charts[randomIndex];
+    }
+
+    function scrollToConstant(constant: string) {
+        visibleItemsCount.value = itemsToRender.value.length;
+        nextTick(() => {
+            const el = document.getElementById("const-" + constant);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth" });
+            }
+        });
     }
     const randomChartDummy = {
         music: {
@@ -186,7 +232,7 @@
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
             if (userData?.data?.detailed) {
-                const d = userData.data.detailed[`${chart.music.id}-${chart.info.grade}`];
+                const d = findDetailedScoreForChart(userData.data.detailed, chart);
                 if (
                     d &&
                     typeof d.achievements === "number" &&
@@ -221,8 +267,8 @@
 
         if (userData?.data?.detailed) {
             charts.sort((a, b) => {
-                const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
-                const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
+                const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
+                const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
                 const playedA = typeof chartDataA?.achievements === "number";
                 const playedB = typeof chartDataB?.achievements === "number";
                 if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
@@ -238,34 +284,10 @@
         };
     }
 
-    const rangeMax = computed(() => {
-        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
-            return 9;
-        else {
-            if (selectedDifficulty.value.endsWith("+")) return 9;
-            else return 5;
-        }
-    });
-
-    const rangeMin = computed(() => {
-        if (Number(selectedDifficulty.value) >= 1 && Number(selectedDifficulty.value) <= 6)
-            return 0;
-        else {
-            if (selectedDifficulty.value.endsWith("+")) return 6;
-            else return 0;
-        }
-    });
-
-    const rangeUpperValue = ref(rangeMax.value);
-    const rangeLowerValue = ref(rangeMin.value);
-
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
         let filteredCharts: Chart[];
-        const allCharts: Chart[] = shared.chartsSort.charts.filter(
-            (chart: Chart) => chart.info.grade === 3
-        );
 
         // 根据当前分类模式筛选曲目
         if (category.value === Category.InGame) {
@@ -276,17 +298,15 @@
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) =>
-                        chart.info.level === selectedDifficulty.value &&
-                        Math.round((chart.info.constant % 1) * 10) >= rangeLowerValue.value &&
-                        Math.round((chart.info.constant % 1) * 10) <= rangeUpperValue.value
+                    (chart: Chart) => chart.info.level === selectedDifficulty.value
                 );
             }
         } else if (category.value === Category.Banquet) {
             // 宴会场模式
             if (selectedDifficulty.value === "ALL") {
                 filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === 3 && chart.info.level.endsWith("?")
+                    (chart: Chart) =>
+                        chart.info.grade === UTAGE_GRADE && chart.info.level.endsWith("?")
                 );
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
@@ -296,35 +316,15 @@
         } else if (category.value === Category.Version) {
             // 版本模式
             // 创建版本名称映射
-            const versionMapping: Record<string, string> = {
-                Maimai: "maimai",
-                "Maimai PLUS": "maimai PLUS",
-                "Maimai GreeN": "maimai GreeN",
-                "Maimai GreeN PLUS": "maimai GreeN PLUS",
-                "Maimai ORANGE": "maimai ORANGE",
-                "Maimai ORANGE PLUS": "maimai ORANGE PLUS",
-                "Maimai PiNK": "maimai PiNK",
-                "Maimai PiNK PLUS": "maimai PiNK PLUS",
-                "Maimai MURASAKi": "maimai MURASAKi",
-                "Maimai MURASAKi PLUS": "maimai MURASAKi PLUS",
-                "Maimai MiLK": "maimai MiLK",
-                "Maimai MiLK PLUS": "MiLK PLUS",
-                "Maimai FiNALE": "maimai FiNALE",
-                舞萌DX: "maimai でらっくす",
-                "舞萌DX 2021": "舞萌DX 2021",
-                "舞萌DX 2022": "舞萌DX 2022",
-                "舞萌DX 2023": "舞萌DX 2023",
-                "舞萌DX 2024": "舞萌DX 2024",
-                "舞萌DX 2025": "舞萌DX 2025",
-            };
+            const versionMapping: Record<string, string> = {};
 
             const targetVersion =
                 versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
-            filteredCharts = shared.chartsSort.charts.filter(
-                (chart: Chart) =>
-                    (chart.music.info.from as unknown as string) === targetVersion &&
-                    chart.info.grade === difficultyFilter.value
-            );
+            filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => {
+                const matchVersion = (chart.music.info.from as unknown as string) === targetVersion;
+                if (!matchVersion) return false;
+                return chart.info.grade === difficultyFilter.value;
+            });
         } else if (category.value === Category.Favorite) {
             // 收藏夹模式
             const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
@@ -409,8 +409,16 @@
             filteredCharts = [];
         }
 
+        const allChartsByGrade: Record<number, Chart[]> = {};
+        [0, 1, 2, 3, 4, 10].forEach(grade => {
+            allChartsByGrade[grade] = shared.chartsSort.charts.filter(
+                (chart: Chart) => chart.info.grade === grade
+            );
+        });
+
         // 先给所有符合难度条件的曲目添加原始排序索引
         const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
+            const gradeCharts = allChartsByGrade[chart.info.grade] || [];
             if (!chart.score) {
                 chart.score = {
                     rankRate: "" as any,
@@ -421,8 +429,8 @@
                     deluxeRating: 0,
                     index: {
                         all: {
-                            index: allCharts.length - allCharts.indexOf(chart),
-                            total: allCharts.length,
+                            index: gradeCharts.length - gradeCharts.indexOf(chart),
+                            total: gradeCharts.length,
                         },
                         difficult: {
                             index: filteredCharts.length - index,
@@ -433,8 +441,8 @@
             } else {
                 chart.score.index = {
                     all: {
-                        index: allCharts.length - allCharts.indexOf(chart),
-                        total: allCharts.length,
+                        index: gradeCharts.length - gradeCharts.indexOf(chart),
+                        total: gradeCharts.length,
                     },
                     difficult: {
                         index: filteredCharts.length - index,
@@ -551,6 +559,239 @@
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
+    function countChartStats(charts: Chart[]) {
+        let sss = 0,
+            sssp = 0,
+            fc = 0,
+            ap = 0,
+            fsdx = 0;
+        charts.forEach(chart => {
+            const s = chart.score;
+            if (s?.achievements != null) {
+                if (s.achievements >= 100.5) sssp++;
+                else if (s.achievements >= 100.0) sss++;
+            }
+            if (s?.comboStatus) {
+                if (
+                    [ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(
+                        s.comboStatus as ComboStatus
+                    )
+                )
+                    ap++;
+                if (
+                    [
+                        ComboStatus.FullCombo,
+                        ComboStatus.FullComboPlus,
+                        ComboStatus.AllPerfect,
+                        ComboStatus.AllPerfectPlus,
+                    ].includes(s.comboStatus as ComboStatus)
+                )
+                    fc++;
+            }
+            if (
+                s?.syncStatus &&
+                [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(
+                    s.syncStatus as SyncStatus
+                )
+            )
+                fsdx++;
+        });
+        return { sss, sssp, fc, ap, fsdx };
+    }
+
+    const rankOrder = [
+        RankRate.sssp,
+        RankRate.sss,
+        RankRate.ssp,
+        RankRate.ss,
+        RankRate.sp,
+        RankRate.s,
+        RankRate.aaa,
+        RankRate.aa,
+        RankRate.a,
+        RankRate.bbb,
+        RankRate.bb,
+        RankRate.b,
+        RankRate.c,
+        RankRate.d,
+    ];
+    const comboOrder = [
+        ComboStatus.AllPerfectPlus,
+        ComboStatus.AllPerfect,
+        ComboStatus.FullComboPlus,
+        ComboStatus.FullCombo,
+        ComboStatus.None,
+    ];
+    const syncOrder = [
+        SyncStatus.FullSyncDXPlus,
+        SyncStatus.FullSyncDX,
+        SyncStatus.FullSyncPlus,
+        SyncStatus.FullSync,
+        SyncStatus.Sync,
+        SyncStatus.None,
+    ];
+
+    const rankDisplayNames: Record<string, string> = {
+        [RankRate.sssp]: "SSS+",
+        [RankRate.sss]: "SSS",
+        [RankRate.ssp]: "SS+",
+        [RankRate.ss]: "SS",
+        [RankRate.sp]: "S+",
+        [RankRate.s]: "S",
+        [RankRate.aaa]: "AAA",
+        [RankRate.aa]: "AA",
+        [RankRate.a]: "A",
+        [RankRate.bbb]: "BBB",
+        [RankRate.bb]: "BB",
+        [RankRate.b]: "B",
+        [RankRate.c]: "C",
+        [RankRate.d]: "D",
+        "": "未游玩",
+    };
+    const comboDisplayNames: Record<string, string> = {
+        [ComboStatus.AllPerfectPlus]: "All Perfect+",
+        [ComboStatus.AllPerfect]: "All Perfect",
+        [ComboStatus.FullComboPlus]: "Full Combo+",
+        [ComboStatus.FullCombo]: "Full Combo",
+        [ComboStatus.None]: "无",
+    };
+    const syncDisplayNames: Record<string, string> = {
+        [SyncStatus.FullSyncDXPlus]: "Full Sync DX+",
+        [SyncStatus.FullSyncDX]: "Full Sync DX",
+        [SyncStatus.FullSyncPlus]: "Full Sync+",
+        [SyncStatus.FullSync]: "Full Sync",
+        [SyncStatus.Sync]: "Sync",
+        [SyncStatus.None]: "无",
+    };
+
+    const groupedItems = computed(() => {
+        const isInGame =
+            category.value === Category.InGame &&
+            groupBy.value !== "none" &&
+            selectedDifficulty.value !== "ALL";
+        const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
+        const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
+
+        if (!isInGame && !isVersion && !isFavorite) return null;
+
+        const activeGroupBy = isVersion || isFavorite ? versionGroupBy.value : groupBy.value;
+
+        const charts = itemsToRender.value;
+        if (!charts.length) return null;
+
+        const groups: Record<string, Chart[]> = {};
+        charts.forEach(chart => {
+            let key: string;
+            if (activeGroupBy === "level") {
+                key = chart.info.level;
+            } else if (activeGroupBy === "version") {
+                key = chart.music.info.from as unknown as string;
+            } else if (activeGroupBy === "constant") {
+                key = chart.info.constant.toFixed(1);
+            } else if (activeGroupBy === "difficulty") {
+                key = String(chart.info.grade);
+            } else if (activeGroupBy === "rank") {
+                key = (chart.score?.rankRate as string) || "";
+            } else if (activeGroupBy === "combo") {
+                key = (chart.score?.comboStatus as string) || "";
+            } else {
+                key = (chart.score?.syncStatus as string) || "";
+            }
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(chart);
+        });
+
+        const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
+            if (activeGroupBy === "level") {
+                const ia = difficulties.indexOf(a[0]);
+                const ib = difficulties.indexOf(b[0]);
+                return ib - ia;
+            }
+            if (activeGroupBy === "constant") return Number(b[0]) - Number(a[0]);
+            if (activeGroupBy === "version") {
+                const orderA = maimaiVersionsCN.indexOf(a[0]);
+                const orderB = maimaiVersionsCN.indexOf(b[0]);
+                return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
+            }
+            if (activeGroupBy === "difficulty") return Number(a[0]) - Number(b[0]);
+            if (activeGroupBy === "rank") {
+                const ia = rankOrder.indexOf(a[0] as RankRate),
+                    ib = rankOrder.indexOf(b[0] as RankRate);
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+            }
+            if (activeGroupBy === "combo") {
+                const ia = comboOrder.indexOf(a[0] as ComboStatus),
+                    ib = comboOrder.indexOf(b[0] as ComboStatus);
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+            }
+            const ia = syncOrder.indexOf(a[0] as SyncStatus),
+                ib = syncOrder.indexOf(b[0] as SyncStatus);
+            return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        };
+
+        const displayNames =
+            activeGroupBy === "rank"
+                ? rankDisplayNames
+                : activeGroupBy === "combo"
+                  ? comboDisplayNames
+                  : activeGroupBy === "sync"
+                    ? syncDisplayNames
+                    : null;
+
+        return Object.entries(groups)
+            .sort(sortFn)
+            .map(([key, items]) => {
+                let title: string;
+                if (displayNames) title = displayNames[key] || key;
+                else if (activeGroupBy === "difficulty")
+                    title = getChartDifficultyFullLabel(Number(key));
+                else title = key;
+                return {
+                    title,
+                    count: items.length,
+                    stats: countChartStats(items),
+                    items,
+                };
+            });
+    });
+
+    const visibleGroupedItems = computed(() => {
+        if (!groupedItems.value) return null;
+
+        let remaining = maxVisibleItems.value;
+        const result: {
+            title: string;
+            count: number;
+            stats: { sss: number; sssp: number; fc: number; ap: number; fsdx: number };
+            visibleCount: number;
+            items: Chart[];
+        }[] = [];
+
+        for (const group of groupedItems.value) {
+            if (remaining <= 0) break;
+            const take = Math.min(remaining, group.items.length);
+            result.push({
+                title: group.title,
+                count: group.count,
+                stats: group.stats,
+                visibleCount: take,
+                items: group.items.slice(0, take),
+            });
+            remaining -= take;
+        }
+
+        return result;
+    });
+
+    const overallStats = computed(() => {
+        if (groupBy.value !== "none" || category.value !== Category.InGame) return null;
+
+        const charts = itemsToRender.value;
+        if (!charts.length) return null;
+
+        return countChartStats(charts);
+    });
+
     // 加载更多项目
     const loadMore = () => {
         const remainingItems = itemsToRender.value.length - visibleItemsCount.value;
@@ -560,13 +801,14 @@
         }
     };
 
+    const getPreloadThreshold = () => Math.max(600, Math.floor(window.innerHeight * 1.5));
+
     // 滚动事件处理（使用 window 滚动）
     const handleScroll = () => {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
-        // 检查是否接近底部（距离底部200px时触发）
-        if (scrollTop + windowHeight >= documentHeight - 200) {
+        if (scrollTop + windowHeight >= documentHeight - getPreloadThreshold()) {
             loadMore();
         }
     };
@@ -586,20 +828,24 @@
     watch(selectedDifficulty, () => {
         visibleItemsCount.value = getLoadSize();
         query.value = "";
+        groupBy.value = "none";
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
     });
 
     watch(category, newCategory => {
+        groupBy.value = "none";
         // 切换分类时，重置到该分类的默认选项
         if (newCategory === Category.InGame) {
             selectedTab.value[Category.InGame] = "ALL";
+            if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
         } else if (newCategory === Category.Banquet) {
             selectedTab.value[Category.Banquet] = banquetDifficulties[0];
         } else if (newCategory === Category.Favorite) {
             selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         } else if (newCategory === Category.Version) {
             selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
+            if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
         } else if (newCategory in versionPlates) {
             // 牌子分类
             const plateType = newCategory as VersionPlateCategory;
@@ -627,6 +873,13 @@
 
     // 监听难度筛选变化，重新计算可视项目数
     watch(difficultyFilter, () => {
+        visibleItemsCount.value = getLoadSize();
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: "instant" });
+    });
+
+    // 监听分组变化，重新计算可视项目数
+    watch(groupBy, () => {
         visibleItemsCount.value = getLoadSize();
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -826,26 +1079,6 @@
             },
         });
     }
-
-    function rangeChange(event: Event) {
-        const target = event.target as HTMLInputElement;
-        const value = target.value;
-        rangeLowerValue.value = Number(value[0]);
-        rangeUpperValue.value = Number(value[1]);
-    }
-
-    async function resetSlider() {
-        // 等待 rangeMin 和 rangeMax 改变并更新到 DOM
-        await nextTick();
-        // 先更新 rangeLowerValue 和 rangeUpperValue 的值
-        rangeLowerValue.value = rangeMin.value;
-        rangeUpperValue.value = rangeMax.value;
-        // 然后更新滑块的值
-        const slider = document.querySelector(".rangeSlider");
-        if (slider) {
-            (slider as unknown as { value: number[] }).value = [rangeMin.value, rangeMax.value];
-        }
-    }
 </script>
 
 <template>
@@ -853,11 +1086,6 @@
         class="songs-page"
         :class="{
             'songs-page-fixed': userId,
-            'songs-page-with-detailed-filter':
-                constantFilterEnabled &&
-                category === Category.InGame &&
-                selectedDifficulty != 'ALL' &&
-                !(Number(selectedDifficulty) < 6),
         }"
     >
         <!-- [游戏排序]难度选单 -->
@@ -900,7 +1128,6 @@
                     @click="
                         () => {
                             selectedTab[category] = tab;
-                            resetSlider();
                         }
                     "
                 >
@@ -976,21 +1203,21 @@
             </div>
         </div>
         <div
-            v-else-if="
-                (category === Category.InGame && selectedDifficulty === 'ALL') ||
-                category === Category.Version ||
-                category === Category.Favorite
-            "
+            v-else-if="category === Category.InGame && selectedDifficulty === 'ALL'"
             class="search-input"
         >
             <mdui-select
                 style="width: 4.1rem"
                 label="难度"
-                :value="difficultyFilter + 1"
+                :value="difficultyFilter.toString()"
                 @change="onDifficultyFilterChange"
             >
-                <mdui-menu-item v-for="index in 5" :key="index" :value="index">
-                    {{ ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"][index - 1] }}
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
                 </mdui-menu-item>
             </mdui-select>
             <mdui-text-field
@@ -1003,37 +1230,109 @@
                 id="search-input"
             ></mdui-text-field>
         </div>
-        <div v-else class="search-input">
+        <div v-else-if="category === Category.Favorite" class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
+            >
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="versionGroupBy"
+                @change="onVersionGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in versionGroupByOptions"
+                    :key="option.value"
+                    :value="option.value"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
             <mdui-text-field
                 clearable
                 icon="search"
                 label="搜索"
                 placeholder="曲名 别名 id 曲师 谱师"
                 @input="query = $event.target.value"
+                style="flex: 1"
                 id="search-input"
             ></mdui-text-field>
-            <mdui-button-icon
-                :icon="constantFilterEnabled ? 'keyboard_arrow_down' : 'keyboard_arrow_left'"
-                @click="constantFilterEnabled = !constantFilterEnabled"
-            ></mdui-button-icon>
         </div>
-        <div
-            v-if="
-                constantFilterEnabled &&
-                category === Category.InGame &&
-                selectedDifficulty != 'ALL' &&
-                !(Number(selectedDifficulty) < 6)
-            "
-            class="detailed-filter"
-        >
-            <div class="detailed-filter-card">定数筛选:</div>
-            <mdui-range-slider
-                :min="rangeMin"
-                :max="rangeMax"
-                :step="1"
-                @input="rangeChange"
-                class="rangeSlider"
-            ></mdui-range-slider>
+        <div v-else-if="category === Category.Version" class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
+            >
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="versionGroupBy"
+                @change="onVersionGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in versionGroupByOptions"
+                    :key="option.value"
+                    :value="option.value"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
+        </div>
+
+        <div v-else class="search-input">
+            <mdui-select
+                style="width: 4.1rem"
+                label="分类"
+                :value="groupBy"
+                @change="onGroupByChange"
+            >
+                <mdui-menu-item
+                    v-for="option in groupByOptions"
+                    :key="option.value"
+                    :value="option.value"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
         </div>
 
         <div
@@ -1041,7 +1340,132 @@
             :class="{ 'card-container-fixed': userId }"
             v-if="chartListFiltered"
         >
-            <div class="score-grid-wrapper">
+            <div v-if="visibleGroupedItems" class="grouped-container">
+                <div
+                    v-for="group in visibleGroupedItems"
+                    :key="group.title"
+                    :id="'const-' + group.title"
+                    class="group-wrapper"
+                >
+                    <div
+                        class="score-section"
+                        style="
+                            max-width: 1300px;
+                            margin: 0 auto;
+                            padding: 0 20px;
+                            box-sizing: border-box;
+                        "
+                    >
+                        <h2 class="section-title">
+                            <mdui-dropdown v-if="groupedItems">
+                                <span slot="trigger" style="cursor: pointer">
+                                    {{ group.title }}
+                                </span>
+                                <mdui-menu>
+                                    <mdui-menu-item
+                                        v-for="target in groupedItems"
+                                        :key="'jump-' + target.title"
+                                        @click="scrollToConstant(target.title)"
+                                    >
+                                        {{ target.title }}
+                                    </mdui-menu-item>
+                                </mdui-menu>
+                            </mdui-dropdown>
+                            <span
+                                class="stats-info"
+                                v-if="
+                                    ['rank', 'combo', 'sync', 'difficulty'].includes(
+                                        category === Category.Version ||
+                                            category === Category.Favorite
+                                            ? versionGroupBy
+                                            : groupBy
+                                    )
+                                "
+                            >
+                                <span class="stat-item">{{ group.count }}</span>
+                            </span>
+                            <span
+                                class="stats-info"
+                                v-else-if="
+                                    group.stats.sss ||
+                                    group.stats.sssp ||
+                                    group.stats.fc ||
+                                    group.stats.ap ||
+                                    group.stats.fsdx
+                                "
+                            >
+                                <span class="stat-item" v-if="group.stats.sss">
+                                    SSS: {{ group.stats.sss }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.sssp">
+                                    SSS+: {{ group.stats.sssp }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.fc">
+                                    FC: {{ group.stats.fc }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.ap">
+                                    AP: {{ group.stats.ap }}
+                                </span>
+                                <span class="stat-item" v-if="group.stats.fsdx">
+                                    FSDX: {{ group.stats.fsdx }}
+                                </span>
+                            </span>
+                        </h2>
+                    </div>
+                    <ScoreSection
+                        title=""
+                        :scores="group.items"
+                        :chartInfoDialog="chartInfoDialog"
+                        hideStats
+                        hideTitle
+                    >
+                        <template #prepend>
+                            <ScoreCard
+                                cover="/icons/random.png"
+                                :data="randomChartDummy"
+                                @click="
+                                    () => {
+                                        const chart =
+                                            group.items[
+                                                Math.floor(Math.random() * group.items.length)
+                                            ];
+                                        if (chart) openChartInfoDialog(chart);
+                                    }
+                                "
+                            />
+                        </template>
+                    </ScoreSection>
+                </div>
+                <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
+                    <div class="loading-text">正在加载更多...</div>
+                    <mdui-button variant="text" @click="loadMore">点击加载</mdui-button>
+                </div>
+            </div>
+            <div v-else class="score-grid-wrapper">
+                <div
+                    class="stats-info"
+                    v-if="
+                        overallStats &&
+                        (overallStats.sss ||
+                            overallStats.sssp ||
+                            overallStats.fc ||
+                            overallStats.ap ||
+                            overallStats.fsdx)
+                    "
+                    style="justify-content: center; padding: 5px 0 10px 0; width: 100%"
+                >
+                    <span class="stat-item" v-if="overallStats.sss">
+                        SSS:{{ overallStats.sss }}
+                    </span>
+                    <span class="stat-item" v-if="overallStats.sssp">
+                        SSS+:{{ overallStats.sssp }}
+                    </span>
+                    <span class="stat-item" v-if="overallStats.fc">FC:{{ overallStats.fc }}</span>
+                    <span class="stat-item" v-if="overallStats.ap">AP:{{ overallStats.ap }}</span>
+                    <span class="stat-item" v-if="overallStats.fsdx">
+                        FSDX:{{ overallStats.fsdx }}
+                    </span>
+                </div>
                 <div class="score-grid">
                     <ScoreCard
                         v-if="
@@ -1091,11 +1515,6 @@
     /* 固定页面模式下的全局样式重写 */
     .songs-page {
         padding-top: calc(48px + 64px); /* category-bar + search-input height */
-    }
-    .songs-page-with-detailed-filter {
-        padding-top: calc(
-            48px + 64px + 48px
-        ); /* category-bar + search-input + detailed-filter height */
     }
     .songs-page-fixed {
         @media (min-aspect-ratio: 1.001/1) {
@@ -1186,53 +1605,19 @@
         }
     }
 
-    .detailed-filter {
-        position: fixed;
-        top: calc(56px + 48px + 64px);
-        left: 0;
-        right: 0;
-        z-index: 98;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 5px 20px;
-        height: 48px;
-        box-sizing: border-box;
-        background: rgb(var(--mdui-color-background));
-    }
-
-    @media (min-aspect-ratio: 1.001/1) {
-        .detailed-filter {
-            left: 80px; /* navigation rail width */
-        }
-    }
-
-    .detailed-filter-card {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        width: 8rem;
-    }
-
-    .rangeSlider {
-        flex: 1 1 0%;
-        padding: 0 25px;
-    }
-
-    .rangeSlider::part(label)::before {
-        content: ".";
-    }
-
     .score-grid-wrapper {
         width: 100%;
         overflow: visible;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
     }
 
     .score-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, 210px);
         gap: 15px;
-        margin-top: 20px;
         width: 100%;
         justify-content: center;
         box-sizing: border-box;
@@ -1255,6 +1640,66 @@
 
     .score-cell-compact {
         width: 100px;
+    }
+
+    .grouped-container {
+        width: 100%;
+    }
+
+    .group-wrapper {
+        scroll-margin-top: 180px;
+    }
+
+    .section-title {
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        text-align: left;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 15px;
+        color: var(--text-primary-color, inherit);
+        cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .section-title {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        .stats-info {
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+        .score-section {
+            padding: 0 !important;
+        }
+        :deep(.score-section) {
+            padding: 0 !important;
+        }
+    }
+
+    .section-count {
+        font-size: 0.9rem;
+        font-weight: normal;
+        color: var(--text-secondary-color, #888);
+    }
+
+    .stats-info {
+        font-size: 0.9rem;
+        font-weight: normal;
+        color: var(--text-secondary-color, #888);
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .stat-item {
+        white-space: nowrap;
     }
 
     @media (min-width: 1254px) {
@@ -1298,19 +1743,11 @@
     }
 
     @media (max-width: 499px) {
-        .score-grid-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            height: auto;
-            overflow: visible;
-        }
         .score-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             transform: none;
             width: 100%;
-            margin: 0;
             justify-content: center;
         }
         .score-grid:has(.score-cell-compact) {

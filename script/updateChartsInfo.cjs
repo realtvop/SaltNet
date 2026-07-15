@@ -7,7 +7,7 @@ const fetchWithCurl = url => {
         const command = `curl -s -L "${url}"`;
         const output = execSync(command, { maxBuffer: 10 * 1024 * 1024 });
         return Promise.resolve({
-            json: () => Promise.resolve(JSON.parse(output.toString()))
+            json: () => Promise.resolve(JSON.parse(output.toString())),
         });
     } catch (error) {
         return Promise.reject(error);
@@ -17,10 +17,50 @@ const fetchWithCurl = url => {
 const DFMusicDataAPIURL = "https://www.diving-fish.com/api/maimaidxprober/music_data";
 const DFChartStatsAPIURL = "https://www.diving-fish.com/api/maimaidxprober/chart_stats";
 const LXListAPIURL = dataType => `https://maimai.lxns.net/api/v0/maimai/${dataType}/list`;
-const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
 const LXSongListAPIURL = "https://maimai.lxns.net/api/v0/maimai/song/list";
+const YzcAliasDataAPIURL = "https://www.yuzuchan.moe/api/maimaidx/maimaidxalias";
 
 const fetchLXListData = dataType => fetchWithCurl(LXListAPIURL(dataType)).then(r => r.json());
+
+const buildVersionTable = lxSongList => {
+    const versionTable = [];
+    for (const version of lxSongList.versions || []) {
+        if (typeof version.version !== "number" || typeof version.title !== "string") continue;
+        versionTable.push(version);
+    }
+    versionTable.sort((a, b) => a.version - b.version);
+    return versionTable;
+};
+
+const buildLxSongMap = lxSongList => {
+    const lxSongMap = new Map();
+    for (const song of lxSongList.songs || []) {
+        const id = Number(song.id);
+        if (!Number.isFinite(id)) continue;
+        lxSongMap.set(id, song);
+    }
+    return lxSongMap;
+};
+
+const getSongMatchId = song => {
+    const id = Number(song.id);
+    if (!Number.isFinite(id)) return null;
+    return id < 100000 ? id % 10000 : id;
+};
+
+const resolveVersionTitle = (versionValue, versionTable) => {
+    if (typeof versionValue !== "number" || versionTable.length === 0) return null;
+
+    for (let i = 0; i < versionTable.length; i++) {
+        const current = versionTable[i];
+        const next = versionTable[i + 1];
+
+        if (!next) return versionValue >= current.version ? current.title : null;
+        if (versionValue >= current.version && versionValue < next.version) return current.title;
+    }
+
+    return null;
+};
 
 async function updateCollectionData() {
     const icons = await fetchLXListData("icon").then(res => res.icons);
@@ -58,13 +98,12 @@ async function updateCollectionData() {
 
 async function updateMusicData() {
     const musicData = await fetchWithCurl(DFMusicDataAPIURL).then(r => r.json());
-    const lxSongData = await fetchWithCurl(LXSongListAPIURL).then(r => r.json());
+    const lxSongList = await fetchWithCurl(LXSongListAPIURL).then(r => r.json());
     const chartStats = await fetchWithCurl(DFChartStatsAPIURL).then(r => r.json());
     const aliases = await fetchLXListData("alias").then(res => res.aliases);
     const yzcAliases = await fetchWithCurl(YzcAliasDataAPIURL).then(r => r.json());
-
-    const lxSongs = lxSongData.songs;
-    const lxVersions = lxSongData.versions;
+    const versionTable = buildVersionTable(lxSongList);
+    const lxSongMap = buildLxSongMap(lxSongList);
 
     for (const song of musicData) {
         const id = Number(song.id);
@@ -81,21 +120,30 @@ async function updateMusicData() {
 
         if (aliasList) song.aliases = finalAliasList;
 
-        const normalizedId = id > 10000 && id < 100000 ? id % 10000 : id;
-        const lxSong = lxSongs.find(s => s.id === normalizedId) || lxSongs.find(s => s.title === song.title);
-
+        const matchId = getSongMatchId(song);
+        const lxSong = lxSongMap.get(matchId);
         if (lxSong) {
-            let versionId;
-            if (song.type === "SD" && lxSong.difficulties.standard && lxSong.difficulties.standard.length > 0) {
-                versionId = lxSong.difficulties.standard[0].version;
-            } else if (song.type === "DX" && lxSong.difficulties.dx && lxSong.difficulties.dx.length > 0) {
-                versionId = lxSong.difficulties.dx[0].version;
-            }
+            let difficulties;
+            if (id >= 100000) difficulties = lxSong.difficulties.utage || lxSong.difficulties.dx;
+            else difficulties = lxSong.difficulties[song.type === "DX" ? "dx" : "standard"];
 
-            if (versionId !== undefined) {
-                const version = lxVersions.find(v => v.version === versionId);
-                if (version) {
-                    song.basic_info.from = version.title;
+            if (difficulties && difficulties.length > 0) {
+                const versionValues = difficulties
+                    .map(difficulty => difficulty.version)
+                    .filter(version => typeof version === "number");
+                if (versionValues.length > 0) {
+                    const versionTitle = resolveVersionTitle(
+                        Math.min(...versionValues),
+                        versionTable
+                    );
+                    if (versionTitle) {
+                        song.basic_info.from = versionTitle;
+                        if (
+                            !song.basic_info.from.startsWith("舞萌") &&
+                            !song.basic_info.from.startsWith("maimai")
+                        )
+                            song.basic_info.from = `maimai ${song.basic_info.from}`;
+                    }
                 }
             }
         }

@@ -1,4 +1,14 @@
 {
+    "rewrites": [
+        {
+            "source": "/render/:path*",
+            "destination": "/api/render/render/:path*"
+        },
+        {
+            "source": "/health",
+            "destination": "/api/render/health"
+        }
+    ],
     "headers": [
         {
             "source": "/updater.js",

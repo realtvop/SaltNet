@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+render-service/src/**/*.js
+shared/rendering/**/*.js
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +28,6 @@ dist-ssr
 
 .pnpm-store
 package-lock.json
+bun.lock
+
+.wrangler

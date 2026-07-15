@@ -50,13 +50,20 @@ export enum MusicOrigin {
     "maimai PiNK PLUS",
     "maimai MiLK",
     "maimai FiNALE",
-    "MiLK PLUS",
+    "maimai MiLK PLUS",
     "maimai でらっくす UNiVERSE",
+    "maimai でらっくす UNiVERSE PLUS",
     "maimai でらっくす FESTiVAL",
+    "maimai でらっくす FESTiVAL PLUS",
     "maimai でらっくす BUDDiES",
+    "maimai でらっくす BUDDiES PLUS",
     "maimai でらっくす",
+    "maimai でらっくす PLUS",
     "maimai でらっくす Splash",
+    "maimai でらっくす Splash PLUS",
     "maimai でらっくす PRiSM",
+    "maimai でらっくす PRiSM PLUS",
+    "maimai でらっくす CiRCLE",
 }
 
 export enum MusicGenre {

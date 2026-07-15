@@ -1,5 +1,14 @@
 import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@/components/data/music/type";
-import type { DivingFishMusicChart, DivingFishResponse, MusicDataResponse } from "./type";
+import type {
+    DivingFishMusicChart,
+    DivingFishResponse,
+    DivingFishRecordsResponse,
+    DivingFishFullRecord,
+    DivingFishB50,
+    MusicDataResponse,
+} from "./type";
+import { isBanquetGenre, UTAGE_GRADE } from "@/components/data/chart/difficulty";
+import { getMusicInfoAsync } from "@/components/data/music";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 
@@ -35,11 +44,58 @@ export async function fetchPlayerData(username: string): Promise<DivingFishRespo
     }
 }
 
+export async function fetchPlayerRecordsByImportToken(
+    importToken: string
+): Promise<DivingFishRecordsResponse> {
+    const response = await fetch(`${API_BASE_URL}/player/records`, {
+        method: "GET",
+        headers: {
+            "Import-Token": importToken,
+        },
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        if (err && err.message) {
+            throw new Error(err.message);
+        }
+        throw new Error(`Request failed with status code ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function calculateB50FromRecords(
+    records: DivingFishFullRecord[]
+): Promise<DivingFishB50> {
+    const musicInfo = await getMusicInfoAsync();
+    const newScores: DivingFishFullRecord[] = [];
+    const oldScores: DivingFishFullRecord[] = [];
+
+    for (const record of records) {
+        const music = musicInfo?.musicList[record.song_id];
+        if (music?.info?.isNew) {
+            newScores.push(record);
+        } else {
+            oldScores.push(record);
+        }
+    }
+
+    newScores.sort((a, b) => b.ra - a.ra);
+    oldScores.sort((a, b) => b.ra - a.ra);
+
+    return {
+        dx: newScores.slice(0, 15),
+        sd: oldScores.slice(0, 35),
+    };
+}
+
 export function convertDFMusicList(data: MusicDataResponse) {
     const musicList: Record<number, Music> = {};
     const chartList: Record<number, Chart> = {};
 
     for (const item of data) {
+        const isBanquetMusic = isBanquetGenre(item.basic_info.genre);
         const id = Number(item.id);
         const musicInfo: MusicInfo = {
             id,
@@ -66,7 +122,7 @@ export function convertDFMusicList(data: MusicDataResponse) {
                 notes: dfChart.notes,
                 charter: dfChart.charter,
                 level: item.level[index],
-                grade: index,
+                grade: isBanquetMusic ? UTAGE_GRADE : index,
                 constant: item.ds[index],
                 deluxeScoreMax: deluxeScoreMax * 3,
                 stat: dfChart.stats || undefined,

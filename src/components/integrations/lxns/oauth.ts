@@ -1,23 +1,24 @@
 import { useShared } from "@/components/app/shared";
-import type { User } from "@/components/data/user";
-import { jwtDecode } from "jwt-decode";
-import type { LXNSResponse } from "./type";
+import type { LXNSAuth, LXNSResponse } from "./type";
+import { applyLXNSAuth } from "./token";
 import { snackbar } from "mdui";
+
+export { refreshLXNSOAuthToken } from "./token";
 
 export async function initLXNSOAuth(userIndex: number): Promise<string> {
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
+    const state = generateCodeVerifier();
 
     const url = `https://maimai.lxns.net/oauth/authorize?response_type=code&client_id=${
         import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID
     }&redirect_uri=${encodeURIComponent(
         import.meta.env.VITE_LXNS_OAUTH_REDIRECT_URI
-    )}&code_challenge=${codeChallenge}&state=${
-        codeVerifier
-    }&code_challenge_method=S256&response_type=code&scope=read_user_profile+read_player+write_player`;
+    )}&code_challenge=${codeChallenge}&state=${state}&code_challenge_method=S256&scope=read_user_profile+read_player+write_player`;
 
     window.sessionStorage.setItem("lxns_oauth_user_index", userIndex.toString());
     window.sessionStorage.setItem("lxns_oauth_code_verifier", codeVerifier);
+    window.sessionStorage.setItem("lxns_oauth_state", state);
 
     return url;
 }
@@ -29,7 +30,13 @@ interface LXNSTokenData {
     refresh_token: string;
     scope: string;
 }
-async function getLXNSOAuthToken(code: string): Promise<LXNSAuth> {
+
+interface LXNSTokenResult {
+    auth: LXNSAuth;
+    expiresIn: number;
+}
+
+async function getLXNSOAuthToken(code: string): Promise<LXNSTokenResult> {
     const codeVerifier = window.sessionStorage.getItem("lxns_oauth_code_verifier");
     if (!codeVerifier) throw new Error("Code verifier not found in session storage");
 
@@ -43,83 +50,61 @@ async function getLXNSOAuthToken(code: string): Promise<LXNSAuth> {
             code_verifier: codeVerifier,
         }),
     });
+
+    if (!resp.ok) {
+        throw new Error(`LXNS token exchange failed (HTTP ${resp.status})`);
+    }
+
     const data = (await resp.json()) as LXNSResponse<LXNSTokenData>;
+    if (!data.success || !data.data?.access_token) {
+        throw new Error(`LXNS token exchange failed (code: ${data.code})`);
+    }
 
     return {
-        accessToken: data.data.access_token,
-        refreshToken: data.data.refresh_token,
-        tokenType: data.data.token_type,
-    };
-}
-export async function refreshLXNSOAuthToken(user: User): Promise<LXNSAuth> {
-    if (!user.lxns?.auth?.refreshToken) throw new Error("No refresh token available");
-
-    const resp = await fetch("https://maimai.lxns.net/api/v0/oauth/token", {
-        method: "POST",
-        body: new URLSearchParams({
-            grant_type: "refresh_token",
-            refresh_token: user.lxns?.auth?.refreshToken || "",
-            client_id: import.meta.env.VITE_LXNS_OAUTH_CLIENT_ID,
-        }),
-    });
-    const data = (await resp.json()) as LXNSResponse<LXNSTokenData>;
-    const auth = {
-        accessToken: data.data.access_token,
-        refreshToken: data.data.refresh_token,
-        tokenType: data.data.token_type,
-    };
-
-    const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
-        auth.accessToken!
-    );
-    user.lxns = {
         auth: {
-            ...auth,
-            expiresAt: exp * 1000,
+            accessToken: data.data.access_token,
+            refreshToken: data.data.refresh_token,
+            tokenType: data.data.token_type,
         },
-        name,
-        id,
+        expiresIn: data.data.expires_in,
     };
-
-    return auth;
 }
 
-function saveLXNSAuth(userIndex: number, auth: LXNSAuth): void {
+function saveLXNSAuth(userIndex: number, auth: LXNSAuth, expiresIn?: number): void {
     const shared = useShared();
     const user = shared.users[userIndex];
 
     if (!user) throw new Error("User not found");
-    const { name, id, exp } = jwtDecode<{ name: string; id: number; exp: number }>(
-        auth.accessToken!
-    );
-    user.lxns = {
-        auth: {
-            ...auth,
-            expiresAt: exp * 1000,
-        },
-        name,
-        id,
-    };
+    applyLXNSAuth(user, auth, expiresIn);
     snackbar({
         message: "落雪绑定成功！",
         autoCloseDelay: 500,
     });
 }
 
-export async function handleLXNSOAuthCallback(code: string): Promise<void> {
+export async function handleLXNSOAuthCallback(code: string, state: string): Promise<void> {
+    const storedState = window.sessionStorage.getItem("lxns_oauth_state");
+    if (!storedState || storedState !== state) {
+        clearOAuthSessionStorage();
+        throw new Error("OAuth state mismatch — possible CSRF attack");
+    }
+
     const userIndexStr = window.sessionStorage.getItem("lxns_oauth_user_index");
     if (!userIndexStr) throw new Error("User index not found in session storage");
     const userIndex = parseInt(userIndexStr, 10);
-    const auth = await getLXNSOAuthToken(code);
-    saveLXNSAuth(userIndex, auth);
+
+    try {
+        const { auth, expiresIn } = await getLXNSOAuthToken(code);
+        saveLXNSAuth(userIndex, auth, expiresIn);
+    } finally {
+        clearOAuthSessionStorage();
+    }
+}
+
+function clearOAuthSessionStorage(): void {
     window.sessionStorage.removeItem("lxns_oauth_user_index");
     window.sessionStorage.removeItem("lxns_oauth_code_verifier");
-}
-export interface LXNSAuth {
-    accessToken: string | null;
-    refreshToken: string | null;
-    tokenType: string | null;
-    expiresAt?: number | null;
+    window.sessionStorage.removeItem("lxns_oauth_state");
 }
 
 function base64UrlEncode(arrayBuffer: ArrayBuffer): string {

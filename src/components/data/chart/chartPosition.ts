@@ -2,6 +2,9 @@ import type { Chart } from "@/components/data/music/type";
 import type { User, ChartsSortCached } from "@/components/data/user/type";
 import { MusicSort } from "@/components/data/music";
 import localForage from "localforage";
+import { findDetailedScoreForChart } from "./scoreLookup";
+
+const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 
 /**
  * 计算谱面在特定难度下的项目位置
@@ -34,8 +37,8 @@ export function getChartPositionByDifficulty(
     // 如果有用户数据，按达成率排序
     if (userData?.data?.detailed) {
         sortedCharts.sort((a, b) => {
-            const chartDataA = userData?.data?.detailed?.[`${a.music.id}-${a.info.grade}`];
-            const chartDataB = userData?.data?.detailed?.[`${b.music.id}-${b.info.grade}`];
+            const chartDataA = findDetailedScoreForChart(userData.data.detailed, a);
+            const chartDataB = findDetailedScoreForChart(userData.data.detailed, b);
             if (chartDataA?.achievements && chartDataB?.achievements)
                 return chartDataB.achievements - chartDataA.achievements;
             if (chartDataA?.achievements) return -1;
@@ -47,14 +50,16 @@ export function getChartPositionByDifficulty(
     // 根据难度筛选
     let filteredCharts: Chart[];
     if (difficulty === "ALL") {
-        filteredCharts = sortedCharts.filter(c => c.info.grade === 3); // Master难度
+        filteredCharts = sortedCharts.filter(c => c.info.grade === chart.info.grade);
     } else {
         filteredCharts = sortedCharts.filter(c => c.info.level === difficulty);
     }
 
     // 找到当前谱面在筛选后列表中的位置
     const chartIndex = filteredCharts.findIndex(
-        c => c.music.id === chart.music.id && c.info.grade === chart.info.grade
+        c =>
+            c.id === chart.id ||
+            (c.music.id === chart.music.id && c.info.grade === chart.info.grade)
     );
 
     if (chartIndex === -1) return "-";
@@ -92,7 +97,7 @@ export function addPositionToCharts(charts: Chart[]): Chart[] {
 export async function getChartPositionFromCache(chart: Chart, difficulty: string): Promise<string> {
     try {
         // 从缓存中获取排序后的谱面数据
-        const cachedData = await localForage.getItem<ChartsSortCached>("chartsSortCached");
+        const cachedData = await localForage.getItem<ChartsSortCached>(CHARTS_SORT_CACHE_KEY);
         if (!cachedData || !cachedData.charts) {
             return "-";
         }
@@ -102,14 +107,16 @@ export async function getChartPositionFromCache(chart: Chart, difficulty: string
         // 根据难度筛选
         let filteredCharts: Chart[];
         if (difficulty === "ALL") {
-            filteredCharts = allCharts.filter(c => c.info.grade === 3); // Master难度
+            filteredCharts = allCharts.filter(c => c.info.grade === chart.info.grade);
         } else {
             filteredCharts = allCharts.filter(c => c.info.level === difficulty);
         }
 
         // 找到当前谱面在筛选后列表中的位置
         const chartIndex = filteredCharts.findIndex(
-            c => c.music.id === chart.music.id && c.info.grade === chart.info.grade
+            c =>
+                c.id === chart.id ||
+                (c.music.id === chart.music.id && c.info.grade === chart.info.grade)
         );
 
         if (chartIndex === -1) return "-";

@@ -89,4 +89,5 @@ export interface CachedMusicData {
     chartList: Record<number, Chart>;
     region: string;
     cachedAt: number;
+    verBuildTime?: string;
 }

@@ -326,6 +326,11 @@ export async function getB50({
     const newScores: ScoreResponse[] = [];
 
     for (const score of scores) {
+        // 排除宴会场曲目
+        if (score.chart.type === "utage" || score.chart.difficulty === "utage") {
+            continue;
+        }
+
         const scoreResponse: ScoreResponse = {
             id: score.chart.music.id,
             title: score.chart.music.title,

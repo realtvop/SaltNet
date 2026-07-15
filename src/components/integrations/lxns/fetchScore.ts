@@ -1,9 +1,10 @@
-import { convertDetailed, type User } from "@/components/data/user";
-import type { DivingFishB50, DivingFishFullRecord } from "../diving-fish/type";
+import { convertDetailed, type User } from "@/components/data/user/type";
+import type { DivingFishFullRecord } from "../diving-fish/type";
 import type { LXNSScore, LXNSUser } from "./type";
-import { getMusicInfoAsync } from "@/components/data/music";
+import { calculateB50FromRecords } from "../diving-fish";
 import { fetchLXNSApi } from "./fetch";
 import { toHalfWidth } from "@/utils";
+import { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
 
 function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
     return {
@@ -17,37 +18,12 @@ function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
         }[score.type] as "SD" | "DX",
         dxScore: score.dx_score,
         ds: 0, // LXNS does not provide ds
-        fc: score.fc,
-        fs: score.fs,
+        fc: score.fc ?? ComboStatus.None,
+        fs: score.fs ?? SyncStatus.None,
         achievements: score.achievements,
         ra: Math.floor(score.dx_rating),
         rate: score.rate,
         title: score.song_name,
-    };
-}
-
-async function getB50(scores: DivingFishFullRecord[]): Promise<DivingFishB50> {
-    const musicInfo = await getMusicInfoAsync();
-    const newScores: DivingFishFullRecord[] = [];
-    const oldScores: DivingFishFullRecord[] = [];
-
-    for (const score of scores) {
-        // Look up music info to determine if the song is new
-        const music = musicInfo?.musicList[score.song_id];
-        if (music?.info?.isNew) {
-            newScores.push(score);
-        } else {
-            oldScores.push(score);
-        }
-    }
-
-    // Sort by rating (ra) in descending order
-    newScores.sort((a, b) => b.ra - a.ra);
-    oldScores.sort((a, b) => b.ra - a.ra);
-
-    return {
-        dx: newScores.slice(0, 15), // Best 15 new version songs
-        sd: oldScores.slice(0, 35), // Best 35 old version songs
     };
 }
 
@@ -56,7 +32,7 @@ export async function fetchLXNSScore(user: User) {
     const lxScores = await fetchLXNSApi<LXNSScore[]>(user, "scores");
 
     const scores = lxScores.map(LXNS2DF);
-    const b50 = await getB50(scores);
+    const b50 = await calculateB50FromRecords(scores);
 
     return {
         name: toHalfWidth(userData.name),

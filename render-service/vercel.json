@@ -1,0 +1,9 @@
+{
+    "outputDirectory": "public",
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/api/render/$1"
+        }
+    ]
+}

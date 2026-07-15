@@ -92,7 +92,12 @@ export const cnVersions = [
     },
     {
         name: "舞萌DX 2025",
-        word: ["鏡", "彩"],
+        word: ["鏡"],
         releaseDate: "2024-09-12",
+    },
+    {
+        name: "舞萌DX 2026",
+        word: ["彩"],
+        releaseDate: "2025-03-13",
     },
 ];

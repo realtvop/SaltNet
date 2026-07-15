@@ -1,21 +1,27 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from "vue";
-    import { useRoute } from "vue-router";
+    import { useRoute, useRouter } from "vue-router";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import type { Chart } from "@/components/data/music/type";
     import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+    import { ComboStatus } from "@/components/data/maiTypes";
     import { getMusicInfoAsync } from "@/components/data/music";
     import { useShared } from "@/components/app/shared";
-    import B50ToRender from "@/components/rendering/b50.vue";
-    import domtoimage from "dom-to-image-more";
+    import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
+    import { isUtageGrade } from "@/components/data/chart/difficulty";
+    import {
+        type B50RenderChart as B50RenderChartPayload,
+        type B50RenderPayload,
+    } from "../../shared/rendering/b50-payload";
 
     const route = useRoute();
+    const router = useRouter();
     const shared = useShared();
     const userId = ref(route.params.id as string);
     const error = ref<string | null>(null);
@@ -24,14 +30,19 @@
 
     // 构建高效查找表
     async function buildMusicChartMap() {
-        const musicInfo = await getMusicInfoAsync();
-        if (!musicInfo) return;
-        const map = new Map();
-        for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
-            // key: `${song_id}-${level_index}`
-            map.set(`${chart.music.id}-${chart.info.grade}`, chart);
+        pending.value = true;
+        try {
+            const musicInfo = await getMusicInfoAsync();
+            if (!musicInfo) return;
+            const map = new Map();
+            for (const chart of Object.values(musicInfo.chartList) as Chart[]) {
+                // key: `${song_id}-${level_index}`
+                map.set(`${chart.music.id}-${chart.info.grade}`, chart);
+            }
+            musicChartMap.value = map;
+        } finally {
+            pending.value = false;
         }
-        musicChartMap.value = map;
     }
 
     onMounted(() => {
@@ -50,6 +61,47 @@
         return false;
     });
 
+    const isNb50Mode = computed(() => {
+        const queryValue = route.query.nb50;
+        if (typeof queryValue === "string") return queryValue.toLowerCase() === "y";
+        if (Array.isArray(queryValue))
+            return queryValue.some(item => typeof item === "string" && item.toLowerCase() === "y");
+        return false;
+    });
+
+    type ComboFilterMode = "ap" | "fc" | null;
+
+    const comboFilterMode = computed((): ComboFilterMode => {
+        const queryValue = route.query.combo_filter;
+        if (typeof queryValue === "string") {
+            const lower = queryValue.toLowerCase();
+            if (lower === "ap" || lower === "fc") return lower;
+        }
+        return null;
+    });
+
+    const modeLabel = computed(() => {
+        if (comboFilterMode.value === "ap") return "AP50";
+        if (comboFilterMode.value === "fc") return "FC50";
+        if (isNb50Mode.value) return "牛逼 50";
+        if (isFitDiffMode.value) return "拟合 B50";
+        return null;
+    });
+
+    function setMode(mode: "fit" | "ap" | "fc" | "nb") {
+        const query: Record<string, string> = {};
+        if (mode === "fit") query.fit_diff = "y";
+        else if (mode === "nb") query.nb50 = "y";
+        else query.combo_filter = mode;
+        router.replace({ query });
+    }
+
+    function clearMode() {
+        router.replace({ query: {} });
+    }
+
+    const hasDetailedData = computed(() => !!player.value?.data?.detailed);
+
     const errorMessage = computed(() => {
         if (!error.value) return "";
         const msg =
@@ -63,24 +115,31 @@
         if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
 
         const useFitDiff = isFitDiffMode.value;
-        const records = getSourceRecords(useFitDiff);
-        const charts = records
+        const comboFilter = comboFilterMode.value;
+
+        let records = getSourceRecords(useFitDiff || isNb50Mode.value || !!comboFilter);
+        records = filterByComboStatus(records, comboFilter);
+
+        let charts = records
             .map(record => convertDFRecordToChart(record, useFitDiff))
-            .filter((chart): chart is Chart => chart !== null);
+            .filter((chart): chart is Chart => chart !== null)
+            .filter(chart => !isUtageGrade(chart.info.grade));
+
+        if (isNb50Mode.value) {
+            charts = charts.filter(chart => {
+                const fitDiff = chart.info.stat?.fit_diff;
+                const constant = chart.info.constant;
+                if (typeof fitDiff !== "number" || typeof constant !== "number") return false;
+                return fitDiff > constant;
+            });
+        }
 
         const oldCharts = charts.filter(chart => chart.music.info.isNew === false);
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);
 
-        if (useFitDiff) {
-            return {
-                old: sortCharts(oldCharts, 35),
-                newer: sortCharts(newCharts, 15),
-            };
-        }
-
         return {
-            old: oldCharts.slice(0, 35),
-            newer: newCharts.slice(0, 15),
+            old: sortCharts(oldCharts, 35),
+            newer: sortCharts(newCharts, 15),
         };
     });
 
@@ -139,17 +198,39 @@
         };
     }
 
-    function getSourceRecords(useFitDiff: boolean): DivingFishFullRecord[] {
+    function getSourceRecords(requireDetailed: boolean): DivingFishFullRecord[] {
         const detailedRecords = player.value?.data?.detailed
             ? Object.values(player.value.data.detailed)
             : [];
 
-        if (useFitDiff && detailedRecords.length) return detailedRecords;
+        if (detailedRecords.length) return detailedRecords;
+
+        if (requireDetailed) return [];
 
         const b50Records = player.value?.data?.b50;
         if (!b50Records) return [];
 
         return [...(b50Records.sd ?? []), ...(b50Records.dx ?? [])];
+    }
+
+    function filterByComboStatus(
+        records: DivingFishFullRecord[],
+        mode: ComboFilterMode
+    ): DivingFishFullRecord[] {
+        if (!mode) return records;
+        if (mode === "ap") {
+            return records.filter(
+                r => r.fc === ComboStatus.AllPerfect || r.fc === ComboStatus.AllPerfectPlus
+            );
+        }
+        return records.filter(r =>
+            [
+                ComboStatus.FullCombo,
+                ComboStatus.FullComboPlus,
+                ComboStatus.AllPerfect,
+                ComboStatus.AllPerfectPlus,
+            ].includes(r.fc)
+        );
     }
 
     function sortCharts(charts: Chart[], limit: number): Chart[] {
@@ -186,131 +267,49 @@
         return Math.round(value * 10) / 10;
     }
 
-    function getB50Png() {
-        return domtoimage.toPng(document.getElementById("player-b50-for-rendering"), {
-            scale: 2,
-            width: 1175,
-            height: 1365,
-        });
-    }
-
-    function generateRenderUrl(endpoint: string): string {
-        const params = new URLSearchParams();
-
-        const sdData = b50SdCharts.value.map(chart => ({
-            song_id: chart.music.info.id,
-            title: chart.music.info.title,
-            type: chart.music.info.type,
-            level_index: chart.info.grade,
-            ds: chart.info.constant,
-            achievements: chart.score?.achievements,
-            fc: chart.score?.comboStatus,
-            fs: chart.score?.syncStatus,
-            rate: chart.score?.rankRate,
-            ra: chart.score?.deluxeRating,
-        }));
-
-        const dxData = b50DxCharts.value.map(chart => ({
-            song_id: chart.music.info.id,
-            title: chart.music.info.title,
-            type: chart.music.info.type,
-            level_index: chart.info.grade,
-            ds: chart.info.constant,
-            achievements: chart.score?.achievements,
-            fc: chart.score?.comboStatus,
-            fs: chart.score?.syncStatus,
-            rate: chart.score?.rankRate,
-            ra: chart.score?.deluxeRating,
-        }));
-
-        params.append("s", JSON.stringify(sdData));
-        params.append("d", JSON.stringify(dxData));
-        params.append("n", getUserDisplayName(player.value));
-
-        const secondaryName =
-            player.value?.remark &&
-            (player.value?.data?.name ??
-                player.value?.divingFish?.name ??
-                player.value?.inGame?.name)
-                ? (player.value.data?.name ??
-                  player.value.divingFish?.name ??
-                  player.value.inGame?.name)
-                : "";
-        if (secondaryName) {
-            params.append("o", secondaryName);
-        }
-
-        if (displayedRating.value) {
-            params.append("r", displayedRating.value.toString());
-        }
-
-        return `${endpoint}?deviceScaleFactor=2&width=1175&height=1365&url=https%3A%2F%2Fsalt.realtvop.top%2F%3Fgenb50%26${params.toString().replace(/&/g, "%26")}`;
-    }
-
-    function isIOSDevice(): boolean {
-        const ua = navigator.userAgent;
-        // iPadOS may report as MacIntel — detect via touch points in that case
-        const isIpadAsMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-        return /iPad|iPhone|iPod/.test(ua) || isIpadAsMac;
-    }
-
-    function isFirefoxBasedBrowser(): boolean {
-        const ua = navigator.userAgent;
-        return /Firefox\//.test(ua) || (/Gecko\//.test(ua) && !/like Gecko/.test(ua));
-    }
-
-    function isLocalRenderSupported(): boolean {
-        // Disallow local rendering on iOS and Firefox-based browsers; allow all other browsers
-        return !isIOSDevice() && !isFirefoxBasedBrowser();
-    }
-
     function downloadB50Png() {
-        function onlineRenderAndDownload() {
-            const renderOriginUrl = generateRenderUrl(
-                import.meta.env.VITE_puppeteer_renderer_improved_ORIGIN_URL
-            );
-            window.open(renderOriginUrl, "_blank");
+        async function renderLocalBlob(): Promise<Blob> {
+            return renderB50WithTakumi(buildB50RenderPayload());
         }
-
-        const isSupported = isLocalRenderSupported();
-
-        const baseActions = [
-            {
-                text: "取消",
-            },
-        ];
 
         const copyAction = {
             text: "复制",
-            onClick: () =>
-                getB50Png()
-                    .then((dataUrl: string) => {
-                        return fetch(dataUrl)
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error("获取图片数据失败");
-                                }
-                                return response.blob();
-                            })
-                            .then(blob => {
-                                const clipboardItem = new ClipboardItem({ "image/png": blob });
-                                return navigator.clipboard.write([clipboardItem]);
-                            });
-                    })
-                    .then(() => {
-                        snackbar({ message: "B50 图片已成功复制到剪贴板!" });
-                    })
-                    .catch(() => {
-                        snackbar({ message: "复制失败，请检查浏览器权限或稍后重试。" });
-                    }),
+            onClick: async () => {
+                const renderingSnackbar = snackbar({
+                    message: "正在渲染 B50...",
+                    autoCloseDelay: 0,
+                });
+                try {
+                    const blob = await renderLocalBlob();
+                    const clipboardItem = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([clipboardItem]);
+                    renderingSnackbar.open = false;
+                    snackbar({ message: "B50 图片已成功复制到剪贴板!" });
+                } catch (err) {
+                    renderingSnackbar.open = false;
+                    snackbar({
+                        message:
+                            err instanceof Error
+                                ? err.message
+                                : "复制失败，请检查浏览器权限或稍后重试。",
+                    });
+                }
+            },
         };
 
         const downloadAction = {
             text: "下载",
-            onClick: () =>
-                getB50Png().then((dataUrl: string) => {
+            onClick: async () => {
+                const renderingSnackbar = snackbar({
+                    message: "正在渲染 B50...",
+                    autoCloseDelay: 0,
+                });
+
+                try {
+                    const blob = await renderLocalBlob();
+                    const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
-                    link.href = dataUrl;
+                    link.href = url;
                     const formattedTime = new Date().toLocaleString("zh-CN", {
                         year: "numeric",
                         month: "2-digit",
@@ -319,19 +318,65 @@
                         minute: "2-digit",
                         hour12: false,
                     });
-                    link.download = `B50_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
+                    const filePrefix = modeLabel.value ?? "B50";
+                    link.download = `${filePrefix}_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
                     link.click();
-                }),
+                    URL.revokeObjectURL(url);
+                    renderingSnackbar.open = false;
+                } catch (err) {
+                    renderingSnackbar.open = false;
+                    snackbar({
+                        message: err instanceof Error ? err.message : "下载失败，请稍后重试。",
+                    });
+                }
+            },
+        };
+
+        const localAction = {
+            text: "本地",
+            onClick: () => showLocalSaveOptions(),
         };
 
         const onlineRenderAction = {
             text: "在线",
-            onClick: () => onlineRenderAndDownload(),
+            onClick: () => {
+                const rendererUrl = getRendererBaseUrl();
+                if (!rendererUrl) {
+                    snackbar({ message: "未配置 Takumi 渲染服务地址" });
+                    return;
+                }
+                try {
+                    const form = document.createElement("form");
+                    form.method = "POST";
+                    form.action = `${rendererUrl}/render/b50`;
+                    form.target = "_blank";
+                    form.style.display = "none";
+
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "payload";
+                    input.value = JSON.stringify(buildB50RenderPayload());
+
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                } catch (err) {
+                    snackbar({
+                        message: err instanceof Error ? err.message : "在线渲染失败。",
+                    });
+                }
+            },
         };
 
-        // If local rendering is supported, first ask whether to use local or online rendering.
-        // If local is chosen, show a second dialog allowing copy or download.
-        const showLocalSaveOptions = () => {
+        const isSupported = true; //isLocalRenderSupported();
+        const baseActions = [
+            {
+                text: "取消",
+            },
+        ];
+
+        function showLocalSaveOptions() {
             const localActions = [...baseActions, copyAction, downloadAction];
 
             dialog({
@@ -343,18 +388,11 @@
                 onOpen: markDialogOpen,
                 onClose: markDialogClosed,
             });
-        };
+        }
 
         const mainActions = [
             ...baseActions,
-            ...(isSupported
-                ? [
-                      {
-                          text: "本地",
-                          onClick: () => showLocalSaveOptions(),
-                      },
-                  ]
-                : []),
+            ...(isSupported ? [localAction] : []),
             onlineRenderAction,
         ];
 
@@ -370,12 +408,54 @@
             onClose: markDialogClosed,
         });
     }
+
+    function buildB50RenderPayload(): B50RenderPayload {
+        return {
+            playerName: getUserDisplayName(player.value),
+            playerSecondaryName: getPlayerSecondaryName(),
+            playerRating: displayedRating.value || null,
+            modeLabel: modeLabel.value ?? "B50",
+            showDxScore: shared.appSettings.showDxScoreInB50,
+            sd: b50SdCharts.value.map(toRenderChartPayload),
+            dx: b50DxCharts.value.map(toRenderChartPayload),
+        };
+    }
+
+    function toRenderChartPayload(chart: Chart): B50RenderChartPayload {
+        return {
+            songId: chart.music.info.id,
+            title: chart.music.info.title,
+            type: chart.music.info.type,
+            levelIndex: chart.info.grade,
+            ds: chart.info.constant,
+            achievements: chart.score?.achievements ?? null,
+            fc: chart.score?.comboStatus ?? "",
+            fs: chart.score?.syncStatus ?? "",
+            rate: chart.score?.rankRate ?? "",
+            ra: chart.score?.deluxeRating ?? 0,
+            deluxeScore: chart.score?.deluxeScore,
+            deluxeScoreMax: chart.info.deluxeScoreMax,
+        };
+    }
+
+    function getPlayerSecondaryName(): string | null {
+        if (!player.value?.remark) return null;
+        return (
+            player.value.data?.name ??
+            player.value.divingFish?.name ??
+            player.value.inGame?.name ??
+            null
+        );
+    }
+
+    function getRendererBaseUrl(): string {
+        return (import.meta.env.VITE_TAKUMI_RENDERER_URL || "").replace(/\/+$/, "");
+    }
 </script>
 
 <template>
     <div class="player-profile">
         <div v-if="pending" class="loading-message">
-            <div class="loading-spinner"></div>
             <p>加载中，请稍候...</p>
         </div>
 
@@ -406,40 +486,52 @@
                 </div>
                 <mdui-button-icon icon="download" @click="downloadB50Png"></mdui-button-icon>
             </div>
+            <div v-if="hasDetailedData" class="mode-selector">
+                <mdui-chip
+                    :selected="isFitDiffMode"
+                    @click="isFitDiffMode ? clearMode() : setMode('fit')"
+                >
+                    拟合 B50
+                </mdui-chip>
+                <mdui-chip
+                    :selected="comboFilterMode === 'ap'"
+                    @click="comboFilterMode === 'ap' ? clearMode() : setMode('ap')"
+                >
+                    AP50
+                </mdui-chip>
+                <mdui-chip
+                    :selected="comboFilterMode === 'fc'"
+                    @click="comboFilterMode === 'fc' ? clearMode() : setMode('fc')"
+                >
+                    FC50
+                </mdui-chip>
+                <mdui-chip :selected="isNb50Mode" @click="isNb50Mode ? clearMode() : setMode('nb')">
+                    牛逼 50
+                </mdui-chip>
+            </div>
             <ScoreSection
                 v-if="b50SdCharts.length"
                 title="旧版本成绩"
                 :scores="b50SdCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <ScoreSection
                 v-if="b50DxCharts.length"
                 title="新版本成绩"
                 :scores="b50DxCharts"
                 :chartInfoDialog="chartInfoDialog"
+                :showDxScoreNum="shared.appSettings.showDxScoreInB50"
             />
             <p
                 v-if="!(b50SdCharts.length || b50DxCharts.length)"
                 style="text-align: center; color: orange; margin-top: 20px"
             >
                 未更新成绩或成绩更新失败，请到“用户”更新成绩
+                <br />
+                也可能是正在加载谱面信息，如已更新成绩请稍等
             </p>
         </div>
-
-        <B50ToRender
-            v-if="player && player.data"
-            :b50SdCharts="b50SdCharts"
-            :b50DxCharts="b50DxCharts"
-            :playerName="getUserDisplayName(player)"
-            :playerSecondaryName="
-                player.remark &&
-                (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
-                    ? (player.data.name ?? player.divingFish?.name ?? player.inGame?.name)
-                    : ''
-            "
-            :playerRating="displayedRating"
-            style="display: none"
-        />
 
         <div v-else class="error-message">
             <h2>无法加载玩家数据</h2>
@@ -470,25 +562,6 @@
         text-align: center;
         margin-top: 50px;
         color: var(--text-secondary-color);
-    }
-
-    .loading-spinner {
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top: 4px solid var(--accent-color, #fff);
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-    }
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
     }
 
     .player-b50 {
@@ -531,6 +604,14 @@
         font-size: 0.9em;
         color: var(--mdui-color-on-surface-variant);
         font-weight: normal;
+    }
+
+    .mode-selector {
+        display: flex;
+        gap: 8px;
+        padding: 0 20px;
+        margin-bottom: 16px;
+        overflow-x: scroll;
     }
 
     .error-message {

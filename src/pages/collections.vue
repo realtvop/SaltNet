@@ -37,22 +37,23 @@
     }
 
     const ownedCollections = computed<Record<number, number[]>>(() => {
-        if (!users || !users[0] || !users[0].data.items)
-            return { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
-
         const owned: Record<number, number[]> = { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
-        for (const collection of users[0].data.items[1]) owned[1].push(collection.itemId);
-        for (const collection of users[0].data.items[2]) owned[2].push(collection.itemId);
-        for (const collection of users[0].data.items[3]) owned[3].push(collection.itemId);
-        if (users[0].data.items[9]) {
-            for (const collection of users[0].data.items[9]) owned[9].push(collection.itemId);
-        }
-        if (users[0].data.items[10]) {
-            for (const collection of users[0].data.items[10]) owned[10].push(collection.itemId);
-        }
-        if (users[0].data.items[11]) {
-            for (const collection of users[0].data.items[11]) owned[11].push(collection.itemId);
-        }
+        const items = users?.[0]?.data?.items;
+        const getItemsByKind = (kind: CollectionKind) =>
+            Array.isArray(items?.[kind]) ? items[kind] : [];
+
+        for (const collection of getItemsByKind(CollectionKind.Plate))
+            owned[CollectionKind.Plate].push(collection.itemId);
+        for (const collection of getItemsByKind(CollectionKind.Title))
+            owned[CollectionKind.Title].push(collection.itemId);
+        for (const collection of getItemsByKind(CollectionKind.Icon))
+            owned[CollectionKind.Icon].push(collection.itemId);
+        for (const collection of getItemsByKind(CollectionKind.Character))
+            owned[CollectionKind.Character].push(collection.itemId);
+        for (const collection of getItemsByKind(CollectionKind.Partner))
+            owned[CollectionKind.Partner].push(collection.itemId);
+        for (const collection of getItemsByKind(CollectionKind.Frame))
+            owned[CollectionKind.Frame].push(collection.itemId);
 
         return owned;
     });

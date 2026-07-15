@@ -10,7 +10,7 @@ declare global {
 }
 
 export function checkForUpdate() {
-    fetch("/latest.json")
+    fetch(`/latest.json?t=${Date.now()}`)
         .then(r => r.text())
         .then(t => JSON.parse(t))
         .then(l => {
@@ -43,7 +43,6 @@ broadcast.onmessage = () => {
 };
 
 function showSnackBar(message: string) {
-    if (window.location.search.startsWith("?genb50")) return;
     return snackbar({
         message,
         placement: "bottom",
