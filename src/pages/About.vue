@@ -1,4 +1,6 @@
 <script setup lang="ts">
+    import { chartMetadataUpdatedAt } from "@/components/data/music";
+
     const buildTime = window.spec?.currentVersionBuildTime;
 </script>
 
@@ -21,6 +23,13 @@
                             buildTime === "%buildTime%"
                                 ? "开发版本"
                                 : new Date(Number(buildTime)).toLocaleString()
+                        }}
+                        <br />
+                        谱面元数据最后更新时间:
+                        {{
+                            chartMetadataUpdatedAt
+                                ? new Date(chartMetadataUpdatedAt).toLocaleString()
+                                : "尚未加载"
                         }}
                     </div>
                     <br />

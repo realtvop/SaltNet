@@ -101,6 +101,7 @@ export interface CachedMusicData {
     musicList: Record<number, Music>;
     chartList: Record<number, Chart>;
     metadata?: MusicMetadataState;
+    metadataUpdatedAt?: number;
     region: string;
     cachedAt: number;
     verBuildTime?: string;

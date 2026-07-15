@@ -39,12 +39,17 @@ async function loadFromCache(): Promise<CachedMusicData | null> {
 /**
  * Save music data to cache
  */
-async function saveToCache(data: SavedMusicList, region: string): Promise<void> {
+async function saveToCache(
+    data: SavedMusicList,
+    region: string,
+    metadataUpdatedAt: number
+): Promise<void> {
     try {
         const cacheData: CachedMusicData = {
             musicList: data.musicList,
             chartList: data.chartList,
             metadata: musicMetadataState ?? undefined,
+            metadataUpdatedAt,
             region,
             cachedAt: Date.now(),
         };
@@ -99,6 +104,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
             applyMusicMetadata(cached.metadata ?? null, musicData);
+            chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;
             isMusicDataLoading.value = false;
             return musicData;
@@ -114,10 +120,12 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
     try {
         const saltMetaData = await fetchSaltMetaMusicList();
         if (saltMetaData) {
+            const metadataUpdatedAt = Date.now();
             musicData = saltMetaData.music;
             applyMusicMetadata(saltMetaData.metadata, musicData);
+            chartMetadataUpdatedAt.value = metadataUpdatedAt;
             currentRegion = region;
-            saveToCache(saltMetaData.music, region);
+            saveToCache(saltMetaData.music, region, metadataUpdatedAt);
         }
     } finally {
         isMusicDataLoading.value = false;
@@ -128,6 +136,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
             applyMusicMetadata(cached.metadata ?? null, musicData);
+            chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;
         }
     }
@@ -188,6 +197,7 @@ export async function refreshMusicData(): Promise<SavedMusicList | null> {
 export function clearMusicData(): void {
     musicData = null;
     musicMetadataState = null;
+    chartMetadataUpdatedAt.value = null;
     maimaiVersionsCN.splice(0, maimaiVersionsCN.length);
     currentRegion = null;
     isMusicDataLoading.value = true;
@@ -198,3 +208,4 @@ export { MusicSort };
 
 export const maimaiVersionsCN = reactive<string[]>([]);
 export const isMusicDataLoading = ref<boolean>(true);
+export const chartMetadataUpdatedAt = ref<number | null>(null);
