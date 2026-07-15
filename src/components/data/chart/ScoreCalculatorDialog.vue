@@ -5,8 +5,8 @@
         close-on-overlay-click
         :open="open"
         :fullscreen="isSmallScreen"
-        @open="markDialogOpen"
-        @close="handleClose"
+        @open.self="markDialogOpen"
+        @close.self="handleClose"
     >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon icon="close" @click="dialogRef.open = false"></mdui-button-icon>

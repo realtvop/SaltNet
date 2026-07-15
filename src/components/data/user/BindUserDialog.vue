@@ -3,9 +3,8 @@
         ref="dialogRef"
         headline=""
         description=""
-        @open="markDialogOpen"
-        @close="handleClose"
-        @closed="markDialogClosed"
+        @open.self="markDialogOpen"
+        @close.self="handleClose"
         close-on-esc
     >
         <mdui-top-app-bar slot="header">
@@ -218,8 +217,8 @@
         }
     );
 
-    const handleClose = () => {
-        // 同步父组件的 modelValue，但不重复 markDialogClosed（已在 @closed 事件中调用）
+    const handleClose = (event: Event) => {
+        markDialogClosed(event);
         if (props.modelValue) emit("update:modelValue", false);
     };
 

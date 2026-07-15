@@ -547,7 +547,7 @@
     </div>
 
     <ChartInfoDialog
-        :open="chartInfoDialog.open"
+        v-model:open="chartInfoDialog.open"
         :chart="chartInfoDialog.chart"
         :targetUserId="userId"
         singleLevel

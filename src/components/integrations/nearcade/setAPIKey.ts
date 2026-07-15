@@ -15,7 +15,7 @@ export function setAPIKey(): Promise<string> {
             return true;
         },
         onOpen: markDialogOpen,
-        onClosed: markDialogClosed,
+        onClose: markDialogClosed,
         closeOnEsc: true,
         closeOnOverlayClick: true,
         confirmText: "保存",
