@@ -94,12 +94,9 @@
             </mdui-tab>
         </mdui-tabs>
 
-        <div v-if="currentChart" style="padding-top: 0.5rem;">
+        <div v-if="currentChart" style="padding-top: 0.5rem">
             <!-- 当前用户成绩信息 -->
-            <div
-                class="score-summary"
-                v-if="currentChartScore && currentChartScore.rankRate"
-            >
+            <div class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
                 <!-- 第一行：rank图标和achievement百分比 -->
                 <div class="score-row-main">
                     <div class="rank-section">
@@ -138,7 +135,9 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value" v-if="currentChartScore.playCount">{{ currentChartScore.playCount }} 次</div>
+                            <div class="dx-score-value" v-if="currentChartScore.playCount">
+                                {{ currentChartScore.playCount }} 次
+                            </div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
@@ -220,14 +219,22 @@
             <!-- 谱面基本信息 -->
             <mdui-card class="chart-basic-info" variant="filled" clickable>
                 <mdui-collapse>
-                    <mdui-collapse-item trigger=".chart-basic-info" @open="chartBasicInfoExpanded = true" @close="chartBasicInfoExpanded = false">
+                    <mdui-collapse-item
+                        trigger=".chart-basic-info"
+                        @open="chartBasicInfoExpanded = true"
+                        @close="chartBasicInfoExpanded = false"
+                    >
                         <div slot="header" class="chart-basic-info-header">
                             <span class="info-label">{{ currentChart.info.charter }}</span>
-                            <span v-if="!chartBasicInfoExpanded && currentChart.info.stat">{{ currentChart.info.stat.fit_diff.toFixed(1) }}</span>
-                            <mdui-icon :name="`keyboard_arrow_${chartBasicInfoExpanded ? 'up' : 'down'}`"></mdui-icon>
+                            <span v-if="!chartBasicInfoExpanded && currentChart.info.stat">
+                                {{ currentChart.info.stat.fit_diff.toFixed(1) }}
+                            </span>
+                            <mdui-icon
+                                :name="`keyboard_arrow_${chartBasicInfoExpanded ? 'up' : 'down'}`"
+                            ></mdui-icon>
                             <!-- <span v-if="getCurrentChartPosition(currentChart) !== '-'">{{ getCurrentChartPosition(currentChart) }}</span> -->
                         </div>
-                        <div style="height: 1rem;"></div>
+                        <div style="height: 1rem"></div>
                         <div>
                             <!-- <div class="info-row">
                                 <span class="info-label">谱师</span>
@@ -243,7 +250,10 @@
                                 <span class="info-label">拟合定数</span>
                                 <span
                                     class="info-value"
-                                    @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
+                                    @click="
+                                        currentChart.info.stat &&
+                                        showChartStats(currentChart.info.stat)
+                                    "
                                     style="cursor: pointer"
                                 >
                                     {{
@@ -257,9 +267,14 @@
                                 <span class="info-label">游玩次数</span>
                                 <span class="info-value">{{ currentChart.score.playCount }}</span>
                             </div> -->
-                            <div class="info-row" v-if="getCurrentChartPosition(currentChart) !== '-'">
+                            <div
+                                class="info-row"
+                                v-if="getCurrentChartPosition(currentChart) !== '-'"
+                            >
                                 <span class="info-label">项目位置</span>
-                                <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
+                                <span class="info-value">
+                                    {{ getCurrentChartPosition(currentChart) }}
+                                </span>
                             </div>
                         </div>
                         <!-- Note 统计 -->
@@ -296,7 +311,9 @@
                                         </tr>
                                         <tr class="total-row">
                                             <td><strong>总计</strong></td>
-                                            <td class="num-val font-bold">{{ noteCounts.total }}</td>
+                                            <td class="num-val font-bold">
+                                                {{ noteCounts.total }}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
