@@ -10,12 +10,9 @@ import SongsPage from "../../pages/songs.vue";
 import CollectionsPage from "../../pages/collections.vue";
 import RatingHistoryPage from "../../pages/rating-history.vue";
 import ShopPage from "../../pages/Shop.vue";
-import MePage from "../../pages/me.vue";
-import OAuthCallbackPage from "../../pages/oauth-callback.vue";
 
 import { useRouterStore } from "../../stores/router";
 import { useDialogStore } from "../../stores/dialog";
-const isDBEnabled = !!import.meta.env.VITE_DB_URL;
 
 const routes = [
     { path: "/", component: IndexPage },
@@ -29,13 +26,6 @@ const routes = [
     { path: "/about", component: AboutPage },
     { path: "/collections", component: CollectionsPage },
     { path: "/nearcade", component: ShopPage },
-    // Only register /me and OAuth callback routes when DB is enabled
-    ...(isDBEnabled
-        ? [
-              { path: "/me", component: MePage },
-              { path: "/oauth/callback", component: OAuthCallbackPage },
-          ]
-        : []),
 ];
 
 const router = createRouter({

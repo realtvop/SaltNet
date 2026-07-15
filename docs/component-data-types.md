@@ -537,9 +537,10 @@ enum MusicGenre {
 
 ### 2. 音乐库缓存
 
-- **存储位置**: 静态资源 (`src/assets/music/charts.json`)
-- **加载方式**: 编译时导入
-- **数据转换**: 启动时通过`convertDFMusicList`转换
+- **数据源**: SaltMeta next compacted metadata (`https://meta.salt.realtvop.top/meta.next.compacted.json`)
+- **存储位置**: IndexedDB / localForage
+- **加载方式**: 启动时优先读取本地缓存，并后台尝试更新远程 SaltMeta 数据
+- **数据转换**: 通过 SaltMeta next 转换器稳定转换为现有 `SavedMusicList`
 
 ### 3. 谱面排序缓存
 
@@ -553,7 +554,8 @@ enum MusicGenre {
 
 ### 1. 谱面ID映射
 
-- B50数据和Songs页面都使用`${song_id}-${level_index}`作为谱面唯一标识
+- B50数据和Songs页面都使用`${music_id}-${level_index}`作为谱面唯一标识
+- DX 谱面的内部 `music_id` 使用 SaltMeta 原曲目 ID + 10000，SD 使用原曲目 ID
 - 详细成绩数据(`detailed`)也使用相同的key格式
 
 ### 2. 数据类型转换

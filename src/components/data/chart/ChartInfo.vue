@@ -30,39 +30,47 @@
             </mdui-top-app-bar-title>
         </mdui-top-app-bar>
 
-        <img
-            class="song-cover"
-            :src="chart?.music ? getCoverURL(chart.music.id) : ''"
-            crossorigin="anonymous"
-        />
-
-        <div class="chip-container" v-if="chart?.music" center>
-            <mdui-chip
-                icon="music_note"
-                @click="copyTextToClipboard(chart.music.info.id.toString() || '?')"
-                style="cursor: pointer"
-            >
-                id{{ chart.music.info.id || "?" }}
-            </mdui-chip>
-            <mdui-chip
-                icon="music_note"
-                @click="copyTextToClipboard(chart.music.info.artist || '未知')"
-                style="cursor: pointer"
-            >
-                {{ chart.music.info.artist || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="category" style="cursor: pointer">
-                {{ chart.music.info.genre || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="timer" style="cursor: pointer">
-                {{ chart.music.info.bpm || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="access_time_filled" style="cursor: pointer">
-                {{ chart.music.info.from || "未知" }}
-            </mdui-chip>
-            <mdui-chip icon="star" style="cursor: pointer">
-                {{ chart.music.info.type || "未知" }}
-            </mdui-chip>
+        <div class="song-header" v-if="chart?.music">
+            <div class="song-cover-container">
+                <img
+                    class="song-cover"
+                    :src="chart?.music ? getCoverURL(chart.music.id) : ''"
+                    crossorigin="anonymous"
+                />
+                <div class="type-pill" :type="chart.music.info.type">
+                    <span>{{ chart.music.info.type }}</span>
+                </div>
+            </div>
+            <div class="song-info">
+                <div
+                    class="song-info-item clickable"
+                    @click="copyTextToClipboard(chart?.music?.info.id?.toString() || '?')"
+                >
+                    <mdui-icon name="numbers" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.id || "?" }}</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="category" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.genre || "未知" }}</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="speed" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.bpm || "未知" }} BPM</span>
+                </div>
+                <div class="song-info-item">
+                    <mdui-icon name="calendar_month" class="info-icon"></mdui-icon>
+                    <span class="info-text">{{ chart?.music?.info.from || "未知" }}</span>
+                </div>
+                <div
+                    class="song-info-item clickable"
+                    @click="copyTextToClipboard(chart?.music?.info.artist || '未知')"
+                >
+                    <mdui-icon name="person" class="info-icon"></mdui-icon>
+                    <span class="info-text font-bold artist-text">
+                        {{ chart?.music?.info.artist || "未知" }}
+                    </span>
+                </div>
+            </div>
         </div>
 
         <mdui-tabs
@@ -77,7 +85,7 @@
                 :value="chartInfo.id.toString()"
                 @click="expandedChartId = chartInfo.id"
             >
-                <span class="difficulty-constant">{{ chartInfo.info.constant }}</span>
+                <span class="difficulty-constant">{{ chartInfo.info.constant.toFixed(1) }}</span>
                 <div class="tab-header" slot="icon">
                     <span class="difficulty-badge" :class="`difficulty-${chartInfo.info.grade}`">
                         {{ getChartDifficultyBadgeLabel(chartInfo.info.grade) }}
@@ -86,7 +94,7 @@
             </mdui-tab>
         </mdui-tabs>
 
-        <div class="tab-content" v-if="currentChart">
+        <div v-if="currentChart" style="padding-top: 0.5rem">
             <!-- 当前用户成绩信息 -->
             <div class="score-summary" v-if="currentChartScore && currentChartScore.rankRate">
                 <!-- 第一行：rank图标和achievement百分比 -->
@@ -127,7 +135,9 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value">{{ currentChartScore.playCount }} 次</div>
+                            <div class="dx-score-value" v-if="currentChartScore.playCount">
+                                {{ currentChartScore.playCount }} 次
+                            </div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
                             </div>
@@ -149,100 +159,169 @@
                 </div>
             </div>
 
-            <div class="chart-search-urls">
-                <mdui-chip
-                    v-for="site in getChartSearchUrls(currentChart)"
-                    :href="site.url"
-                    target="_blank"
-                    :icon="site.icon"
-                >
-                    {{ site.name }}
-                </mdui-chip>
+            <div class="chart-search-urls" v-if="currentChart">
+                <mdui-button variant="tonal" icon="calculate" @click="showScoreCalculator = true">
+                    容错
+                </mdui-button>
+                <mdui-dropdown @open.stop @close.stop>
+                    <mdui-button slot="trigger" variant="tonal" icon="video_library">
+                        搜索
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="site in getChartSearchUrls(currentChart)"
+                            :key="site.name"
+                            :href="site.url"
+                            target="_blank"
+                            :icon="site.icon"
+                        >
+                            {{ site.name }}
+                        </mdui-menu-item>
+                        <mdui-divider></mdui-divider>
+                        <mdui-menu-item
+                            key="simaihub"
+                            :href="`https://simaihub.dev/music/${currentChart.music.id}`"
+                            target="_blank"
+                            icon="download"
+                        >
+                            下载谱面
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
+                <mdui-dropdown stay-open-on-click @open.stop @close.stop>
+                    <mdui-button
+                        slot="trigger"
+                        variant="tonal"
+                        :icon="isSavedInAnyFavoriteList ? 'bookmark' : 'bookmark_border'"
+                    >
+                        收藏
+                    </mdui-button>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="fav in shared.favorites"
+                            :key="fav.name"
+                            :value="fav.name"
+                            @click="toggleFavorite(fav, currentChart)"
+                            :style="{
+                                backgroundColor: isFavoriteChart(fav, currentChart)
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                            }"
+                            :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
+                        >
+                            {{ fav.name }}
+                        </mdui-menu-item>
+                        <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
             </div>
 
             <!-- 谱面基本信息 -->
-            <div class="chart-basic-info">
-                <div class="info-row">
-                    <span class="info-label">谱师</span>
-                    <span
-                        class="info-value"
-                        @click="copyTextToClipboard(currentChart.info.charter)"
-                        style="cursor: pointer"
+            <mdui-card class="chart-basic-info" variant="filled" clickable>
+                <mdui-collapse>
+                    <mdui-collapse-item
+                        trigger=".chart-basic-info"
+                        @open="chartBasicInfoExpanded = true"
+                        @close="chartBasicInfoExpanded = false"
                     >
-                        {{ currentChart.info.charter }}
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">拟合定数</span>
-                    <span
-                        class="info-value"
-                        @click="currentChart.info.stat && showChartStats(currentChart.info.stat)"
-                        style="cursor: pointer"
-                    >
-                        {{
-                            currentChart.info.stat
-                                ? currentChart.info.stat.fit_diff.toFixed(4)
-                                : "蛤 怎么没数据"
-                        }}
-                    </span>
-                </div>
-                <!-- <div class="info-row" v-if="currentChart.score?.playCount">
-                    <span class="info-label">游玩次数</span>
-                    <span class="info-value">{{ currentChart.score.playCount }}</span>
-                </div> -->
-                <div class="info-row">
-                    <span class="info-label">项目位置</span>
-                    <span class="info-value">{{ getCurrentChartPosition(currentChart) }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">
-                        Note 统计
-                        <br />
-                        <br />
-
-                        <mdui-button
-                            variant="text"
-                            icon="calculate"
-                            @click="showScoreCalculator = true"
-                        >
-                            容错
-                        </mdui-button>
-                        <br />
-                        <mdui-dropdown stay-open-on-click @open.stop @close.stop>
-                            <mdui-button slot="trigger" variant="text" icon="playlist_add">
-                                收藏
-                            </mdui-button>
-                            <mdui-menu>
-                                <mdui-menu-item
-                                    v-for="fav in shared.favorites"
-                                    :key="fav.name"
-                                    :value="fav.name"
-                                    @click="toggleFavorite(fav, currentChart)"
-                                    :style="{
-                                        backgroundColor: isFavoriteChart(fav, currentChart)
-                                            ? 'rgba(var(--mdui-color-primary),12%)'
-                                            : '',
-                                    }"
-                                    :icon="isFavoriteChart(fav, currentChart) ? 'check' : ''"
+                        <div slot="header" class="chart-basic-info-header">
+                            <span class="info-label">{{ currentChart.info.charter }}</span>
+                            <span v-if="!chartBasicInfoExpanded && currentChart.info.stat">
+                                {{ currentChart.info.stat.fit_diff.toFixed(1) }}
+                            </span>
+                            <mdui-icon
+                                :name="`keyboard_arrow_${chartBasicInfoExpanded ? 'up' : 'down'}`"
+                            ></mdui-icon>
+                            <!-- <span v-if="getCurrentChartPosition(currentChart) !== '-'">{{ getCurrentChartPosition(currentChart) }}</span> -->
+                        </div>
+                        <div style="height: 1rem"></div>
+                        <div>
+                            <!-- <div class="info-row">
+                                <span class="info-label">谱师</span>
+                                <span
+                                    class="info-value"
+                                    @click="copyTextToClipboard(currentChart.info.charter)"
+                                    style="cursor: pointer"
                                 >
-                                    {{ fav.name }}
-                                </mdui-menu-item>
-                                <mdui-menu-item icon="add" @click="newFavList">新增</mdui-menu-item>
-                            </mdui-menu>
-                        </mdui-dropdown>
-                    </span>
-                    <span class="info-value notes-breakdown">
-                        <span class="note-type">TAP: {{ noteCounts.tap }}</span>
-                        <span class="note-type">HOLD: {{ noteCounts.hold }}</span>
-                        <span class="note-type">SLIDE: {{ noteCounts.slide }}</span>
-                        <span class="note-type" v-if="noteCounts.hasTouch">
-                            TOUCH: {{ noteCounts.touch }}
-                        </span>
-                        <span class="note-type">BREAK: {{ noteCounts.break }}</span>
-                        <span class="note-total">总计: {{ noteCounts.total }}</span>
-                    </span>
-                </div>
-            </div>
+                                    {{ currentChart.info.charter }}
+                                </span>
+                            </div> -->
+                            <div class="info-row">
+                                <span class="info-label">拟合定数</span>
+                                <span
+                                    class="info-value"
+                                    @click="
+                                        currentChart.info.stat &&
+                                        showChartStats(currentChart.info.stat)
+                                    "
+                                    style="cursor: pointer"
+                                >
+                                    {{
+                                        currentChart.info.stat
+                                            ? currentChart.info.stat.fit_diff.toFixed(4)
+                                            : "蛤 怎么没数据"
+                                    }}
+                                </span>
+                            </div>
+                            <!-- <div class="info-row" v-if="currentChart.score?.playCount">
+                                <span class="info-label">游玩次数</span>
+                                <span class="info-value">{{ currentChart.score.playCount }}</span>
+                            </div> -->
+                            <div
+                                class="info-row"
+                                v-if="getCurrentChartPosition(currentChart) !== '-'"
+                            >
+                                <span class="info-label">项目位置</span>
+                                <span class="info-value">
+                                    {{ getCurrentChartPosition(currentChart) }}
+                                </span>
+                            </div>
+                        </div>
+                        <!-- Note 统计 -->
+                        <div class="notes-stats-section">
+                            <!-- <h3>Note 统计</h3> -->
+                            <div class="notes-table-container">
+                                <table class="notes-custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>类型</th>
+                                            <th>数量</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>TAP</td>
+                                            <td class="num-val">{{ noteCounts.tap }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>HOLD</td>
+                                            <td class="num-val">{{ noteCounts.hold }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>SLIDE</td>
+                                            <td class="num-val">{{ noteCounts.slide }}</td>
+                                        </tr>
+                                        <tr v-if="noteCounts.hasTouch">
+                                            <td>TOUCH</td>
+                                            <td class="num-val">{{ noteCounts.touch }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>BREAK</td>
+                                            <td class="num-val">{{ noteCounts.break }}</td>
+                                        </tr>
+                                        <tr class="total-row">
+                                            <td><strong>总计</strong></td>
+                                            <td class="num-val font-bold">
+                                                {{ noteCounts.total }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </mdui-collapse-item>
+                </mdui-collapse>
+            </mdui-card>
 
             <!-- Rating 阶段 -->
             <div
@@ -251,21 +330,31 @@
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 0;
-                    margin-top: 1rem;
                 "
             >
-                <h3 style="margin-bottom: 0">Rating 阶段</h3>
-                <mdui-select
-                    v-model="ratingDisplayMode"
-                    style="width: 5em; --mdui-comp-select-menu-container-shape: 8px"
-                    @change="handleDisplayModeChange"
-                >
-                    <mdui-menu-item value="简洁">简洁</mdui-menu-item>
-                    <mdui-menu-item value="吃分" v-if="chartRatingTables.filtered.length > 3">
-                        吃分
-                    </mdui-menu-item>
-                    <mdui-menu-item value="完整">全部</mdui-menu-item>
-                </mdui-select>
+                <h3 style="margin: 0">Rating 阶段</h3>
+                <mdui-dropdown @open.stop @close.stop>
+                    <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
+                        {{ ratingDisplayMode === "完整" ? "全部" : ratingDisplayMode }}
+                    </mdui-chip>
+                    <mdui-menu>
+                        <mdui-menu-item
+                            v-for="mode in availableRatingDisplayModes"
+                            :key="mode"
+                            :value="mode"
+                            @click="ratingDisplayMode = mode"
+                            :style="{
+                                backgroundColor:
+                                    ratingDisplayMode === mode
+                                        ? 'rgba(var(--mdui-color-primary),12%)'
+                                        : '',
+                            }"
+                            :icon="ratingDisplayMode === mode ? 'check' : ''"
+                        >
+                            {{ mode === "完整" ? "全部" : mode }}
+                        </mdui-menu-item>
+                    </mdui-menu>
+                </mdui-dropdown>
             </div>
             <mdui-list>
                 <mdui-list-item
@@ -414,6 +503,7 @@
     );
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
+    const chartBasicInfoExpanded = ref(false);
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
@@ -820,20 +910,6 @@
         });
     }
 
-    function handleDisplayModeChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        const value = target.value as RatingDisplayMode;
-
-        if (value) ratingDisplayMode.value = resolveAvailableRatingDisplayMode(value);
-        else {
-            // 阻止点击已经选择的项目时清空项目
-            const previousValue = ratingDisplayMode.value;
-            ratingDisplayMode.value = value;
-            ratingDisplayMode.value = previousValue;
-            // wtf
-        }
-    }
-
     watch(
         availableRatingDisplayModes,
         () => {
@@ -857,6 +933,11 @@
     const dxScoreStarsImg = computed(() => {
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
+
+    const isSavedInAnyFavoriteList = computed(() => {
+        if (!currentChart.value) return false;
+        return shared.favorites.some(fav => isFavoriteChart(fav, currentChart.value));
+    });
 </script>
 
 <style scoped>
@@ -874,15 +955,124 @@
         display: block;
     }
 
+    .song-header {
+        display: flex;
+        flex-direction: row;
+        gap: 24px;
+        padding: 16px 1.5rem;
+        align-items: flex-start;
+    }
+
+    .song-cover-container {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        flex-shrink: 0;
+    }
+
     .song-cover {
         width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        margin: 0 auto;
-        display: block;
-        max-width: 300px;
+        height: 100%;
+        border-radius: 8px;
+        object-fit: cover;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
 
-        background: image("https://jacket.maimai.realtvop.top/00000.png");
+    .type-pill {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 10;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-weight: 900;
+        font-size: 0.75rem;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        color: white;
+        background-color: #63acf8;
+    }
+
+    .type-pill[type="DX"] {
+        background-color: white;
+    }
+
+    .type-pill[type="DX"] > span {
+        background: linear-gradient(-20deg, #eb5639 55%, #efb03e 45%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .song-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
+    }
+
+    .song-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        line-height: 1.4;
+    }
+
+    .song-info-item.clickable {
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .song-info-item.clickable:hover {
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .info-icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .info-text {
+        word-break: break-word;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .font-bold {
+        font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+        .song-header {
+            gap: 12px;
+            padding: 12px 1rem;
+        }
+        .song-cover-container {
+            width: 130px;
+            height: 130px;
+        }
+        .type-pill {
+            top: 4px;
+            left: 4px;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+        }
+        .song-info {
+            gap: 6px;
+            padding-top: 0;
+        }
+        .song-info-item {
+            font-size: 0.85rem;
+            gap: 6px;
+        }
+        .info-icon {
+            font-size: 1.1rem;
+        }
     }
 
     .chip-container {
@@ -1027,34 +1217,14 @@
         gap: 8px;
     }
 
-    .tab-content {
-        padding: 1rem 0;
-    }
-
     .score-summary {
-        background: linear-gradient(
-            135deg,
-            rgba(var(--mdui-color-primary), 0.05),
-            rgba(var(--mdui-color-secondary), 0.05)
-        );
-        border: 1px solid rgba(var(--mdui-color-outline), 0.1);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    @media (max-width: 480px) {
-        .score-summary {
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 12px;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .score-summary {
-            padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        padding: 0.5rem 1.25rem 0.25rem 1.25rem;
+        /* margin-bottom: 1rem; */
+        @media (max-width: 480px) {
+            padding: 0.5rem 1rem 0.5rem 1rem;
+            /* margin-bottom: 0.5rem; */
         }
     }
 
@@ -1062,19 +1232,16 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
+        @media (max-width: 480px) {
+            margin-bottom: 0.5rem;
+        }
     }
 
     .score-row-secondary {
         display: flex;
         align-items: center;
         justify-content: space-between;
-    }
-
-    @media (max-width: 480px) {
-        .score-row-main {
-            margin-bottom: 0.5rem;
-        }
     }
 
     .rank-section {
@@ -1088,7 +1255,6 @@
         height: 2.25rem;
         object-fit: cover;
         object-position: center;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     }
 
     @media (max-width: 480px) {
@@ -1153,11 +1319,10 @@
     .dx-score-value {
         font-size: 0.8rem;
         font-weight: 600;
-        color: rgb(var(--mdui-color-secondary));
-        background: rgba(var(--mdui-color-secondary), 0.1);
+        color: rgb(var(--mdui-color-on-surface-variant));
+        background: rgba(var(--mdui-color-on-surface-variant), 0.08);
         padding: 0.15rem 0.4rem;
         border-radius: 4px;
-        border: 1px solid rgba(var(--mdui-color-secondary), 0.2);
         line-height: 1;
         font-family: monospace;
     }
@@ -1187,7 +1352,7 @@
         }
 
         .dx-stars-img {
-            height: 1.2rem;
+            height: 0.8rem;
         }
     }
 
@@ -1196,27 +1361,13 @@
         font-weight: 700;
         color: rgb(var(--mdui-color-primary));
         line-height: 1;
-        margin-bottom: 0.25rem;
-        background: linear-gradient(
-            135deg,
-            rgb(var(--mdui-color-primary)),
-            rgb(var(--mdui-color-secondary))
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        /* margin-bottom: 0.25rem; */
         word-break: break-all;
     }
 
     @media (max-width: 480px) {
         .achievement-percentage {
             font-size: 1.5rem;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .achievement-percentage {
-            font-size: 1.25rem;
         }
     }
 
@@ -1239,7 +1390,6 @@
     .badge-icon {
         height: 2rem;
         object-fit: contain;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     }
 
     .badge-placeholder {
@@ -1344,15 +1494,21 @@
         flex-wrap: wrap;
         align-content: center;
         gap: 0.5rem;
-        padding-bottom: 0.5rem;
+        padding: 0.5rem 0;
     }
 
     /* 谱面基本信息样式 */
     .chart-basic-info {
-        background: rgba(var(--mdui-color-surface-variant), 0.1);
-        border-radius: 8px;
+        width: 100%;
         padding: 1rem;
+        margin-top: 0.5rem;
         margin-bottom: 1rem;
+    }
+    .chart-basic-info-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .info-row {
@@ -1378,23 +1534,88 @@
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .info-value.notes-breakdown {
+    /* Note 统计表格样式 */
+    .notes-stats-section {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        /* padding: 0 1rem; */
+    }
+
+    @media (max-width: 600px) {
+        .notes-stats-section {
+            padding: 0 1rem;
+        }
+    }
+
+    .notes-stats-section h3 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+    }
+
+    .notes-table-container {
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(var(--mdui-color-outline), 0.25);
+    }
+
+    .notes-custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .notes-custom-table th,
+    .notes-custom-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(var(--mdui-color-outline), 0.2);
+    }
+
+    .notes-custom-table th {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        background: rgba(var(--mdui-color-surface-variant), 0.15);
+    }
+
+    .notes-custom-table th:last-child {
         text-align: right;
     }
 
-    .note-type {
-        display: block;
-        font-size: 0.875rem;
-        margin-bottom: 2px;
+    .notes-custom-table td {
+        font-size: 0.9rem;
+        color: rgb(var(--mdui-color-on-surface));
     }
 
-    .note-total {
-        display: block;
-        font-weight: 600;
+    .notes-custom-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .notes-custom-table tbody tr:nth-child(odd) {
+        background: transparent;
+    }
+
+    .notes-custom-table tbody tr:nth-child(even) {
+        background: rgba(var(--mdui-color-on-surface), 0.08);
+    }
+
+    .notes-custom-table tr.total-row {
+        background: rgba(var(--mdui-color-primary), 0.15) !important;
+    }
+
+    .notes-custom-table tr.total-row td {
         color: rgb(var(--mdui-color-primary));
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
+    }
+
+    .notes-custom-table td.num-val {
+        text-align: right;
+        font-family: Monaco, "JetBrains Mono", monospace;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+    }
+
+    .notes-custom-table td.num-val.font-bold {
+        font-weight: 700;
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */
