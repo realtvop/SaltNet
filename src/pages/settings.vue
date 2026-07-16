@@ -39,6 +39,13 @@
                     @change="handleShowDxScoreInB50Change"
                 />
             </div>
+            <div class="setting-row">
+                <span class="setting-label">谱面页面翻转难度、版本</span>
+                <mdui-switch
+                    :checked="shared.appSettings.reverseSongsDifficultyAndVersionTabs"
+                    @change="handleReverseSongsDifficultyAndVersionTabsChange"
+                />
+            </div>
         </mdui-card>
     </div>
 </template>
@@ -156,6 +163,11 @@
     function handleShowDxScoreInB50Change(event: Event) {
         const target = event.target as HTMLInputElement;
         shared.appSettings.showDxScoreInB50 = target.checked;
+    }
+
+    function handleReverseSongsDifficultyAndVersionTabsChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        shared.appSettings.reverseSongsDifficultyAndVersionTabs = target.checked;
     }
 </script>
 

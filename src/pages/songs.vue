@@ -94,10 +94,17 @@
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     const tabs = computed(() => {
-        if (category.value === Category.InGame) return difficulties;
+        if (category.value === Category.InGame) {
+            if (!shared.appSettings.reverseSongsDifficultyAndVersionTabs) return difficulties;
+            return [difficulties[0], ...difficulties.slice(1).reverse()];
+        }
         if (category.value === Category.Banquet) return banquetDifficulties;
         if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (category.value === Category.Version) return maimaiVersionsCN;
+        if (category.value === Category.Version) {
+            return shared.appSettings.reverseSongsDifficultyAndVersionTabs
+                ? [...maimaiVersionsCN].reverse()
+                : maimaiVersionsCN;
+        }
         if (category.value in versionPlates) {
             const plateType = category.value as VersionPlateCategory;
             return versionPlates[plateType]?.map(plate => plate.name) || [];
