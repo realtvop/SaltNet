@@ -93,34 +93,36 @@
     }
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
-    const tabs = computed(() => {
-        if (category.value === Category.InGame) {
+    function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
+        if (tabCategory === Category.InGame) {
             if (!shared.appSettings.reverseSongsDifficultyAndVersionTabs) return difficulties;
             return [difficulties[0], ...difficulties.slice(1).reverse()];
         }
-        if (category.value === Category.Banquet) return banquetDifficulties;
-        if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (category.value === Category.Version) {
+        if (tabCategory === Category.Banquet) return banquetDifficulties;
+        if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (tabCategory === Category.Version) {
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
                 ? [...maimaiVersionsCN].reverse()
                 : maimaiVersionsCN;
         }
-        if (category.value in versionPlates) {
-            const plateType = category.value as VersionPlateCategory;
+        if (tabCategory in versionPlates) {
+            const plateType = tabCategory as VersionPlateCategory;
             return versionPlates[plateType]?.map(plate => plate.name) || [];
         }
         return [];
-    });
+    }
+
+    const tabs = computed(() => getTabsForCategory(category.value));
     const selectedTab = ref({
-        [Category.InGame]: "ALL",
-        [Category.Banquet]: banquetDifficulties[0],
-        [Category.Favorite]: shared.favorites[0]?.name || "",
-        [Category.Version]: maimaiVersionsCN[0] || "",
+        [Category.InGame]: getTabsForCategory(Category.InGame)[0] || "",
+        [Category.Banquet]: getTabsForCategory(Category.Banquet)[0] || "",
+        [Category.Favorite]: getTabsForCategory(Category.Favorite)[0] || "",
+        [Category.Version]: getTabsForCategory(Category.Version)[0] || "",
         // 为每个牌子类型添加默认选择
         ...Object.keys(versionPlates).reduce(
             (acc, key) => {
                 const plateKey = key as VersionPlateCategory;
-                acc[plateKey] = versionPlates[plateKey]?.[0]?.name || "";
+                acc[plateKey] = getTabsForCategory(plateKey)[0] || "";
                 return acc;
             },
             {} as Record<VersionPlateCategory, string>
@@ -879,24 +881,22 @@
     watch(category, newCategory => {
         groupBy.value = "none";
         // 切换分类时，重置到该分类的默认选项
+        selectedTab.value[newCategory] = getTabsForCategory(newCategory)[0] || "";
         if (newCategory === Category.InGame) {
-            selectedTab.value[Category.InGame] = "ALL";
             if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
-        } else if (newCategory === Category.Banquet) {
-            selectedTab.value[Category.Banquet] = banquetDifficulties[0];
-        } else if (newCategory === Category.Favorite) {
-            selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         } else if (newCategory === Category.Version) {
-            selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
             if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
-        } else if (newCategory in versionPlates) {
-            // 牌子分类
-            const plateType = newCategory as VersionPlateCategory;
-            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
         query.value = "";
         visibleItemsCount.value = getLoadSize();
     });
+
+    watch(
+        () => shared.appSettings.reverseSongsDifficultyAndVersionTabs,
+        () => {
+            selectedTab.value[Category.Version] = getTabsForCategory(Category.Version)[0] || "";
+        }
+    );
 
     // 监听路由参数变化，重新加载数据
     watch(
