@@ -1,7 +1,7 @@
 import type { Font } from "takumi-js";
 import type { B50RenderPayload } from "./b50-payload";
 
-const GOOGLE_FONTS_ORIGIN = "https://fonts.googleapis.com/css2";
+const GOOGLE_FONTS_ORIGIN = "https://fonts.googleapis.cn/css2";
 const FONT_FAMILY_QUERIES = [
     "Noto Sans SC:wght@400;700;800;900",
     "Noto Sans JP:wght@400;700;800;900",
