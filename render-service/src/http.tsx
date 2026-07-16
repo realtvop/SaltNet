@@ -180,7 +180,7 @@ async function renderTakumiB50Response(
     payload: ReturnType<typeof parseB50Payload>,
     env: RenderEnv
 ): Promise<Response> {
-    const fonts = await loadB50RenderFonts(payload);
+    const fonts = await loadB50RenderFonts();
     const response = new ImageResponse(<B50RenderImage payload={payload} />, {
         ...B50_RENDER_SIZE,
         format: "png",
