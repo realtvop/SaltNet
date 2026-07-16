@@ -1,117 +1,159 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import type { Dialog } from "mdui";
 
+const DIALOG_HISTORY_STATE_KEY = "__saltnetDialog";
+
+type DialogElement = Element & { open: boolean };
+
+interface DialogEntry {
+    id: string;
+    element: DialogElement;
+    closed: boolean;
+    backTimer: number | null;
+}
+
+interface DialogHistoryState {
+    id: string;
+}
+
+function getDialogElement(evtOrEle: Element | Event | Dialog): DialogElement | null {
+    const element =
+        evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element | null);
+
+    return element?.localName === "mdui-dialog" ? (element as DialogElement) : null;
+}
+
+function getCurrentDialogHistoryId(): string | null {
+    const state = history.state as Record<string, unknown> | null;
+    const dialogState = state?.[DIALOG_HISTORY_STATE_KEY] as DialogHistoryState | undefined;
+    return dialogState?.id ?? null;
+}
+
+function getMergedHistoryState(dialogId: string): Record<string, unknown> {
+    const currentState = history.state;
+    const baseState =
+        currentState && typeof currentState === "object"
+            ? (currentState as Record<string, unknown>)
+            : {};
+
+    return {
+        ...baseState,
+        [DIALOG_HISTORY_STATE_KEY]: { id: dialogId } satisfies DialogHistoryState,
+    };
+}
+
 export const useDialogStore = defineStore("dialog", () => {
-    // 状态：当前打开的 dialog 数量
+    const entries: DialogEntry[] = [];
     const openCount = ref(0);
-    // 上一次的 hash 值
-    const previousHash = ref("");
-    // 待处理的后退操作数
-    const pendingBacks = ref(0);
+    let nextDialogId = 0;
 
-    // 计算属性
-    const currentDialogHashCount = computed(() => {
-        return (window.location.hash.match(/#dialog/g) || []).length;
-    });
+    const currentDialogHistoryId = computed(() => getCurrentDialogHistoryId());
 
-    // 标记 dialog 打开
+    function syncOpenCount() {
+        openCount.value = entries.filter(entry => !entry.closed).length;
+    }
+
+    function removeEntry(entry: DialogEntry) {
+        const index = entries.indexOf(entry);
+        if (index !== -1) entries.splice(index, 1);
+        if (entry.backTimer !== null) window.clearTimeout(entry.backTimer);
+        syncOpenCount();
+    }
+
     function markOpen(evtOrEle: Element | Event | Dialog) {
-        const element =
-            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
-        if (element.localName !== "mdui-dialog") return;
+        const element = getDialogElement(evtOrEle);
+        if (!element) return;
 
-        openCount.value++;
-
-        const currentHash = window.location.hash;
-        const newHash = currentHash ? `${currentHash}#dialog` : "#dialog";
-        history.pushState({ isDialogHistory: true }, "", newHash);
-        previousHash.value = newHash;
-    }
-
-    // 标记 dialog 关闭
-    function markClosed(evtOrEle: Element | Event | Dialog) {
-        const element =
-            evtOrEle instanceof Element ? evtOrEle : ((evtOrEle as Event).target as Element);
-        if (element.localName !== "mdui-dialog") return;
-
-        openCount.value = Math.max(0, openCount.value - 1);
-
-        const currentHash = window.location.hash;
-        if (currentHash.endsWith("#dialog")) {
-            // 使用 setTimeout 确保 DOM 已更新
-            setTimeout(() => {
-                const dialogHashCount = (window.location.hash.match(/#dialog/g) || []).length;
-                const effectiveHashCount = dialogHashCount - pendingBacks.value;
-
-                // 如果打开的对话框数量少于 hash 中的 #dialog 数量，则回退
-                if (openCount.value < effectiveHashCount) {
-                    pendingBacks.value++;
-                    history.back();
-                }
-            }, 0);
-        }
-    }
-
-    // 处理 popstate 事件中的 dialog 逻辑
-    function handlePopstate(): boolean {
-        const currentHash = window.location.hash;
-
-        if (pendingBacks.value > 0) {
-            pendingBacks.value--;
-        }
-
-        // 处理 dialog hash
-        if (previousHash.value.endsWith("#dialog")) {
-            const dialogHashLength = (previousHash.value.match(/#dialog/g) || []).length;
-            const actualOpenCount = document.querySelectorAll("mdui-dialog[open]").length;
-
-            if (actualOpenCount >= dialogHashLength) {
-                const dialogs = document.querySelectorAll("mdui-dialog[open]");
-                const topDialog = dialogs.length > 0 ? dialogs[dialogs.length - 1] : null;
-                if (topDialog) {
-                    (topDialog as any).open = false;
-                }
+        const existingEntry = entries.find(entry => entry.element === element);
+        if (existingEntry) {
+            existingEntry.closed = false;
+            if (existingEntry.backTimer !== null) {
+                window.clearTimeout(existingEntry.backTimer);
+                existingEntry.backTimer = null;
             }
-            previousHash.value = currentHash;
-            return true; // 已处理
+            syncOpenCount();
+            return;
         }
 
-        // 清理意外的 #dialog hash
-        if (currentHash.endsWith("#dialog")) {
-            history.replaceState(
-                null,
-                "",
-                currentHash.replace(/#dialog$/, "") ||
-                    window.location.pathname + window.location.search
-            );
-        }
+        const entry: DialogEntry = {
+            id: `dialog-${Date.now()}-${nextDialogId++}`,
+            element,
+            closed: false,
+            backTimer: null,
+        };
+        entries.push(entry);
+        syncOpenCount();
 
-        previousHash.value = currentHash;
-        return false; // 未处理，交给路由处理
+        history.pushState(getMergedHistoryState(entry.id), "", window.location.href);
     }
 
-    // 同步实际 DOM 状态
+    function markClosed(evtOrEle: Element | Event | Dialog) {
+        const element = getDialogElement(evtOrEle);
+        if (!element) return;
+
+        const entry = entries.find(item => item.element === element);
+        if (!entry) return;
+
+        entry.closed = true;
+        syncOpenCount();
+
+        if (entry.backTimer !== null) window.clearTimeout(entry.backTimer);
+        entry.backTimer = window.setTimeout(() => {
+            entry.backTimer = null;
+
+            // 关闭动画期间被重新打开时，保留当前历史项。
+            if (!entry.closed) return;
+
+            if (getCurrentDialogHistoryId() === entry.id) {
+                history.back();
+            } else {
+                removeEntry(entry);
+            }
+        }, 0);
+    }
+
+    function handlePopstate(): boolean {
+        const destinationDialogId = getCurrentDialogHistoryId();
+        let handled = false;
+
+        while (entries.length && entries[entries.length - 1].id !== destinationDialogId) {
+            const entry = entries.pop()!;
+            handled = true;
+
+            if (entry.backTimer !== null) window.clearTimeout(entry.backTimer);
+            entry.backTimer = null;
+
+            if (!entry.closed && entry.element.open) {
+                entry.closed = true;
+                entry.element.open = false;
+            }
+        }
+
+        syncOpenCount();
+        return handled;
+    }
+
     function syncWithDOM() {
-        openCount.value = document.querySelectorAll("mdui-dialog[open]").length;
+        const openDialogs = new Set(document.querySelectorAll<DialogElement>("mdui-dialog[open]"));
+        entries.forEach(entry => {
+            entry.closed = !openDialogs.has(entry.element);
+        });
+        syncOpenCount();
     }
 
     function reset() {
+        entries.forEach(entry => {
+            if (entry.backTimer !== null) window.clearTimeout(entry.backTimer);
+        });
+        entries.length = 0;
         openCount.value = 0;
-        previousHash.value = "";
-        pendingBacks.value = 0;
+        nextDialogId = 0;
     }
 
     return {
-        // State
         openCount,
-        previousHash,
-        pendingBacks,
-
-        // Getters
-        currentDialogHashCount,
-
-        // Actions
+        currentDialogHistoryId,
         markOpen,
         markClosed,
         handlePopstate,

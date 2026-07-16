@@ -46,6 +46,7 @@
 <script setup lang="ts">
     import { useShared } from "@/components/app/shared";
     import { snackbar, confirm } from "mdui";
+    import { markDialogClosed, markDialogOpen } from "@/components/app/router";
 
     const shared = useShared();
     type RatingDisplayMode = "简洁" | "吃分" | "完整";
@@ -125,6 +126,8 @@
             description: "数据删除后将无法恢复",
             closeOnEsc: true,
             closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
             onConfirm: () =>
                 caches
                     .delete(`SaltNetv0-${key}`)

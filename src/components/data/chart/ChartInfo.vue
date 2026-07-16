@@ -5,8 +5,8 @@
         close-on-overlay-click
         :open="open"
         :fullscreen="shared.isSmallScreen"
-        @open="markDialogOpen"
-        @close="scrollDialogToTopAndMarkClosed"
+        @open.self="markDialogOpen"
+        @close.self="scrollDialogToTopAndMarkClosed"
     >
         <mdui-top-app-bar slot="header">
             <mdui-button-icon
@@ -458,7 +458,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
-    import { defineProps, watch, nextTick, ref, computed } from "vue";
+    import { watch, nextTick, ref, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
@@ -483,6 +483,7 @@
         singleLevel?: boolean;
         targetUserId?: string;
     }>();
+    const emit = defineEmits<{ (event: "update:open", value: boolean): void }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
         {
@@ -511,8 +512,9 @@
     const chartPositionMap = ref<Map<number, string>>(new Map());
 
     // 对话框打开动画完成后，滚动内容到顶部
-    function scrollDialogToTopAndMarkClosed(ref: HTMLElement) {
-        markDialogClosed(ref);
+    function scrollDialogToTopAndMarkClosed(event: Event) {
+        markDialogClosed(event);
+        emit("update:open", false);
         if (dialogRef.value) {
             // 尝试访问 shadow DOM 中的 body 或 panel 部分
             const shadowRoot = dialogRef.value.shadowRoot;
@@ -535,11 +537,13 @@
 
     watch(
         () => props.open,
-        async () => {
+        async newValue => {
             await nextTick();
             if (dialogRef.value) {
-                dialogRef.value.open = true;
+                dialogRef.value.open = newValue;
             }
+            if (!newValue) return;
+
             friendsScores.value = [];
             currentUser.value = null;
             chartFriendsScoresMap.value.clear();
@@ -873,6 +877,7 @@
             closeOnOverlayClick: true,
             closeOnEsc: true,
             onOpen: markDialogOpen,
+            onClose: markDialogClosed,
 
             validator: value => {
                 if (!value || value.trim() === "") {

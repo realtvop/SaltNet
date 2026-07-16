@@ -1,4 +1,4 @@
-import { createRouter, createMemoryHistory, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory, createWebHistory } from "vue-router";
 import type { Dialog } from "mdui";
 
 import IndexPage from "../../pages/index.vue";
@@ -29,7 +29,7 @@ const routes = [
 ];
 
 const router = createRouter({
-    history: import.meta.env.PROD ? createMemoryHistory() : createWebHistory(),
+    history: import.meta.env.PROD ? createWebHashHistory() : createWebHistory(),
     routes,
 });
 
@@ -43,21 +43,7 @@ function getStores() {
     return { routerStore, dialogStore };
 }
 
-// 初始化：清理 URL hash
-window.addEventListener("load", () => {
-    if (window.location.hash) {
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-});
-
-// 路由守卫
-router.beforeEach((to, from, next) => {
-    const { routerStore } = getStores();
-    routerStore.onBeforeRoute(to, from);
-    next();
-});
-
-router.afterEach((to, from) => {
+router.afterEach(to => {
     const { routerStore } = getStores();
 
     // 滚动到顶部
@@ -65,22 +51,16 @@ router.afterEach((to, from) => {
 
     // 控制页面滚动
     document.body.style.overflowY = routerStore.needsFixed(to.path) ? "hidden" : "";
-
-    // 处理历史记录清理
-    routerStore.onAfterRoute(to, from);
 });
 
 // popstate 事件处理
 window.addEventListener("popstate", () => {
-    const { routerStore, dialogStore } = getStores();
+    const { dialogStore } = getStores();
 
     // 先让 dialog 处理
     if (dialogStore.handlePopstate()) {
         return;
     }
-
-    // 再让路由处理
-    routerStore.handlePopstate(router);
 });
 
 // 导出 dialog 标记函数
