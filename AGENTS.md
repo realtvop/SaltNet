@@ -13,7 +13,7 @@ SaltNet is a two-package pnpm workspace:
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
 - `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `user/` for profiles, updates, backups, and rating history, and `collection/` for plate/collection definitions.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
-- `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, and font logic lives in `shared/rendering/` and is consumed by both packages.
+- `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 
 Static assets belong in `public/`; structured source assets belong in `src/assets/`. Utility and generated-data scripts live in `script/`. Do not edit generated `dist/` files or local `.wrangler/` state.

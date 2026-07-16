@@ -12,7 +12,7 @@
     import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
     import { useShared } from "@/components/app/shared";
     import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
-    import { dialog, snackbar } from "mdui";
+    import { dialog, snackbar, type Dialog } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
     import { isUtageGrade } from "@/components/data/chart/difficulty";
@@ -20,6 +20,28 @@
         type B50RenderChart as B50RenderChartPayload,
         type B50RenderPayload,
     } from "../../shared/rendering/b50-payload";
+    import { createB50DownloadFilename } from "../../shared/rendering/b50-filename";
+
+    const DOWNLOAD_URL_REVOKE_DELAY_MS = 60_000;
+
+    interface FileSystemWritableFileStreamLike {
+        write(data: Blob): Promise<void>;
+        close(): Promise<void>;
+    }
+
+    interface FileSystemFileHandleLike {
+        createWritable(): Promise<FileSystemWritableFileStreamLike>;
+    }
+
+    interface WindowWithSaveFilePicker extends Window {
+        showSaveFilePicker?: (options: {
+            suggestedName: string;
+            types: Array<{
+                description: string;
+                accept: Record<string, string[]>;
+            }>;
+        }) => Promise<FileSystemFileHandleLike>;
+    }
 
     const route = useRoute();
     const router = useRouter();
@@ -269,6 +291,110 @@
         return Math.round(value * 10) / 10;
     }
 
+    function requestBlobDownload(blob: Blob, filename: string, requireUserActivation: boolean) {
+        if (
+            requireUserActivation &&
+            navigator.userActivation &&
+            !navigator.userActivation.isActive
+        ) {
+            throw new Error("浏览器需要再次确认后才能保存文件。");
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.style.display = "none";
+
+        try {
+            document.body.appendChild(link);
+            link.click();
+        } catch (error) {
+            URL.revokeObjectURL(url);
+            throw error;
+        } finally {
+            link.remove();
+        }
+
+        window.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_REVOKE_DELAY_MS);
+    }
+
+    async function saveBlobAfterConfirmation(blob: Blob, filename: string): Promise<string> {
+        const saveFilePicker = (window as WindowWithSaveFilePicker).showSaveFilePicker;
+        if (saveFilePicker) {
+            const handle = await saveFilePicker.call(window, {
+                suggestedName: filename,
+                types: [
+                    {
+                        description: "PNG 图片",
+                        accept: { "image/png": [".png"] },
+                    },
+                ],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return "B50 图片已保存。";
+        }
+
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file], title: filename });
+            return "已打开系统保存菜单。";
+        }
+
+        requestBlobDownload(blob, filename, true);
+        return "已请求浏览器下载 B50 图片。";
+    }
+
+    function showDownloadFallbackAfterClose(
+        currentDialog: Dialog,
+        blob: Blob,
+        filename: string
+    ): void {
+        currentDialog.addEventListener(
+            "closed",
+            () => {
+                dialog({
+                    headline: "需要再次确认",
+                    description: "图片已经生成，但浏览器未能直接启动保存。请再次点击保存。",
+                    actions: [
+                        { text: "取消" },
+                        {
+                            text: "保存",
+                            onClick: async () => {
+                                try {
+                                    const message = await saveBlobAfterConfirmation(blob, filename);
+                                    snackbar({ message });
+                                } catch (error) {
+                                    if (
+                                        error instanceof DOMException &&
+                                        error.name === "AbortError"
+                                    ) {
+                                        snackbar({ message: "已取消保存。" });
+                                        return;
+                                    }
+                                    snackbar({
+                                        message:
+                                            error instanceof Error
+                                                ? error.message
+                                                : "保存失败，请稍后重试。",
+                                    });
+                                }
+                            },
+                        },
+                    ],
+                    closeOnEsc: true,
+                    closeOnOverlayClick: true,
+                    onOpen: markDialogOpen,
+                    onClose: markDialogClosed,
+                });
+            },
+            { once: true }
+        );
+        currentDialog.open = false;
+    }
+
     function downloadB50Png() {
         async function renderLocalBlob(): Promise<Blob> {
             return renderB50WithTakumi(buildB50RenderPayload());
@@ -301,35 +427,35 @@
 
         const downloadAction = {
             text: "下载",
-            onClick: async () => {
+            onClick: async (currentDialog: Dialog) => {
                 const renderingSnackbar = snackbar({
                     message: "正在渲染 B50...",
                     autoCloseDelay: 0,
                 });
 
+                let blob: Blob;
                 try {
-                    const blob = await renderLocalBlob();
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    const formattedTime = new Date().toLocaleString("zh-CN", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                    });
-                    const filePrefix = modeLabel.value ?? "B50";
-                    link.download = `${filePrefix}_SaltNet_${getUserDisplayName(player.value)}_${formattedTime}.png`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    renderingSnackbar.open = false;
+                    blob = await renderLocalBlob();
                 } catch (err) {
                     renderingSnackbar.open = false;
                     snackbar({
-                        message: err instanceof Error ? err.message : "下载失败，请稍后重试。",
+                        message: err instanceof Error ? err.message : "渲染失败，请稍后重试。",
                     });
+                    return;
+                }
+
+                const filename = createB50DownloadFilename({
+                    modeLabel: modeLabel.value,
+                    playerName: getUserDisplayName(player.value),
+                });
+
+                try {
+                    requestBlobDownload(blob, filename, true);
+                    snackbar({ message: "已请求浏览器下载 B50 图片。" });
+                } catch {
+                    showDownloadFallbackAfterClose(currentDialog, blob, filename);
+                } finally {
+                    renderingSnackbar.open = false;
                 }
             },
         };
