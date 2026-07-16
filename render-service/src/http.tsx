@@ -4,6 +4,7 @@ import {
     B50_RENDER_LANG,
     loadB50RenderFonts,
 } from "../../shared/rendering/b50-fonts.js";
+import { createB50DownloadFilename } from "../../shared/rendering/b50-filename.js";
 import { B50_RENDER_SIZE, B50RenderImage } from "../../shared/rendering/b50-image.js";
 import { getImageCacheSeconds } from "./env.js";
 import type { RenderEnv } from "./env.js";
@@ -138,11 +139,40 @@ async function renderB50Image(context: RenderContext): Promise<Response> {
     }
 
     try {
-        return context.renderB50Response
-            ? context.renderB50Response(payload, context.env)
-            : renderTakumiB50Response(payload, context.env);
+        const response = context.renderB50Response
+            ? await context.renderB50Response(payload, context.env)
+            : await renderTakumiB50Response(payload, context.env);
+        return withB50DownloadHeaders(response, payload);
     } catch (error) {
         return json({ error: getErrorMessage(error) }, { status: 500 });
+    }
+}
+
+function withB50DownloadHeaders(
+    response: Response,
+    payload: ReturnType<typeof parseB50Payload>
+): Response {
+    const filename = createB50DownloadFilename({
+        modeLabel: payload.modeLabel,
+        playerName: payload.playerName,
+    });
+    const encodedFilename = encodeURIComponent(filename).replace(
+        /['()*]/g,
+        character => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+    );
+    const contentDisposition = `attachment; filename="B50_SaltNet.png"; filename*=UTF-8''${encodedFilename}`;
+
+    try {
+        response.headers.set("Content-Disposition", contentDisposition);
+        return response;
+    } catch {
+        const headers = new Headers(response.headers);
+        headers.set("Content-Disposition", contentDisposition);
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+        });
     }
 }
 
