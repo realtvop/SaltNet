@@ -278,16 +278,42 @@
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Note 统计</span>
-                                <span class="info-value notes-breakdown">
-                                    <span class="note-type">TAP: {{ noteCounts.tap }}</span>
-                                    <span class="note-type">HOLD: {{ noteCounts.hold }}</span>
-                                    <span class="note-type">SLIDE: {{ noteCounts.slide }}</span>
-                                    <span class="note-type" v-if="noteCounts.hasTouch">
-                                        TOUCH: {{ noteCounts.touch }}
-                                    </span>
-                                    <span class="note-type">BREAK: {{ noteCounts.break }}</span>
-                                    <span class="note-total">总计: {{ noteCounts.total }}</span>
-                                </span>
+                                <div class="info-value notes-breakdown">
+                                    <table class="notes-custom-table" aria-label="Note 统计">
+                                        <tbody>
+                                            <tr>
+                                                <td class="note-type">TAP</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.tap }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">HOLD</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.hold }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">SLIDE</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.slide }}</td>
+                                            </tr>
+                                            <tr v-if="noteCounts.hasTouch">
+                                                <td class="note-type">TOUCH</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.touch }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">BREAK</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.break }}</td>
+                                            </tr>
+                                            <tr class="note-total">
+                                                <td class="note-type">总计</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.total }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </mdui-collapse-item>
@@ -1514,19 +1540,46 @@
         text-align: right;
     }
 
-    .note-type {
-        display: block;
+    .notes-custom-table {
+        border-collapse: collapse;
+        border: 0;
+        margin-left: auto;
         font-size: 0.875rem;
-        margin-bottom: 2px;
+        color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .note-total {
-        display: block;
+    .notes-custom-table td {
+        padding: 0;
+        border: 0;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .notes-custom-table tr + tr td {
+        padding-top: 2px;
+    }
+
+    .notes-custom-table .note-type {
+        text-align: right;
+        padding-right: 0.25rem;
+    }
+
+    .notes-custom-table .note-separator {
+        width: 1ch;
+        padding: 0 0.25rem;
+        text-align: center;
+    }
+
+    .notes-custom-table .note-count {
+        min-width: 3ch;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .notes-custom-table .note-total td {
+        padding-top: 4px;
         font-weight: 600;
         color: rgb(var(--mdui-color-primary));
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid rgba(var(--mdui-color-outline), 0.3);
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */
