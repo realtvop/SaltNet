@@ -11,7 +11,8 @@
         "pret": "prettier --check .",
         "pret:fix": "prettier --write .",
         "lint": "eslint .",
-        "lint:fix": "eslint . --fix"
+        "lint:fix": "eslint . --fix",
+        "test:build-info": "node --test script/generateBuildInfo.test.cjs"
     },
     "dependencies": {
         "jwt-decode": "^4.0.0",
