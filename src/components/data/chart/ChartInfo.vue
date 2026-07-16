@@ -1561,18 +1561,18 @@
 
     .notes-custom-table .note-type {
         text-align: right;
-        padding-right: 0.25rem;
+        padding-right: 0;
     }
 
     .notes-custom-table .note-separator {
         width: 1ch;
-        padding: 0 0.25rem;
+        padding: 0 0.25rem 0 0;
         text-align: center;
     }
 
     .notes-custom-table .note-count {
         min-width: 3ch;
-        text-align: right;
+        text-align: left;
         font-variant-numeric: tabular-nums;
     }
 
