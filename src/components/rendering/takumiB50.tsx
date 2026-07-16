@@ -8,7 +8,7 @@ import type { B50RenderPayload } from "../../../shared/rendering/b50-payload";
 
 export async function renderB50WithTakumi(payload: B50RenderPayload): Promise<Blob> {
     const { render } = await import("takumi-js");
-    const fonts = await loadB50RenderFonts(payload);
+    const fonts = await loadB50RenderFonts();
     const png = await render(
         <B50RenderImage payload={payload} options={{ siteOrigin: window.location.origin }} />,
         {
