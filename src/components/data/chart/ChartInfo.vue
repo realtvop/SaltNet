@@ -867,7 +867,7 @@
 
     // 新增收藏夹
     function newFavList() {
-        prompt({
+        void prompt({
             headline: "新增收藏夹",
             confirmText: "新增",
             cancelText: "取消",
@@ -892,7 +892,7 @@
                 });
                 toggleFavorite(shared.favorites[shared.favorites.length - 1], props.chart!);
             },
-        });
+        }).catch(() => undefined);
     }
 
     function showChartStats(stat: ChartStats) {

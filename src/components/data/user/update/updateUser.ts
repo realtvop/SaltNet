@@ -1,6 +1,6 @@
 import { type User } from "@/components/data/user/type";
 import { appendRatingHistory } from "@/components/data/user/ratingHistory";
-import { snackbar, prompt } from "mdui";
+import { alert, snackbar, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
 
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
@@ -35,7 +35,7 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
                 user.inGame.name = data.name;
         }
     } else if (type === "alert") {
-        alert({
+        void alert({
             ...event.data.data,
             onOpen: (dialog: any) => {
                 markDialogOpen(dialog);
@@ -47,7 +47,7 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
                 ).style.whiteSpace = "pre-wrap";
             },
             onClose: markDialogClosed,
-        });
+        }).catch(() => undefined);
     }
 };
 
@@ -64,7 +64,7 @@ export function updateUserWithWorker(user: User) {
     const shouldPromptQrCode = user.inGame?.enabled && !user.inGame?.useFastUpdate;
 
     if (shouldPromptQrCode) {
-        prompt({
+        void prompt({
             headline: "更新用户数据",
             description: `输入二维码扫描结果或复制的二维码页面链接（需要登录帐号）${user.data.detailed && user.inGame.id ? `，日常更新建议留空使用快速更新（不会尝试登录帐号）` : ""}`,
             confirmText: "更新",
@@ -90,7 +90,7 @@ export function updateUserWithWorker(user: User) {
                 });
                 return true;
             },
-        });
+        }).catch(() => undefined);
         return;
     }
 
@@ -100,7 +100,7 @@ export function updateUserWithWorker(user: User) {
 
 export function checkLoginWithWorker(user: User) {
     const plainUser: User = JSON.parse(JSON.stringify(user));
-    prompt({
+    void prompt({
         headline: "检查登录状态",
         description: "输入二维码扫描结果或复制的二维码页面链接。此操作不会尝试登录您的帐户。",
         confirmText: "检查",
@@ -121,7 +121,7 @@ export function checkLoginWithWorker(user: User) {
             updateUserWorker.postMessage({ type: "checkLogin", user: plainUser, qrCode: value });
             return true;
         },
-    });
+    }).catch(() => undefined);
 }
 
 export function clearIllegalTicketsWithWorker(user: User, qrCode: string) {

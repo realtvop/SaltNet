@@ -128,7 +128,7 @@
         Covers: "图片资源",
     };
     function deleteCache(key: keyof typeof displayName) {
-        confirm({
+        void confirm({
             headline: `清除缓存的${displayName[key]}？`,
             description: "数据删除后将无法恢复",
             closeOnEsc: true,
@@ -150,7 +150,7 @@
                             autoCloseDelay: 500,
                         });
                     }),
-        });
+        }).catch(() => undefined);
     }
 
     function handleDefaultRatingModeChange(event: Event) {

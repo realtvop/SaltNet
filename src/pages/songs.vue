@@ -949,7 +949,7 @@
 
     // 新增收藏夹
     function newFavList() {
-        prompt({
+        void prompt({
             headline: "新增收藏夹",
             confirmText: "新增",
             cancelText: "取消",
@@ -973,10 +973,10 @@
                     charts: [],
                 });
             },
-        });
+        }).catch(() => undefined);
     }
     function importFavList() {
-        prompt({
+        void prompt({
             headline: "导入收藏夹",
             confirmText: "导入",
             cancelText: "取消",
@@ -1008,7 +1008,7 @@
                     // 检查是否有同名收藏夹
                     if (shared.favorites.some(fav => fav.name === originalName)) {
                         // 弹出重命名对话框
-                        prompt({
+                        void prompt({
                             headline: "收藏夹名称冲突",
                             confirmText: "导入",
                             cancelText: "取消",
@@ -1034,7 +1034,7 @@
                                 });
                                 snackbar({ message: "导入成功" });
                             },
-                        });
+                        }).catch(() => undefined);
                     } else {
                         // 直接导入
                         shared.favorites.push({
@@ -1047,7 +1047,7 @@
                     snackbar({ message: "导入失败，请检查数据格式" });
                 }
             },
-        });
+        }).catch(() => undefined);
     }
     function exportFavList() {
         if (shared.favorites.length === 0) return;
@@ -1075,7 +1075,7 @@
             f => f.name === selectedTab.value[Category.Favorite]
         );
         if (!currentFavorite) return;
-        prompt({
+        void prompt({
             headline: "重命名收藏夹",
             confirmText: "重命名",
             cancelText: "取消",
@@ -1098,7 +1098,7 @@
                 currentFavorite.name = value;
                 selectedTab.value[Category.Favorite] = value;
             },
-        });
+        }).catch(() => undefined);
     }
     function deleteFavList() {
         if (shared.favorites.length === 0) return;
@@ -1106,7 +1106,7 @@
             f => f.name === selectedTab.value[Category.Favorite]
         );
         if (!currentFavorite) return;
-        confirm({
+        void confirm({
             headline: "删除收藏夹",
             description: `确定要删除收藏夹 "${currentFavorite.name}" 吗？`,
             confirmText: "删除",
@@ -1127,7 +1127,7 @@
                     }
                 }
             },
-        });
+        }).catch(() => undefined);
     }
 </script>
 

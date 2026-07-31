@@ -268,7 +268,7 @@
     };
 
     function bindInGame() {
-        prompt({
+        void prompt({
             headline: "绑定用户",
             description: "输入二维码扫描结果或复制的二维码页面链接。该操作不会尝试登录您的帐户。",
             confirmText: "绑定",
@@ -304,7 +304,7 @@
                     }
                 }
             },
-        });
+        }).catch(() => undefined);
     }
 
     function getUserIdFromQRCode(qrCode: string) {
@@ -352,7 +352,7 @@
         window.location.href = url;
     }
     function unbindLXNS() {
-        confirm({
+        void confirm({
             headline: "确认解绑落雪帐号？",
             description: "您可以稍后重新绑定",
             confirmText: "解绑",
@@ -366,7 +366,7 @@
                 snackbar({ message: "已解绑落雪帐号", autoCloseDelay: 1000 });
                 return true;
             },
-        });
+        }).catch(() => undefined);
     }
 </script>
 

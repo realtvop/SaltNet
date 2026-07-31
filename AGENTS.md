@@ -22,6 +22,12 @@ Static assets belong in `public/`; structured source assets belong in `src/asset
 
 Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates, check `src/components/data/music/saltmeta.ts`, `public/charts.json`, and `script/updateChartsInfo.cjs`. Broader data-shape notes are documented in `docs/component-data-types.md`.
 
+Dialogs add same-URL browser-history entries under `history.state.__saltnetDialog`. Closed,
+unmounted, or reload-stale dialog entries are skipped during `popstate`/initial reconciliation so
+they cannot become empty navigation stops. Register every MDUI function dialog with
+`markDialogOpen`/`markDialogClosed`; custom dialogs containing nested MDUI components must use
+`.self` lifecycle listeners.
+
 ## Build, Test, and Development Commands
 
 Install all workspace dependencies with `pnpm install`. From the repository root:

@@ -157,7 +157,8 @@
     function updateAtendance(game: Game) {
         if (!nearcadeData.APIKey) {
             snackbar({ message: "请先设置 nearcade API Key" });
-            return setAPIKey();
+            void setAPIKey().catch(() => undefined);
+            return;
         }
         const evtListener = function (event: KeyboardEvent) {
             if (event.key === "Enter") {
@@ -169,7 +170,7 @@
             }
         };
         window.addEventListener("keydown", evtListener);
-        prompt({
+        void prompt({
             headline: `更新 ${game.name} 的卡数`,
             description: "请输入当前的卡数",
             textFieldOptions: {
@@ -178,7 +179,10 @@
             confirmText: "更新",
             cancelText: "取消",
             onOpen: markDialogOpen,
-            onClose: markDialogClosed,
+            onClose: dialog => {
+                window.removeEventListener("keydown", evtListener);
+                markDialogClosed(dialog);
+            },
             closeOnEsc: true,
             closeOnOverlayClick: true,
             onConfirm: (value: string) => {
@@ -211,7 +215,7 @@
                         snackbar({ message: `更新卡数失败: ${error.message}` });
                     });
             },
-        });
+        }).catch(() => undefined);
     }
 
     function checkOpeningHours(shop: Shop, textWhileOpen: string = "营业中"): [boolean, string] {

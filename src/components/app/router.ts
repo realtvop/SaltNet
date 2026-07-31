@@ -36,6 +36,7 @@ const router = createRouter({
 // 延迟初始化 stores（等待 Pinia 就绪）
 let routerStore: ReturnType<typeof useRouterStore> | null = null;
 let dialogStore: ReturnType<typeof useDialogStore> | null = null;
+let hasReconciledInitialDialogHistory = false;
 
 function getStores() {
     if (!routerStore) routerStore = useRouterStore();
@@ -44,7 +45,12 @@ function getStores() {
 }
 
 router.afterEach(to => {
-    const { routerStore } = getStores();
+    const { routerStore, dialogStore } = getStores();
+
+    if (!hasReconciledInitialDialogHistory) {
+        hasReconciledInitialDialogHistory = true;
+        dialogStore.reconcileInitialHistory();
+    }
 
     // 滚动到顶部
     window.scrollTo(0, 0);
