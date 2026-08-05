@@ -137,10 +137,10 @@
     const chartsByNewness = computed(() => {
         if (!player.value?.data) return { old: [] as Chart[], newer: [] as Chart[] };
 
-        const useFitDiff = isFitDiffMode.value;
+        const useFitDiff = isFitDiffMode.value || isNb50Mode.value;
         const comboFilter = comboFilterMode.value;
 
-        let records = getSourceRecords(useFitDiff || isNb50Mode.value || !!comboFilter);
+        let records = getSourceRecords(useFitDiff || !!comboFilter);
         records = filterByComboStatus(records, comboFilter);
 
         let charts = records
@@ -550,12 +550,18 @@
     }
 
     function toRenderChartPayload(chart: Chart): B50RenderChartPayload {
+        const fitConstant = (chart.score as Record<string, unknown> | undefined)?.fitConstant;
+        const ds =
+            typeof fitConstant === "number" && !Number.isNaN(fitConstant)
+                ? fitConstant
+                : chart.info.constant;
+
         return {
             songId: chart.music.info.id,
             title: chart.music.info.title,
             type: chart.music.info.type,
             levelIndex: chart.info.grade,
-            ds: chart.info.constant,
+            ds,
             achievements: chart.score?.achievements ?? null,
             fc: chart.score?.comboStatus ?? "",
             fs: chart.score?.syncStatus ?? "",
