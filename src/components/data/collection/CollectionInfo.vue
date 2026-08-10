@@ -85,33 +85,6 @@
         return getRequirementPresentation(props.collection!, requirement);
     }
 
-    function trackingState(requirement: CollectionRequired): {
-        kind: "automatic" | "manual" | "structured";
-        icon: string;
-        text: string;
-    } {
-        const presentation = requirementPresentation(requirement);
-        if (props.collection?.type === CollectionKind.Plate && presentation.progressMode) {
-            return {
-                kind: "automatic",
-                icon: "monitoring",
-                text: presentation.progressMode === "score" ? "可计算进度" : "可判断游玩",
-            };
-        }
-        if (presentation.progressMode) {
-            return {
-                kind: "structured",
-                icon: "fact_check",
-                text: "已结构化",
-            };
-        }
-        return {
-            kind: "manual",
-            icon: "stadia_controller",
-            text: "需游戏内确认",
-        };
-    }
-
     function handleClose(event: Event): void {
         markDialogClosed(event);
         emit("update:open", false);
@@ -191,7 +164,11 @@
                         <span class="info-text">{{ collection.genre }}</span>
                     </div>
                     <div
-                        v-if="collection.description && !collection.required?.length"
+                        v-if="
+                            collection.description &&
+                            !collection.required?.length &&
+                            collection.description !== collection.genre
+                        "
                         class="collection-info-item"
                     >
                         <mdui-icon name="rule" class="info-icon"></mdui-icon>
@@ -225,10 +202,6 @@
                             <div class="requirement-title">
                                 {{ requirementPresentation(requirement).title }}
                             </div>
-                        </div>
-                        <div class="tracking-state" :data-state="trackingState(requirement).kind">
-                            <mdui-icon :name="trackingState(requirement).icon"></mdui-icon>
-                            <span>{{ trackingState(requirement).text }}</span>
                         </div>
                     </div>
 
