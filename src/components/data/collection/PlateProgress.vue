@@ -90,7 +90,7 @@
         <div class="progress-header">
             <div>
                 <div class="progress-title">成绩进度</div>
-                <div class="progress-condition">{{ plate.description }}</div>
+                <div class="progress-caption">依据当前用户保存的最佳成绩计算</div>
             </div>
             <div class="progress-value">
                 <mdui-circular-progress
@@ -146,7 +146,7 @@
         font-weight: 600;
     }
 
-    .progress-condition {
+    .progress-caption {
         margin-top: 4px;
         color: rgb(var(--mdui-color-on-surface-variant));
         font-size: 0.85rem;

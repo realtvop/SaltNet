@@ -1,15 +1,13 @@
 import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 import type { Chart, ChartScore } from "../music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
+import { getRequirementPresentation } from "./requirement";
 import type { CollectionRequired, Plate, VersionPlate } from "./type";
 
 const rankOrder = Object.values(RankRate);
 const comboOrder = Object.values(ComboStatus);
 const syncOrder = Object.values(SyncStatus);
 
-const nonScoreRequirementPattern =
-    /(クレジット|回プレイ|人以上|MISS|SPEED|ミラー|トラックスキップ|TRACK SKIP|上下|左右)/i;
-const simplePlayPattern = /\/(?:プレイ|游玩)\s*$/i;
 const requirementLookupCache = new WeakMap<Plate, Map<number, CollectionRequired[]>>();
 
 function reachesThreshold<T extends string>(current: T, required: T, order: T[]): boolean {
@@ -23,13 +21,7 @@ export function isRequirementScoreEvaluable(
     requirement: CollectionRequired
 ): boolean {
     if (!requirement.songs?.length) return false;
-    if (requirement.rate || requirement.fc || requirement.fs) return true;
-
-    return (
-        requirement.songs.length === 1 &&
-        simplePlayPattern.test(plate.description) &&
-        !nonScoreRequirementPattern.test(plate.description)
-    );
+    return getRequirementPresentation(plate, requirement).progressMode !== null;
 }
 
 export function isPlateScoreEvaluable(plate: Plate): boolean {

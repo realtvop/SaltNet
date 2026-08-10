@@ -7,6 +7,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getCollectionImageURL } from "@/components/integrations/assets";
     import PlateProgress from "./PlateProgress.vue";
+    import { getRequirementPresentation, type RequirementPresentation } from "./requirement";
     import {
         type Collection,
         type CollectionRequired,
@@ -74,17 +75,62 @@
         return value.toUpperCase().replace(/P$/, "+").replace("FSD", "FSDX");
     }
 
-    function requirementLabels(requirement: CollectionRequired): string[] {
+    function difficultyText(requirement: CollectionRequired): string {
         const difficulties = requirement.difficulties ?? [];
-        const labels = [
-            difficulties.length
-                ? difficulties.map(index => difficultyNames[index] ?? index.toString()).join(" / ")
-                : "任意难度",
-        ];
-        if (requirement.rate) labels.push(`RANK ${formatRequirementValue(requirement.rate)}`);
-        if (requirement.fc) labels.push(formatRequirementValue(requirement.fc));
-        if (requirement.fs) labels.push(formatRequirementValue(requirement.fs));
-        return labels;
+        return difficulties.length
+            ? difficulties.map(index => difficultyNames[index] ?? index.toString()).join(" / ")
+            : "任意难度";
+    }
+
+    function scoreTargets(requirement: CollectionRequired): { label: string; value: string }[] {
+        const targets: { label: string; value: string }[] = [];
+        if (requirement.rate) {
+            targets.push({
+                label: "达成等级",
+                value: `RANK ${formatRequirementValue(requirement.rate)}`,
+            });
+        }
+        if (requirement.fc) {
+            targets.push({ label: "连击状态", value: formatRequirementValue(requirement.fc) });
+        }
+        if (requirement.fs) {
+            targets.push({ label: "同步状态", value: formatRequirementValue(requirement.fs) });
+        }
+        return targets;
+    }
+
+    function requirementPresentation(requirement: CollectionRequired): RequirementPresentation {
+        return getRequirementPresentation(props.collection!, requirement);
+    }
+
+    function trackingState(requirement: CollectionRequired): {
+        kind: "automatic" | "manual" | "structured";
+        icon: string;
+        text: string;
+    } {
+        const presentation = requirementPresentation(requirement);
+        if (props.collection?.type === CollectionKind.Plate && presentation.progressMode) {
+            return {
+                kind: "automatic",
+                icon: "monitoring",
+                text:
+                    presentation.progressMode === "score"
+                        ? "可根据当前成绩计算进度"
+                        : "可根据成绩记录判断是否游玩",
+            };
+        }
+        if (presentation.progressMode) {
+            return {
+                kind: "structured",
+                icon: "fact_check",
+                text: "条件已结构化展示",
+            };
+        }
+        return {
+            kind: "manual",
+            icon: "stadia_controller",
+            text: "需在游戏内完成，无法从最佳成绩判断",
+        };
     }
 
     function titleColorClass(color: TitleColor): string {
@@ -167,7 +213,10 @@
                         </mdui-chip>
                         <mdui-chip v-if="collection.genre">{{ collection.genre }}</mdui-chip>
                     </div>
-                    <p v-if="collection.description" class="description">
+                    <p
+                        v-if="collection.description && !collection.required?.length"
+                        class="description"
+                    >
                         {{ collection.description }}
                     </p>
                 </div>
@@ -175,34 +224,99 @@
 
             <section v-if="collection.required?.length" class="requirements">
                 <h3>获取条件</h3>
-                <mdui-card
+                <div v-if="collection.description" class="condition-overview">
+                    <span class="condition-overview-icon">
+                        <mdui-icon name="assignment"></mdui-icon>
+                    </span>
+                    <div>
+                        <div class="condition-overview-label">完整条件</div>
+                        <p>{{ collection.description }}</p>
+                    </div>
+                </div>
+                <article
                     v-for="(requirement, index) in collection.required"
                     :key="index"
                     class="requirement-card"
-                    variant="filled"
+                    :data-kind="requirementPresentation(requirement).kind"
                 >
-                    <button
-                        type="button"
-                        class="requirement-header"
-                        @click="expandedRequirement = expandedRequirement === index ? null : index"
-                    >
-                        <span class="requirement-labels">
-                            <mdui-chip v-for="label in requirementLabels(requirement)" :key="label">
-                                {{ label }}
-                            </mdui-chip>
-                        </span>
-                        <span class="song-count">
-                            {{ requirement.songs?.length ?? 0 }} 首
+                    <div class="requirement-heading">
+                        <span class="requirement-icon">
                             <mdui-icon
-                                :name="
-                                    expandedRequirement === index
-                                        ? 'keyboard_arrow_up'
-                                        : 'keyboard_arrow_down'
-                                "
+                                :name="requirementPresentation(requirement).icon"
                             ></mdui-icon>
                         </span>
-                    </button>
-                    <div v-if="expandedRequirement === index" class="required-songs">
+                        <div class="requirement-heading-copy">
+                            <div class="requirement-kind">
+                                {{ requirementPresentation(requirement).label }}
+                            </div>
+                            <div class="requirement-title">
+                                {{ requirementPresentation(requirement).title }}
+                            </div>
+                        </div>
+                        <div class="tracking-state" :data-state="trackingState(requirement).kind">
+                            <mdui-icon :name="trackingState(requirement).icon"></mdui-icon>
+                            <span>{{ trackingState(requirement).text }}</span>
+                        </div>
+                    </div>
+
+                    <div class="requirement-details">
+                        <div class="requirement-detail">
+                            <span>目标难度</span>
+                            <strong>{{ difficultyText(requirement) }}</strong>
+                        </div>
+                        <div
+                            v-for="target in scoreTargets(requirement)"
+                            :key="target.label"
+                            class="requirement-detail"
+                        >
+                            <span>{{ target.label }}</span>
+                            <strong>{{ target.value }}</strong>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="!requirementPresentation(requirement).progressMode"
+                        class="manual-condition-note"
+                    >
+                        <mdui-icon name="info"></mdui-icon>
+                        <span>
+                            {{ requirementPresentation(requirement).manualReason }}
+                        </span>
+                    </div>
+
+                    <div v-if="requirement.songs?.length" class="song-targets">
+                        <button
+                            v-if="requirement.songs.length > 1"
+                            type="button"
+                            class="song-targets-toggle"
+                            @click="
+                                expandedRequirement = expandedRequirement === index ? null : index
+                            "
+                        >
+                            <span>
+                                <mdui-icon name="library_music"></mdui-icon>
+                                目标曲目
+                            </span>
+                            <span>
+                                {{ requirement.songs.length }} 首
+                                <mdui-icon
+                                    :name="
+                                        expandedRequirement === index
+                                            ? 'keyboard_arrow_up'
+                                            : 'keyboard_arrow_down'
+                                    "
+                                ></mdui-icon>
+                            </span>
+                        </button>
+                        <div v-else class="single-song-label">
+                            <mdui-icon name="library_music"></mdui-icon>
+                            目标曲目
+                        </div>
+                    </div>
+                    <div
+                        v-if="requirement.songs?.length === 1 || expandedRequirement === index"
+                        class="required-songs"
+                    >
                         <div
                             v-for="song in requirement.songs ?? []"
                             :key="`${song.type}-${song.id}`"
@@ -215,7 +329,7 @@
                             <span class="song-id">#{{ song.id }}</span>
                         </div>
                     </div>
-                </mdui-card>
+                </article>
             </section>
             <section v-else class="requirements-empty">暂无结构化获取条件</section>
 
@@ -319,8 +433,7 @@
         overflow-wrap: anywhere;
     }
 
-    .metadata-chips,
-    .requirement-labels {
+    .metadata-chips {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
@@ -340,34 +453,225 @@
         margin: 0 0 10px;
     }
 
-    .requirement-card + .requirement-card {
-        margin-top: 8px;
+    .condition-overview {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding: 14px 16px;
+        border-radius: var(--mdui-shape-corner-medium);
+        background: rgb(var(--mdui-color-primary-container));
+        color: rgb(var(--mdui-color-on-primary-container));
     }
 
-    .requirement-header {
+    .condition-overview-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgb(var(--mdui-color-primary));
+        color: rgb(var(--mdui-color-on-primary));
+        flex: none;
+        place-items: center;
+    }
+
+    .condition-overview-label {
+        margin-bottom: 3px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+    }
+
+    .condition-overview p {
+        margin: 0;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+    }
+
+    .requirement-card {
+        --condition-accent: var(--mdui-color-primary);
+        padding: 16px;
+        border: 1px solid rgb(var(--mdui-color-outline-variant));
+        border-left: 4px solid rgb(var(--condition-accent));
+        border-radius: var(--mdui-shape-corner-medium);
+        background: rgb(var(--mdui-color-surface-container-low));
+    }
+
+    .requirement-card[data-kind="play"] {
+        --condition-accent: 42 126 81;
+    }
+
+    .requirement-card[data-kind="credit"],
+    .requirement-card[data-kind="play-count"],
+    .requirement-card[data-kind="miss"],
+    .requirement-card[data-kind="loadout"],
+    .requirement-card[data-kind="settings"],
+    .requirement-card[data-kind="special"] {
+        --condition-accent: 181 107 0;
+    }
+
+    .requirement-card[data-kind="multiplayer"] {
+        --condition-accent: var(--mdui-color-secondary);
+    }
+
+    .requirement-card + .requirement-card {
+        margin-top: 12px;
+    }
+
+    .requirement-heading {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+    }
+
+    .requirement-icon {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+        color: rgb(var(--condition-accent));
+        background: rgb(var(--condition-accent) / 0.12);
+        place-items: center;
+    }
+
+    .requirement-icon mdui-icon {
+        font-size: 25px;
+    }
+
+    .requirement-heading-copy {
+        min-width: 0;
+    }
+
+    .requirement-kind {
+        color: rgb(var(--condition-accent));
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    .requirement-title {
+        margin-top: 2px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .tracking-state {
+        display: flex;
+        grid-column: 2 / -1;
+        align-items: center;
+        gap: 6px;
+        margin-top: -6px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.78rem;
+        font-weight: 500;
+        line-height: 1.25;
+    }
+
+    .tracking-state[data-state="automatic"] {
+        color: rgb(42 126 81);
+    }
+
+    .tracking-state[data-state="manual"] {
+        color: rgb(var(--condition-accent));
+    }
+
+    .tracking-state mdui-icon {
+        font-size: 17px;
+        flex: none;
+    }
+
+    .requirement-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .requirement-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        padding: 10px 12px;
+        border-radius: var(--mdui-shape-corner-small);
+        background: rgb(var(--mdui-color-surface-container));
+    }
+
+    .requirement-detail span {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.72rem;
+    }
+
+    .requirement-detail strong {
+        font-size: 0.88rem;
+        overflow-wrap: anywhere;
+    }
+
+    .manual-condition-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: var(--mdui-shape-corner-small);
+        background: rgb(181 107 0 / 0.1);
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+        line-height: 1.45;
+    }
+
+    .manual-condition-note mdui-icon {
+        color: rgb(181 107 0);
+        font-size: 18px;
+        flex: none;
+    }
+
+    .song-targets {
+        margin-top: 12px;
+        border-top: 1px solid rgb(var(--mdui-color-outline-variant));
+    }
+
+    .song-targets-toggle {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
         width: 100%;
-        padding: 12px 14px;
+        padding: 12px 0 0;
         border: 0;
         color: inherit;
         background: transparent;
         cursor: pointer;
+        font: inherit;
         text-align: left;
     }
 
-    .song-count {
+    .song-targets-toggle > span,
+    .single-song-label {
         display: flex;
         align-items: center;
-        white-space: nowrap;
+        gap: 6px;
+    }
+
+    .song-targets-toggle > span:last-child {
         color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.85rem;
+    }
+
+    .song-targets-toggle mdui-icon,
+    .single-song-label mdui-icon {
+        font-size: 19px;
+    }
+
+    .single-song-label {
+        padding-top: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
     }
 
     .required-songs {
         max-height: 360px;
-        padding: 0 14px 12px;
         overflow: auto;
     }
 
@@ -436,6 +740,19 @@
         .title-preview {
             min-width: 0;
             width: 100%;
+        }
+
+        .requirement-heading {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .tracking-state {
+            grid-column: 2 / -1;
+            justify-self: start;
+        }
+
+        .requirement-details {
+            grid-template-columns: 1fr;
         }
     }
 </style>
