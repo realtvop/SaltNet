@@ -113,23 +113,20 @@
             return {
                 kind: "automatic",
                 icon: "monitoring",
-                text:
-                    presentation.progressMode === "score"
-                        ? "可根据当前成绩计算进度"
-                        : "可根据成绩记录判断是否游玩",
+                text: presentation.progressMode === "score" ? "可计算进度" : "可判断游玩",
             };
         }
         if (presentation.progressMode) {
             return {
                 kind: "structured",
                 icon: "fact_check",
-                text: "条件已结构化展示",
+                text: "已结构化",
             };
         }
         return {
             kind: "manual",
             icon: "stadia_controller",
-            text: "需在游戏内完成，无法从最佳成绩判断",
+            text: "需游戏内确认",
         };
     }
 
@@ -225,26 +222,21 @@
             <section v-if="collection.required?.length" class="requirements">
                 <h3>获取条件</h3>
                 <div v-if="collection.description" class="condition-overview">
-                    <span class="condition-overview-icon">
-                        <mdui-icon name="assignment"></mdui-icon>
-                    </span>
-                    <div>
-                        <div class="condition-overview-label">完整条件</div>
-                        <p>{{ collection.description }}</p>
-                    </div>
+                    <mdui-icon name="rule"></mdui-icon>
+                    <p>{{ collection.description }}</p>
                 </div>
-                <article
+                <mdui-card
                     v-for="(requirement, index) in collection.required"
                     :key="index"
                     class="requirement-card"
+                    variant="filled"
                     :data-kind="requirementPresentation(requirement).kind"
                 >
                     <div class="requirement-heading">
-                        <span class="requirement-icon">
-                            <mdui-icon
-                                :name="requirementPresentation(requirement).icon"
-                            ></mdui-icon>
-                        </span>
+                        <mdui-icon
+                            class="requirement-icon"
+                            :name="requirementPresentation(requirement).icon"
+                        ></mdui-icon>
                         <div class="requirement-heading-copy">
                             <div class="requirement-kind">
                                 {{ requirementPresentation(requirement).label }}
@@ -278,7 +270,7 @@
                         v-if="!requirementPresentation(requirement).progressMode"
                         class="manual-condition-note"
                     >
-                        <mdui-icon name="info"></mdui-icon>
+                        <mdui-icon name="info_outline"></mdui-icon>
                         <span>
                             {{ requirementPresentation(requirement).manualReason }}
                         </span>
@@ -329,7 +321,7 @@
                             <span class="song-id">#{{ song.id }}</span>
                         </div>
                     </div>
-                </article>
+                </mdui-card>
             </section>
             <section v-else class="requirements-empty">暂无结构化获取条件</section>
 
@@ -355,42 +347,42 @@
     }
 
     .collection-detail {
-        width: min(900px, 100%);
+        width: min(760px, 100%);
         margin: 0 auto;
-        padding: 12px 4px 24px;
+        padding: 4px 2px 16px;
         box-sizing: border-box;
     }
 
     .collection-hero {
         display: flex;
         align-items: center;
-        gap: 24px;
+        gap: 16px;
     }
 
     .collection-image {
         display: block;
-        max-width: 360px;
-        max-height: 220px;
+        max-width: 300px;
+        max-height: 140px;
         object-fit: contain;
-        flex: 0 1 42%;
+        flex: 0 1 48%;
     }
 
     .collection-image.square {
-        width: min(220px, 35vw);
+        width: min(140px, 30vw);
         aspect-ratio: 1;
     }
 
     .collection-image.plate {
-        width: min(360px, 45vw);
+        width: min(300px, 42vw);
     }
 
     .collection-image.frame {
-        width: min(360px, 45vw);
+        width: min(300px, 42vw);
     }
 
     .title-preview {
-        min-width: 240px;
-        padding: 16px 24px;
+        min-width: 200px;
+        padding: 12px 18px;
         border-radius: var(--mdui-shape-corner-medium);
         text-align: center;
         font-size: 1.25rem;
@@ -429,76 +421,67 @@
     }
 
     .collection-summary h2 {
-        margin: 0 0 12px;
+        margin: 0 0 8px;
+        font-size: 1.25rem;
         overflow-wrap: anywhere;
     }
 
     .metadata-chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 4px;
+    }
+
+    .metadata-chips mdui-chip {
+        height: 28px;
     }
 
     .description {
-        margin: 14px 0 0;
+        margin: 8px 0 0;
         color: rgb(var(--mdui-color-on-surface-variant));
         line-height: 1.6;
     }
 
     .requirements {
-        margin-top: 24px;
+        margin-top: 16px;
     }
 
     .requirements h3 {
-        margin: 0 0 10px;
+        margin: 0 0 8px;
+        font-size: 1rem;
     }
 
     .condition-overview {
         display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 12px;
-        padding: 14px 16px;
-        border-radius: var(--mdui-shape-corner-medium);
-        background: rgb(var(--mdui-color-primary-container));
-        color: rgb(var(--mdui-color-on-primary-container));
+        align-items: center;
+        gap: 8px;
+        margin: 0 2px 8px;
+        color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .condition-overview-icon {
-        display: grid;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgb(var(--mdui-color-primary));
-        color: rgb(var(--mdui-color-on-primary));
+    .condition-overview mdui-icon {
+        color: rgb(var(--mdui-color-primary));
+        font-size: 20px;
         flex: none;
-        place-items: center;
-    }
-
-    .condition-overview-label {
-        margin-bottom: 3px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
     }
 
     .condition-overview p {
         margin: 0;
-        line-height: 1.55;
+        font-size: 0.84rem;
+        line-height: 1.4;
         overflow-wrap: anywhere;
     }
 
     .requirement-card {
         --condition-accent: var(--mdui-color-primary);
-        padding: 16px;
-        border: 1px solid rgb(var(--mdui-color-outline-variant));
-        border-left: 4px solid rgb(var(--condition-accent));
-        border-radius: var(--mdui-shape-corner-medium);
-        background: rgb(var(--mdui-color-surface-container-low));
+        display: block;
+        width: 100%;
+        padding: 12px;
+        box-sizing: border-box;
     }
 
     .requirement-card[data-kind="play"] {
-        --condition-accent: 42 126 81;
+        --condition-accent: var(--mdui-color-tertiary);
     }
 
     .requirement-card[data-kind="credit"],
@@ -507,7 +490,7 @@
     .requirement-card[data-kind="loadout"],
     .requirement-card[data-kind="settings"],
     .requirement-card[data-kind="special"] {
-        --condition-accent: 181 107 0;
+        --condition-accent: var(--mdui-color-secondary);
     }
 
     .requirement-card[data-kind="multiplayer"] {
@@ -515,28 +498,19 @@
     }
 
     .requirement-card + .requirement-card {
-        margin-top: 12px;
+        margin-top: 8px;
     }
 
     .requirement-heading {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
-        gap: 12px;
+        column-gap: 8px;
     }
 
     .requirement-icon {
-        display: grid;
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
         color: rgb(var(--condition-accent));
-        background: rgb(var(--condition-accent) / 0.12);
-        place-items: center;
-    }
-
-    .requirement-icon mdui-icon {
-        font-size: 25px;
+        font-size: 23px;
     }
 
     .requirement-heading-copy {
@@ -545,31 +519,28 @@
 
     .requirement-kind {
         color: rgb(var(--condition-accent));
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 700;
-        letter-spacing: 0.04em;
     }
 
     .requirement-title {
-        margin-top: 2px;
-        font-size: 1rem;
+        font-size: 0.9rem;
         font-weight: 600;
     }
 
     .tracking-state {
         display: flex;
-        grid-column: 2 / -1;
         align-items: center;
-        gap: 6px;
-        margin-top: -6px;
+        gap: 4px;
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 500;
         line-height: 1.25;
+        white-space: nowrap;
     }
 
     .tracking-state[data-state="automatic"] {
-        color: rgb(42 126 81);
+        color: rgb(var(--mdui-color-primary));
     }
 
     .tracking-state[data-state="manual"] {
@@ -577,58 +548,57 @@
     }
 
     .tracking-state mdui-icon {
-        font-size: 17px;
+        font-size: 16px;
         flex: none;
     }
 
     .requirement-details {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 8px;
-        margin-top: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        margin-top: 10px;
+        border-block: 1px solid rgb(var(--mdui-color-outline-variant));
     }
 
     .requirement-detail {
         display: flex;
-        flex-direction: column;
-        gap: 3px;
+        align-items: baseline;
+        gap: 6px;
         min-width: 0;
-        padding: 10px 12px;
-        border-radius: var(--mdui-shape-corner-small);
-        background: rgb(var(--mdui-color-surface-container));
+        padding: 7px 4px;
     }
 
     .requirement-detail span {
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.72rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
     }
 
     .requirement-detail strong {
-        font-size: 0.88rem;
+        font-size: 0.8rem;
         overflow-wrap: anywhere;
     }
 
     .manual-condition-note {
         display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-top: 10px;
-        padding: 10px 12px;
-        border-radius: var(--mdui-shape-corner-small);
-        background: rgb(181 107 0 / 0.1);
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.8rem;
-        line-height: 1.45;
+        font-size: 0.75rem;
+        line-height: 1.35;
     }
 
     .manual-condition-note mdui-icon {
-        color: rgb(181 107 0);
-        font-size: 18px;
+        color: rgb(var(--mdui-color-secondary));
+        font-size: 16px;
         flex: none;
     }
 
     .song-targets {
-        margin-top: 12px;
+        margin-top: 8px;
+    }
+
+    .manual-condition-note + .song-targets {
         border-top: 1px solid rgb(var(--mdui-color-outline-variant));
     }
 
@@ -638,7 +608,7 @@
         justify-content: space-between;
         gap: 12px;
         width: 100%;
-        padding: 12px 0 0;
+        padding: 8px 0 0;
         border: 0;
         color: inherit;
         background: transparent;
@@ -656,17 +626,17 @@
 
     .song-targets-toggle > span:last-child {
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.85rem;
+        font-size: 0.78rem;
     }
 
     .song-targets-toggle mdui-icon,
     .single-song-label mdui-icon {
-        font-size: 19px;
+        font-size: 17px;
     }
 
     .single-song-label {
-        padding-top: 12px;
-        font-size: 0.85rem;
+        padding-top: 8px;
+        font-size: 0.78rem;
         font-weight: 600;
     }
 
@@ -680,7 +650,7 @@
         grid-template-columns: minmax(0, 1fr) auto auto;
         align-items: center;
         gap: 10px;
-        padding: 8px 0;
+        padding: 6px 0;
         border-top: 1px solid rgb(var(--mdui-color-outline-variant));
     }
 
@@ -724,7 +694,7 @@
         .collection-hero {
             align-items: stretch;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
         }
 
         .collection-image,
@@ -733,7 +703,7 @@
         .collection-image.frame {
             width: 100%;
             max-width: 100%;
-            max-height: 240px;
+            max-height: 160px;
             margin: 0 auto;
         }
 
@@ -748,11 +718,8 @@
 
         .tracking-state {
             grid-column: 2 / -1;
+            margin-top: 2px;
             justify-self: start;
-        }
-
-        .requirement-details {
-            grid-template-columns: 1fr;
         }
     }
 </style>

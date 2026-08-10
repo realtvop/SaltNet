@@ -87,7 +87,7 @@
 
 <template>
     <section v-if="evaluable" class="plate-progress">
-        <div class="progress-header">
+        <mdui-card class="progress-header" variant="filled">
             <div>
                 <div class="progress-title">成绩进度</div>
                 <div class="progress-caption">依据当前用户保存的最佳成绩计算</div>
@@ -100,7 +100,7 @@
                 ></mdui-circular-progress>
                 <span>{{ progress.completed }} / {{ progress.total }}</span>
             </div>
-        </div>
+        </mdui-card>
 
         <div v-if="loading" class="progress-state">
             <mdui-circular-progress></mdui-circular-progress>
@@ -128,66 +128,61 @@
 
 <style scoped>
     .plate-progress {
-        margin-top: 20px;
+        margin-top: 12px;
     }
 
     .progress-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        padding: 14px 16px;
-        border-radius: var(--mdui-shape-corner-medium);
-        background: rgb(var(--mdui-color-surface-container));
+        gap: 12px;
+        width: 100%;
+        padding: 10px 12px;
+        box-sizing: border-box;
     }
 
     .progress-title {
-        font-size: 1rem;
+        font-size: 0.9rem;
         font-weight: 600;
     }
 
     .progress-caption {
-        margin-top: 4px;
+        margin-top: 2px;
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
 
     .progress-value {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 7px;
         white-space: nowrap;
     }
 
     .progress-value mdui-circular-progress {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     .progress-state {
         display: flex;
         justify-content: center;
-        padding: 32px;
+        padding: 24px;
     }
 
     .score-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 8px;
-        margin-top: 12px;
+        gap: 6px;
+        margin-top: 8px;
     }
 
     .load-more {
         display: block;
-        margin: 12px auto 0;
+        margin: 8px auto 0;
     }
 
     @media (max-width: 560px) {
-        .progress-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
         .score-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
