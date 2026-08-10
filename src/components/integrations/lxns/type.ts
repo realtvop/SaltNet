@@ -1,4 +1,5 @@
 import type { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
+import type { CollectionRequired, CollectionSongType } from "@/components/data/collection/type";
 
 export interface LXNSAuth {
     accessToken: string | null;
@@ -40,6 +41,36 @@ interface LXNSCollection {
     name: string;
     genre: string;
     color?: string;
+}
+
+export type LXNSCollectionType = "trophy" | "icon" | "plate" | "frame";
+
+export interface LXNSCollectionRequiredSong {
+    id: number;
+    title: string;
+    type: CollectionSongType;
+    completed?: boolean;
+    completed_difficulties?: number[];
+}
+
+export interface LXNSCollectionRequired extends Omit<CollectionRequired, "songs"> {
+    songs?: LXNSCollectionRequiredSong[];
+}
+
+export interface LXNSCollectionItem {
+    id: number;
+    name: string;
+    color?: string | null;
+    description?: string | null;
+    genre?: string | null;
+    required?: LXNSCollectionRequired[] | null;
+}
+
+export interface LXNSCollectionLists {
+    trophies: LXNSCollectionItem[];
+    icons: LXNSCollectionItem[];
+    plates: LXNSCollectionItem[];
+    frames: LXNSCollectionItem[];
 }
 
 export interface LXNSResponse<T> {

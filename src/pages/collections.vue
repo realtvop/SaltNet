@@ -1,19 +1,24 @@
 <script setup lang="ts">
-    import { ref, computed, watch } from "vue";
+    import { ref, computed, onMounted, watch } from "vue";
     import {
+        collectionDataError,
+        getCollectionDataAsync,
         icons,
+        isCollectionDataLoading,
         plates,
         frames,
         titles,
         characters,
         genres,
         partners,
+        refreshCollectionData,
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
     import { copyTextToClipboard } from "@/components/app/utils";
     import { useVirtualScroll, handleSelectChange } from "@/utils";
     import { getCollectionImageURL } from "@/components/integrations/assets";
+    import CollectionInfo from "@/components/data/collection/CollectionInfo.vue";
 
     const Category = {
         Title: "称号",
@@ -30,6 +35,10 @@
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
     const filter = ref<string>("all");
+    const collectionInfoDialog = ref<{ open: boolean; collection: Collection | null }>({
+        open: false,
+        collection: null,
+    });
 
     function handleCategoryChange(e: Event) {
         const target = e.target as HTMLElement & { value: string };
@@ -252,6 +261,14 @@
     function onFilterChange(event: Event) {
         handleSelectChange(event, filter);
     }
+
+    function openCollectionInfo(collection: Collection): void {
+        collectionInfoDialog.value = { open: true, collection };
+    }
+
+    onMounted(() => {
+        void getCollectionDataAsync();
+    });
 </script>
 
 <template>
@@ -290,14 +307,42 @@
             ></mdui-text-field>
         </div>
 
+        <div
+            v-if="
+                isCollectionDataLoading &&
+                !collections.length &&
+                category !== Category.Character &&
+                category !== Category.Partner
+            "
+            class="collection-state"
+        >
+            <mdui-circular-progress></mdui-circular-progress>
+            <span>正在从 LXNS 加载收藏品…</span>
+        </div>
+        <div
+            v-else-if="
+                collectionDataError &&
+                !collections.length &&
+                category !== Category.Character &&
+                category !== Category.Partner
+            "
+            class="collection-state"
+        >
+            <mdui-icon name="cloud_off"></mdui-icon>
+            <span>{{ collectionDataError }}</span>
+            <mdui-button variant="tonal" @click="refreshCollectionData">重试</mdui-button>
+        </div>
+
         <!-- 收藏品网格 -->
-        <div class="collections-container">
+        <div v-else class="collections-container">
             <div class="collections-grid">
                 <mdui-card
                     v-for="collection in itemsToRender"
                     :key="`${collection.type}-${collection.id}`"
                     :variant="isCollectionOwned(collection) ? 'filled' : 'outlined'"
                     class="collection-card"
+                    clickable
+                    @click="openCollectionInfo(collection)"
                 >
                     <div class="collection-content">
                         <!-- 根据类型显示不同的内容 -->
@@ -310,7 +355,7 @@
                                     ></div>
                                     <h3
                                         class="title-name clickable"
-                                        @click="copyTextToClipboard(collection.name)"
+                                        @click.stop="copyTextToClipboard(collection.name)"
                                     >
                                         {{ collection.name }}
                                     </h3>
@@ -319,13 +364,13 @@
                             <div class="title-info">
                                 <p
                                     class="collection-description clickable"
-                                    @click="copyTextToClipboard(collection.description)"
+                                    @click.stop="copyTextToClipboard(collection.description)"
                                 >
                                     {{ collection.description }}
                                 </p>
                                 <span
                                     class="collection-id clickable"
-                                    @click="copyTextToClipboard(collection.id.toString())"
+                                    @click.stop="copyTextToClipboard(collection.id.toString())"
                                 >
                                     #{{ collection.id }}
                                 </span>
@@ -402,7 +447,7 @@
                                 >
                                     <h3
                                         class="collection-name clickable"
-                                        @click="copyTextToClipboard(collection.name)"
+                                        @click.stop="copyTextToClipboard(collection.name)"
                                     >
                                         {{ collection.name }}
                                     </h3>
@@ -413,7 +458,7 @@
                                             collection.type === CollectionKind.Character
                                         "
                                         class="collection-id-inline clickable"
-                                        @click="copyTextToClipboard(collection.id.toString())"
+                                        @click.stop="copyTextToClipboard(collection.id.toString())"
                                     >
                                         #{{ collection.id }}
                                     </span>
@@ -421,7 +466,7 @@
                                 <p
                                     v-if="collection.type !== CollectionKind.Partner"
                                     class="collection-description clickable"
-                                    @click="copyTextToClipboard(collection.description)"
+                                    @click.stop="copyTextToClipboard(collection.description)"
                                 >
                                     {{ collection.description }}
                                 </p>
@@ -433,7 +478,7 @@
                                             collection.type === CollectionKind.Partner
                                         "
                                         class="collection-id clickable"
-                                        @click="copyTextToClipboard(collection.id.toString())"
+                                        @click.stop="copyTextToClipboard(collection.id.toString())"
                                     >
                                         #{{ collection.id }}
                                     </span>
@@ -483,6 +528,11 @@
                 </div>
             </div>
         </div>
+
+        <CollectionInfo
+            v-model:open="collectionInfoDialog.open"
+            :collection="collectionInfoDialog.collection"
+        />
     </div>
 </template>
 
@@ -493,6 +543,20 @@
 
     .collections-page {
         padding-top: calc(48px + 64px); /* tabs + filter-bar height */
+    }
+
+    .collection-state {
+        min-height: 40vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .collection-state mdui-icon {
+        font-size: 48px;
     }
 
     .category-tabs {

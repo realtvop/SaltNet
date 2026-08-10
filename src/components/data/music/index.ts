@@ -5,7 +5,6 @@
 
 import localForage from "localforage";
 import { reactive, ref } from "vue";
-import { updateSaltMetaVersionPlates } from "@/components/data/collection";
 import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type";
 import type { MaimaidxRegion } from "./type";
 import { fetchSaltMetaMusicList } from "./musicApi";
@@ -79,14 +78,13 @@ function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
     };
 }
 
-function applyMusicMetadata(metadata: MusicMetadataState | null, data: SavedMusicList): void {
+function applyMusicMetadata(metadata: MusicMetadataState | null): void {
     musicMetadataState = metadata;
     maimaiVersionsCN.splice(
         0,
         maimaiVersionsCN.length,
         ...(metadata?.cnVersions ?? []).map(v => v.name)
     );
-    updateSaltMetaVersionPlates(metadata?.cnVersionPlates ?? metadata?.cnVersions ?? [], data);
 }
 
 /**
@@ -103,7 +101,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
-            applyMusicMetadata(cached.metadata ?? null, musicData);
+            applyMusicMetadata(cached.metadata ?? null);
             chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;
             isMusicDataLoading.value = false;
@@ -122,7 +120,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         if (saltMetaData) {
             const metadataUpdatedAt = Date.now();
             musicData = saltMetaData.music;
-            applyMusicMetadata(saltMetaData.metadata, musicData);
+            applyMusicMetadata(saltMetaData.metadata);
             chartMetadataUpdatedAt.value = metadataUpdatedAt;
             currentRegion = region;
             saveToCache(saltMetaData.music, region, metadataUpdatedAt);
@@ -135,7 +133,7 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
-            applyMusicMetadata(cached.metadata ?? null, musicData);
+            applyMusicMetadata(cached.metadata ?? null);
             chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;
         }

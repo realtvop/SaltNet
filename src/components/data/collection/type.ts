@@ -22,8 +22,27 @@ export interface Collection {
     name: string;
     genre?: string;
     description: string;
+    required?: CollectionRequired[];
 
     status?: CollectionStatus;
+}
+export type CollectionSongType = "standard" | "dx" | "utage";
+
+export interface CollectionRequiredSong {
+    id: number;
+    title: string;
+    type: CollectionSongType;
+    completed?: boolean;
+    completedDifficulties?: number[];
+}
+
+export interface CollectionRequired {
+    difficulties?: number[];
+    rate?: RankRate;
+    fc?: ComboStatus;
+    fs?: SyncStatus;
+    songs?: CollectionRequiredSong[];
+    completed?: boolean;
 }
 export interface Character {
     id: number;
@@ -46,10 +65,10 @@ export interface Title extends Collection {
     genre: string;
 }
 export interface VersionPlate extends Plate {
-    difficulties: number[];
-    condition: ComboStatus | SyncStatus | RankRate;
-    songs: number[];
+    category: VersionPlateCategory;
 }
+
+export type VersionPlateCategory = "極" | "将" | "神" | "舞舞";
 
 export interface CollectionStatus {
     owned: boolean;

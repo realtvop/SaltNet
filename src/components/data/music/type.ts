@@ -82,10 +82,6 @@ export interface MusicMetadataState {
         name: string;
         word: string;
     }[];
-    cnVersionPlates?: {
-        name: string;
-        word: string;
-    }[];
 }
 
 // 用户成绩类型

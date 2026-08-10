@@ -7,7 +7,6 @@ import type { MusicMetadataState, SavedMusicList } from "./type";
 import {
     convertSaltMetaNextCompactedToNormal,
     convertSaltMetaNextToSavedMusicList,
-    getSaltMetaCnVersionPlates,
     getSaltMetaCnVersions,
     SALTMETA_NEXT_COMPACTED_URL,
     SALTMETA_NEXT_COMPACTED_VERSION,
@@ -56,7 +55,6 @@ export async function fetchSaltMetaMusicList(): Promise<SaltMetaMusicListResult 
             music,
             metadata: {
                 cnVersions: getSaltMetaCnVersions(metadata, music),
-                cnVersionPlates: getSaltMetaCnVersionPlates(metadata, music),
             },
         };
     } catch (error) {

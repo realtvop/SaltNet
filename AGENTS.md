@@ -11,7 +11,7 @@ SaltNet is a two-package pnpm workspace:
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
-- `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `user/` for profiles, updates, backups, and rating history, and `collection/` for plate/collection definitions.
+- `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `user/` for profiles, updates, backups, and rating history, and `collection/` for cached LXNS collections, collection dialogs, and reusable plate-progress evaluation.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
@@ -20,7 +20,7 @@ Static assets belong in `public/`; structured source assets belong in `src/asset
 
 ## Architecture & Navigation Index
 
-Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates, check `src/components/data/music/saltmeta.ts`, `public/charts.json`, and `script/updateChartsInfo.cjs`. Broader data-shape notes are documented in `docs/component-data-types.md`.
+Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates, check `src/components/data/music/saltmeta.ts` and `src/components/data/music/musicApi.ts`. For collection or version-plate data, trace `src/components/integrations/lxns/fetchCollection.ts`, `src/components/data/collection/`, then `src/pages/collections.vue` or `src/pages/songs.vue`. Broader data-shape notes are documented in `docs/component-data-types.md`.
 
 Dialogs add same-URL browser-history entries under `history.state.__saltnetDialog`. Closed,
 unmounted, or reload-stale dialog entries are skipped during `popstate`/initial reconciliation so

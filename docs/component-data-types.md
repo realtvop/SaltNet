@@ -550,6 +550,16 @@ enum MusicGenre {
 - **缓存标识**: 用户名 + 更新时间 + 版本构建时间
 - **失效条件**: 标识不匹配时重新计算排序
 
+### 4. 收藏品缓存
+
+- **数据源**: LXNS 公共收藏品列表 API（`trophy`、`icon`、`plate`、`frame`，请求 `required=true`）
+- **存储位置**: IndexedDB / localForage
+- **缓存key**: `saltnet_collection_cache_lxns_v1`
+- **加载方式**: 与音乐库一致，启动时优先恢复完整缓存快照，并在后台同时刷新四类收藏品
+- **更新保证**: 只有四类请求均成功且响应结构有效时才整体替换内存数据和缓存；刷新失败保留上次快照
+- **牌子映射**: 谱面页的极、将、神、舞舞牌直接使用姓名框的 `required` 条件；LXNS 的 DX 曲目 ID 转换为内部 ID 时增加 10000
+- **静态例外**: 旅行伙伴和搭档继续使用项目原有数据源；收藏品图片继续使用 `collectionimg.maimai.realtvop.top`
+
 ## 数据一致性保证
 
 ### 1. 谱面ID映射

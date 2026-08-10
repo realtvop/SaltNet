@@ -1,5 +1,5 @@
 import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-import type { Chart } from "@/components/data/music/type";
+import type { Chart, ChartScore } from "@/components/data/music/type";
 import type { DetailedData } from "@/components/data/user/type";
 import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
 import { isUtageGrade } from "./difficulty";
@@ -75,4 +75,26 @@ export function findDetailedScoreForChart(
     chart: Chart | null | undefined
 ): DivingFishFullRecord | undefined {
     return createDetailedScoreLookup(detailed)?.findScoreForChart(chart);
+}
+
+export function toChartScore(record: DivingFishFullRecord | undefined): ChartScore | undefined {
+    if (
+        !record ||
+        typeof record.achievements !== "number" ||
+        record.fc === undefined ||
+        record.fs === undefined ||
+        record.rate === undefined
+    ) {
+        return undefined;
+    }
+
+    return {
+        achievements: record.achievements,
+        comboStatus: record.fc,
+        syncStatus: record.fs,
+        rankRate: record.rate,
+        deluxeRating: record.ra,
+        deluxeScore: record.dxScore,
+        playCount: record.play_count,
+    };
 }
