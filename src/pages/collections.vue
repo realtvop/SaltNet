@@ -15,7 +15,7 @@
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
-    import { copyTextToClipboard } from "@/components/app/utils";
+    // import { copyTextToClipboard } from "@/components/app/utils";
     import { useVirtualScroll, handleSelectChange } from "@/utils";
     import { getCollectionImageURL } from "@/components/integrations/assets";
     import CollectionInfo from "@/components/data/collection/CollectionInfo.vue";
@@ -335,20 +335,16 @@
                             <div class="title-header">
                                 <CollectionTitle
                                     :title="collection as Title"
-                                    class="clickable"
-                                    @click.stop="copyTextToClipboard(collection.name)"
                                 />
                             </div>
                             <div class="title-info">
                                 <p
-                                    class="collection-description clickable"
-                                    @click.stop="copyTextToClipboard(collection.description)"
+                                    class="collection-description"
                                 >
                                     {{ collection.description }}
                                 </p>
                                 <span
-                                    class="collection-id clickable"
-                                    @click.stop="copyTextToClipboard(collection.id.toString())"
+                                    class="collection-id"
                                 >
                                     #{{ collection.id }}
                                 </span>
@@ -424,8 +420,7 @@
                                     }"
                                 >
                                     <h3
-                                        class="collection-name clickable"
-                                        @click.stop="copyTextToClipboard(collection.name)"
+                                        class="collection-name"
                                     >
                                         {{ collection.name }}
                                     </h3>
@@ -435,16 +430,14 @@
                                             collection.type === CollectionKind.Frame ||
                                             collection.type === CollectionKind.Character
                                         "
-                                        class="collection-id-inline clickable"
-                                        @click.stop="copyTextToClipboard(collection.id.toString())"
+                                        class="collection-id-inline"
                                     >
                                         #{{ collection.id }}
                                     </span>
                                 </div>
                                 <p
                                     v-if="collection.type !== CollectionKind.Partner"
-                                    class="collection-description clickable"
-                                    @click.stop="copyTextToClipboard(collection.description)"
+                                    class="collection-description"
                                 >
                                     {{ collection.description }}
                                 </p>
@@ -455,8 +448,7 @@
                                             collection.type === CollectionKind.Icon ||
                                             collection.type === CollectionKind.Partner
                                         "
-                                        class="collection-id clickable"
-                                        @click.stop="copyTextToClipboard(collection.id.toString())"
+                                        class="collection-id"
                                     >
                                         #{{ collection.id }}
                                     </span>
@@ -515,10 +507,6 @@
 </template>
 
 <style scoped>
-    .clickable {
-        cursor: pointer;
-    }
-
     .collections-page {
         padding-top: calc(48px + 64px); /* tabs + filter-bar height */
     }

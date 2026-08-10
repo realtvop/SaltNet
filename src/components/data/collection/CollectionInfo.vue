@@ -184,7 +184,7 @@
                         @click="copyTextToClipboard(collection.id.toString())"
                     >
                         <mdui-icon name="numbers" class="info-icon"></mdui-icon>
-                        <span class="info-text">#{{ collection.id }}</span>
+                        <span class="info-text">{{ collection.id }}</span>
                     </div>
                     <div v-if="collection.genre" class="collection-info-item">
                         <mdui-icon name="category" class="info-icon"></mdui-icon>
