@@ -33,24 +33,6 @@
     });
 
     const currentUser = computed(() => shared.users[0] ?? null);
-    const collectionTypeName = computed(() => {
-        switch (props.collection?.type) {
-            case CollectionKind.Title:
-                return "称号";
-            case CollectionKind.Icon:
-                return "头像";
-            case CollectionKind.Plate:
-                return "姓名框";
-            case CollectionKind.Frame:
-                return "背景";
-            case CollectionKind.Character:
-                return "旅行伙伴";
-            case CollectionKind.Partner:
-                return "搭档";
-            default:
-                return "收藏品";
-        }
-    });
     const imageUrl = computed(() => {
         if (!props.collection) return "";
         const typePaths: Partial<Record<CollectionKind, string>> = {
@@ -197,20 +179,24 @@
                 />
 
                 <div class="collection-summary">
-                    <h2>{{ collection.name }}</h2>
-                    <div class="metadata-chips">
-                        <mdui-chip>{{ collectionTypeName }}</mdui-chip>
-                        <mdui-chip @click="copyTextToClipboard(collection.id.toString())">
-                            #{{ collection.id }}
-                        </mdui-chip>
-                        <mdui-chip v-if="collection.genre">{{ collection.genre }}</mdui-chip>
-                    </div>
-                    <p
-                        v-if="collection.description && !collection.required?.length"
-                        class="description"
+                    <div
+                        class="collection-info-item clickable"
+                        @click="copyTextToClipboard(collection.id.toString())"
                     >
-                        {{ collection.description }}
-                    </p>
+                        <mdui-icon name="numbers" class="info-icon"></mdui-icon>
+                        <span class="info-text">#{{ collection.id }}</span>
+                    </div>
+                    <div v-if="collection.genre" class="collection-info-item">
+                        <mdui-icon name="category" class="info-icon"></mdui-icon>
+                        <span class="info-text">{{ collection.genre }}</span>
+                    </div>
+                    <div
+                        v-if="collection.description && !collection.required?.length"
+                        class="collection-info-item"
+                    >
+                        <mdui-icon name="rule" class="info-icon"></mdui-icon>
+                        <span class="info-text">{{ collection.description }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -378,28 +364,41 @@
     .collection-summary {
         min-width: 0;
         flex: 1;
-    }
-
-    .collection-summary h2 {
-        margin: 0 0 8px;
-        font-size: 1.25rem;
-        overflow-wrap: anywhere;
-    }
-
-    .metadata-chips {
         display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
     }
 
-    .metadata-chips mdui-chip {
-        height: 28px;
-    }
-
-    .description {
-        margin: 8px 0 0;
+    .collection-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
         color: rgb(var(--mdui-color-on-surface-variant));
-        line-height: 1.6;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .collection-info-item.clickable {
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .collection-info-item.clickable:hover {
+        color: rgb(var(--mdui-color-primary));
+    }
+
+    .info-icon {
+        flex-shrink: 0;
+        color: rgb(var(--mdui-color-primary));
+        font-size: 1.25rem;
+    }
+
+    .info-text {
+        overflow-wrap: anywhere;
+        white-space: normal;
+        word-break: break-word;
     }
 
     .requirements {
@@ -665,6 +664,21 @@
             max-width: 100%;
             max-height: 160px;
             margin: 0 auto;
+        }
+
+        .collection-summary {
+            width: 100%;
+            gap: 6px;
+            padding-top: 0;
+        }
+
+        .collection-info-item {
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .info-icon {
+            font-size: 1.1rem;
         }
 
         .requirement-heading {
