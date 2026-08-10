@@ -7,6 +7,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getCollectionImageURL } from "@/components/integrations/assets";
     import PlateProgress from "./PlateProgress.vue";
+    import CollectionTitle from "./CollectionTitle.vue";
     import { getRequirementPresentation, type RequirementPresentation } from "./requirement";
     import {
         type Collection,
@@ -14,7 +15,6 @@
         CollectionKind,
         type Plate,
         type Title,
-        TitleColor,
     } from "./type";
     import { isPlateScoreEvaluable } from "./versionPlate";
 
@@ -130,10 +130,6 @@
         };
     }
 
-    function titleColorClass(color: TitleColor): string {
-        return `title-color-${color.toLowerCase()}`;
-    }
-
     function handleClose(event: Event): void {
         markDialogClosed(event);
         emit("update:open", false);
@@ -193,13 +189,12 @@
                     }"
                     crossorigin="anonymous"
                 />
-                <div
+                <CollectionTitle
                     v-else-if="collection.type === CollectionKind.Title"
-                    class="title-preview"
-                    :class="titleColorClass((collection as Title).color)"
-                >
-                    {{ collection.name }}
-                </div>
+                    :title="collection as Title"
+                    class="clickable"
+                    @click="copyTextToClipboard(collection.name)"
+                />
 
                 <div class="collection-summary">
                     <h2>{{ collection.name }}</h2>
@@ -378,41 +373,6 @@
 
     .collection-image.frame {
         width: min(300px, 42vw);
-    }
-
-    .title-preview {
-        min-width: 200px;
-        padding: 12px 18px;
-        border-radius: var(--mdui-shape-corner-medium);
-        text-align: center;
-        font-size: 1.25rem;
-        font-weight: 700;
-        box-sizing: border-box;
-    }
-
-    .title-color-normal {
-        background: #e7e7e7;
-        color: #262626;
-    }
-
-    .title-color-bronze {
-        background: linear-gradient(135deg, #8d5637, #d59a68);
-        color: white;
-    }
-
-    .title-color-silver {
-        background: linear-gradient(135deg, #9ca3af, #f3f4f6);
-        color: #262626;
-    }
-
-    .title-color-gold {
-        background: linear-gradient(135deg, #c28d00, #ffe27a);
-        color: #3d2d00;
-    }
-
-    .title-color-rainbow {
-        background: linear-gradient(120deg, #ff8a8a, #ffe66d, #86efac, #7dd3fc, #c4b5fd);
-        color: #262626;
     }
 
     .collection-summary {
@@ -705,11 +665,6 @@
             max-width: 100%;
             max-height: 160px;
             margin: 0 auto;
-        }
-
-        .title-preview {
-            min-width: 0;
-            width: 100%;
         }
 
         .requirement-heading {
