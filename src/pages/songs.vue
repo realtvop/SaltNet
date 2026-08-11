@@ -21,8 +21,8 @@
         versionPlates,
     } from "@/components/data/collection";
     import {
-        checkChartFinish,
-        getPlateCharts,
+        checkCollectionChartFinish,
+        getCollectionCharts,
         getPlateCompactPresentation,
         getVersionPlateConditionText,
     } from "@/components/data/collection/versionPlate";
@@ -159,7 +159,9 @@
     const plateFinishStatus = computed(() => {
         const plate = selectedVersionPlate.value;
         if (!plate) return { plate: null, finishedItems: [], conditionText: "正在加载牌子数据…" };
-        const finishedItems = itemsToRender.value.filter(chart => checkChartFinish(plate, chart));
+        const finishedItems = itemsToRender.value.filter(chart =>
+            checkCollectionChartFinish(plate, chart)
+        );
 
         return {
             plate,
@@ -395,7 +397,7 @@
             if (!selectedPlate) {
                 filteredCharts = [];
             } else {
-                filteredCharts = getPlateCharts(selectedPlate, shared.chartsSort.charts);
+                filteredCharts = getCollectionCharts(selectedPlate, shared.chartsSort.charts);
 
                 // 按照牌子的达成条件进行排序
                 if (plateFinishSort.value === "constant-desc") {
@@ -417,8 +419,8 @@
                     filteredCharts.sort((a, b) => {
                         const scoreA = a.score;
                         const scoreB = b.score;
-                        const completedA = checkChartFinish(selectedPlate, a);
-                        const completedB = checkChartFinish(selectedPlate, b);
+                        const completedA = checkCollectionChartFinish(selectedPlate, a);
+                        const completedB = checkCollectionChartFinish(selectedPlate, b);
 
                         // 已完成的排在前面
                         if (completedA && !completedB) return -1;

@@ -6,16 +6,16 @@
     import type { Chart } from "@/components/data/music/type";
     import type { User } from "@/components/data/user/type";
     import { RankRate } from "@/components/data/maiTypes";
-    import type { Plate } from "./type";
+    import type { Collection } from "./type";
     import {
-        getPlateCharts,
-        getPlateProgress,
-        isPlateScoreEvaluable,
-        sortPlateChartsByCompletion,
+        getCollectionCharts,
+        getCollectionProgress,
+        isCollectionScoreEvaluable,
+        sortCollectionChartsByCompletion,
     } from "./versionPlate";
 
     const props = defineProps<{
-        plate: Plate;
+        collection: Collection;
         user?: User | null;
     }>();
     const emit = defineEmits<{
@@ -26,10 +26,10 @@
     const loading = ref(false);
     const visibleCount = ref(60);
 
-    const evaluable = computed(() => isPlateScoreEvaluable(props.plate));
-    const progress = computed(() => getPlateProgress(props.plate, charts.value));
+    const evaluable = computed(() => isCollectionScoreEvaluable(props.collection));
+    const progress = computed(() => getCollectionProgress(props.collection, charts.value));
     const visibleCharts = computed(() => charts.value.slice(0, visibleCount.value));
-    const firstRequirement = computed(() => props.plate.required?.[0]);
+    const firstRequirement = computed(() => props.collection.required?.[0]);
     const compactPresentation = computed(() => {
         const requirement = firstRequirement.value;
         if (requirement?.rate) {
@@ -63,9 +63,9 @@
                 ...chart,
                 score: toChartScore(scoreLookup?.findScoreForChart(chart)),
             }));
-            charts.value = sortPlateChartsByCompletion(
-                props.plate,
-                getPlateCharts(props.plate, withScores)
+            charts.value = sortCollectionChartsByCompletion(
+                props.collection,
+                getCollectionCharts(props.collection, withScores)
             );
         } finally {
             loading.value = false;
@@ -73,7 +73,7 @@
     }
 
     watch(
-        () => [props.plate.id, props.user?.data.updateTime],
+        () => [props.collection.id, props.user?.data.updateTime],
         () => {
             visibleCount.value = 60;
             void loadCharts();
@@ -86,7 +86,7 @@
 </script>
 
 <template>
-    <section v-if="evaluable" class="plate-progress">
+    <section v-if="evaluable" class="collection-progress">
         <div class="progress-header">
             <slot name="condition"></slot>
             <div class="progress-value">
@@ -124,7 +124,7 @@
 </template>
 
 <style scoped>
-    .plate-progress {
+    .collection-progress {
         min-width: 0;
     }
 

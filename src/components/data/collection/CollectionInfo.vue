@@ -6,16 +6,10 @@
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import type { Chart } from "@/components/data/music/type";
     import { getCollectionImageURL } from "@/components/integrations/assets";
-    import PlateProgress from "./PlateProgress.vue";
+    import CollectionProgress from "./CollectionProgress.vue";
     import CollectionTitle from "./CollectionTitle.vue";
-    import {
-        type Collection,
-        type CollectionRequired,
-        CollectionKind,
-        type Plate,
-        type Title,
-    } from "./type";
-    import { isPlateScoreEvaluable } from "./versionPlate";
+    import { type Collection, type CollectionRequired, CollectionKind, type Title } from "./type";
+    import { isCollectionScoreEvaluable } from "./versionPlate";
 
     const props = defineProps<{
         open: boolean;
@@ -43,10 +37,9 @@
         const path = typePaths[props.collection.type];
         return path ? getCollectionImageURL(path, props.collection.id) : "";
     });
-    const plateWithProgress = computed<Plate | null>(() => {
-        if (props.collection?.type !== CollectionKind.Plate) return null;
-        const plate = props.collection as Plate;
-        return isPlateScoreEvaluable(plate) ? plate : null;
+    const collectionWithProgress = computed<Collection | null>(() => {
+        const collection = props.collection;
+        return collection && isCollectionScoreEvaluable(collection) ? collection : null;
     });
 
     const difficultyNames = ["BASIC", "ADVANCED", "EXPERT", "MASTER", "Re:MASTER"];
@@ -169,10 +162,10 @@
             </div>
 
             <section v-if="collection.required?.length" class="requirements">
-                <h3>{{ plateWithProgress ? "获取条件与成绩进度" : "获取条件" }}</h3>
-                <PlateProgress
-                    v-if="plateWithProgress"
-                    :plate="plateWithProgress"
+                <h3>{{ collectionWithProgress ? "获取条件与成绩进度" : "获取条件" }}</h3>
+                <CollectionProgress
+                    v-if="collectionWithProgress"
+                    :collection="collectionWithProgress"
                     :user="currentUser"
                     @open-chart="openChartInfo"
                 >
@@ -201,7 +194,7 @@
                             </div>
                         </div>
                     </template>
-                </PlateProgress>
+                </CollectionProgress>
                 <div v-else class="condition-summaries standalone">
                     <div
                         v-for="(requirement, index) in collection.required"

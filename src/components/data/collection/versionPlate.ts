@@ -1,13 +1,13 @@
 import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 import type { Chart, ChartScore } from "../music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
-import type { CollectionRequired, Plate, VersionPlate } from "./type";
+import type { Collection, CollectionRequired, VersionPlate } from "./type";
 
 const rankOrder = Object.values(RankRate);
 const comboOrder = Object.values(ComboStatus);
 const syncOrder = Object.values(SyncStatus);
 
-const requirementLookupCache = new WeakMap<Plate, Map<number, CollectionRequired[]>>();
+const requirementLookupCache = new WeakMap<Collection, Map<number, CollectionRequired[]>>();
 
 function reachesThreshold<T extends string>(current: T, required: T, order: T[]): boolean {
     const currentIndex = order.indexOf(current);
@@ -19,8 +19,10 @@ export function isRequirementScoreEvaluable(requirement: CollectionRequired): bo
     return Boolean(requirement.songs?.length);
 }
 
-export function isPlateScoreEvaluable(plate: Plate): boolean {
-    return Boolean(plate.required?.length && plate.required.every(isRequirementScoreEvaluable));
+export function isCollectionScoreEvaluable(collection: Collection): boolean {
+    return Boolean(
+        collection.required?.length && collection.required.every(isRequirementScoreEvaluable)
+    );
 }
 
 function requirementMatchesChart(requirement: CollectionRequired, chart: Chart): boolean {
@@ -28,12 +30,12 @@ function requirementMatchesChart(requirement: CollectionRequired, chart: Chart):
     return difficulties.length === 0 || difficulties.includes(chart.info.grade);
 }
 
-function getRequirementLookup(plate: Plate): Map<number, CollectionRequired[]> {
-    const cached = requirementLookupCache.get(plate);
+function getRequirementLookup(collection: Collection): Map<number, CollectionRequired[]> {
+    const cached = requirementLookupCache.get(collection);
     if (cached) return cached;
 
     const lookup = new Map<number, CollectionRequired[]>();
-    for (const requirement of plate.required ?? []) {
+    for (const requirement of collection.required ?? []) {
         for (const song of requirement.songs ?? []) {
             const musicId = getSaltNetMusicIdForChartType(song.id, song.type);
             const requirements = lookup.get(musicId);
@@ -41,29 +43,29 @@ function getRequirementLookup(plate: Plate): Map<number, CollectionRequired[]> {
             else lookup.set(musicId, [requirement]);
         }
     }
-    requirementLookupCache.set(plate, lookup);
+    requirementLookupCache.set(collection, lookup);
     return lookup;
 }
 
-export function getPlateRequirementForChart(
-    plate: Plate,
+export function getCollectionRequirementForChart(
+    collection: Collection,
     chart: Chart
 ): CollectionRequired | undefined {
-    return getRequirementLookup(plate)
+    return getRequirementLookup(collection)
         .get(chart.music.id)
         ?.find(requirement => requirementMatchesChart(requirement, chart));
 }
 
-export function getPlateCharts(plate: Plate, charts: Chart[]): Chart[] {
-    return charts.filter(chart => Boolean(getPlateRequirementForChart(plate, chart)));
+export function getCollectionCharts(collection: Collection, charts: Chart[]): Chart[] {
+    return charts.filter(chart => Boolean(getCollectionRequirementForChart(collection, chart)));
 }
 
-export type PlateProgress = {
+export type CollectionProgress = {
     completed: number;
     total: number;
 };
 
-export function getPlateProgress(plate: Plate, charts: Chart[]): PlateProgress {
+export function getCollectionProgress(collection: Collection, charts: Chart[]): CollectionProgress {
     let completed = 0;
     let total = 0;
     const chartsByMusicId = new Map<number, Chart[]>();
@@ -73,7 +75,7 @@ export function getPlateProgress(plate: Plate, charts: Chart[]): PlateProgress {
         else chartsByMusicId.set(chart.music.id, [chart]);
     }
 
-    for (const requirement of plate.required ?? []) {
+    for (const requirement of collection.required ?? []) {
         for (const song of requirement.songs ?? []) {
             const musicId = getSaltNetMusicIdForChartType(song.id, song.type);
             const songCharts = chartsByMusicId.get(musicId) ?? [];
@@ -81,7 +83,9 @@ export function getPlateProgress(plate: Plate, charts: Chart[]): PlateProgress {
 
             if (difficulties.length === 0) {
                 total += 1;
-                if (songCharts.some(chart => checkChartFinish(plate, chart))) completed += 1;
+                if (songCharts.some(chart => checkCollectionChartFinish(collection, chart))) {
+                    completed += 1;
+                }
                 continue;
             }
 
@@ -89,7 +93,7 @@ export function getPlateProgress(plate: Plate, charts: Chart[]): PlateProgress {
                 const chart = songCharts.find(item => item.info.grade === difficulty);
                 if (!chart) continue;
                 total += 1;
-                if (checkChartFinish(plate, chart)) completed += 1;
+                if (checkCollectionChartFinish(collection, chart)) completed += 1;
             }
         }
     }
@@ -111,13 +115,15 @@ function scoreMeetsRequirement(score: ChartScore, requirement: CollectionRequire
     return true;
 }
 
-export function checkChartFinish(plate: Plate, chart: Chart): boolean {
-    const requirement = getPlateRequirementForChart(plate, chart);
+export function checkCollectionChartFinish(collection: Collection, chart: Chart): boolean {
+    const requirement = getCollectionRequirementForChart(collection, chart);
     return Boolean(requirement && chart.score && scoreMeetsRequirement(chart.score, requirement));
 }
 
-export function sortPlateChartsByCompletion(plate: Plate, charts: Chart[]): Chart[] {
-    const completed = new Map(charts.map(chart => [chart, checkChartFinish(plate, chart)]));
+export function sortCollectionChartsByCompletion(collection: Collection, charts: Chart[]): Chart[] {
+    const completed = new Map(
+        charts.map(chart => [chart, checkCollectionChartFinish(collection, chart)])
+    );
     return [...charts].sort((a, b) => {
         const completedA = completed.get(a) ?? false;
         const completedB = completed.get(b) ?? false;
