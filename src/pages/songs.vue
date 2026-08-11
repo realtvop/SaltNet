@@ -36,6 +36,14 @@
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
     import type { Course } from "@/components/data/course";
+    import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
+    import {
+        formatKaleidxscopeDateTime,
+        getKaleidxscopeCurrentPhase,
+        getKaleidxscopeGate,
+        getKaleidxscopeNextPhase,
+        kaleidxscopeGates,
+    } from "@/components/data/kaleidxscope";
     import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
 
@@ -52,10 +60,13 @@
         Version = "版本",
         Favorite = "收藏夹",
         Banquet = "宴会场",
+        Kaleidxscope = "万花筒",
         Course = "段位",
     }
 
-    const primaryCategories = Object.values(Category).filter(item => item !== Category.Course);
+    const primaryCategories = Object.values(Category).filter(
+        item => item !== Category.Kaleidxscope && item !== Category.Course
+    );
 
     const route = useRoute();
     const shared = useShared();
@@ -113,6 +124,8 @@
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (tabCategory === Category.Kaleidxscope)
+            return kaleidxscopeGates.map(gate => gate.shortName);
         if (tabCategory === Category.Course) return courses.map(course => course.name);
         if (tabCategory === Category.Version) {
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
@@ -132,6 +145,7 @@
         [Category.Banquet]: getTabsForCategory(Category.Banquet)[0] || "",
         [Category.Favorite]: getTabsForCategory(Category.Favorite)[0] || "",
         [Category.Version]: getTabsForCategory(Category.Version)[0] || "",
+        [Category.Kaleidxscope]: getTabsForCategory(Category.Kaleidxscope)[0] || "",
         [Category.Course]: getTabsForCategory(Category.Course)[0] || "",
         // 为每个牌子类型添加默认选择
         ...Object.keys(versionPlates).reduce(
@@ -149,6 +163,21 @@
     const selectedCourse = computed<Course | null>(() => {
         if (category.value !== Category.Course) return null;
         return courses.find(course => course.name === selectedDifficulty.value) ?? null;
+    });
+
+    const selectedKaleidxscopeGate = computed(() => {
+        if (category.value !== Category.Kaleidxscope) return null;
+        return getKaleidxscopeGate(selectedDifficulty.value);
+    });
+    const kaleidxscopeNow = ref(new Date());
+    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
+    const selectedKaleidxscopeCurrentPhase = computed(() => {
+        const gate = selectedKaleidxscopeGate.value;
+        return gate ? getKaleidxscopeCurrentPhase(gate, kaleidxscopeNow.value) : null;
+    });
+    const selectedKaleidxscopeNextPhase = computed(() => {
+        const gate = selectedKaleidxscopeGate.value;
+        return gate ? getKaleidxscopeNextPhase(gate, kaleidxscopeNow.value) : null;
     });
 
     const selectedCourseLifeRuleText = computed(() => {
@@ -415,6 +444,9 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
+        } else if (category.value === Category.Kaleidxscope) {
+            // 万花筒有独立的钥匙条件、血量日历与抽选曲池视图。
+            filteredCharts = [];
         } else if (category.value === Category.Course) {
             filteredCharts = selectedCourse.value
                 ? getCourseCharts(selectedCourse.value, shared.chartsSort.charts)
@@ -969,6 +1001,9 @@
 
     onMounted(async () => {
         visibleItemsCount.value = getLoadSize();
+        kaleidxscopeClock = setInterval(() => {
+            kaleidxscopeNow.value = new Date();
+        }, 60_000);
         window.addEventListener("resize", handleResize);
         window.addEventListener("scroll", handleScroll);
         void getCollectionDataAsync().then(syncVersionPlateSelections);
@@ -983,6 +1018,7 @@
     });
 
     onUnmounted(() => {
+        if (kaleidxscopeClock) clearInterval(kaleidxscopeClock);
         window.removeEventListener("resize", handleResize);
         window.removeEventListener("scroll", handleScroll);
     });
@@ -1210,6 +1246,18 @@
                     </mdui-menu-item>
                     <mdui-divider />
                     <mdui-menu-item
+                        :icon="category === Category.Kaleidxscope ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === Category.Kaleidxscope
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                        }"
+                        @click="category = Category.Kaleidxscope"
+                    >
+                        万花筒
+                    </mdui-menu-item>
+                    <mdui-menu-item
                         :icon="category === Category.Course ? 'check' : ''"
                         :style="{
                             backgroundColor:
@@ -1304,6 +1352,28 @@
                     {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
                 </span>
             </div>
+        </div>
+        <div
+            v-else-if="category === Category.Kaleidxscope"
+            class="search-input kaleidxscope-life-summary"
+        >
+            <span v-if="selectedKaleidxscopeCurrentPhase" class="kaleidxscope-life-value">
+                <mdui-icon name="favorite"></mdui-icon>
+                {{ selectedKaleidxscopeCurrentPhase.life }}
+                <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
+            </span>
+            <span v-else-if="selectedKaleidxscopeGate" class="kaleidxscope-life-value pending">
+                <mdui-icon name="event"></mdui-icon>
+                {{ formatKaleidxscopeDateTime(selectedKaleidxscopeGate.openedAt, true) }} 开放
+            </span>
+            <span v-if="selectedKaleidxscopeNextPhase" class="kaleidxscope-next-phase">
+                下次放宽 {{ formatKaleidxscopeDateTime(selectedKaleidxscopeNextPhase.startsAt) }} →
+                {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
+                {{ selectedKaleidxscopeNextPhase.life }}
+            </span>
+            <span v-else-if="selectedKaleidxscopeCurrentPhase" class="kaleidxscope-next-phase">
+                最终阶段
+            </span>
         </div>
         <div v-else-if="category === Category.Course" class="search-input course-life-summary">
             <span class="course-life-value">
@@ -1447,7 +1517,14 @@
             ></mdui-text-field>
         </div>
 
-        <div v-if="isMusicDataLoading" class="songs-loading-container">
+        <KaleidxscopeOverview
+            v-if="category === Category.Kaleidxscope && selectedKaleidxscopeGate"
+            :gate="selectedKaleidxscopeGate"
+            :charts="shared.chartsSort.charts"
+            :now="kaleidxscopeNow"
+            @select-chart="openChartInfoDialog"
+        />
+        <div v-else-if="isMusicDataLoading" class="songs-loading-container">
             <mdui-circular-progress></mdui-circular-progress>
             <div class="loading-text">正在更新谱面列表...</div>
         </div>
@@ -1761,6 +1838,38 @@
     .course-life-rules {
         color: rgb(var(--mdui-color-on-surface-variant));
         font-size: 0.85rem;
+    }
+
+    .kaleidxscope-life-summary {
+        justify-content: flex-start !important;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .kaleidxscope-life-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: rgb(var(--mdui-color-primary));
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .kaleidxscope-life-value mdui-icon {
+        font-size: 1.3rem;
+    }
+
+    .kaleidxscope-life-value small {
+        font-size: 0.72rem;
+    }
+
+    .kaleidxscope-life-value.pending,
+    .kaleidxscope-next-phase {
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .kaleidxscope-next-phase {
+        font-size: 0.82rem;
     }
 
     .card-container {

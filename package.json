@@ -13,6 +13,7 @@
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "test:course": "vitest run src/components/data/course/index.test.ts",
+        "test:kaleidxscope": "vitest run src/components/data/kaleidxscope/index.test.ts",
         "test:collection-index": "vitest run src/components/data/collection/index.test.ts src/components/data/collection/relatedCollections.test.ts",
         "test:build-info": "node --test script/generateBuildInfo.test.cjs"
     },
