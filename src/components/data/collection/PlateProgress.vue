@@ -87,9 +87,9 @@
 
 <template>
     <section v-if="evaluable" class="plate-progress">
-        <mdui-card class="progress-header" variant="filled">
+        <div class="progress-header">
             <div>
-                <div class="progress-title">成绩进度</div>
+                <div class="progress-title">当前完成度</div>
                 <div class="progress-caption">依据当前用户保存的最佳成绩计算</div>
             </div>
             <div class="progress-value">
@@ -100,7 +100,7 @@
                 ></mdui-circular-progress>
                 <span>{{ progress.completed }} / {{ progress.total }}</span>
             </div>
-        </mdui-card>
+        </div>
 
         <div v-if="loading" class="progress-state">
             <mdui-circular-progress></mdui-circular-progress>
@@ -128,7 +128,9 @@
 
 <style scoped>
     .plate-progress {
-        margin-top: 12px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgb(var(--mdui-color-outline-variant));
     }
 
     .progress-header {
@@ -137,7 +139,7 @@
         justify-content: space-between;
         gap: 12px;
         width: 100%;
-        padding: 10px 12px;
+        padding-inline: 4px;
         box-sizing: border-box;
     }
 
