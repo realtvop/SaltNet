@@ -210,6 +210,7 @@
             deluxeRating: rating,
             deluxeScore: record.dxScore,
             playCount: record.play_count,
+            lastChangedAt: record.lastChangedAt,
         };
 
         if (typeof fitConstant === "number") {

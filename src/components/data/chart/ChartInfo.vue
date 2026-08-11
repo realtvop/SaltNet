@@ -276,6 +276,12 @@
                                     {{ getCurrentChartPosition(currentChart) }}
                                 </span>
                             </div>
+                            <div class="info-row" v-if="currentChartScore?.lastChangedAt">
+                                <span class="info-label">成绩最后变动</span>
+                                <span class="info-value">
+                                    {{ formatScoreChangedAt(currentChartScore.lastChangedAt) }}
+                                </span>
+                            </div>
                             <div class="info-row">
                                 <span class="info-label">Note 统计</span>
                                 <div class="info-value notes-breakdown">
@@ -1058,6 +1064,10 @@
     const dxScoreStarsImg = computed(() => {
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
+
+    function formatScoreChangedAt(timestamp: number): string {
+        return new Date(timestamp).toLocaleString();
+    }
 
     const isSavedInAnyFavoriteList = computed(() => {
         if (!currentChart.value) return false;

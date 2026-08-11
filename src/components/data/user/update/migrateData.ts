@@ -10,15 +10,28 @@ function getRecordKey(record: DivingFishFullRecord): string {
     return `${musicId}-${record.level_index}`;
 }
 
+const SCORE_CHANGE_FIELDS = [
+    "achievements",
+    "dxScore",
+    "fc",
+    "fs",
+    "play_count",
+] as const satisfies readonly (keyof DivingFishFullRecord)[];
+
+function hasScoreChanged(existing: DivingFishFullRecord, incoming: DivingFishFullRecord): boolean {
+    return SCORE_CHANGE_FIELDS.some(field => existing[field] !== incoming[field]);
+}
+
 function migrateRecord(
     existing: DetailedData | undefined,
-    incoming: DivingFishFullRecord
+    incoming: DivingFishFullRecord,
+    changedAt: number
 ): DivingFishFullRecord {
-    if (!existing) return incoming;
+    if (!existing) return { ...incoming, lastChangedAt: incoming.lastChangedAt ?? changedAt };
     const existingRecord = existing[getRecordKey(incoming)];
-    if (!existingRecord) return incoming;
+    if (!existingRecord) return { ...incoming, lastChangedAt: incoming.lastChangedAt ?? changedAt };
 
-    return {
+    const migrated: DivingFishFullRecord = {
         achievements: incoming.achievements,
         ds: incoming.ds,
         dxScore: incoming.dxScore,
@@ -34,13 +47,21 @@ function migrateRecord(
         title: incoming.title,
         type: incoming.type,
     };
+
+    migrated.lastChangedAt =
+        !existingRecord.lastChangedAt || hasScoreChanged(existingRecord, migrated)
+            ? changedAt
+            : existingRecord.lastChangedAt;
+
+    return migrated;
 }
 
 export function migrateRecordList(
     existing: DetailedData | undefined,
-    incomingList: DivingFishFullRecord[]
+    incomingList: DivingFishFullRecord[],
+    changedAt: number = Date.now()
 ): DivingFishFullRecord[] {
-    return incomingList.map(incoming => migrateRecord(existing, incoming));
+    return incomingList.map(incoming => migrateRecord(existing, incoming, changedAt));
 }
 
 export function supplementRecordList(
@@ -84,10 +105,13 @@ export function supplementB50(
     };
 }
 
-export function migrateB50(existing: DetailedData | undefined, b50: DivingFishB50): DivingFishB50 {
-    if (!existing) return b50;
+export function migrateB50(
+    existing: DetailedData | undefined,
+    b50: DivingFishB50,
+    changedAt: number = Date.now()
+): DivingFishB50 {
     return {
-        dx: migrateRecordList(existing, b50.dx),
-        sd: migrateRecordList(existing, b50.sd),
+        dx: migrateRecordList(existing, b50.dx, changedAt),
+        sd: migrateRecordList(existing, b50.sd, changedAt),
     };
 }

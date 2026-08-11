@@ -350,6 +350,7 @@ interface DivingFishFullRecord {
     song_id: number; // 曲目ID
     title: string; // 曲目标题
     type: "DX" | "SD"; // 谱面类型
+    lastChangedAt?: number; // SaltNet 观测到该成绩最后发生变动的时间戳
 }
 ```
 
@@ -534,6 +535,8 @@ enum MusicGenre {
 - **缓存key**: "users"
 - **数据结构**: `User[]`
 - **更新时机**: 用户手动更新成绩时
+- **逐谱面变动时间**: `detailed` 与 B50 成绩使用 `lastChangedAt` 记录 SaltNet
+  首次获得该成绩，或达成率、DX 分、FC/FS 状态、游玩次数最后发生变化的时间；旧缓存会在下次成功更新时开始记录
 
 ### 2. 音乐库缓存
 

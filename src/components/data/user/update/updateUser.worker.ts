@@ -106,12 +106,18 @@ async function fromLXNS(user: User) {
     info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
     try {
         const data = await fetchLXNSScore(user);
+        const existingScores = getExistingScoreData(user);
+        const detailedRecords = migrateRecordList(
+            existingScores,
+            Object.values(data.scores),
+            data.updateTime
+        );
         info(`从落雪获取用户信息成功：${getUserDisplayName(user)}`);
         return {
             rating: data.rating,
             name: data.name,
-            b50: data.b50,
-            detailed: data.scores,
+            b50: migrateB50(existingScores, data.b50, data.updateTime),
+            detailed: convertDetailed(detailedRecords),
             updateTime: data.updateTime,
             lxns: user.lxns,
         };
@@ -126,11 +132,12 @@ async function fromDivingFish(user: User) {
     info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
     return fetchPlayerData(user.divingFish.name as string)
         .then((data: DivingFishResponse) => {
+            const updateTime = Date.now();
             info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
             return {
                 rating: data.rating,
-                b50: data.charts,
-                updateTime: Date.now(),
+                b50: migrateB50(getExistingScoreData(user), data.charts, updateTime),
+                updateTime,
                 name: data.nickname,
             };
         })
@@ -188,7 +195,9 @@ async function fromInGame(user: User, qrCodeInput?: string) {
     const mergedData = supplementRecords
         ? supplementRecordList(data.divingFishData, supplementRecords)
         : data.divingFishData;
-    const divingFishData = migrateRecordList(user.data.detailed, mergedData);
+    const updateTime = Date.now();
+    const existingScores = getExistingScoreData(user);
+    const divingFishData = migrateRecordList(existingScores, mergedData, updateTime);
 
     if (user.divingFish.importToken) {
         info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
@@ -205,9 +214,9 @@ async function fromInGame(user: User, qrCodeInput?: string) {
         userId: data.userId || user.inGame.id,
         rating: data.rating,
         name: toHalfWidth(data.userName),
-        b50: migrateB50(user.data.detailed, mergedB50),
+        b50: migrateB50(existingScores, mergedB50, updateTime),
         detailed: convertDetailed(divingFishData),
-        updateTime: Date.now(),
+        updateTime,
         items: data.items || [],
         characters: data.characters || [],
         info: data.info,
@@ -219,13 +228,16 @@ async function fromDFLikeInGame(user: User) {
         user.divingFish.name as string
     );
     if (data) {
+        const updateTime = Date.now();
+        const existingScores = getExistingScoreData(user);
+        const divingFishData = migrateRecordList(existingScores, data.divingFishData, updateTime);
         info(`从水鱼获取用户详细信息成功：${getUserDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.userName),
-            b50: data.b50,
-            detailed: convertDetailed(data.divingFishData),
-            updateTime: Date.now(),
+            b50: migrateB50(existingScores, data.b50, updateTime),
+            detailed: convertDetailed(divingFishData),
+            updateTime,
         };
     } else {
         return await fromDivingFish(user);
@@ -237,19 +249,28 @@ async function fromDivingFishByImportToken(user: User) {
     try {
         const data = await fetchPlayerRecordsByImportToken(user.divingFish.importToken as string);
         const b50 = await calculateB50FromRecords(data.records);
+        const updateTime = Date.now();
+        const existingScores = getExistingScoreData(user);
+        const detailedRecords = migrateRecordList(existingScores, data.records, updateTime);
         info(`从水鱼获取用户信息成功：${getUserDisplayName(user)}`);
         return {
             rating: data.rating,
             name: toHalfWidth(data.nickname),
-            b50,
-            detailed: convertDetailed(data.records),
-            updateTime: Date.now(),
+            b50: migrateB50(existingScores, b50, updateTime),
+            detailed: convertDetailed(detailedRecords),
+            updateTime,
         };
     } catch (e) {
         const errorMsg = e?.toString?.() || "Unknown error";
         info(`从水鱼获取用户信息失败：${errorMsg}`, errorMsg);
         return null;
     }
+}
+
+function getExistingScoreData(user: User) {
+    if (user.data.detailed) return user.data.detailed;
+    if (!user.data.b50) return undefined;
+    return convertDetailed([...user.data.b50.sd, ...user.data.b50.dx]);
 }
 
 function fetchInGameData(

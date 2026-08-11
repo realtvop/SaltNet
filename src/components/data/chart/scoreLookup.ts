@@ -96,5 +96,6 @@ export function toChartScore(record: DivingFishFullRecord | undefined): ChartSco
         deluxeRating: record.ra,
         deluxeScore: record.dxScore,
         playCount: record.play_count,
+        lastChangedAt: record.lastChangedAt,
     };
 }
