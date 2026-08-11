@@ -69,21 +69,30 @@
         return { summary: "全部指定难度", details: names.join(" · ") };
     }
 
-    function scoreTargets(requirement: CollectionRequired): { label: string; value: string }[] {
-        const targets: { label: string; value: string }[] = [];
+    function scoreTargetValues(requirement: CollectionRequired): string[] {
+        const targets: string[] = [];
         if (requirement.rate) {
-            targets.push({
-                label: "达成等级",
-                value: `RANK ${formatRequirementValue(requirement.rate)}`,
-            });
+            targets.push(`RANK ${formatRequirementValue(requirement.rate)}`);
         }
         if (requirement.fc) {
-            targets.push({ label: "连击状态", value: formatRequirementValue(requirement.fc) });
+            targets.push(formatRequirementValue(requirement.fc));
         }
         if (requirement.fs) {
-            targets.push({ label: "同步状态", value: formatRequirementValue(requirement.fs) });
+            targets.push(formatRequirementValue(requirement.fs));
         }
         return targets;
+    }
+
+    function requirementTitle(
+        requirement: CollectionRequired,
+        index: number,
+        total: number
+    ): string {
+        const summary = [
+            difficultyPresentation(requirement).summary,
+            ...scoreTargetValues(requirement),
+        ].join(" · ");
+        return total > 1 ? `第 ${index + 1} 组：${summary}` : summary;
     }
 
     function handleClose(event: Event): void {
@@ -161,53 +170,55 @@
 
             <section v-if="collection.required?.length" class="requirements">
                 <h3>{{ plateWithProgress ? "获取条件与成绩进度" : "获取条件" }}</h3>
-                <mdui-card class="requirements-card" variant="filled">
+                <PlateProgress
+                    v-if="plateWithProgress"
+                    :plate="plateWithProgress"
+                    :user="currentUser"
+                    @open-chart="openChartInfo"
+                >
+                    <template #condition>
+                        <div class="condition-summaries">
+                            <div
+                                v-for="(requirement, index) in collection.required"
+                                :key="index"
+                                class="condition-summary"
+                            >
+                                <div class="condition-title">
+                                    {{
+                                        requirementTitle(
+                                            requirement,
+                                            index,
+                                            collection.required.length
+                                        )
+                                    }}
+                                </div>
+                                <div
+                                    v-if="difficultyPresentation(requirement).details"
+                                    class="condition-caption"
+                                >
+                                    {{ difficultyPresentation(requirement).details }}
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </PlateProgress>
+                <div v-else class="condition-summaries standalone">
                     <div
                         v-for="(requirement, index) in collection.required"
                         :key="index"
-                        class="requirement-group"
+                        class="condition-summary"
                     >
-                        <div class="requirement-heading">
-                            <mdui-icon class="requirement-icon" name="fact_check"></mdui-icon>
-                            <div class="requirement-title">
-                                {{
-                                    collection.required.length > 1
-                                        ? `第 ${index + 1} 组要求`
-                                        : "达成要求"
-                                }}
-                            </div>
+                        <div class="condition-title">
+                            {{ requirementTitle(requirement, index, collection.required.length) }}
                         </div>
-
-                        <div class="requirement-details">
-                            <div class="requirement-detail requirement-difficulty">
-                                <span>目标难度</span>
-                                <div>
-                                    <strong>
-                                        {{ difficultyPresentation(requirement).summary }}
-                                    </strong>
-                                    <small v-if="difficultyPresentation(requirement).details">
-                                        {{ difficultyPresentation(requirement).details }}
-                                    </small>
-                                </div>
-                            </div>
-                            <div
-                                v-for="target in scoreTargets(requirement)"
-                                :key="target.label"
-                                class="requirement-detail"
-                            >
-                                <span>{{ target.label }}</span>
-                                <strong>{{ target.value }}</strong>
-                            </div>
+                        <div
+                            v-if="difficultyPresentation(requirement).details"
+                            class="condition-caption"
+                        >
+                            {{ difficultyPresentation(requirement).details }}
                         </div>
                     </div>
-
-                    <PlateProgress
-                        v-if="plateWithProgress"
-                        :plate="plateWithProgress"
-                        :user="currentUser"
-                        @open-chart="openChartInfo"
-                    />
-                </mdui-card>
+                </div>
             </section>
             <section v-else class="requirements-empty">暂无结构化获取条件</section>
         </div>
@@ -308,71 +319,28 @@
         font-size: 1rem;
     }
 
-    .requirements-card {
-        display: block;
-        width: 100%;
-        padding: 12px;
-        box-sizing: border-box;
+    .condition-summaries {
+        min-width: 0;
     }
 
-    .requirement-group + .requirement-group {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid rgb(var(--mdui-color-outline-variant));
+    .condition-summaries.standalone {
+        padding: 4px;
     }
 
-    .requirement-heading {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        align-items: center;
-        column-gap: 8px;
+    .condition-summary + .condition-summary {
+        margin-top: 6px;
     }
 
-    .requirement-icon {
-        color: rgb(var(--mdui-color-primary));
-        font-size: 23px;
-    }
-
-    .requirement-title {
+    .condition-title {
         font-size: 0.9rem;
         font-weight: 600;
-    }
-
-    .requirement-details {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        margin-top: 8px;
-    }
-
-    .requirement-detail {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-        min-width: 0;
-        padding: 7px 4px;
-    }
-
-    .requirement-detail span {
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.7rem;
-        white-space: nowrap;
-    }
-
-    .requirement-detail strong {
-        font-size: 0.8rem;
         overflow-wrap: anywhere;
     }
 
-    .requirement-difficulty > div {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
-    }
-
-    .requirement-difficulty small {
+    .condition-caption {
+        margin-top: 2px;
         color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.68rem;
+        font-size: 0.75rem;
         line-height: 1.3;
         overflow-wrap: anywhere;
     }

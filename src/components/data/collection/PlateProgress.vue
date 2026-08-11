@@ -88,10 +88,7 @@
 <template>
     <section v-if="evaluable" class="plate-progress">
         <div class="progress-header">
-            <div>
-                <div class="progress-title">当前完成度</div>
-                <div class="progress-caption">依据当前用户保存的最佳成绩计算</div>
-            </div>
+            <slot name="condition"></slot>
             <div class="progress-value">
                 <mdui-circular-progress
                     v-if="progress.total > 0"
@@ -128,9 +125,7 @@
 
 <style scoped>
     .plate-progress {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid rgb(var(--mdui-color-outline-variant));
+        min-width: 0;
     }
 
     .progress-header {
@@ -141,17 +136,6 @@
         width: 100%;
         padding-inline: 4px;
         box-sizing: border-box;
-    }
-
-    .progress-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-
-    .progress-caption {
-        margin-top: 2px;
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.75rem;
     }
 
     .progress-value {
