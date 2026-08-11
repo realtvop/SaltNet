@@ -35,6 +35,22 @@
     const progress = computed(() => getCollectionProgress(props.collection, charts.value));
     const visibleCharts = computed(() => charts.value.slice(0, visibleCount.value));
     const firstRequirement = computed(() => props.collection.required?.[0]);
+    const chartLoadKey = computed(() =>
+        JSON.stringify({
+            type: props.collection.type,
+            id: props.collection.id,
+            requirements: (props.collection.required ?? []).map(requirement => ({
+                difficulties: requirement.difficulties ?? [],
+                rate: requirement.rate,
+                fc: requirement.fc,
+                fs: requirement.fs,
+                songs: (requirement.songs ?? []).map(song => ({
+                    id: song.id,
+                    type: song.type,
+                })),
+            })),
+        })
+    );
     const compactPresentation = computed(() => {
         const requirement = firstRequirement.value;
         if (requirement?.rate) {
@@ -93,13 +109,10 @@
         }
     }
 
-    watch(
-        () => [props.collection.id, props.user?.data.updateTime],
-        () => {
-            visibleCount.value = PAGE_SIZE;
-            void loadCharts();
-        }
-    );
+    watch([chartLoadKey, () => props.user?.data.updateTime], () => {
+        visibleCount.value = PAGE_SIZE;
+        void loadCharts();
+    });
 
     watch([visibleCount, loading, () => charts.value.length], observePreloadCard, {
         flush: "post",
