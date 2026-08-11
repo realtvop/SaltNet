@@ -108,12 +108,7 @@
                 <h2 class="section-title">
                     <span>钥匙曲目</span>
                     <span class="section-description key-description">
-                        <span>
-                            共 {{ gate.keyCondition.songs.length }} 首 · 钥匙获取条件：{{
-                                gate.keyCondition.summary
-                            }}
-                        </span>
-                        <small>{{ gate.keyCondition.notes.join(" · ") }}</small>
+                        <span>钥匙获取条件：{{ gate.keyCondition.summary }}</span>
                     </span>
                 </h2>
             </div>
@@ -331,6 +326,11 @@
     }
 
     @media (max-width: 768px) {
+        :global(.kaleidxscope-overview .score-group .score-section) {
+            padding-right: 20px !important;
+            padding-left: 20px !important;
+        }
+
         .section-title {
             flex-direction: column;
             align-items: flex-start;
