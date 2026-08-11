@@ -59,7 +59,7 @@
             {{ title }}
             <span
                 :class="{ 'stats-info': true, rendering: props.rendering }"
-                v-if="stats && !hideStats"
+                v-if="!hideStats && stats"
             >
                 <span class="stat-item">{{ stats.total }}</span>
                 <span class="stat-item">{{ stats.levelRange }}</span>

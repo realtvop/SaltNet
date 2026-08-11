@@ -1522,7 +1522,7 @@
             :gate="selectedKaleidxscopeGate"
             :charts="shared.chartsSort.charts"
             :now="kaleidxscopeNow"
-            @select-chart="openChartInfoDialog"
+            :chart-info-dialog="chartInfoDialog"
         />
         <div v-else-if="isMusicDataLoading" class="songs-loading-container">
             <mdui-circular-progress></mdui-circular-progress>
