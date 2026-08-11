@@ -443,64 +443,85 @@
         </div>
 
         <section v-if="chart?.music" class="related-collections-section">
-            <div class="related-collections-heading">
-                <h3>关联收藏品</h3>
-                <span v-if="relatedCollections.length" class="related-collections-count">
-                    {{ relatedCollections.length }} 项
-                </span>
-            </div>
-
-            <div v-if="isCollectionDataLoading" class="related-collections-state">
-                <mdui-circular-progress></mdui-circular-progress>
-                <span>正在加载收藏品…</span>
-            </div>
-            <div
-                v-else-if="collectionDataError && !relatedCollectionCandidates.length"
-                class="related-collections-state"
-            >
-                <span>{{ collectionDataError }}</span>
-                <mdui-button variant="text" @click="refreshCollectionData">重试</mdui-button>
-            </div>
-            <div v-else-if="relatedCollections.length" class="related-collections-grid">
-                <mdui-card
-                    v-for="collection in relatedCollections"
-                    :key="`${collection.type}-${collection.id}`"
-                    variant="outlined"
-                    :clickable="relatedCollectionDetails"
-                    class="related-collection-card"
-                    @click="openRelatedCollection(collection)"
+            <mdui-collapse>
+                <mdui-collapse-item
+                    ref="relatedCollectionsCollapseItemRef"
+                    trigger=".related-collections-toggle"
+                    @open="relatedCollectionsExpanded = true"
+                    @close="relatedCollectionsExpanded = false"
                 >
-                    <div class="related-collection-preview">
-                        <CollectionTitle
-                            v-if="collection.type === CollectionKind.Title"
-                            :title="collection as Title"
-                        />
-                        <img
-                            v-else
-                            :src="getRelatedCollectionImageUrl(collection)"
-                            :alt="collection.name"
-                            class="related-collection-image"
-                            :class="{
-                                square: collection.type === CollectionKind.Icon,
-                                plate: collection.type === CollectionKind.Plate,
-                                frame: collection.type === CollectionKind.Frame,
-                            }"
-                            crossorigin="anonymous"
-                        />
+                    <div slot="header" class="related-collections-header">
+                        <h3>关联收藏品</h3>
+                        <div class="related-collections-summary">
+                            <span v-if="isCollectionDataLoading">加载中</span>
+                            <span v-else>{{ relatedCollections.length }} 项</span>
+                            <mdui-button-icon
+                                class="related-collections-toggle"
+                                :icon="`keyboard_arrow_${relatedCollectionsExpanded ? 'up' : 'down'}`"
+                                :aria-label="
+                                    relatedCollectionsExpanded ? '折叠关联收藏品' : '展开关联收藏品'
+                                "
+                            ></mdui-button-icon>
+                        </div>
                     </div>
-                    <div
-                        v-if="collection.type !== CollectionKind.Title"
-                        class="related-collection-name"
-                    >
-                        {{ collection.name }}
+
+                    <div class="related-collections-content">
+                        <div v-if="isCollectionDataLoading" class="related-collections-state">
+                            <mdui-circular-progress></mdui-circular-progress>
+                            <span>正在加载收藏品…</span>
+                        </div>
+                        <div
+                            v-else-if="collectionDataError && !relatedCollectionCandidates.length"
+                            class="related-collections-state"
+                        >
+                            <span>{{ collectionDataError }}</span>
+                            <mdui-button variant="text" @click.stop="refreshCollectionData">
+                                重试
+                            </mdui-button>
+                        </div>
+                        <div v-else-if="relatedCollections.length" class="related-collections-grid">
+                            <mdui-card
+                                v-for="collection in relatedCollections"
+                                :key="`${collection.type}-${collection.id}`"
+                                variant="outlined"
+                                :clickable="relatedCollectionDetails"
+                                class="related-collection-card"
+                                @click.stop="openRelatedCollection(collection)"
+                            >
+                                <div class="related-collection-preview">
+                                    <CollectionTitle
+                                        v-if="collection.type === CollectionKind.Title"
+                                        :title="collection as Title"
+                                    />
+                                    <img
+                                        v-else
+                                        :src="getRelatedCollectionImageUrl(collection)"
+                                        :alt="collection.name"
+                                        class="related-collection-image"
+                                        :class="{
+                                            square: collection.type === CollectionKind.Icon,
+                                            plate: collection.type === CollectionKind.Plate,
+                                            frame: collection.type === CollectionKind.Frame,
+                                        }"
+                                        crossorigin="anonymous"
+                                    />
+                                </div>
+                                <div
+                                    v-if="collection.type !== CollectionKind.Title"
+                                    class="related-collection-name"
+                                >
+                                    {{ collection.name }}
+                                </div>
+                                <div class="related-collection-meta">
+                                    <span>{{ getCollectionKindName(collection.type) }}</span>
+                                    <span>#{{ collection.id }}</span>
+                                </div>
+                            </mdui-card>
+                        </div>
+                        <div v-else class="related-collections-empty">暂无关联收藏品</div>
                     </div>
-                    <div class="related-collection-meta">
-                        <span>{{ getCollectionKindName(collection.type) }}</span>
-                        <span>#{{ collection.id }}</span>
-                    </div>
-                </mdui-card>
-            </div>
-            <div v-else class="related-collections-empty">暂无关联收藏品</div>
+                </mdui-collapse-item>
+            </mdui-collapse>
         </section>
     </mdui-dialog>
 
@@ -586,6 +607,8 @@
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
     const chartBasicInfoExpanded = ref(false);
+    const relatedCollectionsExpanded = ref(false);
+    const relatedCollectionsCollapseItemRef = ref<any>(null);
     const relatedCollectionDialog = ref<{ open: boolean; collection: Collection | null }>({
         open: false,
         collection: null,
@@ -623,7 +646,11 @@
     watch(
         () => props.open,
         async newValue => {
+            if (newValue) relatedCollectionsExpanded.value = false;
             await nextTick();
+            if (newValue && relatedCollectionsCollapseItemRef.value) {
+                relatedCollectionsCollapseItemRef.value.open = false;
+            }
             if (dialogRef.value) {
                 dialogRef.value.open = newValue;
             }
@@ -1220,22 +1247,35 @@
     }
 
     .related-collections-section {
-        padding: 8px 1.5rem 20px;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
     }
 
-    .related-collections-heading {
+    .related-collections-header {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-bottom: 10px;
     }
 
-    .related-collections-heading h3 {
+    .related-collections-header h3 {
         margin: 0;
     }
 
-    .related-collections-count,
+    .related-collections-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+        padding-right: 8px;
+        white-space: nowrap;
+    }
+
+    .related-collections-content {
+        padding-top: 10px;
+    }
+
     .related-collection-meta,
     .related-collections-empty,
     .related-collections-state {
@@ -1310,10 +1350,6 @@
     }
 
     @media (max-width: 600px) {
-        .related-collections-section {
-            padding-inline: 1rem;
-        }
-
         .related-collections-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }

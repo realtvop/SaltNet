@@ -560,7 +560,7 @@ enum MusicGenre {
 - **牌子映射**: 谱面页的极、将、神、舞舞牌直接使用姓名框的 `required` 条件；LXNS 的 DX 曲目 ID 转换为内部 ID 时增加 10000
 - **条件展示**: 详情仅渲染 LXNS `required` 返回的难度、评级、FULL COMBO 和 FULL SYNC；目标曲目不再单独列出，也不根据 `description` 推断条件类型或补充人工判断提示
 - **进度边界**: 任意收藏品的获取条件与完成数均可在无卡片的信息行中合并展示；每组 `required` 只要包含目标曲目即可按其中的难度和成绩字段计算，目标曲目仅用于生成成绩卡和计算进度，描述文本不参与判断
-- **谱面关联**: `ChartInfo` 底部按当前 SD/DX 曲目及所选难度反查 `required.songs`，展示关联收藏品；从关联项打开详情时使用独立 dialog 历史层
+- **谱面关联**: `ChartInfo` 底部以默认折叠的独立 section 按当前 SD/DX 曲目及所选难度反查 `required.songs`，展示关联收藏品；从关联项打开详情时使用独立 dialog 历史层
 - **静态例外**: 旅行伙伴和搭档继续使用项目原有数据源；收藏品图片继续使用 `collectionimg.maimai.realtvop.top`
 
 ## 数据一致性保证
