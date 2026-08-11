@@ -20,6 +20,7 @@ import {
     type VersionPlateCategory,
 } from "./type";
 import additionalCollections from "./additionalCollections.json";
+import { updateRelatedCollectionsIndex } from "./relatedCollections";
 
 const COLLECTION_CACHE_KEY = "saltnet_collection_cache_lxns_v1";
 
@@ -139,6 +140,8 @@ function applyCollectionData(data: LXNSCollectionLists, updatedAt: number): void
     plates.splice(0, plates.length, ...nextPlates);
     frames.splice(0, frames.length, ...nextFrames);
     titles.splice(0, titles.length, ...nextTitles);
+
+    updateRelatedCollectionsIndex([...nextPlates, ...nextTitles, ...nextIcons, ...nextFrames]);
 
     genres.icons.splice(0, genres.icons.length, ...uniqueGenres(nextIcons));
     genres.plates.splice(0, genres.plates.length, ...uniqueGenres(nextPlates));

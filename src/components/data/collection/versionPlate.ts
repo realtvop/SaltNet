@@ -25,7 +25,7 @@ export function isCollectionScoreEvaluable(collection: Collection): boolean {
     );
 }
 
-function requirementMatchesChart(requirement: CollectionRequired, chart: Chart): boolean {
+export function requirementMatchesChart(requirement: CollectionRequired, chart: Chart): boolean {
     const difficulties = requirement.difficulties ?? [];
     return difficulties.length === 0 || difficulties.includes(chart.info.grade);
 }

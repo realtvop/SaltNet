@@ -471,7 +471,7 @@
                             <span>正在加载收藏品…</span>
                         </div>
                         <div
-                            v-else-if="collectionDataError && !relatedCollectionCandidates.length"
+                            v-else-if="collectionDataError && !hasRelatedCollectionCandidates"
                             class="related-collections-state"
                         >
                             <span>{{ collectionDataError }}</span>
@@ -571,7 +571,7 @@
         titles,
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
-    import { getCollectionRequirementForChart } from "@/components/data/collection/versionPlate";
+    import { getRelatedCollectionsForChart } from "@/components/data/collection/relatedCollections";
 
     const shared = useShared();
 
@@ -759,19 +759,14 @@
         if (props.chart.id === expandedChartId.value) return props.chart;
         return props.chart.music.charts.find(chart => chart.id === expandedChartId.value) ?? null;
     });
-    const relatedCollectionCandidates = computed<Collection[]>(() => [
-        ...plates,
-        ...titles,
-        ...icons,
-        ...frames,
-    ]);
     const relatedCollections = computed(() => {
         const chart = currentChart.value;
         if (!chart) return [];
-        return relatedCollectionCandidates.value.filter(collection =>
-            getCollectionRequirementForChart(collection, chart)
-        );
+        return getRelatedCollectionsForChart(chart);
     });
+    const hasRelatedCollectionCandidates = computed(
+        () => plates.length + titles.length + icons.length + frames.length > 0
+    );
     const currentChartScore = computed(() => {
         if (!props.chart || !currentChart.value) return null;
         if (props.chart.id === currentChart.value.id && props.chart.score) return props.chart.score;

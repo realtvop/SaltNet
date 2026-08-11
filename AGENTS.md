@@ -40,6 +40,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.
+- `pnpm test:collection-index` runs focused tests for ChartInfo collection reverse associations.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
 
@@ -49,9 +50,10 @@ Use TypeScript and Vue single-file components. Prettier enforces four-space inde
 
 ## Testing Guidelines
 
-Vitest tests currently live in `render-service/tests/` and use `*.test.ts` or `*.test.tsx`.
-The build metadata script has a Node test at `script/generateBuildInfo.test.cjs`. Add focused
-regression cases alongside the affected service or script code. No coverage threshold is enforced.
+Vitest tests live in `render-service/tests/` and alongside focused frontend data modules, using
+`*.test.ts` or `*.test.tsx`. The build metadata script has a Node test at
+`script/generateBuildInfo.test.cjs`. Add focused regression cases alongside the affected service,
+frontend module, or script code. No coverage threshold is enforced.
 Frontend changes must at minimum pass `pnpm check`, `pnpm lint`, and `pnpm build`; manually
 exercise affected routes and browser back/forward behavior for UI or dialog changes.
 
