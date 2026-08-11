@@ -151,6 +151,22 @@
         return courses.find(course => course.name === selectedDifficulty.value) ?? null;
     });
 
+    const selectedCourseLifeRuleText = computed(() => {
+        const course = selectedCourse.value;
+        if (!course) return "";
+
+        const damagingJudgments = [
+            { judgment: "PERFECT", damage: course.life.damage.perfect },
+            { judgment: "GREAT", damage: course.life.damage.great },
+            { judgment: "GOOD", damage: course.life.damage.good },
+            { judgment: "MISS", damage: course.life.damage.miss },
+        ]
+            .filter(({ damage }) => damage > 0)
+            .map(({ judgment, damage }) => `${judgment} -${damage}`);
+
+        return [`恢复 +${course.life.recovery}`, ...damagingJudgments].join(" ");
+    });
+
     function syncVersionPlateSelections(): void {
         for (const plateCategory of versionPlateCategories) {
             const available = versionPlates[plateCategory];
@@ -1292,16 +1308,10 @@
         <div v-else-if="category === Category.Course" class="search-input course-life-summary">
             <span class="course-life-value">
                 <mdui-icon name="favorite"></mdui-icon>
-                血量 {{ selectedCourse?.life.initial ?? "-" }}
+                {{ selectedCourse?.life.initial ?? "-" }}
             </span>
             <span v-if="selectedCourse" class="course-life-rules">
-                {{ selectedCourse.mode.name }} · 回复 +{{ selectedCourse.life.recovery }} · PERFECT
-                -{{ selectedCourse.life.damage.perfect }} · GREAT -{{
-                    selectedCourse.life.damage.great
-                }}
-                · GOOD -{{ selectedCourse.life.damage.good }} · MISS -{{
-                    selectedCourse.life.damage.miss
-                }}
+                {{ selectedCourseLifeRuleText }}
             </span>
         </div>
         <div
@@ -1577,12 +1587,12 @@
                         <div
                             v-for="(entry, index) in courseTrackEntries"
                             :key="getCourseTrackKey(entry.track)"
-                            class="score-cell course-score-cell"
+                            class="score-cell"
                         >
-                            <div class="course-track-order">第 {{ index + 1 }} 曲</div>
                             <ScoreCard
                                 v-if="entry.chart"
                                 :data="entry.chart"
+                                :rating="`${index + 1}`"
                                 @click="openChartInfoDialog(entry.chart)"
                             />
                             <mdui-card v-else variant="outlined" class="course-missing-card">
@@ -1800,19 +1810,6 @@
 
     .score-cell-compact {
         width: 100px;
-    }
-
-    .course-score-cell {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .course-track-order {
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-align: center;
     }
 
     .course-missing-card {
