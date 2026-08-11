@@ -1096,7 +1096,6 @@
 
     function handleRelatedCollectionDialogOpen(open: boolean): void {
         relatedCollectionDialog.value.open = open;
-        if (!open) relatedCollectionDialog.value.collection = null;
     }
 </script>
 
