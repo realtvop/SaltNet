@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, onMounted, ref, watch } from "vue";
+    import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { getMusicInfoAsync } from "@/components/data/music";
@@ -22,9 +22,14 @@
         openChart: [chart: Chart];
     }>();
 
+    const PAGE_SIZE = 60;
+    const PRELOAD_REMAINING_CARDS = 12;
+
     const charts = ref<Chart[]>([]);
     const loading = ref(false);
-    const visibleCount = ref(60);
+    const visibleCount = ref(PAGE_SIZE);
+    const scoreGridRef = ref<HTMLElement | null>(null);
+    let preloadObserver: IntersectionObserver | null = null;
 
     const evaluable = computed(() => isCollectionScoreEvaluable(props.collection));
     const progress = computed(() => getCollectionProgress(props.collection, charts.value));
@@ -43,6 +48,22 @@
         }
         return { mode: "rankRate" as const, filter: RankRate.d };
     });
+
+    function loadMore(): void {
+        if (visibleCount.value >= charts.value.length) return;
+        visibleCount.value = Math.min(visibleCount.value + PAGE_SIZE, charts.value.length);
+    }
+
+    function observePreloadCard(): void {
+        preloadObserver?.disconnect();
+
+        const grid = scoreGridRef.value;
+        if (!grid || visibleCount.value >= charts.value.length) return;
+
+        const triggerIndex = Math.max(0, grid.children.length - PRELOAD_REMAINING_CARDS);
+        const triggerCard = grid.children.item(triggerIndex);
+        if (triggerCard) preloadObserver?.observe(triggerCard);
+    }
 
     async function loadCharts(): Promise<void> {
         if (!evaluable.value) {
@@ -75,13 +96,28 @@
     watch(
         () => [props.collection.id, props.user?.data.updateTime],
         () => {
-            visibleCount.value = 60;
+            visibleCount.value = PAGE_SIZE;
             void loadCharts();
         }
     );
 
+    watch([visibleCount, loading, () => charts.value.length], observePreloadCard, {
+        flush: "post",
+    });
+
     onMounted(() => {
+        if (typeof IntersectionObserver !== "undefined") {
+            preloadObserver = new IntersectionObserver(entries => {
+                if (!entries.some(entry => entry.isIntersecting)) return;
+                preloadObserver?.disconnect();
+                loadMore();
+            });
+        }
         void loadCharts();
+    });
+
+    onBeforeUnmount(() => {
+        preloadObserver?.disconnect();
     });
 </script>
 
@@ -102,7 +138,7 @@
         <div v-if="loading" class="progress-state">
             <mdui-circular-progress></mdui-circular-progress>
         </div>
-        <div v-else class="score-grid">
+        <div v-else ref="scoreGridRef" class="score-grid">
             <ScoreCard
                 v-for="chart in visibleCharts"
                 :key="chart.id"
@@ -116,7 +152,7 @@
             v-if="visibleCount < charts.length"
             class="load-more"
             variant="text"
-            @click="visibleCount += 60"
+            @click="loadMore"
         >
             加载更多（{{ visibleCount }} / {{ charts.length }}）
         </mdui-button>
