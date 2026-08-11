@@ -29,6 +29,11 @@ type CachedCollectionData = LXNSCollectionLists & {
     metadataUpdatedAt: number;
 };
 
+type CollectionDataLoadResult = {
+    loaded: boolean;
+    source: "cache" | "memory" | "network" | "unavailable";
+};
+
 export const icons = reactive<Icon[]>([]);
 export const plates = reactive<Plate[]>([]);
 export const frames = reactive<Frame[]>([]);
@@ -62,7 +67,87 @@ export const collectionDataError = ref<string | null>(null);
 export const collectionDataUpdatedAt = ref<number | null>(null);
 
 let collectionDataLoaded = false;
-let collectionDataPromise: Promise<boolean> | null = null;
+let collectionDataPromise: Promise<CollectionDataLoadResult> | null = null;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+    return typeof value === "number" && Number.isFinite(value);
+}
+
+function isOptionalString(value: unknown): boolean {
+    return value === undefined || typeof value === "string";
+}
+
+function isOptionalBoolean(value: unknown): boolean {
+    return value === undefined || typeof value === "boolean";
+}
+
+function isOptionalNumberArray(value: unknown): boolean {
+    return value === undefined || (Array.isArray(value) && value.every(isFiniteNumber));
+}
+
+function isCachedCollectionSong(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isFiniteNumber(value.id) &&
+        typeof value.title === "string" &&
+        (value.type === "standard" || value.type === "dx" || value.type === "utage") &&
+        isOptionalBoolean(value.completed) &&
+        isOptionalNumberArray(value.completed_difficulties)
+    );
+}
+
+function isCachedCollectionRequirement(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isOptionalNumberArray(value.difficulties) &&
+        isOptionalString(value.rate) &&
+        isOptionalString(value.fc) &&
+        isOptionalString(value.fs) &&
+        (value.songs === undefined ||
+            (Array.isArray(value.songs) && value.songs.every(isCachedCollectionSong))) &&
+        isOptionalBoolean(value.completed)
+    );
+}
+
+function isCachedCollectionItem(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isFiniteNumber(value.id) &&
+        typeof value.name === "string" &&
+        (value.color === undefined || value.color === null || typeof value.color === "string") &&
+        (value.description === undefined ||
+            value.description === null ||
+            typeof value.description === "string") &&
+        (value.genre === undefined || value.genre === null || typeof value.genre === "string") &&
+        (value.required === undefined ||
+            value.required === null ||
+            (Array.isArray(value.required) && value.required.every(isCachedCollectionRequirement)))
+    );
+}
+
+function isCachedCollectionData(value: unknown): value is CachedCollectionData {
+    if (!isRecord(value)) return false;
+
+    return (
+        Array.isArray(value.trophies) &&
+        value.trophies.every(isCachedCollectionItem) &&
+        Array.isArray(value.icons) &&
+        value.icons.every(isCachedCollectionItem) &&
+        Array.isArray(value.plates) &&
+        value.plates.every(isCachedCollectionItem) &&
+        Array.isArray(value.frames) &&
+        value.frames.every(isCachedCollectionItem) &&
+        isFiniteNumber(value.cachedAt) &&
+        isFiniteNumber(value.metadataUpdatedAt)
+    );
+}
 
 function normalizeTitleColor(color: string | null | undefined): TitleColor {
     const normalized = color?.toLowerCase();
@@ -168,7 +253,8 @@ function applyCollectionData(data: LXNSCollectionLists, updatedAt: number): void
 
 async function loadFromCache(): Promise<CachedCollectionData | null> {
     try {
-        return await localForage.getItem<CachedCollectionData>(COLLECTION_CACHE_KEY);
+        const cached = await localForage.getItem<unknown>(COLLECTION_CACHE_KEY);
+        return isCachedCollectionData(cached) ? cached : null;
     } catch (error) {
         console.error("Failed to load collection cache:", error);
         return null;
@@ -187,27 +273,35 @@ async function saveToCache(data: LXNSCollectionLists, metadataUpdatedAt: number)
     }
 }
 
-async function loadCollectionData(forceRefresh: boolean = false): Promise<boolean> {
+async function loadCollectionData(
+    forceRefresh: boolean = false
+): Promise<CollectionDataLoadResult> {
     if (collectionDataLoaded && !forceRefresh) {
         isCollectionDataLoading.value = false;
-        return true;
+        return { loaded: true, source: "memory" };
     }
 
     if (!forceRefresh) {
         const cached = await loadFromCache();
         if (cached) {
-            applyCollectionData(cached, cached.metadataUpdatedAt ?? cached.cachedAt);
-            collectionDataError.value = null;
-            isCollectionDataLoading.value = false;
-            return true;
+            try {
+                applyCollectionData(cached, cached.metadataUpdatedAt);
+                collectionDataError.value = null;
+                isCollectionDataLoading.value = false;
+                return { loaded: true, source: "cache" };
+            } catch (error) {
+                console.error("Failed to apply collection cache:", error);
+            }
         }
     }
 
     isCollectionDataLoading.value = !collectionDataLoaded;
+    let loadedFromNetwork = false;
     try {
         const data = await fetchLXNSCollections();
         const metadataUpdatedAt = Date.now();
         applyCollectionData(data, metadataUpdatedAt);
+        loadedFromNetwork = true;
         collectionDataError.value = null;
         void saveToCache(data, metadataUpdatedAt);
     } catch (error) {
@@ -220,33 +314,47 @@ async function loadCollectionData(forceRefresh: boolean = false): Promise<boolea
     if (!collectionDataLoaded && forceRefresh) {
         const cached = await loadFromCache();
         if (cached) {
-            applyCollectionData(cached, cached.metadataUpdatedAt ?? cached.cachedAt);
+            try {
+                applyCollectionData(cached, cached.metadataUpdatedAt);
+            } catch (error) {
+                console.error("Failed to apply collection cache:", error);
+            }
         }
     }
 
-    return collectionDataLoaded;
+    return {
+        loaded: collectionDataLoaded,
+        source: loadedFromNetwork ? "network" : "unavailable",
+    };
+}
+
+async function getCollectionDataResult(forceRefresh: boolean): Promise<CollectionDataLoadResult> {
+    if (!forceRefresh && collectionDataLoaded) {
+        return { loaded: true, source: "memory" };
+    }
+    if (collectionDataPromise) return collectionDataPromise;
+
+    const promise = loadCollectionData(forceRefresh);
+    collectionDataPromise = promise;
+    try {
+        return await promise;
+    } finally {
+        if (collectionDataPromise === promise) collectionDataPromise = null;
+        isCollectionDataLoading.value = false;
+    }
 }
 
 export async function getCollectionDataAsync(): Promise<boolean> {
-    if (collectionDataLoaded) return true;
-    if (collectionDataPromise) return collectionDataPromise;
-
-    collectionDataPromise = loadCollectionData();
-    const result = await collectionDataPromise;
-    collectionDataPromise = null;
-    return result;
+    return (await getCollectionDataResult(false)).loaded;
 }
 
 export async function initializeCollectionData(): Promise<void> {
-    await getCollectionDataAsync();
-    void refreshCollectionData();
+    const result = await getCollectionDataResult(false);
+    if (result.source === "cache") void refreshCollectionData();
 }
 
 export async function refreshCollectionData(): Promise<boolean> {
-    collectionDataPromise = loadCollectionData(true);
-    const result = await collectionDataPromise;
-    collectionDataPromise = null;
-    return result;
+    return (await getCollectionDataResult(true)).loaded;
 }
 
 export const partners: Partner[] = [

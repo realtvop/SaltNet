@@ -40,7 +40,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.
-- `pnpm test:collection-index` runs focused tests for ChartInfo collection reverse associations.
+- `pnpm test:collection-index` runs focused tests for collection caching, initialization, and
+  ChartInfo reverse associations.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
 

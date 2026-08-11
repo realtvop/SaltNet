@@ -12,7 +12,7 @@
         "pret:fix": "prettier --write .",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "test:collection-index": "vitest run src/components/data/collection/relatedCollections.test.ts",
+        "test:collection-index": "vitest run src/components/data/collection/index.test.ts src/components/data/collection/relatedCollections.test.ts",
         "test:build-info": "node --test script/generateBuildInfo.test.cjs"
     },
     "dependencies": {
