@@ -5,6 +5,7 @@
     import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
     import { useShared } from "./components/app/shared";
     import { initializeMusicData } from "@/components/data/music";
+    import { initializeCollectionData } from "@/components/data/collection";
 
     const route = useRoute();
     const router = useRouter();
@@ -46,6 +47,9 @@
     // Initialize music data from database on app startup
     initializeMusicData().catch(() => {
         // Music data init error - silent fail, will retry on demand
+    });
+    initializeCollectionData().catch(() => {
+        // Collection data init error - the collections page exposes retry UI
     });
 </script>
 

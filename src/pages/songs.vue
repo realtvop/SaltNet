@@ -15,16 +15,25 @@
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-    import { versionPlates } from "@/components/data/collection";
-    import { checkChartFinish } from "@/components/data/collection/versionPlate";
-    import type { VersionPlate } from "@/components/data/collection/type";
+    import {
+        getCollectionDataAsync,
+        versionPlateCategories,
+        versionPlates,
+    } from "@/components/data/collection";
+    import {
+        checkCollectionChartFinish,
+        getCollectionCharts,
+        getPlateCompactPresentation,
+        getVersionPlateConditionText,
+    } from "@/components/data/collection/versionPlate";
+    import type { VersionPlate, VersionPlateCategory } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
     import {
         getDifficultyFilterOptions,
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
-    import { createDetailedScoreLookup } from "@/components/data/chart/scoreLookup";
+    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { handleSelectChange } from "@/utils";
 
     declare global {
@@ -41,8 +50,6 @@
         Favorite = "收藏夹",
         Banquet = "宴会场",
     }
-
-    type VersionPlateCategory = keyof typeof versionPlates;
 
     const route = useRoute();
     const shared = useShared();
@@ -131,24 +138,35 @@
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
 
+    function syncVersionPlateSelections(): void {
+        for (const plateCategory of versionPlateCategories) {
+            const available = versionPlates[plateCategory];
+            if (!available.some(plate => plate.name === selectedTab.value[plateCategory])) {
+                selectedTab.value[plateCategory] = available[0]?.name ?? "";
+            }
+        }
+    }
+
+    const selectedVersionPlate = computed<VersionPlate | null>(() => {
+        if (!(category.value in versionPlates)) return null;
+        return (
+            versionPlates[category.value as VersionPlateCategory]?.find(
+                plate => plate.name === selectedDifficulty.value
+            ) ?? null
+        );
+    });
+
     const plateFinishStatus = computed(() => {
-        const plate: VersionPlate = versionPlates[
-            category.value as keyof typeof versionPlates
-        ]?.find(plate => plate.name === selectedDifficulty.value) as VersionPlate;
+        const plate = selectedVersionPlate.value;
+        if (!plate) return { plate: null, finishedItems: [], conditionText: "正在加载牌子数据…" };
         const finishedItems = itemsToRender.value.filter(chart =>
-            checkChartFinish(plate, chart.score as ChartScore)
+            checkCollectionChartFinish(plate, chart)
         );
 
         return {
             plate,
             finishedItems,
-            conditionText: plate.description
-                .replace("FULL COMBO", "FC")
-                .replace("FULL SYNC DX", "FSDX")
-                .replace("ALL PERFECT", "AP")
-                .replace("BASIC", "BAS")
-                .replace("Re:Master", "ReM")
-                .replace("MASTER", "MAS"),
+            conditionText: getVersionPlateConditionText(plate),
         };
     });
     const plateFinishSort = ref("condition");
@@ -272,26 +290,7 @@
             if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (detailedLookup) {
-                const d = detailedLookup.findScoreForChart(chart);
-                if (
-                    d &&
-                    typeof d.achievements === "number" &&
-                    d.fc !== undefined &&
-                    d.fs !== undefined &&
-                    d.rate !== undefined
-                ) {
-                    chartScore = {
-                        achievements: d.achievements,
-                        comboStatus: d.fc,
-                        syncStatus: d.fs,
-                        rankRate: d.rate,
-                        deluxeRating: d.ra,
-                        deluxeScore: d.dxScore,
-                        playCount: d.play_count,
-                    };
-                }
-            }
+            if (detailedLookup) chartScore = toChartScore(detailedLookup.findScoreForChart(chart));
             charts.push({
                 ...chart,
                 score: chartScore,
@@ -398,16 +397,7 @@
             if (!selectedPlate) {
                 filteredCharts = [];
             } else {
-                // 获取该牌子包含的所有曲目ID和需要的难度
-                const plateSongIds = new Set(selectedPlate.songs);
-                const requiredDifficulties = new Set(selectedPlate.difficulties);
-
-                // 筛选出该牌子包含的曲目，且只包含指定难度的谱面
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) =>
-                        plateSongIds.has(chart.music.id) &&
-                        requiredDifficulties.has(chart.info.grade)
-                );
+                filteredCharts = getCollectionCharts(selectedPlate, shared.chartsSort.charts);
 
                 // 按照牌子的达成条件进行排序
                 if (plateFinishSort.value === "constant-desc") {
@@ -429,13 +419,8 @@
                     filteredCharts.sort((a, b) => {
                         const scoreA = a.score;
                         const scoreB = b.score;
-
-                        if (!scoreA && !scoreB) return 0;
-                        if (!scoreA) return 1;
-                        if (!scoreB) return -1;
-
-                        const completedA = checkChartFinish(selectedPlate, scoreA);
-                        const completedB = checkChartFinish(selectedPlate, scoreB);
+                        const completedA = checkCollectionChartFinish(selectedPlate, a);
+                        const completedB = checkCollectionChartFinish(selectedPlate, b);
 
                         // 已完成的排在前面
                         if (completedA && !completedB) return -1;
@@ -443,8 +428,8 @@
 
                         // 同样完成状态下按达成率排序
                         if (
-                            typeof scoreA.achievements === "number" &&
-                            typeof scoreB.achievements === "number"
+                            typeof scoreA?.achievements === "number" &&
+                            typeof scoreB?.achievements === "number"
                         ) {
                             return scoreB.achievements - scoreA.achievements;
                         }
@@ -536,17 +521,12 @@
     });
 
     const compactMode = computed<"rankRate" | "comboStatus" | "syncStatus" | undefined>(() => {
-        if (category.value === "極" || category.value === "神") return "comboStatus";
-        if (category.value === "将") return "rankRate";
-        if (category.value === "舞舞") return "syncStatus";
-        return undefined;
+        const plate = selectedVersionPlate.value;
+        return plate ? getPlateCompactPresentation(plate).mode : undefined;
     });
     const compactFilter = computed<ComboStatus | RankRate | SyncStatus | undefined>(() => {
-        if (category.value === "極") return ComboStatus.FullCombo;
-        if (category.value === "将") return RankRate.sss;
-        if (category.value === "神") return ComboStatus.AllPerfect;
-        if (category.value === "舞舞") return SyncStatus.FullSyncDX;
-        return undefined;
+        const plate = selectedVersionPlate.value;
+        return plate ? getPlateCompactPresentation(plate).filter : undefined;
     });
 
     const loadPlayerData = async () => {
@@ -898,6 +878,12 @@
         }
     );
 
+    watch(
+        () =>
+            versionPlateCategories.map(key => versionPlates[key].map(plate => plate.id).join(",")),
+        syncVersionPlateSelections
+    );
+
     // 监听路由参数变化，重新加载数据
     watch(
         () => route.params.id,
@@ -932,6 +918,7 @@
         visibleItemsCount.value = getLoadSize();
         window.addEventListener("resize", handleResize);
         window.addEventListener("scroll", handleScroll);
+        void getCollectionDataAsync().then(syncVersionPlateSelections);
         loadPlayerData().catch(error => {
             console.error("Failed to load charts:", error);
         });

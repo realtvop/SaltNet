@@ -1,111 +1,60 @@
+import localForage from "localforage";
+import { reactive, ref } from "vue";
+import { fetchLXNSCollections } from "@/components/integrations/lxns";
+import type {
+    LXNSCollectionItem,
+    LXNSCollectionLists,
+    LXNSCollectionRequired,
+} from "@/components/integrations/lxns";
 import {
-    type Icon,
-    type Plate,
-    type Frame,
-    type Title,
     type Character,
+    type CollectionRequired,
     CollectionKind,
+    type Frame,
+    type Icon,
+    type Partner,
+    type Plate,
+    type Title,
     TitleColor,
     type VersionPlate,
-    type Partner,
-} from "@/components/data/collection/type";
-import collections from "./collections.json";
+    type VersionPlateCategory,
+} from "./type";
 import additionalCollections from "./additionalCollections.json";
-import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
-import { reactive } from "vue";
-import type { MusicMetadataState, SavedMusicList } from "@/components/data/music/type";
+import { updateRelatedCollectionsIndex } from "./relatedCollections";
 
-type VersionPlateCategory = "極" | "将" | "神" | "舞舞";
+const COLLECTION_CACHE_KEY = "saltnet_collection_cache_lxns_v1";
 
-type VersionPlateGroup = MusicMetadataState["cnVersions"][number] & {
-    versionNames: string[];
+type CachedCollectionData = LXNSCollectionLists & {
+    cachedAt: number;
+    metadataUpdatedAt: number;
 };
 
-type VersionPlateDraft = {
-    group: VersionPlateGroup;
-    index: number;
-    songs: number[];
-    difficulties: number[];
-    id?: number;
-    description?: string;
+type CollectionDataLoadResult = {
+    loaded: boolean;
+    source: "cache" | "memory" | "network" | "unavailable";
 };
 
-export const icons: Icon[] = collections.icons.map(icon => ({
-    type: CollectionKind.Icon,
-    id: icon.id,
-    name: icon.name,
-    genre: icon.genre,
-    description: icon.description,
-}));
-export const plates: Plate[] = collections.plates.map(plate => ({
-    type: CollectionKind.Plate,
-    id: plate.id,
-    name: plate.name,
-    genre: plate.genre,
-    description: plate.description,
-}));
-export const frames: Frame[] = collections.frames.map(frame => ({
-    type: CollectionKind.Frame,
-    id: frame.id,
-    name: frame.name,
-    genre: frame.genre,
-    description: frame.description,
-}));
-export const titles: Title[] = collections.titles.map(title => ({
-    type: CollectionKind.Title,
-    id: title.id,
-    name: title.name,
-    genre: title.genre,
-    description: title.description,
-    color: title.color as TitleColor,
-}));
+export const icons = reactive<Icon[]>([]);
+export const plates = reactive<Plate[]>([]);
+export const frames = reactive<Frame[]>([]);
+export const titles = reactive<Title[]>([]);
+
 export const characters: Character[] = additionalCollections.characters.map(character => ({
     id: character.id,
     name: character.name,
     genre: character.genre,
     updateTime: character.updateTime,
 }));
-export const genres = {
-    ...collections.genres,
-    ...additionalCollections.genres,
-};
-const versionPlateCategories = ["極", "将", "神", "舞舞"] as const;
 
-const versionPlateConditions: Record<
-    VersionPlateCategory,
-    {
-        idOffset: number;
-        specialMaiPlateId: number;
-        description: string;
-        condition: ComboStatus | SyncStatus | RankRate;
-    }
-> = {
-    極: {
-        idOffset: 1000,
-        specialMaiPlateId: 6149,
-        description: "FULL COMBO",
-        condition: ComboStatus.FullCombo,
-    },
-    将: {
-        idOffset: 2000,
-        specialMaiPlateId: 6150,
-        description: "RANK SSS",
-        condition: RankRate.sss,
-    },
-    神: {
-        idOffset: 3000,
-        specialMaiPlateId: 6151,
-        description: "ALL PERFECT",
-        condition: ComboStatus.AllPerfect,
-    },
-    舞舞: {
-        idOffset: 4000,
-        specialMaiPlateId: 6152,
-        description: "FULL SYNC DX",
-        condition: SyncStatus.FullSyncDX,
-    },
-};
+export const genres = reactive({
+    icons: [] as string[],
+    plates: [] as string[],
+    frames: [] as string[],
+    titles: [] as string[],
+    characters: [...additionalCollections.genres.characters],
+});
 
+export const versionPlateCategories = ["極", "将", "神", "舞舞"] as const;
 export const versionPlates = reactive<Record<VersionPlateCategory, VersionPlate[]>>({
     極: [],
     将: [],
@@ -113,127 +62,299 @@ export const versionPlates = reactive<Record<VersionPlateCategory, VersionPlate[
     舞舞: [],
 });
 
-function groupVersionsByWord(versions: MusicMetadataState["cnVersions"]): VersionPlateGroup[] {
-    const groups: VersionPlateGroup[] = [];
-    const byWord = new Map<string, VersionPlateGroup>();
+export const isCollectionDataLoading = ref(true);
+export const collectionDataError = ref<string | null>(null);
+export const collectionDataUpdatedAt = ref<number | null>(null);
 
-    for (const version of versions) {
-        let group = byWord.get(version.word);
-        if (!group) {
-            group = {
-                ...version,
-                versionNames: [],
-            };
-            byWord.set(version.word, group);
-            groups.push(group);
-        }
-        group.versionNames.push(version.name);
-    }
+let collectionDataLoaded = false;
+let collectionDataPromise: Promise<CollectionDataLoadResult> | null = null;
 
-    return groups;
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
 }
 
-function getVersionPlateSongs(
-    data: SavedMusicList,
-    versionNames: string[],
-    difficulties: number[] = [0, 1, 2, 3]
-): number[] {
-    const targetVersions = new Set(versionNames);
-    const targetDifficulties = new Set(difficulties);
-    const songs = new Set<number>();
-
-    for (const music of Object.values(data.musicList)) {
-        if (!targetVersions.has(music.info.from as unknown as string)) continue;
-        if (!music.charts.some(chart => targetDifficulties.has(chart.info.grade))) continue;
-        songs.add(music.id);
-    }
-
-    return [...songs];
+function isFiniteNumber(value: unknown): value is number {
+    return typeof value === "number" && Number.isFinite(value);
 }
 
-function getVersionPlateDescription(group: VersionPlateGroup, condition: string): string {
-    const versionLabel =
-        group.versionNames.length > 1
-            ? `${group.versionNames[group.versionNames.length - 1]}までの`
-            : `${group.versionNames[0]} `;
-    return `${versionLabel}全曲/BASIC～MASTER/${condition}`;
+function isOptionalString(value: unknown): boolean {
+    return value === undefined || typeof value === "string";
 }
 
-function insertSpecialMaiVersionPlateDraft(
-    drafts: VersionPlateDraft[],
-    data: SavedMusicList
-): VersionPlateDraft[] {
-    const insertAfterIndex = drafts.findIndex(({ group }) => group.word === "輝");
-    if (insertAfterIndex === -1) return drafts;
+function isOptionalBoolean(value: unknown): boolean {
+    return value === undefined || typeof value === "boolean";
+}
 
-    const versionNames = drafts
-        .slice(0, insertAfterIndex + 1)
-        .flatMap(({ group }) => group.versionNames);
-    const songs = getVersionPlateSongs(data, versionNames, [0, 1, 2, 3, 4]);
-    if (songs.length === 0) return drafts;
+function isOptionalNumberArray(value: unknown): boolean {
+    return value === undefined || (Array.isArray(value) && value.every(isFiniteNumber));
+}
 
-    return [
-        ...drafts.slice(0, insertAfterIndex + 1),
-        {
-            group: {
-                name: "舞",
-                word: "舞",
-                versionNames,
-            },
-            index: insertAfterIndex + 1,
-            songs,
-            difficulties: [0, 1, 2, 3, 4],
-            description: "全曲/BASIC～Re:MASTER",
-        },
-        ...drafts.slice(insertAfterIndex + 1).map(draft => ({
-            ...draft,
-            index: draft.index + 1,
+function isCachedCollectionSong(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isFiniteNumber(value.id) &&
+        typeof value.title === "string" &&
+        (value.type === "standard" || value.type === "dx" || value.type === "utage") &&
+        isOptionalBoolean(value.completed) &&
+        isOptionalNumberArray(value.completed_difficulties)
+    );
+}
+
+function isCachedCollectionRequirement(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isOptionalNumberArray(value.difficulties) &&
+        isOptionalString(value.rate) &&
+        isOptionalString(value.fc) &&
+        isOptionalString(value.fs) &&
+        (value.songs === undefined ||
+            (Array.isArray(value.songs) && value.songs.every(isCachedCollectionSong))) &&
+        isOptionalBoolean(value.completed)
+    );
+}
+
+function isCachedCollectionItem(value: unknown): boolean {
+    if (!isRecord(value)) return false;
+
+    return (
+        isFiniteNumber(value.id) &&
+        typeof value.name === "string" &&
+        (value.color === undefined || value.color === null || typeof value.color === "string") &&
+        (value.description === undefined ||
+            value.description === null ||
+            typeof value.description === "string") &&
+        (value.genre === undefined || value.genre === null || typeof value.genre === "string") &&
+        (value.required === undefined ||
+            value.required === null ||
+            (Array.isArray(value.required) && value.required.every(isCachedCollectionRequirement)))
+    );
+}
+
+function isCachedCollectionData(value: unknown): value is CachedCollectionData {
+    if (!isRecord(value)) return false;
+
+    return (
+        Array.isArray(value.trophies) &&
+        value.trophies.every(isCachedCollectionItem) &&
+        Array.isArray(value.icons) &&
+        value.icons.every(isCachedCollectionItem) &&
+        Array.isArray(value.plates) &&
+        value.plates.every(isCachedCollectionItem) &&
+        Array.isArray(value.frames) &&
+        value.frames.every(isCachedCollectionItem) &&
+        isFiniteNumber(value.cachedAt) &&
+        isFiniteNumber(value.metadataUpdatedAt)
+    );
+}
+
+function normalizeTitleColor(color: string | null | undefined): TitleColor {
+    const normalized = color?.toLowerCase();
+    return (
+        Object.values(TitleColor).find(value => value.toLowerCase() === normalized) ??
+        TitleColor.Normal
+    );
+}
+
+function mapRequirements(
+    requirements: LXNSCollectionRequired[] | null | undefined
+): CollectionRequired[] | undefined {
+    if (!requirements?.length) return undefined;
+
+    return requirements.map(requirement => ({
+        difficulties: requirement.difficulties ? [...requirement.difficulties] : undefined,
+        rate: requirement.rate,
+        fc: requirement.fc,
+        fs: requirement.fs,
+        songs: requirement.songs?.map(song => ({
+            id: song.id,
+            title: song.title,
+            type: song.type,
+            completed: song.completed,
+            completedDifficulties: song.completed_difficulties
+                ? [...song.completed_difficulties]
+                : undefined,
         })),
-    ];
+        completed: requirement.completed,
+    }));
 }
 
-export function updateSaltMetaVersionPlates(
-    versions: MusicMetadataState["cnVersions"],
-    data: SavedMusicList
-): void {
-    const groups = groupVersionsByWord(versions);
+function mapCollectionBase(item: LXNSCollectionItem) {
+    return {
+        id: item.id,
+        name: item.name,
+        genre: item.genre ?? "",
+        description: item.description ?? "",
+        required: mapRequirements(item.required),
+    };
+}
+
+function getVersionPlateCategory(name: string): VersionPlateCategory | null {
+    if (name.endsWith("舞舞")) return "舞舞";
+    if (name.endsWith("極")) return "極";
+    if (name.endsWith("将")) return "将";
+    if (name.endsWith("神")) return "神";
+    return null;
+}
+
+function uniqueGenres(collections: { genre?: string }[]): string[] {
+    return [...new Set(collections.map(item => item.genre).filter(Boolean) as string[])];
+}
+
+function applyCollectionData(data: LXNSCollectionLists, updatedAt: number): void {
+    const nextIcons: Icon[] = data.icons.map(item => ({
+        ...mapCollectionBase(item),
+        type: CollectionKind.Icon,
+    }));
+    const nextPlates: Plate[] = data.plates.map(item => ({
+        ...mapCollectionBase(item),
+        type: CollectionKind.Plate,
+    }));
+    const nextFrames: Frame[] = data.frames.map(item => ({
+        ...mapCollectionBase(item),
+        type: CollectionKind.Frame,
+    }));
+    const nextTitles: Title[] = data.trophies.map(item => ({
+        ...mapCollectionBase(item),
+        type: CollectionKind.Title,
+        color: normalizeTitleColor(item.color),
+    }));
+
+    icons.splice(0, icons.length, ...nextIcons);
+    plates.splice(0, plates.length, ...nextPlates);
+    frames.splice(0, frames.length, ...nextFrames);
+    titles.splice(0, titles.length, ...nextTitles);
+
+    updateRelatedCollectionsIndex([...nextPlates, ...nextTitles, ...nextIcons, ...nextFrames]);
+
+    genres.icons.splice(0, genres.icons.length, ...uniqueGenres(nextIcons));
+    genres.plates.splice(0, genres.plates.length, ...uniqueGenres(nextPlates));
+    genres.frames.splice(0, genres.frames.length, ...uniqueGenres(nextFrames));
+    genres.titles.splice(0, genres.titles.length, ...uniqueGenres(nextTitles));
 
     for (const category of versionPlateCategories) {
-        const condition = versionPlateConditions[category];
-        const drafts = insertSpecialMaiVersionPlateDraft(
-            groups.map((group, index) => ({
-                group,
-                index,
-                songs: getVersionPlateSongs(data, group.versionNames),
-                difficulties: [0, 1, 2, 3],
-            })),
-            data
-        );
-        versionPlates[category].splice(
-            0,
-            versionPlates[category].length,
-            ...drafts
-                .filter(({ group, index, songs }) => {
-                    if (songs.length === 0) return false;
-                    return !(category === "将" && index === 0 && group.word === "真");
-                })
-                .map(({ group, index, songs, difficulties, id, description }) => ({
-                    type: CollectionKind.Plate,
-                    id:
-                        group.word === "舞"
-                            ? condition.specialMaiPlateId
-                            : (id ?? condition.idOffset + index),
-                    name: `${group.word}${category}`,
-                    description: description
-                        ? `${description}/${condition.description}`
-                        : getVersionPlateDescription(group, condition.description),
-                    genre: "実績",
-                    difficulties,
-                    condition: condition.condition,
-                    songs,
-                }))
-        );
+        const matchingPlates = nextPlates
+            .map(plate => ({ plate, category: getVersionPlateCategory(plate.name) }))
+            .filter(
+                (entry): entry is { plate: Plate; category: VersionPlateCategory } =>
+                    entry.category === category && Boolean(entry.plate.required?.length)
+            )
+            .map(({ plate, category: plateCategory }) => ({
+                ...plate,
+                category: plateCategory,
+            }));
+        versionPlates[category].splice(0, versionPlates[category].length, ...matchingPlates);
     }
+
+    collectionDataLoaded = true;
+    collectionDataUpdatedAt.value = updatedAt;
+}
+
+async function loadFromCache(): Promise<CachedCollectionData | null> {
+    try {
+        const cached = await localForage.getItem<unknown>(COLLECTION_CACHE_KEY);
+        return isCachedCollectionData(cached) ? cached : null;
+    } catch (error) {
+        console.error("Failed to load collection cache:", error);
+        return null;
+    }
+}
+
+async function saveToCache(data: LXNSCollectionLists, metadataUpdatedAt: number): Promise<void> {
+    try {
+        await localForage.setItem<CachedCollectionData>(COLLECTION_CACHE_KEY, {
+            ...data,
+            metadataUpdatedAt,
+            cachedAt: Date.now(),
+        });
+    } catch (error) {
+        console.error("Failed to save collection cache:", error);
+    }
+}
+
+async function loadCollectionData(
+    forceRefresh: boolean = false
+): Promise<CollectionDataLoadResult> {
+    if (collectionDataLoaded && !forceRefresh) {
+        isCollectionDataLoading.value = false;
+        return { loaded: true, source: "memory" };
+    }
+
+    if (!forceRefresh) {
+        const cached = await loadFromCache();
+        if (cached) {
+            try {
+                applyCollectionData(cached, cached.metadataUpdatedAt);
+                collectionDataError.value = null;
+                isCollectionDataLoading.value = false;
+                return { loaded: true, source: "cache" };
+            } catch (error) {
+                console.error("Failed to apply collection cache:", error);
+            }
+        }
+    }
+
+    isCollectionDataLoading.value = !collectionDataLoaded;
+    let loadedFromNetwork = false;
+    try {
+        const data = await fetchLXNSCollections();
+        const metadataUpdatedAt = Date.now();
+        applyCollectionData(data, metadataUpdatedAt);
+        loadedFromNetwork = true;
+        collectionDataError.value = null;
+        void saveToCache(data, metadataUpdatedAt);
+    } catch (error) {
+        console.error("Failed to fetch LXNS collections:", error);
+        collectionDataError.value = "收藏品数据加载失败，请稍后重试";
+    } finally {
+        isCollectionDataLoading.value = false;
+    }
+
+    if (!collectionDataLoaded && forceRefresh) {
+        const cached = await loadFromCache();
+        if (cached) {
+            try {
+                applyCollectionData(cached, cached.metadataUpdatedAt);
+            } catch (error) {
+                console.error("Failed to apply collection cache:", error);
+            }
+        }
+    }
+
+    return {
+        loaded: collectionDataLoaded,
+        source: loadedFromNetwork ? "network" : "unavailable",
+    };
+}
+
+async function getCollectionDataResult(forceRefresh: boolean): Promise<CollectionDataLoadResult> {
+    if (!forceRefresh && collectionDataLoaded) {
+        return { loaded: true, source: "memory" };
+    }
+    if (collectionDataPromise) return collectionDataPromise;
+
+    const promise = loadCollectionData(forceRefresh);
+    collectionDataPromise = promise;
+    try {
+        return await promise;
+    } finally {
+        if (collectionDataPromise === promise) collectionDataPromise = null;
+        isCollectionDataLoading.value = false;
+    }
+}
+
+export async function getCollectionDataAsync(): Promise<boolean> {
+    return (await getCollectionDataResult(false)).loaded;
+}
+
+export async function initializeCollectionData(): Promise<void> {
+    const result = await getCollectionDataResult(false);
+    if (result.source === "cache") void refreshCollectionData();
+}
+
+export async function refreshCollectionData(): Promise<boolean> {
+    return (await getCollectionDataResult(true)).loaded;
 }
 
 export const partners: Partner[] = [
