@@ -1,0 +1,952 @@
+{
+    "sourceVersion": 155,
+    "netOpenId": 260610,
+    "courses": [
+        {
+            "id": 551001,
+            "name": "初段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 1,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 10256,
+                    "title": "いーあるふぁんくらぶ",
+                    "difficulty": 0
+                },
+                {
+                    "musicId": 11052,
+                    "title": "グリーンライツ・セレナーデ",
+                    "difficulty": 0
+                },
+                {
+                    "musicId": 10319,
+                    "title": "幻想のサテライト",
+                    "difficulty": 0
+                },
+                {
+                    "musicId": 617,
+                    "title": "オトヒメモリー☆ウタゲーション",
+                    "difficulty": 0
+                }
+            ],
+            "life": {
+                "initial": 350,
+                "recovery": 20,
+                "damage": {
+                    "perfect": 0,
+                    "great": 0,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551002,
+            "name": "二段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 2,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11764,
+                    "title": "唱",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11136,
+                    "title": "Oath Act",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11265,
+                    "title": "Alice in 冷凍庫",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11697,
+                    "title": "ラビットホール",
+                    "difficulty": 1
+                }
+            ],
+            "life": {
+                "initial": 350,
+                "recovery": 20,
+                "damage": {
+                    "perfect": 0,
+                    "great": 0,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551003,
+            "name": "三段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 3,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11701,
+                    "title": "さよならヒストリー",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11411,
+                    "title": "エンヴィーベイビー",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11491,
+                    "title": "Luminaria",
+                    "difficulty": 1
+                },
+                {
+                    "musicId": 11638,
+                    "title": "星界ちゃんと可不ちゃんのおつかい合騒曲",
+                    "difficulty": 1
+                }
+            ],
+            "life": {
+                "initial": 600,
+                "recovery": 50,
+                "damage": {
+                    "perfect": 0,
+                    "great": 1,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551004,
+            "name": "四段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 4,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11698,
+                    "title": "酔いどれ知らず",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11276,
+                    "title": "今、誰が為のかがり火へ",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 10535,
+                    "title": "色は匂へど散りぬるを",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 417,
+                    "title": "ウミユリ海底譚",
+                    "difficulty": 2
+                }
+            ],
+            "life": {
+                "initial": 700,
+                "recovery": 50,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551005,
+            "name": "五段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 5,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 579,
+                    "title": "ポップミュージックは僕のもの",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11003,
+                    "title": "でらっくmaimai♪てんてこまい!",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11333,
+                    "title": "Southern Cross",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11770,
+                    "title": "Ultimate taste",
+                    "difficulty": 2
+                }
+            ],
+            "life": {
+                "initial": 700,
+                "recovery": 50,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551006,
+            "name": "六段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 6,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 439,
+                    "title": "最終鬼畜妹・一部声",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11405,
+                    "title": "エータ・ベータ・イータ",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 432,
+                    "title": "幸せになれる隠しコマンドがあるらしい",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11272,
+                    "title": "約束",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 700,
+                "recovery": 50,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551007,
+            "name": "七段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 7,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11271,
+                    "title": "再会",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 634,
+                    "title": "GET!! 夢&DREAM",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11580,
+                    "title": "解けないように",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11767,
+                    "title": "デビルじゃないもん",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 700,
+                "recovery": 50,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551008,
+            "name": "八段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 8,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11017,
+                    "title": "福宿音屋魂音泉",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11048,
+                    "title": "ナイト・オブ・ナイツ (Cranky Remix)",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11615,
+                    "title": "ぽわわん劇場",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11512,
+                    "title": "きゅうくらりん",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 700,
+                "recovery": 20,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551009,
+            "name": "九段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 9,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 11699,
+                    "title": "新人類",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11141,
+                    "title": "energy trixxx",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 798,
+                    "title": "セイクリッド　ルイン",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11496,
+                    "title": "Destiny Runner",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 800,
+                "recovery": 30,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551010,
+            "name": "十段",
+            "mode": {
+                "id": 1,
+                "name": "段位认定"
+            },
+            "baseDaniId": 10,
+            "isLocked": false,
+            "unlockCourseId": 1001,
+            "tracks": [
+                {
+                    "musicId": 840,
+                    "title": "Imperishable Night 2006 (2016 Refine)",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11207,
+                    "title": "Ether Strike",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11412,
+                    "title": "初音天地開闢神話",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 227,
+                    "title": "Garakuta Doll Play",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 900,
+                "recovery": 30,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 2,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551101,
+            "name": "真初段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 12,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11010,
+                    "title": "STARTLINER",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11133,
+                    "title": "Catch the Wave",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 759,
+                    "title": "サドマミホリック",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 136,
+                    "title": "Streak",
+                    "difficulty": 2
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551102,
+            "name": "真二段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 13,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 791,
+                    "title": "ロールプレイングゲーム",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11199,
+                    "title": "悪戯センセーション",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 191,
+                    "title": "脳漿炸裂ガール",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 11532,
+                    "title": "ヱデン",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551103,
+            "name": "真三段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 14,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11599,
+                    "title": "まにまに",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 794,
+                    "title": "Money Money",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 239,
+                    "title": "System “Z”",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 709,
+                    "title": "アウターサイエンス",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551104,
+            "name": "真四段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 15,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11715,
+                    "title": "ライアーダンサー",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 581,
+                    "title": "ねぇ、壊れタ人形ハ何処へ棄テらレるノ？",
+                    "difficulty": 2
+                },
+                {
+                    "musicId": 204,
+                    "title": "ナイト・オブ・ナイツ",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 453,
+                    "title": "Garden Of The Dragon",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551105,
+            "name": "真五段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 16,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11583,
+                    "title": "インターネットサバイバー",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11653,
+                    "title": "ULTRA POWER",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 448,
+                    "title": "ありふれたせかいせいふく",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 673,
+                    "title": "咲キ誇レ常世ノ華",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551106,
+            "name": "真六段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 17,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11316,
+                    "title": "We Are Us",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11710,
+                    "title": "サイバーサンダーサイダー",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11177,
+                    "title": "レーイレーイ",
+                    "difficulty": 4
+                },
+                {
+                    "musicId": 700,
+                    "title": "疾走あんさんぶる",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551107,
+            "name": "真七段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 18,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11460,
+                    "title": "Neon Kingdom",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11208,
+                    "title": "Cyaegha",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 451,
+                    "title": "頓珍漢の宴",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11413,
+                    "title": "Armageddon",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551108,
+            "name": "真八段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 19,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 766,
+                    "title": "アマノジャクリバース feat. ｙｔｒ",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11213,
+                    "title": "Arty Party",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 24,
+                    "title": "Sun Dance",
+                    "difficulty": 4
+                },
+                {
+                    "musicId": 556,
+                    "title": "夜明けまであと３秒",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551109,
+            "name": "真九段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 20,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11675,
+                    "title": "勦滅",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11618,
+                    "title": "Energizing Flame",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 589,
+                    "title": "Panopticon",
+                    "difficulty": 4
+                },
+                {
+                    "musicId": 11687,
+                    "title": "MarbleBlue.",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551110,
+            "name": "真十段",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 21,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11295,
+                    "title": "脳天直撃",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11026,
+                    "title": "TEmPTaTiON",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11470,
+                    "title": "康莊大道",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11619,
+                    "title": "KHYMΞXΛ",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 10,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551111,
+            "name": "真皆伝",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 22,
+            "isLocked": true,
+            "unlockCourseId": 551010,
+            "tracks": [
+                {
+                    "musicId": 11223,
+                    "title": "Heavenly Blast",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11745,
+                    "title": "氷滅の135小節",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11311,
+                    "title": "躯樹の墓守",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11753,
+                    "title": "宙天",
+                    "difficulty": 3
+                }
+            ],
+            "life": {
+                "initial": 50,
+                "recovery": 5,
+                "damage": {
+                    "perfect": 0,
+                    "great": 2,
+                    "good": 3,
+                    "miss": 5
+                }
+            }
+        },
+        {
+            "id": 551112,
+            "name": "裏皆伝",
+            "mode": {
+                "id": 2,
+                "name": "真段位认定"
+            },
+            "baseDaniId": 23,
+            "isLocked": true,
+            "unlockCourseId": 551111,
+            "tracks": [
+                {
+                    "musicId": 834,
+                    "title": "PANDORA PARADOXXX",
+                    "difficulty": 4
+                },
+                {
+                    "musicId": 11612,
+                    "title": "Latent Kingdom",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11662,
+                    "title": "raputa",
+                    "difficulty": 3
+                },
+                {
+                    "musicId": 11663,
+                    "title": "系ぎて",
+                    "difficulty": 4
+                }
+            ],
+            "life": {
+                "initial": 10,
+                "recovery": 0,
+                "damage": {
+                    "perfect": 0,
+                    "great": 1,
+                    "good": 3,
+                    "miss": 10
+                }
+            }
+        }
+    ]
+}

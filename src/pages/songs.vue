@@ -34,6 +34,9 @@
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
+    import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
+    import type { Course } from "@/components/data/course";
+    import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
 
     declare global {
@@ -49,7 +52,10 @@
         Version = "版本",
         Favorite = "收藏夹",
         Banquet = "宴会场",
+        Course = "段位",
     }
+
+    const primaryCategories = Object.values(Category).filter(item => item !== Category.Course);
 
     const route = useRoute();
     const shared = useShared();
@@ -107,6 +113,7 @@
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (tabCategory === Category.Course) return courses.map(course => course.name);
         if (tabCategory === Category.Version) {
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
                 ? [...maimaiVersionsCN].reverse()
@@ -125,6 +132,7 @@
         [Category.Banquet]: getTabsForCategory(Category.Banquet)[0] || "",
         [Category.Favorite]: getTabsForCategory(Category.Favorite)[0] || "",
         [Category.Version]: getTabsForCategory(Category.Version)[0] || "",
+        [Category.Course]: getTabsForCategory(Category.Course)[0] || "",
         // 为每个牌子类型添加默认选择
         ...Object.keys(versionPlates).reduce(
             (acc, key) => {
@@ -137,6 +145,11 @@
     });
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
+
+    const selectedCourse = computed<Course | null>(() => {
+        if (category.value !== Category.Course) return null;
+        return courses.find(course => course.name === selectedDifficulty.value) ?? null;
+    });
 
     function syncVersionPlateSelections(): void {
         for (const plateCategory of versionPlateCategories) {
@@ -386,6 +399,10 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
+        } else if (category.value === Category.Course) {
+            filteredCharts = selectedCourse.value
+                ? getCourseCharts(selectedCourse.value, shared.chartsSort.charts)
+                : [];
         } else if (category.value in versionPlates) {
             // 牌子模式
             const plateType = category.value as VersionPlateCategory;
@@ -543,6 +560,26 @@
     const itemsToRender = computed(() => {
         if (!chartListFiltered.value) return [];
         return chartListFiltered.value[selectedDifficulty.value] || [];
+    });
+
+    const courseTrackEntries = computed(() => {
+        const course = selectedCourse.value;
+        if (!course) return [];
+
+        const chartsByTrack = new Map(
+            itemsToRender.value.map(chart => [
+                getCourseTrackKey({
+                    musicId: chart.music.id,
+                    difficulty: chart.info.grade,
+                }),
+                chart,
+            ])
+        );
+
+        return course.tracks.map(track => ({
+            track,
+            chart: chartsByTrack.get(getCourseTrackKey(track)) ?? null,
+        }));
     });
 
     // 虚拟滚动状态管理
@@ -1132,7 +1169,7 @@
                 <mdui-menu>
                     <mdui-menu-item
                         @click="category = item"
-                        v-for="(item, index) in Object.values(Category)"
+                        v-for="(item, index) in primaryCategories"
                         :key="index"
                         :style="{
                             backgroundColor:
@@ -1154,6 +1191,19 @@
                         @click="category = plateType as VersionPlateCategory"
                     >
                         {{ plateType }}牌
+                    </mdui-menu-item>
+                    <mdui-divider />
+                    <mdui-menu-item
+                        :icon="category === Category.Course ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === Category.Course
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                        }"
+                        @click="category = Category.Course"
+                    >
+                        段位
                     </mdui-menu-item>
                 </mdui-menu>
             </mdui-dropdown>
@@ -1238,6 +1288,21 @@
                     {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
                 </span>
             </div>
+        </div>
+        <div v-else-if="category === Category.Course" class="search-input course-life-summary">
+            <span class="course-life-value">
+                <mdui-icon name="favorite"></mdui-icon>
+                血量 {{ selectedCourse?.life.initial ?? "-" }}
+            </span>
+            <span v-if="selectedCourse" class="course-life-rules">
+                {{ selectedCourse.mode.name }} · 回复 +{{ selectedCourse.life.recovery }} · PERFECT
+                -{{ selectedCourse.life.damage.perfect }} · GREAT -{{
+                    selectedCourse.life.damage.great
+                }}
+                · GOOD -{{ selectedCourse.life.damage.good }} · MISS -{{
+                    selectedCourse.life.damage.miss
+                }}
+            </span>
         </div>
         <div
             v-else-if="category === Category.InGame && selectedDifficulty === 'ALL'"
@@ -1508,33 +1573,63 @@
                     </span>
                 </div>
                 <div class="score-grid">
-                    <ScoreCard
-                        v-if="
-                            !(category in versionPlates) &&
-                            (category !== Category.Favorite || shared.favorites.length > 0)
-                        "
-                        cover="/icons/random.png"
-                        :data="randomChartDummy"
-                        @click="
-                            () => {
-                                const chart = getRandomChart();
-                                if (chart) openChartInfoDialog(chart);
-                            }
-                        "
-                    />
-                    <div
-                        v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
-                        :key="`score-cell-${index}`"
-                        class="score-cell"
-                        :class="{ 'score-cell-compact': category in versionPlates }"
-                    >
+                    <template v-if="category === Category.Course">
+                        <div
+                            v-for="(entry, index) in courseTrackEntries"
+                            :key="getCourseTrackKey(entry.track)"
+                            class="score-cell course-score-cell"
+                        >
+                            <div class="course-track-order">第 {{ index + 1 }} 曲</div>
+                            <ScoreCard
+                                v-if="entry.chart"
+                                :data="entry.chart"
+                                @click="openChartInfoDialog(entry.chart)"
+                            />
+                            <mdui-card v-else variant="outlined" class="course-missing-card">
+                                <img
+                                    :src="getCoverURL(entry.track.musicId)"
+                                    :alt="entry.track.title"
+                                    crossorigin="anonymous"
+                                />
+                                <div>
+                                    <strong>{{ entry.track.title }}</strong>
+                                    <span>
+                                        {{ getChartDifficultyFullLabel(entry.track.difficulty) }}
+                                    </span>
+                                    <small>谱面数据暂不可用</small>
+                                </div>
+                            </mdui-card>
+                        </div>
+                    </template>
+                    <template v-else>
                         <ScoreCard
-                            :data="chart"
-                            @click="openChartInfoDialog(chart)"
-                            :compact="compactMode"
-                            :compact-filter="compactFilter"
+                            v-if="
+                                !(category in versionPlates) &&
+                                (category !== Category.Favorite || shared.favorites.length > 0)
+                            "
+                            cover="/icons/random.png"
+                            :data="randomChartDummy"
+                            @click="
+                                () => {
+                                    const chart = getRandomChart();
+                                    if (chart) openChartInfoDialog(chart);
+                                }
+                            "
                         />
-                    </div>
+                        <div
+                            v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
+                            :key="`score-cell-${index}`"
+                            class="score-cell"
+                            :class="{ 'score-cell-compact': category in versionPlates }"
+                        >
+                            <ScoreCard
+                                :data="chart"
+                                @click="openChartInfoDialog(chart)"
+                                :compact="compactMode"
+                                :compact-filter="compactFilter"
+                            />
+                        </div>
+                    </template>
 
                     <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
                         <div class="loading-text">正在加载更多...</div>
@@ -1634,6 +1729,30 @@
         gap: 0.5rem;
     }
 
+    .course-life-summary {
+        justify-content: flex-start !important;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .course-life-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: rgb(var(--mdui-color-primary));
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .course-life-value mdui-icon {
+        font-size: 1.3rem;
+    }
+
+    .course-life-rules {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.85rem;
+    }
+
     .card-container {
         padding: 5px 20px;
         min-height: 50vh;
@@ -1681,6 +1800,53 @@
 
     .score-cell-compact {
         width: 100px;
+    }
+
+    .course-score-cell {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .course-track-order {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .course-missing-card {
+        display: flex;
+        min-height: 95px;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .course-missing-card > img {
+        object-fit: cover;
+        width: 40%;
+    }
+
+    .course-missing-card > div {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 4px;
+        justify-content: center;
+        min-width: 0;
+        padding: 8px;
+        text-align: left;
+    }
+
+    .course-missing-card strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .course-missing-card span,
+    .course-missing-card small {
+        color: rgb(var(--mdui-color-on-surface-variant));
     }
 
     .grouped-container {
