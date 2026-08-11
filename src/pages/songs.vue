@@ -1355,32 +1355,32 @@
         </div>
         <div
             v-else-if="category === Category.Kaleidxscope"
-            class="search-input kaleidxscope-life-summary"
+            class="search-input challenge-life-summary"
         >
-            <span v-if="selectedKaleidxscopeCurrentPhase" class="kaleidxscope-life-value">
+            <span v-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-value">
                 <mdui-icon name="favorite"></mdui-icon>
                 {{ selectedKaleidxscopeCurrentPhase.life }}
                 <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
             </span>
-            <span v-else-if="selectedKaleidxscopeGate" class="kaleidxscope-life-value pending">
+            <span v-else-if="selectedKaleidxscopeGate" class="challenge-life-value pending">
                 <mdui-icon name="event"></mdui-icon>
                 {{ formatKaleidxscopeDateTime(selectedKaleidxscopeGate.openedAt, true) }} 开放
             </span>
-            <span v-if="selectedKaleidxscopeNextPhase" class="kaleidxscope-next-phase">
+            <span v-if="selectedKaleidxscopeNextPhase" class="challenge-life-rules">
                 下次放宽 {{ formatKaleidxscopeDateTime(selectedKaleidxscopeNextPhase.startsAt) }} →
                 {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
                 {{ selectedKaleidxscopeNextPhase.life }}
             </span>
-            <span v-else-if="selectedKaleidxscopeCurrentPhase" class="kaleidxscope-next-phase">
+            <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
                 最终阶段
             </span>
         </div>
-        <div v-else-if="category === Category.Course" class="search-input course-life-summary">
-            <span class="course-life-value">
+        <div v-else-if="category === Category.Course" class="search-input challenge-life-summary">
+            <span class="challenge-life-value">
                 <mdui-icon name="favorite"></mdui-icon>
                 {{ selectedCourse?.life.initial ?? "-" }}
             </span>
-            <span v-if="selectedCourse" class="course-life-rules">
+            <span v-if="selectedCourse" class="challenge-life-rules">
                 {{ selectedCourseLifeRuleText }}
             </span>
         </div>
@@ -1816,13 +1816,13 @@
         gap: 0.5rem;
     }
 
-    .course-life-summary {
+    .challenge-life-summary {
         justify-content: flex-start !important;
         overflow-x: auto;
         white-space: nowrap;
     }
 
-    .course-life-value {
+    .challenge-life-value {
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
@@ -1831,45 +1831,21 @@
         font-weight: 700;
     }
 
-    .course-life-value mdui-icon {
+    .challenge-life-value mdui-icon {
         font-size: 1.3rem;
     }
 
-    .course-life-rules {
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.85rem;
-    }
-
-    .kaleidxscope-life-summary {
-        justify-content: flex-start !important;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-
-    .kaleidxscope-life-value {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        color: rgb(var(--mdui-color-primary));
-        font-size: 1rem;
-        font-weight: 700;
-    }
-
-    .kaleidxscope-life-value mdui-icon {
-        font-size: 1.3rem;
-    }
-
-    .kaleidxscope-life-value small {
+    .challenge-life-value small {
         font-size: 0.72rem;
     }
 
-    .kaleidxscope-life-value.pending,
-    .kaleidxscope-next-phase {
+    .challenge-life-value.pending,
+    .challenge-life-rules {
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .kaleidxscope-next-phase {
-        font-size: 0.82rem;
+    .challenge-life-rules {
+        font-size: 0.85rem;
     }
 
     .card-container {

@@ -32,7 +32,6 @@ export interface KaleidxscopeGate {
     name: string;
     shortName: string;
     region: string;
-    accent: string;
     openedAt: string;
     keyCondition: KaleidxscopeKeyCondition;
     lifePhases: KaleidxscopeLifePhase[];

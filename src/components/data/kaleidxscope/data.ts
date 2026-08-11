@@ -329,7 +329,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "蓝色之门",
         shortName: "蓝门",
         region: "青春区域",
-        accent: "#2878d0",
         openedAt: "2026-01-23T10:00:00+08:00",
         keyCondition: {
             summary: "门更新后，游玩全部 29 首青春区域曲目",
@@ -368,7 +367,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "白色之门",
         shortName: "白门",
         region: "天界区域 8 / 神明地域",
-        accent: "#7a7f88",
         openedAt: "2026-02-10T07:00:00+08:00",
         keyCondition: {
             summary: "同一局连续游玩 3 首（单人）或 4 首（双人）不重复的奏音曲目",
@@ -408,7 +406,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "紫色之门",
         shortName: "紫门",
         region: "BLACK ROSE 区域 10",
-        accent: "#7e57c2",
         openedAt: "2026-03-25T10:00:00+08:00",
         keyCondition: {
             summary: "同一局连续游玩 3 首（单人）或 4 首（双人）不重复的言ノ葉Project 曲目",
@@ -442,7 +439,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "黑色之门",
         shortName: "黑门",
         region: "メトロポリス区域 9",
-        accent: "#34343b",
         openedAt: "2026-04-28T10:00:00+08:00",
         keyCondition: {
             summary: "门更新后，游玩全部 11 首 KOP6 及以前的 KOP 曲目",
@@ -483,7 +479,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "黄色之门",
         shortName: "黄门",
         region: "七彩区域",
-        accent: "#b47d00",
         openedAt: "2026-06-10T10:00:00+08:00",
         keyCondition: {
             summary: "使用游戏内随机选曲抽到下列 12 首之一，并游玩其中 1 首",
@@ -522,7 +517,6 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "红色之门",
         shortName: "红门",
         region: "龙之区域 4",
-        accent: "#d23f46",
         openedAt: "2026-08-05T10:00:00+08:00",
         keyCondition: {
             summary: "完成龙之区域 4，并在门更新后游玩全部 10 首钥匙曲目",

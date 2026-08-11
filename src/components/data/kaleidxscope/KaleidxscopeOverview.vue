@@ -4,7 +4,6 @@
     import {
         formatKaleidxscopeDateTime,
         getKaleidxscopeCurrentPhase,
-        getKaleidxscopeNextPhase,
         getKaleidxscopePhaseEnd,
         getKaleidxscopePhaseStatus,
         getKaleidxscopePreferredGrade,
@@ -23,7 +22,6 @@
     }>();
 
     const currentPhase = computed(() => getKaleidxscopeCurrentPhase(props.gate, props.now));
-    const nextPhase = computed(() => getKaleidxscopeNextPhase(props.gate, props.now));
     const preferredGrade = computed(() => getKaleidxscopePreferredGrade(currentPhase.value));
     const bossSong = computed(
         () => props.gate.selectionPools.find(pool => pool.track === 3)?.songs[0]
@@ -33,6 +31,12 @@
         past: "历史",
         current: "当前",
         future: "未来",
+    };
+
+    const statusIcons: Record<KaleidxscopePhaseStatus, string> = {
+        past: "history",
+        current: "favorite",
+        future: "schedule",
     };
 
     function getPhaseStatus(index: number): KaleidxscopePhaseStatus {
@@ -48,94 +52,71 @@
 </script>
 
 <template>
-    <div
-        class="kaleidxscope-overview"
-        :style="{
-            '--gate-accent': gate.accent,
-            '--gate-accent-soft': `${gate.accent}29`,
-            '--gate-accent-faint': `${gate.accent}14`,
-        }"
-    >
-        <mdui-card variant="filled" class="gate-heading">
-            <span class="gate-marker"></span>
-            <span class="gate-title">
-                <strong>{{ gate.name }}</strong>
-                <small>{{ gate.region }}</small>
-            </span>
-            <span v-if="bossSong" class="gate-boss">
-                门曲
-                <strong>{{ bossSong.title }}</strong>
-            </span>
-        </mdui-card>
+    <main class="kaleidxscope-overview">
+        <header class="gate-header">
+            <h2>{{ gate.name }}</h2>
+            <p>
+                {{ gate.region }}
+                <template v-if="bossSong">· 门曲：{{ bossSong.title }}</template>
+            </p>
+        </header>
 
         <div class="overview-grid">
-            <mdui-card variant="outlined" class="key-condition-card">
-                <h2>
+            <mdui-card variant="filled" class="overview-card condition-card">
+                <div class="card-title">
                     <mdui-icon name="key"></mdui-icon>
-                    钥匙获取条件
-                </h2>
-                <p>{{ gate.keyCondition.summary }}</p>
-                <ul>
+                    <h3>钥匙获取条件</h3>
+                </div>
+                <p class="condition-summary">{{ gate.keyCondition.summary }}</p>
+                <ul class="condition-notes">
                     <li v-for="note in gate.keyCondition.notes" :key="note">{{ note }}</li>
                 </ul>
             </mdui-card>
 
-            <mdui-card variant="outlined" class="life-calendar-card">
-                <header>
-                    <span>
-                        <h2>
-                            <mdui-icon name="favorite"></mdui-icon>
-                            血量日历
-                        </h2>
-                        <small>北京时间；阶段切换以游戏内显示为准</small>
-                    </span>
-                    <span v-if="currentPhase" class="current-life-chip">
-                        {{ currentPhase.difficulty }} · LIFE {{ currentPhase.life }}
-                    </span>
-                    <span v-else class="current-life-chip pending">
-                        {{ formatKaleidxscopeDateTime(gate.openedAt, true) }} 开放
-                    </span>
-                </header>
-
-                <div class="phase-calendar">
-                    <div
+            <mdui-card variant="filled" class="overview-card calendar-card">
+                <div class="card-title">
+                    <mdui-icon name="favorite"></mdui-icon>
+                    <h3>血量日历</h3>
+                    <span>北京时间</span>
+                </div>
+                <mdui-list class="phase-list">
+                    <mdui-list-item
                         v-for="(lifePhase, index) in gate.lifePhases"
                         :key="lifePhase.startsAt"
-                        class="phase-item"
-                        :class="`phase-${getPhaseStatus(index)}`"
+                        rounded
+                        nonclickable
+                        :active="getPhaseStatus(index) === 'current'"
+                        :icon="statusIcons[getPhaseStatus(index)]"
+                        :headline="`LIFE ${lifePhase.life} · ${lifePhase.difficulty}`"
+                        :description="formatPhaseRange(index)"
+                        description-line="2"
                     >
-                        <span class="phase-status">{{ statusLabels[getPhaseStatus(index)] }}</span>
-                        <strong>LIFE {{ lifePhase.life }}</strong>
-                        <span>{{ lifePhase.difficulty }}</span>
-                        <time :datetime="lifePhase.startsAt">{{ formatPhaseRange(index) }}</time>
-                    </div>
-                </div>
-
-                <p v-if="nextPhase" class="next-phase">
-                    下次放宽：{{ formatKaleidxscopeDateTime(nextPhase.startsAt) }} ·
-                    {{ nextPhase.difficulty }} · LIFE {{ nextPhase.life }}
-                </p>
-                <p v-else class="next-phase">当前已是最终阶段</p>
+                        <span slot="end-icon" class="phase-status">
+                            {{ statusLabels[getPhaseStatus(index)] }}
+                        </span>
+                    </mdui-list-item>
+                </mdui-list>
             </mdui-card>
         </div>
 
         <KaleidxscopeSongGrid
+            :key="`${gate.id}-keys`"
             title="钥匙曲目"
-            :description="gate.keyCondition.summary"
+            :description="`共 ${gate.keyCondition.songs.length} 首；点击展开完整列表`"
             :songs="gate.keyCondition.songs"
             :charts="charts"
             :preferred-grade="preferredGrade"
             @select-chart="emit('selectChart', $event)"
         />
 
-        <div class="selection-heading">
-            <h2>抽选曲目范围</h2>
-            <p>挑战门时，TRACK 1 与 TRACK 2 分别从对应曲池随机抽选，TRACK 3 为固定门曲。</p>
-        </div>
+        <section class="selection-section">
+            <h3>抽选曲目范围</h3>
+            <p>TRACK 1、2 从对应曲池随机抽选，TRACK 3 为固定门曲。</p>
+        </section>
 
         <KaleidxscopeSongGrid
             v-for="pool in gate.selectionPools"
-            :key="pool.track"
+            :key="`${gate.id}-track-${pool.track}`"
             :title="`TRACK ${pool.track} · ${pool.selection === 'fixed' ? '固定' : '随机'}`"
             :description="pool.description"
             :songs="pool.songs"
@@ -144,213 +125,115 @@
             :open="pool.track === 3"
             @select-chart="emit('selectChart', $event)"
         />
-    </div>
+    </main>
 </template>
 
 <style scoped>
     .kaleidxscope-overview {
         display: flex;
         flex-direction: column;
-        gap: 14px;
-        padding: 8px 20px calc(56px + 1rem);
-        box-sizing: border-box;
-    }
-
-    .gate-heading {
-        display: flex;
-        align-items: center;
         gap: 12px;
-        min-height: 64px;
-        padding: 10px 16px;
-        border-left: 5px solid var(--gate-accent);
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 5px 20px calc(56px + 1rem);
         box-sizing: border-box;
     }
 
-    .gate-marker {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--gate-accent);
-        box-shadow: 0 0 0 5px var(--gate-accent-soft);
+    .gate-header {
+        padding: 8px 4px 0;
     }
 
-    .gate-title {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        min-width: 0;
+    .gate-header h2,
+    .selection-section h3,
+    .card-title h3 {
+        margin: 0;
+        color: rgb(var(--mdui-color-on-surface));
     }
 
-    .gate-title strong {
-        font-size: 1.1rem;
+    .gate-header h2 {
+        font-size: var(--mdui-typescale-title-large-size);
+        font-weight: var(--mdui-typescale-title-large-weight);
+        line-height: var(--mdui-typescale-title-large-line-height);
     }
 
-    .gate-title small,
-    .gate-boss,
-    .life-calendar-card small,
-    .selection-heading p {
+    .gate-header p,
+    .selection-section p,
+    .condition-notes,
+    .card-title > span {
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .gate-boss {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        min-width: 0;
-        font-size: 0.72rem;
-    }
-
-    .gate-boss strong {
-        max-width: min(40vw, 360px);
-        overflow: hidden;
-        color: rgb(var(--mdui-color-on-surface));
-        font-size: 0.9rem;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .gate-header p,
+    .selection-section p {
+        margin: 4px 0 0;
+        font-size: var(--mdui-typescale-body-medium-size);
+        line-height: var(--mdui-typescale-body-medium-line-height);
     }
 
     .overview-grid {
         display: grid;
-        grid-template-columns: minmax(260px, 0.8fr) minmax(0, 2fr);
-        gap: 14px;
-    }
-
-    .key-condition-card,
-    .life-calendar-card {
-        padding: 16px;
-    }
-
-    h2 {
-        margin: 0;
-        font-size: 1.05rem;
-    }
-
-    h2 mdui-icon {
-        margin-right: 6px;
-        color: var(--gate-accent);
-        font-size: 1.25rem;
-        vertical-align: -0.2em;
-    }
-
-    .key-condition-card p {
-        margin: 10px 0;
-        font-weight: 600;
-    }
-
-    .key-condition-card ul {
-        margin: 0;
-        padding-left: 1.25rem;
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.82rem;
-    }
-
-    .life-calendar-card > header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.4fr);
+        align-items: start;
         gap: 12px;
-        margin-bottom: 12px;
     }
 
-    .life-calendar-card > header > span:first-child {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .current-life-chip {
-        flex-shrink: 0;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: var(--gate-accent-soft);
-        color: var(--gate-accent);
-        font-size: 0.78rem;
-        font-weight: 700;
-    }
-
-    .current-life-chip.pending {
-        color: rgb(var(--mdui-color-on-surface-variant));
-    }
-
-    .phase-calendar {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(98px, 1fr));
-        gap: 7px;
-        overflow-x: auto;
-        padding-bottom: 4px;
-    }
-
-    .phase-item {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        min-width: 98px;
-        padding: 9px;
-        border: 1px solid rgb(var(--mdui-color-outline-variant));
-        border-radius: 9px;
+    .overview-card {
+        width: 100%;
+        padding: 8px;
         box-sizing: border-box;
     }
 
-    .phase-item > strong {
-        margin-top: 12px;
-        font-size: 0.86rem;
+    .card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 8px 4px;
     }
 
-    .phase-item > span:not(.phase-status) {
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.72rem;
+    .card-title mdui-icon {
+        color: rgb(var(--mdui-color-primary));
+        font-size: 1.25rem;
     }
 
-    .phase-item time {
-        margin-top: 4px;
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.62rem;
-        line-height: 1.3;
+    .card-title h3,
+    .selection-section h3 {
+        font-size: var(--mdui-typescale-title-medium-size);
+        font-weight: var(--mdui-typescale-title-medium-weight);
+        line-height: var(--mdui-typescale-title-medium-line-height);
+    }
+
+    .card-title > span {
+        margin-left: auto;
+        font-size: var(--mdui-typescale-label-medium-size);
+    }
+
+    .condition-summary {
+        margin: 8px;
+        color: rgb(var(--mdui-color-on-surface));
+        font-size: var(--mdui-typescale-body-large-size);
+        line-height: var(--mdui-typescale-body-large-line-height);
+    }
+
+    .condition-notes {
+        margin: 8px;
+        padding-left: 1.25rem;
+        font-size: var(--mdui-typescale-body-small-size);
+        line-height: var(--mdui-typescale-body-small-line-height);
+    }
+
+    .phase-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 4px 0 0;
     }
 
     .phase-status {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        padding: 1px 5px;
-        border-radius: 999px;
-        background: rgb(var(--mdui-color-surface-container-high));
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.6rem;
+        white-space: nowrap;
     }
 
-    .phase-past {
-        opacity: 0.58;
-    }
-
-    .phase-current {
-        border-color: var(--gate-accent);
-        background: var(--gate-accent-faint);
-    }
-
-    .phase-current .phase-status {
-        background: var(--gate-accent);
-        color: white;
-    }
-
-    .phase-future {
-        border-style: dashed;
-    }
-
-    .next-phase {
-        margin: 7px 0 0;
-        color: rgb(var(--mdui-color-on-surface-variant));
-        font-size: 0.74rem;
-        text-align: right;
-    }
-
-    .selection-heading {
-        padding: 2px 2px 0;
-    }
-
-    .selection-heading p {
-        margin: 4px 0 0;
-        font-size: 0.8rem;
+    .selection-section {
+        padding: 8px 4px 0;
     }
 
     @media (min-aspect-ratio: 1.001/1) {
@@ -365,23 +248,14 @@
         }
     }
 
-    @media (max-width: 499px) {
+    @media (max-width: 599px) {
         .kaleidxscope-overview {
-            padding-right: 10px;
-            padding-left: 10px;
+            padding-right: 12px;
+            padding-left: 12px;
         }
 
-        .gate-heading {
-            align-items: flex-start;
-        }
-
-        .gate-boss {
-            display: none;
-        }
-
-        .life-calendar-card > header {
-            align-items: flex-start;
-            flex-direction: column;
+        .phase-list {
+            grid-template-columns: 1fr;
         }
     }
 </style>
