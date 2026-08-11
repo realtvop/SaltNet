@@ -10,7 +10,12 @@
         getKaleidxscopePreferredGrade,
         resolveKaleidxscopeSongChart,
     } from "./index";
-    import type { KaleidxscopeGate, KaleidxscopePhaseStatus, KaleidxscopeSong } from "./type";
+    import type {
+        KaleidxscopeGate,
+        KaleidxscopePhaseStatus,
+        KaleidxscopeSelectionPool,
+        KaleidxscopeSong,
+    } from "./type";
 
     const props = defineProps<{
         gate: KaleidxscopeGate;
@@ -80,6 +85,10 @@
         const start = formatKaleidxscopeDateTime(lifePhase.startsAt);
         return endsAt ? `${start} ～ ${formatKaleidxscopeDateTime(endsAt)}` : `${start} 起`;
     }
+
+    function formatSelectionPoolSource(pool: KaleidxscopeSelectionPool): string {
+        return pool.description.replace(/^随机/, "");
+    }
 </script>
 
 <template>
@@ -94,27 +103,30 @@
             </header>
         </div>
 
-        <ScoreSection
-            title="钥匙曲目"
-            :scores="keyCharts"
-            :chart-info-dialog="chartInfoDialog"
-            hide-stats
-        >
-            <template #title>
-                <span>钥匙曲目</span>
-                <span class="key-condition">
-                    <span>钥匙获取条件：{{ gate.keyCondition.summary }}</span>
-                    <small>{{ gate.keyCondition.notes.join(" · ") }}</small>
-                </span>
-            </template>
-        </ScoreSection>
+        <section class="score-group">
+            <div class="section-heading">
+                <h2 class="section-title">
+                    <span>钥匙曲目</span>
+                    <span class="section-description key-description">
+                        <span>
+                            共 {{ gate.keyCondition.songs.length }} 首 · 钥匙获取条件：{{
+                                gate.keyCondition.summary
+                            }}
+                        </span>
+                        <small>{{ gate.keyCondition.notes.join(" · ") }}</small>
+                    </span>
+                </h2>
+            </div>
+            <ScoreSection
+                title=""
+                :scores="keyCharts"
+                :chart-info-dialog="chartInfoDialog"
+                hide-title
+                hide-stats
+            />
+        </section>
 
         <div class="overview-content selection-content">
-            <section class="selection-section">
-                <h2>抽选曲目范围</h2>
-                <p>TRACK 1、2 从对应曲池随机抽选，TRACK 3 为固定门曲。</p>
-            </section>
-
             <mdui-card variant="filled" class="calendar-card">
                 <div class="card-title">
                     <mdui-icon name="favorite"></mdui-icon>
@@ -141,14 +153,27 @@
             </mdui-card>
         </div>
 
-        <ScoreSection
+        <section
             v-for="pool in gate.selectionPools"
             :key="`${gate.id}-track-${pool.track}`"
-            :title="`TRACK ${pool.track} · ${pool.selection === 'fixed' ? '固定' : '随机'} · ${pool.description}`"
-            :scores="selectionPoolCharts.get(pool.track) ?? []"
-            :chart-info-dialog="chartInfoDialog"
-            hide-stats
-        />
+            class="score-group"
+        >
+            <div class="section-heading">
+                <h2 class="section-title">
+                    <span>TRACK {{ pool.track }}</span>
+                    <small v-if="pool.track !== 3" class="section-description">
+                        {{ formatSelectionPoolSource(pool) }}
+                    </small>
+                </h2>
+            </div>
+            <ScoreSection
+                title=""
+                :scores="selectionPoolCharts.get(pool.track) ?? []"
+                :chart-info-dialog="chartInfoDialog"
+                hide-title
+                hide-stats
+            />
+        </section>
     </main>
 </template>
 
@@ -177,7 +202,6 @@
     }
 
     .gate-header h2,
-    .selection-section h2,
     .card-title h3 {
         margin: 0;
         color: rgb(var(--mdui-color-on-surface));
@@ -190,13 +214,11 @@
     }
 
     .gate-header p,
-    .selection-section p,
     .card-title > span {
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .gate-header p,
-    .selection-section p {
+    .gate-header p {
         margin: 4px 0 0;
         font-size: var(--mdui-typescale-body-medium-size);
         line-height: var(--mdui-typescale-body-medium-line-height);
@@ -231,19 +253,48 @@
         font-size: var(--mdui-typescale-label-medium-size);
     }
 
-    .key-condition {
-        display: inline-flex;
-        flex: 1 1 420px;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
+    .score-group,
+    .section-title {
+        width: 100%;
+    }
+
+    .section-heading {
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 0 20px;
+        box-sizing: border-box;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+        color: var(--text-primary-color, inherit);
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .section-description {
         color: rgb(var(--mdui-color-on-surface-variant));
         font-size: var(--mdui-typescale-body-medium-size);
         font-weight: var(--mdui-typescale-body-medium-weight);
         line-height: var(--mdui-typescale-body-medium-line-height);
     }
 
-    .key-condition small {
+    .key-description {
+        display: inline-flex;
+        flex: 1 1 420px;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .key-description small {
         font-size: var(--mdui-typescale-body-small-size);
         font-weight: var(--mdui-typescale-body-small-weight);
         line-height: var(--mdui-typescale-body-small-line-height);
@@ -251,11 +302,6 @@
 
     .selection-content {
         padding-top: 30px;
-    }
-
-    .selection-section h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
     }
 
     .calendar-card {
@@ -285,7 +331,13 @@
     }
 
     @media (max-width: 768px) {
-        .key-condition {
+        .section-title {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .key-description {
             flex-basis: auto;
             width: 100%;
         }
