@@ -92,17 +92,6 @@
                     <template v-if="bossSong">· 门曲：{{ bossSong.title }}</template>
                 </p>
             </header>
-
-            <mdui-card variant="filled" class="condition-card">
-                <div class="card-title">
-                    <mdui-icon name="key"></mdui-icon>
-                    <h3>钥匙获取条件</h3>
-                </div>
-                <p class="condition-summary">{{ gate.keyCondition.summary }}</p>
-                <ul class="condition-notes">
-                    <li v-for="note in gate.keyCondition.notes" :key="note">{{ note }}</li>
-                </ul>
-            </mdui-card>
         </div>
 
         <ScoreSection
@@ -110,7 +99,15 @@
             :scores="keyCharts"
             :chart-info-dialog="chartInfoDialog"
             hide-stats
-        />
+        >
+            <template #title>
+                <span>钥匙曲目</span>
+                <span class="key-condition">
+                    <span>钥匙获取条件：{{ gate.keyCondition.summary }}</span>
+                    <small>{{ gate.keyCondition.notes.join(" · ") }}</small>
+                </span>
+            </template>
+        </ScoreSection>
 
         <div class="overview-content selection-content">
             <section class="selection-section">
@@ -194,7 +191,6 @@
 
     .gate-header p,
     .selection-section p,
-    .condition-notes,
     .card-title > span {
         color: rgb(var(--mdui-color-on-surface-variant));
     }
@@ -206,15 +202,10 @@
         line-height: var(--mdui-typescale-body-medium-line-height);
     }
 
-    .condition-card,
     .calendar-card {
         width: 100%;
         padding: 8px;
         box-sizing: border-box;
-    }
-
-    .condition-card {
-        margin-top: 12px;
     }
 
     .card-title {
@@ -240,17 +231,21 @@
         font-size: var(--mdui-typescale-label-medium-size);
     }
 
-    .condition-summary {
-        margin: 8px;
-        color: rgb(var(--mdui-color-on-surface));
-        font-size: var(--mdui-typescale-body-large-size);
-        line-height: var(--mdui-typescale-body-large-line-height);
+    .key-condition {
+        display: inline-flex;
+        flex: 1 1 420px;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: var(--mdui-typescale-body-medium-size);
+        font-weight: var(--mdui-typescale-body-medium-weight);
+        line-height: var(--mdui-typescale-body-medium-line-height);
     }
 
-    .condition-notes {
-        margin: 8px;
-        padding-left: 1.25rem;
+    .key-condition small {
         font-size: var(--mdui-typescale-body-small-size);
+        font-weight: var(--mdui-typescale-body-small-weight);
         line-height: var(--mdui-typescale-body-small-line-height);
     }
 
@@ -286,6 +281,13 @@
     @media (max-width: 900px) {
         .phase-list {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .key-condition {
+            flex-basis: auto;
+            width: 100%;
         }
     }
 
