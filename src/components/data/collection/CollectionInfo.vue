@@ -221,6 +221,7 @@
         v-model:open="chartInfoDialog.open"
         :chart="chartInfoDialog.chart"
         target-user-id="0"
+        :related-collection-details="false"
     />
 </template>
 

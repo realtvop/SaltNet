@@ -441,6 +441,67 @@
                 {{ alias }}
             </mdui-chip>
         </div>
+
+        <section v-if="chart?.music" class="related-collections-section">
+            <div class="related-collections-heading">
+                <h3>关联收藏品</h3>
+                <span v-if="relatedCollections.length" class="related-collections-count">
+                    {{ relatedCollections.length }} 项
+                </span>
+            </div>
+
+            <div v-if="isCollectionDataLoading" class="related-collections-state">
+                <mdui-circular-progress></mdui-circular-progress>
+                <span>正在加载收藏品…</span>
+            </div>
+            <div
+                v-else-if="collectionDataError && !relatedCollectionCandidates.length"
+                class="related-collections-state"
+            >
+                <span>{{ collectionDataError }}</span>
+                <mdui-button variant="text" @click="refreshCollectionData">重试</mdui-button>
+            </div>
+            <div v-else-if="relatedCollections.length" class="related-collections-grid">
+                <mdui-card
+                    v-for="collection in relatedCollections"
+                    :key="`${collection.type}-${collection.id}`"
+                    variant="outlined"
+                    :clickable="relatedCollectionDetails"
+                    class="related-collection-card"
+                    @click="openRelatedCollection(collection)"
+                >
+                    <div class="related-collection-preview">
+                        <CollectionTitle
+                            v-if="collection.type === CollectionKind.Title"
+                            :title="collection as Title"
+                        />
+                        <img
+                            v-else
+                            :src="getRelatedCollectionImageUrl(collection)"
+                            :alt="collection.name"
+                            class="related-collection-image"
+                            :class="{
+                                square: collection.type === CollectionKind.Icon,
+                                plate: collection.type === CollectionKind.Plate,
+                                frame: collection.type === CollectionKind.Frame,
+                            }"
+                            crossorigin="anonymous"
+                        />
+                    </div>
+                    <div
+                        v-if="collection.type !== CollectionKind.Title"
+                        class="related-collection-name"
+                    >
+                        {{ collection.name }}
+                    </div>
+                    <div class="related-collection-meta">
+                        <span>{{ getCollectionKindName(collection.type) }}</span>
+                        <span>#{{ collection.id }}</span>
+                    </div>
+                </mdui-card>
+            </div>
+            <div v-else class="related-collections-empty">暂无关联收藏品</div>
+        </section>
     </mdui-dialog>
 
     <ScoreCalculatorDialog
@@ -449,13 +510,19 @@
         @update:open="showScoreCalculator = $event"
         :copyTextToClipboard="copyTextToClipboard"
     />
+    <CollectionInfoDialog
+        v-if="relatedCollectionDetails"
+        :open="relatedCollectionDialog.open"
+        :collection="relatedCollectionDialog.collection"
+        @update:open="handleRelatedCollectionDialogOpen"
+    />
 </template>
 
 <script setup lang="ts">
     import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
-    import { watch, nextTick, ref, computed } from "vue";
+    import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
@@ -465,21 +532,38 @@
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { getCoverURL } from "@/components/integrations/assets";
+    import { getCollectionImageURL, getCoverURL } from "@/components/integrations/assets";
+    import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
+    import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
     import { getChartDifficultyBadgeLabel } from "./difficulty";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";
     import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
+    import {
+        collectionDataError,
+        frames,
+        icons,
+        isCollectionDataLoading,
+        plates,
+        refreshCollectionData,
+        titles,
+    } from "@/components/data/collection";
+    import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
+    import { getCollectionRequirementForChart } from "@/components/data/collection/versionPlate";
 
     const shared = useShared();
 
-    const props = defineProps<{
-        open: boolean;
-        chart: Chart | null;
-        singleLevel?: boolean;
-        targetUserId?: string;
-    }>();
+    const props = withDefaults(
+        defineProps<{
+            open: boolean;
+            chart: Chart | null;
+            singleLevel?: boolean;
+            targetUserId?: string;
+            relatedCollectionDetails?: boolean;
+        }>(),
+        { relatedCollectionDetails: true }
+    );
     const emit = defineEmits<{ (event: "update:open", value: boolean): void }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
@@ -502,6 +586,10 @@
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
     const chartBasicInfoExpanded = ref(false);
+    const relatedCollectionDialog = ref<{ open: boolean; collection: Collection | null }>({
+        open: false,
+        collection: null,
+    });
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
@@ -643,6 +731,19 @@
         if (!props.chart) return null;
         if (props.chart.id === expandedChartId.value) return props.chart;
         return props.chart.music.charts.find(chart => chart.id === expandedChartId.value) ?? null;
+    });
+    const relatedCollectionCandidates = computed<Collection[]>(() => [
+        ...plates,
+        ...titles,
+        ...icons,
+        ...frames,
+    ]);
+    const relatedCollections = computed(() => {
+        const chart = currentChart.value;
+        if (!chart) return [];
+        return relatedCollectionCandidates.value.filter(collection =>
+            getCollectionRequirementForChart(collection, chart)
+        );
     });
     const currentChartScore = computed(() => {
         if (!props.chart || !currentChart.value) return null;
@@ -940,6 +1041,36 @@
         if (!currentChart.value) return false;
         return shared.favorites.some(fav => isFavoriteChart(fav, currentChart.value));
     });
+
+    function getRelatedCollectionImageUrl(collection: Collection): string {
+        const typePaths: Partial<Record<CollectionKind, string>> = {
+            [CollectionKind.Icon]: "icon",
+            [CollectionKind.Plate]: "plate",
+            [CollectionKind.Frame]: "frame",
+        };
+        const path = typePaths[collection.type];
+        return path ? getCollectionImageURL(path, collection.id) : "";
+    }
+
+    function getCollectionKindName(type: CollectionKind): string {
+        const names: Partial<Record<CollectionKind, string>> = {
+            [CollectionKind.Plate]: "姓名框",
+            [CollectionKind.Title]: "称号",
+            [CollectionKind.Icon]: "头像",
+            [CollectionKind.Frame]: "背景",
+        };
+        return names[type] ?? "收藏品";
+    }
+
+    function openRelatedCollection(collection: Collection): void {
+        if (!props.relatedCollectionDetails) return;
+        relatedCollectionDialog.value = { open: true, collection };
+    }
+
+    function handleRelatedCollectionDialogOpen(open: boolean): void {
+        relatedCollectionDialog.value.open = open;
+        if (!open) relatedCollectionDialog.value.collection = null;
+    }
 </script>
 
 <style scoped>
@@ -1086,6 +1217,106 @@
     .chip-container[center] {
         justify-content: center;
         padding: 16px 0 !important;
+    }
+
+    .related-collections-section {
+        padding: 8px 1.5rem 20px;
+    }
+
+    .related-collections-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .related-collections-heading h3 {
+        margin: 0;
+    }
+
+    .related-collections-count,
+    .related-collection-meta,
+    .related-collections-empty,
+    .related-collections-state {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+    }
+
+    .related-collections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 8px;
+    }
+
+    .related-collection-card {
+        min-width: 0;
+        padding: 10px;
+    }
+
+    .related-collection-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 54px;
+        min-width: 0;
+    }
+
+    .related-collection-image {
+        display: block;
+        width: 100%;
+        height: 54px;
+        object-fit: contain;
+    }
+
+    .related-collection-image.square {
+        width: 54px;
+        border-radius: var(--mdui-shape-corner-small);
+    }
+
+    .related-collection-name {
+        margin-top: 6px;
+        overflow: hidden;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .related-collection-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .related-collections-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 54px;
+        gap: 8px;
+    }
+
+    .related-collections-state mdui-circular-progress {
+        width: 20px;
+        height: 20px;
+    }
+
+    .related-collections-empty {
+        padding: 12px 0;
+        text-align: center;
+    }
+
+    @media (max-width: 600px) {
+        .related-collections-section {
+            padding-inline: 1rem;
+        }
+
+        .related-collections-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     h3 {
