@@ -333,21 +333,13 @@
                         <!-- 根据类型显示不同的内容 -->
                         <div v-if="collection.type === CollectionKind.Title" class="title-content">
                             <div class="title-header">
-                                <CollectionTitle
-                                    :title="collection as Title"
-                                />
+                                <CollectionTitle :title="collection as Title" />
                             </div>
                             <div class="title-info">
-                                <p
-                                    class="collection-description"
-                                >
+                                <p class="collection-description">
                                     {{ collection.description }}
                                 </p>
-                                <span
-                                    class="collection-id"
-                                >
-                                    #{{ collection.id }}
-                                </span>
+                                <span class="collection-id">#{{ collection.id }}</span>
                             </div>
                         </div>
 
@@ -419,9 +411,7 @@
                                             collection.type === CollectionKind.Partner,
                                     }"
                                 >
-                                    <h3
-                                        class="collection-name"
-                                    >
+                                    <h3 class="collection-name">
                                         {{ collection.name }}
                                     </h3>
                                     <span

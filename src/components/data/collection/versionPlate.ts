@@ -1,7 +1,6 @@
 import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
 import type { Chart, ChartScore } from "../music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
-import { getRequirementPresentation } from "./requirement";
 import type { CollectionRequired, Plate, VersionPlate } from "./type";
 
 const rankOrder = Object.values(RankRate);
@@ -16,19 +15,12 @@ function reachesThreshold<T extends string>(current: T, required: T, order: T[])
     return currentIndex !== -1 && requiredIndex !== -1 && currentIndex >= requiredIndex;
 }
 
-export function isRequirementScoreEvaluable(
-    plate: Plate,
-    requirement: CollectionRequired
-): boolean {
-    if (!requirement.songs?.length) return false;
-    return getRequirementPresentation(plate, requirement).progressMode !== null;
+export function isRequirementScoreEvaluable(requirement: CollectionRequired): boolean {
+    return Boolean(requirement.songs?.length);
 }
 
 export function isPlateScoreEvaluable(plate: Plate): boolean {
-    return Boolean(
-        plate.required?.length &&
-        plate.required.every(requirement => isRequirementScoreEvaluable(plate, requirement))
-    );
+    return Boolean(plate.required?.length && plate.required.every(isRequirementScoreEvaluable));
 }
 
 function requirementMatchesChart(requirement: CollectionRequired, chart: Chart): boolean {
