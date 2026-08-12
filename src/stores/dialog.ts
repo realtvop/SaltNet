@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import type { Dialog } from "mdui";
 
 const DIALOG_HISTORY_STATE_KEY = "__saltnetDialog";
@@ -48,10 +48,18 @@ export const useDialogStore = defineStore("dialog", () => {
     const openCount = ref(0);
     let nextDialogId = 0;
 
-    const currentDialogHistoryId = computed(() => getCurrentDialogHistoryId());
-
     function syncOpenCount() {
         openCount.value = entries.filter(entry => !entry.closed).length;
+    }
+
+    function isRestorableEntry(entry: DialogEntry | undefined, dialogId: string): boolean {
+        return Boolean(
+            entry &&
+            entry.id === dialogId &&
+            !entry.closed &&
+            entry.element.isConnected &&
+            entry.element.open
+        );
     }
 
     function removeEntry(entry: DialogEntry) {
@@ -130,8 +138,32 @@ export const useDialogStore = defineStore("dialog", () => {
             }
         }
 
+        if (destinationDialogId !== null) {
+            const destinationEntry = entries[entries.length - 1];
+
+            // 已关闭、卸载或刷新前遗留的 dialog 历史项无法恢复。继续返回到最近的
+            // 有效页面项，避免停在 URL 不变、界面也没有 dialog 的空历史项上。
+            if (!isRestorableEntry(destinationEntry, destinationDialogId)) {
+                if (destinationEntry?.id === destinationDialogId) removeEntry(destinationEntry);
+                history.back();
+                handled = true;
+            }
+        }
+
         syncOpenCount();
         return handled;
+    }
+
+    function reconcileInitialHistory(): boolean {
+        const dialogId = getCurrentDialogHistoryId();
+        if (dialogId === null) return false;
+
+        const entry = entries[entries.length - 1];
+        if (isRestorableEntry(entry, dialogId)) return false;
+
+        // 刷新或冷恢复不会保留内存中的 dialog 实例，因此主动退回其页面历史项。
+        history.back();
+        return true;
     }
 
     function syncWithDOM() {
@@ -153,10 +185,10 @@ export const useDialogStore = defineStore("dialog", () => {
 
     return {
         openCount,
-        currentDialogHistoryId,
         markOpen,
         markClosed,
         handlePopstate,
+        reconcileInitialHistory,
         syncWithDOM,
         reset,
     };

@@ -22,6 +22,7 @@ export interface DivingFishFullRecord {
     song_id: number;
     title: string;
     type: "DX" | "SD";
+    lastChangedAt?: number;
 }
 
 export interface BasicInfo {
@@ -164,6 +165,7 @@ export interface DivingFishMusicChart {
     song_id: number;
     title: string;
     type: "DX" | "SD";
+    lastChangedAt?: number;
 }
 
 // Error response structure (example)

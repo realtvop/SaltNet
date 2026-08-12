@@ -346,22 +346,6 @@ export function getSaltMetaCnVersions(
     return versionInfos;
 }
 
-export function getSaltMetaCnVersionPlates(
-    metadata: SaltMetaMusicMetadataNext,
-    savedMusicList: SavedMusicList
-): SaltMetaCnVersionInfo[] {
-    const usedVersions = new Set(
-        Object.values(savedMusicList.musicList).map(music => music.info.from as unknown as string)
-    );
-
-    return metadata.versions
-        .map(version => ({
-            name: normalizeSaltMetaCnVersion(version.cnVerOverride ?? version.version),
-            word: version.word,
-        }))
-        .filter(version => usedVersions.has(version.name) && version.word.length > 0);
-}
-
 function getSaltNetChartType(chartType: SaltMetaChartType): ChartType {
     return chartType === "sd" ? ChartType.Standard : ChartType.Deluxe;
 }

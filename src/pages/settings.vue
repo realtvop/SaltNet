@@ -39,6 +39,13 @@
                     @change="handleShowDxScoreInB50Change"
                 />
             </div>
+            <div class="setting-row">
+                <span class="setting-label">谱面页面翻转难度、版本及万花筒门</span>
+                <mdui-switch
+                    :checked="shared.appSettings.reverseSongsDifficultyAndVersionTabs"
+                    @change="handleReverseSongsDifficultyAndVersionTabsChange"
+                />
+            </div>
         </mdui-card>
     </div>
 </template>
@@ -121,7 +128,7 @@
         Covers: "图片资源",
     };
     function deleteCache(key: keyof typeof displayName) {
-        confirm({
+        void confirm({
             headline: `清除缓存的${displayName[key]}？`,
             description: "数据删除后将无法恢复",
             closeOnEsc: true,
@@ -143,7 +150,7 @@
                             autoCloseDelay: 500,
                         });
                     }),
-        });
+        }).catch(() => undefined);
     }
 
     function handleDefaultRatingModeChange(event: Event) {
@@ -156,6 +163,11 @@
     function handleShowDxScoreInB50Change(event: Event) {
         const target = event.target as HTMLInputElement;
         shared.appSettings.showDxScoreInB50 = target.checked;
+    }
+
+    function handleReverseSongsDifficultyAndVersionTabsChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        shared.appSettings.reverseSongsDifficultyAndVersionTabs = target.checked;
     }
 </script>
 

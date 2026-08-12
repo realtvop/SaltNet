@@ -74,5 +74,6 @@ export function chartScoreFromDF(chart: DivingFishMusicChart): ChartScore {
         deluxeScore: chart.dxScore,
 
         playCount: chart.play_count,
+        lastChangedAt: chart.lastChangedAt,
     };
 }

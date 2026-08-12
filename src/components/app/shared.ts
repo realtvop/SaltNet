@@ -12,6 +12,7 @@ type RatingDisplayMode = "简洁" | "吃分" | "完整";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
     showDxScoreInB50: boolean;
+    reverseSongsDifficultyAndVersionTabs: boolean;
 };
 
 function toStorageValue<T>(value: T): T {
@@ -42,6 +43,7 @@ export const useShared = defineStore("shared", () => {
     const appSettings = ref<AppSettings>({
         defaultChartRatingDisplayMode: "简洁",
         showDxScoreInB50: false,
+        reverseSongsDifficultyAndVersionTabs: false,
     });
 
     const handleScreenSizeChange = () => {
@@ -115,6 +117,9 @@ export const useShared = defineStore("shared", () => {
                     v.defaultChartRatingDisplayMode ??
                     appSettings.value.defaultChartRatingDisplayMode,
                 showDxScoreInB50: v.showDxScoreInB50 ?? appSettings.value.showDxScoreInB50,
+                reverseSongsDifficultyAndVersionTabs:
+                    v.reverseSongsDifficultyAndVersionTabs ??
+                    appSettings.value.reverseSongsDifficultyAndVersionTabs,
             };
         });
 

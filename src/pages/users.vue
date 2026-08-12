@@ -44,7 +44,7 @@
     };
 
     const openDeleteDialog = (index: number) => {
-        confirm({
+        void confirm({
             headline: `删除绑定的用户：${getUserDisplayName(shared.users[index])}？`,
             description: "用户删除后无法恢复",
             confirmText: "删除",
@@ -58,7 +58,7 @@
                     shared.users.splice(index, 1);
                 return true;
             },
-        });
+        }).catch(() => undefined);
     };
 
     const goToUserDetails = (index: number) => {
@@ -75,7 +75,7 @@
     function showUserInfo(user: User) {
         const info = user.data.info as UserInfo;
 
-        alert({
+        void alert({
             headline: `${getUserDisplayName(user)}`,
             description:
                 (info
@@ -103,7 +103,7 @@
                 ).style.whiteSpace = "pre-wrap";
             },
             onClose: markDialogClosed,
-        });
+        }).catch(() => undefined);
     }
     interface UpdatedUserData {
         remark?: string | null;
@@ -195,7 +195,7 @@
     };
 
     const setAsDefault = (index: number) => {
-        confirm({
+        void confirm({
             headline: `将 ${getUserDisplayName(shared.users[index])} 设为主用户？`,
             description: "您只应该将主用户设置为自己",
             confirmText: "确认",
@@ -211,7 +211,7 @@
                 }
                 return true;
             },
-        });
+        }).catch(() => undefined);
     };
 
     function updateAll() {

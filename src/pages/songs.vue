@@ -15,16 +15,36 @@
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-    import { versionPlates } from "@/components/data/collection";
-    import { checkChartFinish } from "@/components/data/collection/versionPlate";
-    import type { VersionPlate } from "@/components/data/collection/type";
+    import {
+        getCollectionDataAsync,
+        versionPlateCategories,
+        versionPlates,
+    } from "@/components/data/collection";
+    import {
+        checkCollectionChartFinish,
+        getCollectionCharts,
+        getPlateCompactPresentation,
+        getVersionPlateConditionText,
+    } from "@/components/data/collection/versionPlate";
+    import type { VersionPlate, VersionPlateCategory } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
     import {
         getDifficultyFilterOptions,
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
-    import { createDetailedScoreLookup } from "@/components/data/chart/scoreLookup";
+    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
+    import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
+    import type { Course } from "@/components/data/course";
+    import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
+    import {
+        formatKaleidxscopeDateTime,
+        getKaleidxscopeCurrentPhase,
+        getKaleidxscopeGate,
+        getKaleidxscopeNextPhase,
+        kaleidxscopeGates,
+    } from "@/components/data/kaleidxscope";
+    import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
 
     declare global {
@@ -40,9 +60,13 @@
         Version = "版本",
         Favorite = "收藏夹",
         Banquet = "宴会场",
+        Kaleidxscope = "万花筒",
+        Course = "段位",
     }
 
-    type VersionPlateCategory = keyof typeof versionPlates;
+    const primaryCategories = Object.values(Category).filter(
+        item => item !== Category.Kaleidxscope && item !== Category.Course
+    );
 
     const route = useRoute();
     const shared = useShared();
@@ -93,27 +117,45 @@
     }
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
-    const tabs = computed(() => {
-        if (category.value === Category.InGame) return difficulties;
-        if (category.value === Category.Banquet) return banquetDifficulties;
-        if (category.value === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (category.value === Category.Version) return maimaiVersionsCN;
-        if (category.value in versionPlates) {
-            const plateType = category.value as VersionPlateCategory;
+    function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
+        if (tabCategory === Category.InGame) {
+            if (!shared.appSettings.reverseSongsDifficultyAndVersionTabs) return difficulties;
+            return [difficulties[0], ...difficulties.slice(1).reverse()];
+        }
+        if (tabCategory === Category.Banquet) return banquetDifficulties;
+        if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
+        if (tabCategory === Category.Kaleidxscope) {
+            const gateTabs = kaleidxscopeGates.map(gate => gate.shortName);
+            return shared.appSettings.reverseSongsDifficultyAndVersionTabs
+                ? gateTabs.reverse()
+                : gateTabs;
+        }
+        if (tabCategory === Category.Course) return courses.map(course => course.name);
+        if (tabCategory === Category.Version) {
+            return shared.appSettings.reverseSongsDifficultyAndVersionTabs
+                ? [...maimaiVersionsCN].reverse()
+                : maimaiVersionsCN;
+        }
+        if (tabCategory in versionPlates) {
+            const plateType = tabCategory as VersionPlateCategory;
             return versionPlates[plateType]?.map(plate => plate.name) || [];
         }
         return [];
-    });
+    }
+
+    const tabs = computed(() => getTabsForCategory(category.value));
     const selectedTab = ref({
-        [Category.InGame]: "ALL",
-        [Category.Banquet]: banquetDifficulties[0],
-        [Category.Favorite]: shared.favorites[0]?.name || "",
-        [Category.Version]: maimaiVersionsCN[0] || "",
+        [Category.InGame]: getTabsForCategory(Category.InGame)[0] || "",
+        [Category.Banquet]: getTabsForCategory(Category.Banquet)[0] || "",
+        [Category.Favorite]: getTabsForCategory(Category.Favorite)[0] || "",
+        [Category.Version]: getTabsForCategory(Category.Version)[0] || "",
+        [Category.Kaleidxscope]: getTabsForCategory(Category.Kaleidxscope)[0] || "",
+        [Category.Course]: getTabsForCategory(Category.Course)[0] || "",
         // 为每个牌子类型添加默认选择
         ...Object.keys(versionPlates).reduce(
             (acc, key) => {
                 const plateKey = key as VersionPlateCategory;
-                acc[plateKey] = versionPlates[plateKey]?.[0]?.name || "";
+                acc[plateKey] = getTabsForCategory(plateKey)[0] || "";
                 return acc;
             },
             {} as Record<VersionPlateCategory, string>
@@ -122,24 +164,71 @@
 
     const selectedDifficulty = computed(() => selectedTab.value[category.value]);
 
+    const selectedCourse = computed<Course | null>(() => {
+        if (category.value !== Category.Course) return null;
+        return courses.find(course => course.name === selectedDifficulty.value) ?? null;
+    });
+
+    const selectedKaleidxscopeGate = computed(() => {
+        if (category.value !== Category.Kaleidxscope) return null;
+        return getKaleidxscopeGate(selectedDifficulty.value);
+    });
+    const kaleidxscopeNow = ref(new Date());
+    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
+    const selectedKaleidxscopeCurrentPhase = computed(() => {
+        const gate = selectedKaleidxscopeGate.value;
+        return gate ? getKaleidxscopeCurrentPhase(gate, kaleidxscopeNow.value) : null;
+    });
+    const selectedKaleidxscopeNextPhase = computed(() => {
+        const gate = selectedKaleidxscopeGate.value;
+        return gate ? getKaleidxscopeNextPhase(gate, kaleidxscopeNow.value) : null;
+    });
+
+    const selectedCourseLifeRuleText = computed(() => {
+        const course = selectedCourse.value;
+        if (!course) return "";
+
+        const damagingJudgments = [
+            { judgment: "PERFECT", damage: course.life.damage.perfect },
+            { judgment: "GREAT", damage: course.life.damage.great },
+            { judgment: "GOOD", damage: course.life.damage.good },
+            { judgment: "MISS", damage: course.life.damage.miss },
+        ]
+            .filter(({ damage }) => damage > 0)
+            .map(({ judgment, damage }) => `${judgment} -${damage}`);
+
+        return [`恢复 +${course.life.recovery}`, ...damagingJudgments].join(" ");
+    });
+
+    function syncVersionPlateSelections(): void {
+        for (const plateCategory of versionPlateCategories) {
+            const available = versionPlates[plateCategory];
+            if (!available.some(plate => plate.name === selectedTab.value[plateCategory])) {
+                selectedTab.value[plateCategory] = available[0]?.name ?? "";
+            }
+        }
+    }
+
+    const selectedVersionPlate = computed<VersionPlate | null>(() => {
+        if (!(category.value in versionPlates)) return null;
+        return (
+            versionPlates[category.value as VersionPlateCategory]?.find(
+                plate => plate.name === selectedDifficulty.value
+            ) ?? null
+        );
+    });
+
     const plateFinishStatus = computed(() => {
-        const plate: VersionPlate = versionPlates[
-            category.value as keyof typeof versionPlates
-        ]?.find(plate => plate.name === selectedDifficulty.value) as VersionPlate;
+        const plate = selectedVersionPlate.value;
+        if (!plate) return { plate: null, finishedItems: [], conditionText: "正在加载牌子数据…" };
         const finishedItems = itemsToRender.value.filter(chart =>
-            checkChartFinish(plate, chart.score as ChartScore)
+            checkCollectionChartFinish(plate, chart)
         );
 
         return {
             plate,
             finishedItems,
-            conditionText: plate.description
-                .replace("FULL COMBO", "FC")
-                .replace("FULL SYNC DX", "FSDX")
-                .replace("ALL PERFECT", "AP")
-                .replace("BASIC", "BAS")
-                .replace("Re:Master", "ReM")
-                .replace("MASTER", "MAS"),
+            conditionText: getVersionPlateConditionText(plate),
         };
     });
     const plateFinishSort = ref("condition");
@@ -263,26 +352,7 @@
             if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (detailedLookup) {
-                const d = detailedLookup.findScoreForChart(chart);
-                if (
-                    d &&
-                    typeof d.achievements === "number" &&
-                    d.fc !== undefined &&
-                    d.fs !== undefined &&
-                    d.rate !== undefined
-                ) {
-                    chartScore = {
-                        achievements: d.achievements,
-                        comboStatus: d.fc,
-                        syncStatus: d.fs,
-                        rankRate: d.rate,
-                        deluxeRating: d.ra,
-                        deluxeScore: d.dxScore,
-                        playCount: d.play_count,
-                    };
-                }
-            }
+            if (detailedLookup) chartScore = toChartScore(detailedLookup.findScoreForChart(chart));
             charts.push({
                 ...chart,
                 score: chartScore,
@@ -378,6 +448,13 @@
                     favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
                 );
             }
+        } else if (category.value === Category.Kaleidxscope) {
+            // 万花筒有独立的钥匙条件、血量日历与抽选曲池视图。
+            filteredCharts = [];
+        } else if (category.value === Category.Course) {
+            filteredCharts = selectedCourse.value
+                ? getCourseCharts(selectedCourse.value, shared.chartsSort.charts)
+                : [];
         } else if (category.value in versionPlates) {
             // 牌子模式
             const plateType = category.value as VersionPlateCategory;
@@ -389,16 +466,7 @@
             if (!selectedPlate) {
                 filteredCharts = [];
             } else {
-                // 获取该牌子包含的所有曲目ID和需要的难度
-                const plateSongIds = new Set(selectedPlate.songs);
-                const requiredDifficulties = new Set(selectedPlate.difficulties);
-
-                // 筛选出该牌子包含的曲目，且只包含指定难度的谱面
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) =>
-                        plateSongIds.has(chart.music.id) &&
-                        requiredDifficulties.has(chart.info.grade)
-                );
+                filteredCharts = getCollectionCharts(selectedPlate, shared.chartsSort.charts);
 
                 // 按照牌子的达成条件进行排序
                 if (plateFinishSort.value === "constant-desc") {
@@ -420,13 +488,8 @@
                     filteredCharts.sort((a, b) => {
                         const scoreA = a.score;
                         const scoreB = b.score;
-
-                        if (!scoreA && !scoreB) return 0;
-                        if (!scoreA) return 1;
-                        if (!scoreB) return -1;
-
-                        const completedA = checkChartFinish(selectedPlate, scoreA);
-                        const completedB = checkChartFinish(selectedPlate, scoreB);
+                        const completedA = checkCollectionChartFinish(selectedPlate, a);
+                        const completedB = checkCollectionChartFinish(selectedPlate, b);
 
                         // 已完成的排在前面
                         if (completedA && !completedB) return -1;
@@ -434,8 +497,8 @@
 
                         // 同样完成状态下按达成率排序
                         if (
-                            typeof scoreA.achievements === "number" &&
-                            typeof scoreB.achievements === "number"
+                            typeof scoreA?.achievements === "number" &&
+                            typeof scoreB?.achievements === "number"
                         ) {
                             return scoreB.achievements - scoreA.achievements;
                         }
@@ -527,17 +590,12 @@
     });
 
     const compactMode = computed<"rankRate" | "comboStatus" | "syncStatus" | undefined>(() => {
-        if (category.value === "極" || category.value === "神") return "comboStatus";
-        if (category.value === "将") return "rankRate";
-        if (category.value === "舞舞") return "syncStatus";
-        return undefined;
+        const plate = selectedVersionPlate.value;
+        return plate ? getPlateCompactPresentation(plate).mode : undefined;
     });
     const compactFilter = computed<ComboStatus | RankRate | SyncStatus | undefined>(() => {
-        if (category.value === "極") return ComboStatus.FullCombo;
-        if (category.value === "将") return RankRate.sss;
-        if (category.value === "神") return ComboStatus.AllPerfect;
-        if (category.value === "舞舞") return SyncStatus.FullSyncDX;
-        return undefined;
+        const plate = selectedVersionPlate.value;
+        return plate ? getPlateCompactPresentation(plate).filter : undefined;
     });
 
     const loadPlayerData = async () => {
@@ -554,6 +612,26 @@
     const itemsToRender = computed(() => {
         if (!chartListFiltered.value) return [];
         return chartListFiltered.value[selectedDifficulty.value] || [];
+    });
+
+    const courseTrackEntries = computed(() => {
+        const course = selectedCourse.value;
+        if (!course) return [];
+
+        const chartsByTrack = new Map(
+            itemsToRender.value.map(chart => [
+                getCourseTrackKey({
+                    musicId: chart.music.id,
+                    difficulty: chart.info.grade,
+                }),
+                chart,
+            ])
+        );
+
+        return course.tracks.map(track => ({
+            track,
+            chart: chartsByTrack.get(getCourseTrackKey(track)) ?? null,
+        }));
     });
 
     // 虚拟滚动状态管理
@@ -872,24 +950,30 @@
     watch(category, newCategory => {
         groupBy.value = "none";
         // 切换分类时，重置到该分类的默认选项
+        selectedTab.value[newCategory] = getTabsForCategory(newCategory)[0] || "";
         if (newCategory === Category.InGame) {
-            selectedTab.value[Category.InGame] = "ALL";
             if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
-        } else if (newCategory === Category.Banquet) {
-            selectedTab.value[Category.Banquet] = banquetDifficulties[0];
-        } else if (newCategory === Category.Favorite) {
-            selectedTab.value[Category.Favorite] = shared.favorites[0]?.name || "";
         } else if (newCategory === Category.Version) {
-            selectedTab.value[Category.Version] = maimaiVersionsCN[0] || "";
             if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
-        } else if (newCategory in versionPlates) {
-            // 牌子分类
-            const plateType = newCategory as VersionPlateCategory;
-            selectedTab.value[plateType] = versionPlates[plateType]?.[0]?.name || "";
         }
         query.value = "";
         visibleItemsCount.value = getLoadSize();
     });
+
+    watch(
+        () => shared.appSettings.reverseSongsDifficultyAndVersionTabs,
+        () => {
+            selectedTab.value[Category.Version] = getTabsForCategory(Category.Version)[0] || "";
+            selectedTab.value[Category.Kaleidxscope] =
+                getTabsForCategory(Category.Kaleidxscope)[0] || "";
+        }
+    );
+
+    watch(
+        () =>
+            versionPlateCategories.map(key => versionPlates[key].map(plate => plate.id).join(",")),
+        syncVersionPlateSelections
+    );
 
     // 监听路由参数变化，重新加载数据
     watch(
@@ -923,8 +1007,12 @@
 
     onMounted(async () => {
         visibleItemsCount.value = getLoadSize();
+        kaleidxscopeClock = setInterval(() => {
+            kaleidxscopeNow.value = new Date();
+        }, 60_000);
         window.addEventListener("resize", handleResize);
         window.addEventListener("scroll", handleScroll);
+        void getCollectionDataAsync().then(syncVersionPlateSelections);
         loadPlayerData().catch(error => {
             console.error("Failed to load charts:", error);
         });
@@ -936,13 +1024,14 @@
     });
 
     onUnmounted(() => {
+        if (kaleidxscopeClock) clearInterval(kaleidxscopeClock);
         window.removeEventListener("resize", handleResize);
         window.removeEventListener("scroll", handleScroll);
     });
 
     // 新增收藏夹
     function newFavList() {
-        prompt({
+        void prompt({
             headline: "新增收藏夹",
             confirmText: "新增",
             cancelText: "取消",
@@ -966,10 +1055,10 @@
                     charts: [],
                 });
             },
-        });
+        }).catch(() => undefined);
     }
     function importFavList() {
-        prompt({
+        void prompt({
             headline: "导入收藏夹",
             confirmText: "导入",
             cancelText: "取消",
@@ -1001,7 +1090,7 @@
                     // 检查是否有同名收藏夹
                     if (shared.favorites.some(fav => fav.name === originalName)) {
                         // 弹出重命名对话框
-                        prompt({
+                        void prompt({
                             headline: "收藏夹名称冲突",
                             confirmText: "导入",
                             cancelText: "取消",
@@ -1027,7 +1116,7 @@
                                 });
                                 snackbar({ message: "导入成功" });
                             },
-                        });
+                        }).catch(() => undefined);
                     } else {
                         // 直接导入
                         shared.favorites.push({
@@ -1040,7 +1129,7 @@
                     snackbar({ message: "导入失败，请检查数据格式" });
                 }
             },
-        });
+        }).catch(() => undefined);
     }
     function exportFavList() {
         if (shared.favorites.length === 0) return;
@@ -1068,7 +1157,7 @@
             f => f.name === selectedTab.value[Category.Favorite]
         );
         if (!currentFavorite) return;
-        prompt({
+        void prompt({
             headline: "重命名收藏夹",
             confirmText: "重命名",
             cancelText: "取消",
@@ -1091,7 +1180,7 @@
                 currentFavorite.name = value;
                 selectedTab.value[Category.Favorite] = value;
             },
-        });
+        }).catch(() => undefined);
     }
     function deleteFavList() {
         if (shared.favorites.length === 0) return;
@@ -1099,7 +1188,7 @@
             f => f.name === selectedTab.value[Category.Favorite]
         );
         if (!currentFavorite) return;
-        confirm({
+        void confirm({
             headline: "删除收藏夹",
             description: `确定要删除收藏夹 "${currentFavorite.name}" 吗？`,
             confirmText: "删除",
@@ -1120,7 +1209,7 @@
                     }
                 }
             },
-        });
+        }).catch(() => undefined);
     }
 </script>
 
@@ -1135,10 +1224,10 @@
         <div class="category-bar">
             <mdui-dropdown>
                 <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
-                <mdui-menu>
+                <mdui-menu class="category-menu">
                     <mdui-menu-item
                         @click="category = item"
-                        v-for="(item, index) in Object.values(Category)"
+                        v-for="(item, index) in primaryCategories"
                         :key="index"
                         :style="{
                             backgroundColor:
@@ -1160,6 +1249,31 @@
                         @click="category = plateType as VersionPlateCategory"
                     >
                         {{ plateType }}牌
+                    </mdui-menu-item>
+                    <mdui-divider />
+                    <mdui-menu-item
+                        :icon="category === Category.Course ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === Category.Course
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                        }"
+                        @click="category = Category.Course"
+                    >
+                        段位
+                    </mdui-menu-item>
+                    <mdui-menu-item
+                        :icon="category === Category.Kaleidxscope ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === Category.Kaleidxscope
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                        }"
+                        @click="category = Category.Kaleidxscope"
+                    >
+                        万花筒
                     </mdui-menu-item>
                 </mdui-menu>
             </mdui-dropdown>
@@ -1244,6 +1358,37 @@
                     {{ plateFinishStatus.finishedItems.length }} / {{ itemsToRender.length }}
                 </span>
             </div>
+        </div>
+        <div
+            v-else-if="category === Category.Kaleidxscope"
+            class="search-input challenge-life-summary"
+        >
+            <span v-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-value">
+                <mdui-icon name="favorite"></mdui-icon>
+                {{ selectedKaleidxscopeCurrentPhase.life }}
+                <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
+            </span>
+            <span v-else-if="selectedKaleidxscopeGate" class="challenge-life-value pending">
+                <mdui-icon name="event"></mdui-icon>
+                {{ formatKaleidxscopeDateTime(selectedKaleidxscopeGate.openedAt, true) }} 开放
+            </span>
+            <span v-if="selectedKaleidxscopeNextPhase" class="challenge-life-rules">
+                下次放宽 {{ formatKaleidxscopeDateTime(selectedKaleidxscopeNextPhase.startsAt) }} →
+                {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
+                {{ selectedKaleidxscopeNextPhase.life }}
+            </span>
+            <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
+                最终阶段
+            </span>
+        </div>
+        <div v-else-if="category === Category.Course" class="search-input challenge-life-summary">
+            <span class="challenge-life-value">
+                <mdui-icon name="favorite"></mdui-icon>
+                {{ selectedCourse?.life.initial ?? "-" }}
+            </span>
+            <span v-if="selectedCourse" class="challenge-life-rules">
+                {{ selectedCourseLifeRuleText }}
+            </span>
         </div>
         <div
             v-else-if="category === Category.InGame && selectedDifficulty === 'ALL'"
@@ -1378,7 +1523,14 @@
             ></mdui-text-field>
         </div>
 
-        <div v-if="isMusicDataLoading" class="songs-loading-container">
+        <KaleidxscopeOverview
+            v-if="category === Category.Kaleidxscope && selectedKaleidxscopeGate"
+            :gate="selectedKaleidxscopeGate"
+            :charts="shared.chartsSort.charts"
+            :now="kaleidxscopeNow"
+            :chart-info-dialog="chartInfoDialog"
+        />
+        <div v-else-if="isMusicDataLoading" class="songs-loading-container">
             <mdui-circular-progress></mdui-circular-progress>
             <div class="loading-text">正在更新谱面列表...</div>
         </div>
@@ -1514,33 +1666,63 @@
                     </span>
                 </div>
                 <div class="score-grid">
-                    <ScoreCard
-                        v-if="
-                            !(category in versionPlates) &&
-                            (category !== Category.Favorite || shared.favorites.length > 0)
-                        "
-                        cover="/icons/random.png"
-                        :data="randomChartDummy"
-                        @click="
-                            () => {
-                                const chart = getRandomChart();
-                                if (chart) openChartInfoDialog(chart);
-                            }
-                        "
-                    />
-                    <div
-                        v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
-                        :key="`score-cell-${index}`"
-                        class="score-cell"
-                        :class="{ 'score-cell-compact': category in versionPlates }"
-                    >
+                    <template v-if="category === Category.Course">
+                        <div
+                            v-for="(entry, index) in courseTrackEntries"
+                            :key="getCourseTrackKey(entry.track)"
+                            class="score-cell"
+                        >
+                            <ScoreCard
+                                v-if="entry.chart"
+                                :data="entry.chart"
+                                :rating="`${index + 1}`"
+                                @click="openChartInfoDialog(entry.chart)"
+                            />
+                            <mdui-card v-else variant="outlined" class="course-missing-card">
+                                <img
+                                    :src="getCoverURL(entry.track.musicId)"
+                                    :alt="entry.track.title"
+                                    crossorigin="anonymous"
+                                />
+                                <div>
+                                    <strong>{{ entry.track.title }}</strong>
+                                    <span>
+                                        {{ getChartDifficultyFullLabel(entry.track.difficulty) }}
+                                    </span>
+                                    <small>谱面数据暂不可用</small>
+                                </div>
+                            </mdui-card>
+                        </div>
+                    </template>
+                    <template v-else>
                         <ScoreCard
-                            :data="chart"
-                            @click="openChartInfoDialog(chart)"
-                            :compact="compactMode"
-                            :compact-filter="compactFilter"
+                            v-if="
+                                !(category in versionPlates) &&
+                                (category !== Category.Favorite || shared.favorites.length > 0)
+                            "
+                            cover="/icons/random.png"
+                            :data="randomChartDummy"
+                            @click="
+                                () => {
+                                    const chart = getRandomChart();
+                                    if (chart) openChartInfoDialog(chart);
+                                }
+                            "
                         />
-                    </div>
+                        <div
+                            v-for="(chart, index) in itemsToRender.slice(0, maxVisibleItems)"
+                            :key="`score-cell-${index}`"
+                            class="score-cell"
+                            :class="{ 'score-cell-compact': category in versionPlates }"
+                        >
+                            <ScoreCard
+                                :data="chart"
+                                @click="openChartInfoDialog(chart)"
+                                :compact="compactMode"
+                                :compact-filter="compactFilter"
+                            />
+                        </div>
+                    </template>
 
                     <div v-if="maxVisibleItems < itemsToRender.length" class="loading-indicator">
                         <div class="loading-text">正在加载更多...</div>
@@ -1596,9 +1778,19 @@
         box-sizing: border-box;
     }
 
+    .category-menu {
+        max-height: calc(100dvh - 56px - 40px - var(--nav-bar-height) - 8px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
     @media (min-aspect-ratio: 1.001/1) {
         .category-bar {
             left: 80px; /* navigation rail width */
+        }
+
+        .category-menu {
+            max-height: calc(100dvh - 56px - 40px - 8px);
         }
     }
 
@@ -1638,6 +1830,38 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+    }
+
+    .challenge-life-summary {
+        justify-content: flex-start !important;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .challenge-life-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: rgb(var(--mdui-color-primary));
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .challenge-life-value mdui-icon {
+        font-size: 1.3rem;
+    }
+
+    .challenge-life-value small {
+        font-size: 0.72rem;
+    }
+
+    .challenge-life-value.pending,
+    .challenge-life-rules {
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .challenge-life-rules {
+        font-size: 0.85rem;
     }
 
     .card-container {
@@ -1687,6 +1911,40 @@
 
     .score-cell-compact {
         width: 100px;
+    }
+
+    .course-missing-card {
+        display: flex;
+        min-height: 95px;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .course-missing-card > img {
+        object-fit: cover;
+        width: 40%;
+    }
+
+    .course-missing-card > div {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 4px;
+        justify-content: center;
+        min-width: 0;
+        padding: 8px;
+        text-align: left;
+    }
+
+    .course-missing-card strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .course-missing-card span,
+    .course-missing-card small {
+        color: rgb(var(--mdui-color-on-surface-variant));
     }
 
     .grouped-container {

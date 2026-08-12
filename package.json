@@ -11,7 +11,11 @@
         "pret": "prettier --check .",
         "pret:fix": "prettier --write .",
         "lint": "eslint .",
-        "lint:fix": "eslint . --fix"
+        "lint:fix": "eslint . --fix",
+        "test:course": "vitest run src/components/data/course/index.test.ts",
+        "test:kaleidxscope": "vitest run src/components/data/kaleidxscope/index.test.ts",
+        "test:collection-index": "vitest run src/components/data/collection/index.test.ts src/components/data/collection/relatedCollections.test.ts",
+        "test:build-info": "node --test script/generateBuildInfo.test.cjs"
     },
     "dependencies": {
         "jwt-decode": "^4.0.0",
@@ -36,6 +40,7 @@
         "typescript": "~5.7.2",
         "url": "^0.11.4",
         "vite": "^7.1.1",
+        "vitest": "^3.2.4",
         "vue-tsc": "^2.2.8"
     }
 }

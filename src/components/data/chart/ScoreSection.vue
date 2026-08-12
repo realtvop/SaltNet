@@ -56,10 +56,10 @@
 <template>
     <div :class="{ 'score-section': true, rendering: props.rendering }">
         <h2 :class="{ 'section-title': true, rendering: props.rendering }" v-if="!hideTitle">
-            {{ title }}
+            <slot name="title">{{ title }}</slot>
             <span
                 :class="{ 'stats-info': true, rendering: props.rendering }"
-                v-if="stats && !hideStats"
+                v-if="!hideStats && stats"
             >
                 <span class="stat-item">{{ stats.total }}</span>
                 <span class="stat-item">{{ stats.levelRange }}</span>

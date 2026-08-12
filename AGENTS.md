@@ -1,0 +1,69 @@
+# Repository Guidelines
+
+## Keeping This Guide Current
+
+Treat `AGENTS.md` as living project documentation. Whenever a change adds, removes, renames, or reorganizes modules, commands, tests, deployment paths, architecture boundaries, or contribution requirements, update this guide in the same commit or pull request. Review referenced paths and commands before merging so the file remains a reliable quick index to the current codebase.
+
+## Project Structure & Module Organization
+
+SaltNet is a two-package pnpm workspace:
+
+- The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
+- `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
+- `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
+- `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `course/` for static dan-course definitions and ordered chart matching, `kaleidxscope/` for CN gate conditions, life calendars, draw pools, and the songs-page overview backed by the shared `ScoreSection`, `user/` for profiles, updates, backups, and rating history, and `collection/` for cached LXNS collections, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
+- `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
+- `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
+- `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
+
+Static assets belong in `public/`; structured source assets belong in `src/assets/`. Utility and generated-data scripts live in `script/`. Do not edit generated `dist/` files or local `.wrangler/` state.
+
+## Architecture & Navigation Index
+
+Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates, check `src/components/data/music/saltmeta.ts` and `src/components/data/music/musicApi.ts`. For dan-course data or its songs-page category, inspect `src/components/data/course/` and `src/pages/songs.vue`. For KALEIDXSCOPE gate data or its songs-page category, inspect `src/components/data/kaleidxscope/` and `src/pages/songs.vue`; life timestamps are stored with the CN UTC+8 offset. For collection or version-plate data, trace `src/components/integrations/lxns/fetchCollection.ts`, `src/components/data/collection/`, then `src/pages/collections.vue` or `src/pages/songs.vue`. Broader data-shape notes are documented in `docs/component-data-types.md`.
+
+Dialogs add same-URL browser-history entries under `history.state.__saltnetDialog`. Closed,
+unmounted, or reload-stale dialog entries are skipped during `popstate`/initial reconciliation so
+they cannot become empty navigation stops. Register every MDUI function dialog with
+`markDialogOpen`/`markDialogClosed`; custom dialogs containing nested MDUI components must use
+`.self` lifecycle listeners.
+
+## Build, Test, and Development Commands
+
+Install all workspace dependencies with `pnpm install`. From the repository root:
+
+- `pnpm dev` starts the frontend Vite server.
+- `pnpm check` runs Vue/TypeScript checks and verifies Prettier formatting.
+- `pnpm lint` runs ESLint across the repository.
+- `pnpm build` type-checks, builds the frontend, and generates build metadata.
+- `pnpm preview` serves the production frontend build locally.
+- `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
+- `pnpm --filter saltnet-render-service test` runs its Vitest suite.
+- `pnpm --filter saltnet-render-service check` type-checks the service.
+- `pnpm test:course` validates the static dan-course snapshot and ordered chart matching.
+- `pnpm test:kaleidxscope` validates the six-gate snapshot, life-phase boundaries, and chart matching.
+- `pnpm test:collection-index` runs focused tests for collection caching, initialization, and
+  ChartInfo reverse associations.
+- `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
+  formatting-only commits.
+
+## Coding Style & Naming Conventions
+
+Use TypeScript and Vue single-file components. Prettier enforces four-space indentation, double quotes, semicolons, 100-character lines, and LF endings; use `pnpm pret:fix` for formatting. ESLint uses the Antfu Vue/TypeScript configuration. Keep Vue block order as `script`, `template`, `style`; use kebab-case component names in templates. Name components in PascalCase (`ChartInfo.vue`), composables with `use...`, and variables/functions in camelCase.
+
+## Testing Guidelines
+
+Vitest tests live in `render-service/tests/` and alongside focused frontend data modules, using
+`*.test.ts` or `*.test.tsx`. The build metadata script has a Node test at
+`script/generateBuildInfo.test.cjs`. Add focused regression cases alongside the affected service,
+frontend module, or script code. No coverage threshold is enforced.
+Frontend changes must at minimum pass `pnpm check`, `pnpm lint`, and `pnpm build`; manually
+exercise affected routes and browser back/forward behavior for UI or dialog changes.
+
+## Commit & Pull Request Guidelines
+
+Follow the repository's Conventional Commit style, such as `feat: add reversed song tab setting`, `fix(render): cache full B50 fonts`, or `style(chart): refine spacing`. Keep commits narrowly scoped. Pull requests should explain behavior changes, link relevant issues, list validation commands, and include before/after screenshots for visible UI work. Review AI-generated code for readability and disclose the tool and model used, as required by the README.
+
+## Security & Configuration
+
+Never commit API keys, tokens, or local Wrangler state. Keep deployment-specific values in environment configuration and document any newly required variables in the relevant package.

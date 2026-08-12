@@ -1,19 +1,25 @@
 <script setup lang="ts">
-    import { ref, computed, watch } from "vue";
+    import { ref, computed, onMounted, watch } from "vue";
     import {
+        collectionDataError,
+        getCollectionDataAsync,
         icons,
+        isCollectionDataLoading,
         plates,
         frames,
         titles,
         characters,
         genres,
         partners,
+        refreshCollectionData,
     } from "@/components/data/collection";
-    import { CollectionKind, type Collection, TitleColor } from "@/components/data/collection/type";
+    import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
     import { useShared } from "@/components/app/shared";
-    import { copyTextToClipboard } from "@/components/app/utils";
+    // import { copyTextToClipboard } from "@/components/app/utils";
     import { useVirtualScroll, handleSelectChange } from "@/utils";
     import { getCollectionImageURL } from "@/components/integrations/assets";
+    import CollectionInfo from "@/components/data/collection/CollectionInfo.vue";
+    import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
 
     const Category = {
         Title: "称号",
@@ -30,6 +36,10 @@
     const query = ref<string>("");
     const category = ref<CategoryType>(Category.Title);
     const filter = ref<string>("all");
+    const collectionInfoDialog = ref<{ open: boolean; collection: Collection | null }>({
+        open: false,
+        collection: null,
+    });
 
     function handleCategoryChange(e: Event) {
         const target = e.target as HTMLElement & { value: string };
@@ -184,22 +194,6 @@
         resetScroll();
     });
 
-    // 根据称号颜色获取CSS类名
-    const getTitleColorClass = (color: TitleColor) => {
-        switch (color) {
-            case TitleColor.Bronze:
-                return "title-color-bronze";
-            case TitleColor.Silver:
-                return "title-color-silver";
-            case TitleColor.Gold:
-                return "title-color-gold";
-            case TitleColor.Rainbow:
-                return "title-color-rainbow";
-            default:
-                return "title-color-normal";
-        }
-    };
-
     // 根据收藏品类型获取图片URL
     const COLLECTION_TYPE_MAP: Record<CollectionKind, string> = {
         [CollectionKind.Icon]: "icon",
@@ -252,6 +246,14 @@
     function onFilterChange(event: Event) {
         handleSelectChange(event, filter);
     }
+
+    function openCollectionInfo(collection: Collection): void {
+        collectionInfoDialog.value = { open: true, collection };
+    }
+
+    onMounted(() => {
+        void getCollectionDataAsync();
+    });
 </script>
 
 <template>
@@ -290,45 +292,54 @@
             ></mdui-text-field>
         </div>
 
+        <div
+            v-if="
+                isCollectionDataLoading &&
+                !collections.length &&
+                category !== Category.Character &&
+                category !== Category.Partner
+            "
+            class="collection-state"
+        >
+            <mdui-circular-progress></mdui-circular-progress>
+            <span>正在从 LXNS 加载收藏品…</span>
+        </div>
+        <div
+            v-else-if="
+                collectionDataError &&
+                !collections.length &&
+                category !== Category.Character &&
+                category !== Category.Partner
+            "
+            class="collection-state"
+        >
+            <mdui-icon name="cloud_off"></mdui-icon>
+            <span>{{ collectionDataError }}</span>
+            <mdui-button variant="tonal" @click="refreshCollectionData">重试</mdui-button>
+        </div>
+
         <!-- 收藏品网格 -->
-        <div class="collections-container">
+        <div v-else class="collections-container">
             <div class="collections-grid">
                 <mdui-card
                     v-for="collection in itemsToRender"
                     :key="`${collection.type}-${collection.id}`"
                     :variant="isCollectionOwned(collection) ? 'filled' : 'outlined'"
                     class="collection-card"
+                    clickable
+                    @click="openCollectionInfo(collection)"
                 >
                     <div class="collection-content">
                         <!-- 根据类型显示不同的内容 -->
                         <div v-if="collection.type === CollectionKind.Title" class="title-content">
                             <div class="title-header">
-                                <div class="title-color-wrapper">
-                                    <div
-                                        class="title-color-indicator"
-                                        :class="getTitleColorClass((collection as any).color)"
-                                    ></div>
-                                    <h3
-                                        class="title-name clickable"
-                                        @click="copyTextToClipboard(collection.name)"
-                                    >
-                                        {{ collection.name }}
-                                    </h3>
-                                </div>
+                                <CollectionTitle :title="collection as Title" />
                             </div>
                             <div class="title-info">
-                                <p
-                                    class="collection-description clickable"
-                                    @click="copyTextToClipboard(collection.description)"
-                                >
+                                <p class="collection-description">
                                     {{ collection.description }}
                                 </p>
-                                <span
-                                    class="collection-id clickable"
-                                    @click="copyTextToClipboard(collection.id.toString())"
-                                >
-                                    #{{ collection.id }}
-                                </span>
+                                <span class="collection-id">#{{ collection.id }}</span>
                             </div>
                         </div>
 
@@ -400,10 +411,7 @@
                                             collection.type === CollectionKind.Partner,
                                     }"
                                 >
-                                    <h3
-                                        class="collection-name clickable"
-                                        @click="copyTextToClipboard(collection.name)"
-                                    >
+                                    <h3 class="collection-name">
                                         {{ collection.name }}
                                     </h3>
                                     <span
@@ -412,16 +420,14 @@
                                             collection.type === CollectionKind.Frame ||
                                             collection.type === CollectionKind.Character
                                         "
-                                        class="collection-id-inline clickable"
-                                        @click="copyTextToClipboard(collection.id.toString())"
+                                        class="collection-id-inline"
                                     >
                                         #{{ collection.id }}
                                     </span>
                                 </div>
                                 <p
                                     v-if="collection.type !== CollectionKind.Partner"
-                                    class="collection-description clickable"
-                                    @click="copyTextToClipboard(collection.description)"
+                                    class="collection-description"
                                 >
                                     {{ collection.description }}
                                 </p>
@@ -432,8 +438,7 @@
                                             collection.type === CollectionKind.Icon ||
                                             collection.type === CollectionKind.Partner
                                         "
-                                        class="collection-id clickable"
-                                        @click="copyTextToClipboard(collection.id.toString())"
+                                        class="collection-id"
                                     >
                                         #{{ collection.id }}
                                     </span>
@@ -483,16 +488,31 @@
                 </div>
             </div>
         </div>
+
+        <CollectionInfo
+            v-model:open="collectionInfoDialog.open"
+            :collection="collectionInfoDialog.collection"
+        />
     </div>
 </template>
 
 <style scoped>
-    .clickable {
-        cursor: pointer;
-    }
-
     .collections-page {
         padding-top: calc(48px + 64px); /* tabs + filter-bar height */
+    }
+
+    .collection-state {
+        min-height: 40vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+    }
+
+    .collection-state mdui-icon {
+        font-size: 48px;
     }
 
     .category-tabs {
@@ -599,79 +619,6 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
-    }
-
-    .title-color-wrapper {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: fit-content;
-        min-width: 120px;
-        min-height: 24px; /* 缩短高度 */
-        max-width: 100%; /* 限制最大宽度 */
-    }
-
-    .title-color-indicator {
-        width: 100%;
-        height: 100%;
-        border-radius: 30px; /* 胶囊状圆角 */
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 1;
-    }
-
-    .title-name {
-        margin: 0;
-        font-size: 16px; /* 稍微减小字体 */
-        font-weight: 500;
-        color: rgba(0, 0, 0, 0.87);
-        position: relative;
-        z-index: 2;
-        padding: 3px 20px; /* 调整padding以适应更小的高度 */
-        display: inline-block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        text-align: center;
-    }
-
-    .title-color-normal {
-        background-color: #eaeaea;
-    }
-
-    .title-color-bronze {
-        background: #f69b6c;
-        box-shadow: 0 2px 4px rgba(205, 127, 50, 0.3);
-    }
-
-    .title-color-silver {
-        background: #e2e3f4;
-        box-shadow: 0 2px 4px rgba(192, 192, 192, 0.3);
-    }
-
-    .title-color-gold {
-        background: #fbcd0d;
-        box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
-    }
-
-    .title-color-rainbow {
-        background: repeating-linear-gradient(
-            135deg,
-            #f86f56,
-            #f86f56 20px,
-            #fcd562 20px,
-            #fcd562 40px,
-            #feef6f 40px,
-            #feef6f 60px,
-            #c1f640 60px,
-            #c1f640 80px,
-            #86def9 80px,
-            #86def9 100px
-        );
-        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.4);
     }
 
     /* 其他类型收藏品样式 */

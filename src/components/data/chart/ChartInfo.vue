@@ -276,47 +276,50 @@
                                     {{ getCurrentChartPosition(currentChart) }}
                                 </span>
                             </div>
-                        </div>
-                        <!-- Note 统计 -->
-                        <div class="notes-stats-section">
-                            <!-- <h3>Note 统计</h3> -->
-                            <div class="notes-table-container">
-                                <table class="notes-custom-table">
-                                    <thead>
-                                        <tr>
-                                            <th>类型</th>
-                                            <th>数量</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>TAP</td>
-                                            <td class="num-val">{{ noteCounts.tap }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>HOLD</td>
-                                            <td class="num-val">{{ noteCounts.hold }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>SLIDE</td>
-                                            <td class="num-val">{{ noteCounts.slide }}</td>
-                                        </tr>
-                                        <tr v-if="noteCounts.hasTouch">
-                                            <td>TOUCH</td>
-                                            <td class="num-val">{{ noteCounts.touch }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>BREAK</td>
-                                            <td class="num-val">{{ noteCounts.break }}</td>
-                                        </tr>
-                                        <tr class="total-row">
-                                            <td><strong>总计</strong></td>
-                                            <td class="num-val font-bold">
-                                                {{ noteCounts.total }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="info-row" v-if="currentChartScore?.lastChangedAt">
+                                <span class="info-label">成绩最后变动</span>
+                                <span class="info-value">
+                                    {{ formatScoreChangedAt(currentChartScore.lastChangedAt) }}
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Note 统计</span>
+                                <div class="info-value notes-breakdown">
+                                    <table class="notes-custom-table" aria-label="Note 统计">
+                                        <tbody>
+                                            <tr>
+                                                <td class="note-type">TAP</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.tap }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">HOLD</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.hold }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">SLIDE</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.slide }}</td>
+                                            </tr>
+                                            <tr v-if="noteCounts.hasTouch">
+                                                <td class="note-type">TOUCH</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.touch }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="note-type">BREAK</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.break }}</td>
+                                            </tr>
+                                            <tr class="note-total">
+                                                <td class="note-type">总计</td>
+                                                <td class="note-separator">:</td>
+                                                <td class="note-count">{{ noteCounts.total }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </mdui-collapse-item>
@@ -444,6 +447,88 @@
                 {{ alias }}
             </mdui-chip>
         </div>
+
+        <section v-if="chart?.music" class="related-collections-section">
+            <mdui-collapse>
+                <mdui-collapse-item
+                    ref="relatedCollectionsCollapseItemRef"
+                    trigger=".related-collections-toggle"
+                    @open="relatedCollectionsExpanded = true"
+                    @close="relatedCollectionsExpanded = false"
+                >
+                    <div slot="header" class="related-collections-header">
+                        <h3>关联收藏品</h3>
+                        <div class="related-collections-summary">
+                            <span v-if="isCollectionDataLoading">加载中</span>
+                            <span v-else>{{ relatedCollections.length }} 项</span>
+                            <mdui-button-icon
+                                class="related-collections-toggle"
+                                :icon="`keyboard_arrow_${relatedCollectionsExpanded ? 'up' : 'down'}`"
+                                :aria-label="
+                                    relatedCollectionsExpanded ? '折叠关联收藏品' : '展开关联收藏品'
+                                "
+                            ></mdui-button-icon>
+                        </div>
+                    </div>
+
+                    <div class="related-collections-content">
+                        <div v-if="isCollectionDataLoading" class="related-collections-state">
+                            <mdui-circular-progress></mdui-circular-progress>
+                            <span>正在加载收藏品…</span>
+                        </div>
+                        <div
+                            v-else-if="collectionDataError && !hasRelatedCollectionCandidates"
+                            class="related-collections-state"
+                        >
+                            <span>{{ collectionDataError }}</span>
+                            <mdui-button variant="text" @click.stop="refreshCollectionData">
+                                重试
+                            </mdui-button>
+                        </div>
+                        <div v-else-if="relatedCollections.length" class="related-collections-grid">
+                            <mdui-card
+                                v-for="collection in relatedCollections"
+                                :key="`${collection.type}-${collection.id}`"
+                                variant="outlined"
+                                :clickable="relatedCollectionDetails"
+                                class="related-collection-card"
+                                @click.stop="openRelatedCollection(collection)"
+                            >
+                                <div class="related-collection-preview">
+                                    <CollectionTitle
+                                        v-if="collection.type === CollectionKind.Title"
+                                        :title="collection as Title"
+                                    />
+                                    <img
+                                        v-else
+                                        :src="getRelatedCollectionImageUrl(collection)"
+                                        :alt="collection.name"
+                                        class="related-collection-image"
+                                        :class="{
+                                            square: collection.type === CollectionKind.Icon,
+                                            plate: collection.type === CollectionKind.Plate,
+                                            frame: collection.type === CollectionKind.Frame,
+                                        }"
+                                        crossorigin="anonymous"
+                                    />
+                                </div>
+                                <div
+                                    v-if="collection.type !== CollectionKind.Title"
+                                    class="related-collection-name"
+                                >
+                                    {{ collection.name }}
+                                </div>
+                                <div class="related-collection-meta">
+                                    <span>{{ getCollectionKindName(collection.type) }}</span>
+                                    <span>#{{ collection.id }}</span>
+                                </div>
+                            </mdui-card>
+                        </div>
+                        <div v-else class="related-collections-empty">暂无关联收藏品</div>
+                    </div>
+                </mdui-collapse-item>
+            </mdui-collapse>
+        </section>
     </mdui-dialog>
 
     <ScoreCalculatorDialog
@@ -452,13 +537,19 @@
         @update:open="showScoreCalculator = $event"
         :copyTextToClipboard="copyTextToClipboard"
     />
+    <CollectionInfoDialog
+        v-if="relatedCollectionDetails"
+        :open="relatedCollectionDialog.open"
+        :collection="relatedCollectionDialog.collection"
+        @update:open="handleRelatedCollectionDialogOpen"
+    />
 </template>
 
 <script setup lang="ts">
     import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
-    import { watch, nextTick, ref, computed } from "vue";
+    import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
@@ -468,21 +559,38 @@
     import type { ChartStats } from "@/components/integrations/diving-fish/type";
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { getCoverURL } from "@/components/integrations/assets";
+    import { getCollectionImageURL, getCoverURL } from "@/components/integrations/assets";
+    import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
+    import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
     import { getChartDifficultyBadgeLabel } from "./difficulty";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";
     import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
+    import {
+        collectionDataError,
+        frames,
+        icons,
+        isCollectionDataLoading,
+        plates,
+        refreshCollectionData,
+        titles,
+    } from "@/components/data/collection";
+    import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
+    import { getRelatedCollectionsForChart } from "@/components/data/collection/relatedCollections";
 
     const shared = useShared();
 
-    const props = defineProps<{
-        open: boolean;
-        chart: Chart | null;
-        singleLevel?: boolean;
-        targetUserId?: string;
-    }>();
+    const props = withDefaults(
+        defineProps<{
+            open: boolean;
+            chart: Chart | null;
+            singleLevel?: boolean;
+            targetUserId?: string;
+            relatedCollectionDetails?: boolean;
+        }>(),
+        { relatedCollectionDetails: true }
+    );
     const emit = defineEmits<{ (event: "update:open", value: boolean): void }>();
     const dialogRef = ref<any>(null);
     const friendsScores = ref<
@@ -505,6 +613,12 @@
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
     const chartBasicInfoExpanded = ref(false);
+    const relatedCollectionsExpanded = ref(false);
+    const relatedCollectionsCollapseItemRef = ref<any>(null);
+    const relatedCollectionDialog = ref<{ open: boolean; collection: Collection | null }>({
+        open: false,
+        collection: null,
+    });
 
     // 存储每个难度对应的好友成绩
     const chartFriendsScoresMap = ref<Map<number, any[]>>(new Map());
@@ -538,7 +652,11 @@
     watch(
         () => props.open,
         async newValue => {
+            if (newValue) relatedCollectionsExpanded.value = false;
             await nextTick();
+            if (newValue && relatedCollectionsCollapseItemRef.value) {
+                relatedCollectionsCollapseItemRef.value.open = false;
+            }
             if (dialogRef.value) {
                 dialogRef.value.open = newValue;
             }
@@ -647,6 +765,14 @@
         if (props.chart.id === expandedChartId.value) return props.chart;
         return props.chart.music.charts.find(chart => chart.id === expandedChartId.value) ?? null;
     });
+    const relatedCollections = computed(() => {
+        const chart = currentChart.value;
+        if (!chart) return [];
+        return getRelatedCollectionsForChart(chart);
+    });
+    const hasRelatedCollectionCandidates = computed(
+        () => plates.length + titles.length + icons.length + frames.length > 0
+    );
     const currentChartScore = computed(() => {
         if (!props.chart || !currentChart.value) return null;
         if (props.chart.id === currentChart.value.id && props.chart.score) return props.chart.score;
@@ -870,7 +996,7 @@
 
     // 新增收藏夹
     function newFavList() {
-        prompt({
+        void prompt({
             headline: "新增收藏夹",
             confirmText: "新增",
             cancelText: "取消",
@@ -895,7 +1021,7 @@
                 });
                 toggleFavorite(shared.favorites[shared.favorites.length - 1], props.chart!);
             },
-        });
+        }).catch(() => undefined);
     }
 
     function showChartStats(stat: ChartStats) {
@@ -939,10 +1065,43 @@
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
 
+    function formatScoreChangedAt(timestamp: number): string {
+        return new Date(timestamp).toLocaleString();
+    }
+
     const isSavedInAnyFavoriteList = computed(() => {
         if (!currentChart.value) return false;
         return shared.favorites.some(fav => isFavoriteChart(fav, currentChart.value));
     });
+
+    function getRelatedCollectionImageUrl(collection: Collection): string {
+        const typePaths: Partial<Record<CollectionKind, string>> = {
+            [CollectionKind.Icon]: "icon",
+            [CollectionKind.Plate]: "plate",
+            [CollectionKind.Frame]: "frame",
+        };
+        const path = typePaths[collection.type];
+        return path ? getCollectionImageURL(path, collection.id) : "";
+    }
+
+    function getCollectionKindName(type: CollectionKind): string {
+        const names: Partial<Record<CollectionKind, string>> = {
+            [CollectionKind.Plate]: "姓名框",
+            [CollectionKind.Title]: "称号",
+            [CollectionKind.Icon]: "头像",
+            [CollectionKind.Frame]: "背景",
+        };
+        return names[type] ?? "收藏品";
+    }
+
+    function openRelatedCollection(collection: Collection): void {
+        if (!props.relatedCollectionDetails) return;
+        relatedCollectionDialog.value = { open: true, collection };
+    }
+
+    function handleRelatedCollectionDialogOpen(open: boolean): void {
+        relatedCollectionDialog.value.open = open;
+    }
 </script>
 
 <style scoped>
@@ -1089,6 +1248,115 @@
     .chip-container[center] {
         justify-content: center;
         padding: 16px 0 !important;
+    }
+
+    .related-collections-section {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .related-collections-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .related-collections-header h3 {
+        margin: 0;
+    }
+
+    .related-collections-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+        padding-right: 8px;
+        white-space: nowrap;
+    }
+
+    .related-collections-content {
+        padding-top: 10px;
+    }
+
+    .related-collection-meta,
+    .related-collections-empty,
+    .related-collections-state {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.8rem;
+    }
+
+    .related-collections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 8px;
+    }
+
+    .related-collection-card {
+        min-width: 0;
+        padding: 10px;
+    }
+
+    .related-collection-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 54px;
+        min-width: 0;
+    }
+
+    .related-collection-image {
+        display: block;
+        width: 100%;
+        height: 54px;
+        object-fit: contain;
+    }
+
+    .related-collection-image.square {
+        width: 54px;
+        border-radius: var(--mdui-shape-corner-small);
+    }
+
+    .related-collection-name {
+        margin-top: 6px;
+        overflow: hidden;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .related-collection-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .related-collections-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 54px;
+        gap: 8px;
+    }
+
+    .related-collections-state mdui-circular-progress {
+        width: 20px;
+        height: 20px;
+    }
+
+    .related-collections-empty {
+        padding: 12px 0;
+        text-align: center;
+    }
+
+    @media (max-width: 600px) {
+        .related-collections-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     h3 {
@@ -1539,88 +1807,50 @@
         color: rgb(var(--mdui-color-on-surface-variant));
     }
 
-    /* Note 统计表格样式 */
-    .notes-stats-section {
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-        /* padding: 0 1rem; */
-    }
-
-    @media (max-width: 600px) {
-        .notes-stats-section {
-            padding: 0 1rem;
-        }
-    }
-
-    .notes-stats-section h3 {
-        margin-top: 0;
-        margin-bottom: 0.75rem;
-    }
-
-    .notes-table-container {
-        width: 100%;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid rgba(var(--mdui-color-outline), 0.25);
+    .info-value.notes-breakdown {
+        text-align: right;
     }
 
     .notes-custom-table {
-        width: 100%;
         border-collapse: collapse;
-        text-align: left;
-    }
-
-    .notes-custom-table th,
-    .notes-custom-table td {
-        padding: 10px 16px;
-        border-bottom: 1px solid rgba(var(--mdui-color-outline), 0.2);
-    }
-
-    .notes-custom-table th {
-        font-size: 0.85rem;
-        font-weight: 600;
+        border: 0;
+        margin-left: auto;
+        font-size: 0.875rem;
         color: rgb(var(--mdui-color-on-surface-variant));
-        background: rgba(var(--mdui-color-surface-variant), 0.15);
-    }
-
-    .notes-custom-table th:last-child {
-        text-align: right;
     }
 
     .notes-custom-table td {
-        font-size: 0.9rem;
-        color: rgb(var(--mdui-color-on-surface));
+        padding: 0;
+        border: 0;
+        line-height: 1.4;
+        white-space: nowrap;
     }
 
-    .notes-custom-table tr:last-child td {
-        border-bottom: none;
+    .notes-custom-table tr + tr td {
+        padding-top: 2px;
     }
 
-    .notes-custom-table tbody tr:nth-child(odd) {
-        background: transparent;
-    }
-
-    .notes-custom-table tbody tr:nth-child(even) {
-        background: rgba(var(--mdui-color-on-surface), 0.08);
-    }
-
-    .notes-custom-table tr.total-row {
-        background: rgba(var(--mdui-color-primary), 0.15) !important;
-    }
-
-    .notes-custom-table tr.total-row td {
-        color: rgb(var(--mdui-color-primary));
-    }
-
-    .notes-custom-table td.num-val {
+    .notes-custom-table .note-type {
         text-align: right;
-        font-family: Monaco, "JetBrains Mono", monospace;
-        font-variant-numeric: tabular-nums;
-        font-weight: 500;
+        padding-right: 0;
     }
 
-    .notes-custom-table td.num-val.font-bold {
-        font-weight: 700;
+    .notes-custom-table .note-separator {
+        width: 1ch;
+        padding: 0 0.25rem 0 0;
+        text-align: center;
+    }
+
+    .notes-custom-table .note-count {
+        min-width: 3ch;
+        text-align: left;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .notes-custom-table .note-total td {
+        padding-top: 4px;
+        font-weight: 600;
+        color: rgb(var(--mdui-color-primary));
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */

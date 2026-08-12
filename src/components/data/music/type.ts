@@ -60,6 +60,7 @@ export interface ChartScore {
     deluxeRating: number; // 单曲rating
 
     playCount?: number; // 游玩次数
+    lastChangedAt?: number; // SaltNet 观测到该成绩最后发生变动的时间
 
     index?: {
         all: ChartIndex;
@@ -79,10 +80,6 @@ export interface SavedMusicList {
 
 export interface MusicMetadataState {
     cnVersions: {
-        name: string;
-        word: string;
-    }[];
-    cnVersionPlates?: {
         name: string;
         word: string;
     }[];

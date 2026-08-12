@@ -39,6 +39,9 @@ describe("handleRenderRequest", () => {
 
         expect(response.status).toBe(200);
         expect(response.headers.get("content-type")).toBe("image/png");
+        expect(response.headers.get("content-disposition")).toMatch(
+            /^attachment; filename="B50_SaltNet\.png"; filename\*=UTF-8''B50_SaltNet_Salt_/
+        );
         expect(await response.text()).toBe("png:Salt");
     });
 

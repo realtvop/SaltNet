@@ -1,6 +1,8 @@
 "use strict";
 
-var cacheStorageKey = "SaltNetv0-";
+var cacheStorageKey = "SaltNetv1-";
+
+const FONT_HOSTS = ["fonts.googleapis.cn", "fonts.gstatic.cn", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 const CORE = [
     "/",
@@ -74,6 +76,22 @@ function cacheFirst(request, key) {
         });
     });
 }
+
+function cacheFirstForFonts(request, key) {
+    return caches.open(key).then((cache) => {
+        return cache.match(request).then((response) => {
+            if (response) return response;
+            return fetch(request).then((response) => {
+                if (!response.ok && response.type !== "opaque") return response;
+                return cache.put(request, response.clone()).then(
+                    () => response,
+                    () => response
+                );
+            });
+        });
+    });
+}
+
 function cacheFirstForCovers(request, key) {
     return caches.open(key).then((cache) => {
         return cache.match(request, { ignoreSearch: true, ignoreVary: true }).then((response) => {
@@ -129,7 +147,10 @@ self.addEventListener("fetch", async function (e) {
     const urlParsed = parseURL(urlOri);
     const currentUrlParsed = parseURL(self.location.href);
     if (urlOri.startsWith("http")) {
-        if (urlParsed.path.endsWith("sw.v2.js") ||
+        if (FONT_HOSTS.includes(urlParsed.host)) {
+            e.respondWith(cacheFirstForFonts(e.request, cacheStorageKey + "Fonts"));
+            return;
+        } else if (urlParsed.path.endsWith("sw.v2.js") ||
             (urlParsed.path.endsWith(".json") && !urlParsed.path.endsWith("manifest.json")) ||
             urlOri.includes("lxns.net/api") || urlOri.includes("diving-fish.com/api") ||
             urlParsed.host.includes("fonts.googleapis.com") || urlParsed.host.includes("fonts.gstatic.com") ||
