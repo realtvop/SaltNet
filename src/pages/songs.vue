@@ -1218,7 +1218,7 @@
         <div class="category-bar">
             <mdui-dropdown>
                 <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">{{ category }}</mdui-chip>
-                <mdui-menu>
+                <mdui-menu class="category-menu">
                     <mdui-menu-item
                         @click="category = item"
                         v-for="(item, index) in primaryCategories"
@@ -1772,9 +1772,19 @@
         box-sizing: border-box;
     }
 
+    .category-menu {
+        max-height: calc(100dvh - 56px - 40px - var(--nav-bar-height) - 8px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
     @media (min-aspect-ratio: 1.001/1) {
         .category-bar {
             left: 80px; /* navigation rail width */
+        }
+
+        .category-menu {
+            max-height: calc(100dvh - 56px - 40px - 8px);
         }
     }
 
