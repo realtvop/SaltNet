@@ -40,7 +40,7 @@
                 />
             </div>
             <div class="setting-row">
-                <span class="setting-label">谱面页面翻转难度、版本</span>
+                <span class="setting-label">谱面页面翻转难度、版本及万花筒门</span>
                 <mdui-switch
                     :checked="shared.appSettings.reverseSongsDifficultyAndVersionTabs"
                     @change="handleReverseSongsDifficultyAndVersionTabsChange"

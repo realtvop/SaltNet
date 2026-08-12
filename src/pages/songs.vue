@@ -124,8 +124,12 @@
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
-        if (tabCategory === Category.Kaleidxscope)
-            return kaleidxscopeGates.map(gate => gate.shortName);
+        if (tabCategory === Category.Kaleidxscope) {
+            const gateTabs = kaleidxscopeGates.map(gate => gate.shortName);
+            return shared.appSettings.reverseSongsDifficultyAndVersionTabs
+                ? gateTabs.reverse()
+                : gateTabs;
+        }
         if (tabCategory === Category.Course) return courses.map(course => course.name);
         if (tabCategory === Category.Version) {
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
@@ -960,6 +964,8 @@
         () => shared.appSettings.reverseSongsDifficultyAndVersionTabs,
         () => {
             selectedTab.value[Category.Version] = getTabsForCategory(Category.Version)[0] || "";
+            selectedTab.value[Category.Kaleidxscope] =
+                getTabsForCategory(Category.Kaleidxscope)[0] || "";
         }
     );
 
