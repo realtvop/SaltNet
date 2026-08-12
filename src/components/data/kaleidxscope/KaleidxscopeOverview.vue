@@ -4,10 +4,8 @@
     import type { Chart } from "@/components/data/music/type";
     import {
         formatKaleidxscopeDateTime,
-        getKaleidxscopeCurrentPhase,
         getKaleidxscopePhaseEnd,
         getKaleidxscopePhaseStatus,
-        getKaleidxscopePreferredGrade,
         resolveKaleidxscopeSongChart,
     } from "./index";
     import type {
@@ -27,8 +25,6 @@
         };
     }>();
 
-    const currentPhase = computed(() => getKaleidxscopeCurrentPhase(props.gate, props.now));
-    const preferredGrade = computed(() => getKaleidxscopePreferredGrade(currentPhase.value));
     const bossSong = computed(
         () => props.gate.selectionPools.find(pool => pool.track === 3)?.songs[0]
     );
@@ -46,11 +42,7 @@
     function resolveSongCharts(songs: readonly KaleidxscopeSong[]): Chart[] {
         return songs
             .map(song =>
-                resolveKaleidxscopeSongChart(
-                    song,
-                    chartsByMusicId.value.get(song.musicId) ?? [],
-                    preferredGrade.value
-                )
+                resolveKaleidxscopeSongChart(song, chartsByMusicId.value.get(song.musicId) ?? [], 3)
             )
             .filter((chart): chart is Chart => chart !== null);
     }
