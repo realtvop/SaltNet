@@ -16,7 +16,6 @@ export interface KaleidxscopeLifePhase {
 
 export interface KaleidxscopeKeyCondition {
     summary: string;
-    notes: string[];
     songs: KaleidxscopeSong[];
 }
 

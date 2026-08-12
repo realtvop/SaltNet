@@ -1246,18 +1246,6 @@
                     </mdui-menu-item>
                     <mdui-divider />
                     <mdui-menu-item
-                        :icon="category === Category.Kaleidxscope ? 'check' : ''"
-                        :style="{
-                            backgroundColor:
-                                category === Category.Kaleidxscope
-                                    ? 'rgba(var(--mdui-color-primary),12%)'
-                                    : '',
-                        }"
-                        @click="category = Category.Kaleidxscope"
-                    >
-                        万花筒
-                    </mdui-menu-item>
-                    <mdui-menu-item
                         :icon="category === Category.Course ? 'check' : ''"
                         :style="{
                             backgroundColor:
@@ -1268,6 +1256,18 @@
                         @click="category = Category.Course"
                     >
                         段位
+                    </mdui-menu-item>
+                    <mdui-menu-item
+                        :icon="category === Category.Kaleidxscope ? 'check' : ''"
+                        :style="{
+                            backgroundColor:
+                                category === Category.Kaleidxscope
+                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                    : '',
+                        }"
+                        @click="category = Category.Kaleidxscope"
+                    >
+                        万花筒
                     </mdui-menu-item>
                 </mdui-menu>
             </mdui-dropdown>

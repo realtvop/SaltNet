@@ -25,10 +25,6 @@
         };
     }>();
 
-    const bossSong = computed(
-        () => props.gate.selectionPools.find(pool => pool.track === 3)?.songs[0]
-    );
-
     const chartsByMusicId = computed(() => {
         const index = new Map<number, Chart[]>();
         for (const chart of props.charts) {
@@ -90,7 +86,6 @@
                 <h2>{{ gate.name }}</h2>
                 <p>
                     {{ gate.region }}
-                    <template v-if="bossSong">· 门曲：{{ bossSong.title }}</template>
                 </p>
             </header>
         </div>
@@ -100,7 +95,7 @@
                 <h2 class="section-title">
                     <span>钥匙曲目</span>
                     <span class="section-description key-description">
-                        <span>钥匙获取条件：{{ gate.keyCondition.summary }}</span>
+                        <span>{{ gate.keyCondition.summary }}</span>
                     </span>
                 </h2>
             </div>

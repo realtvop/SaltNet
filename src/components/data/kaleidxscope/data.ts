@@ -331,11 +331,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "青春区域",
         openedAt: "2026-01-23T10:00:00+08:00",
         keyCondition: {
-            summary: "门更新后，游玩全部 29 首青春区域曲目",
-            notes: [
-                "29 首均需至少游玩一次，完成后在结算画面确认钥匙。",
-                "钥匙曲目包含青春区域课题曲与完美挑战曲。",
-            ],
+            summary: "游玩全部 29 首青春区域曲目",
             songs: blueKeySongs,
         },
         lifePhases: [
@@ -369,12 +365,8 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "天界区域 8 / 神明地域",
         openedAt: "2026-02-10T07:00:00+08:00",
         keyCondition: {
-            summary: "同一局连续游玩 3 首（单人）或 4 首（双人）不重复的奏音曲目",
-            notes: [
-                "先完成天界区域 8，并设置背景「Latent Kingdom」。",
-                "曲目作曲家需含「奏音」或「大国奏音」，难度不限。",
-                "通常模式下 SKIP 计入；段位与宴谱不计入。",
-            ],
+            summary:
+                "设置背景「Latent Kingdom」后，同一局连续游玩 3 首（单人）或 4 首（双人）不重复的作曲家含「奏音」曲目",
             songs: whiteKeySongs,
         },
         lifePhases: [
@@ -408,11 +400,8 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "BLACK ROSE 区域 10",
         openedAt: "2026-03-25T10:00:00+08:00",
         keyCondition: {
-            summary: "同一局连续游玩 3 首（单人）或 4 首（双人）不重复的言ノ葉Project 曲目",
-            notes: [
-                "难度不限；宴谱与段位不计入。",
-                "旅行伙伴队长需设置为 BLACK ROSE 区域的アウル或其任意变种。",
-            ],
+            summary:
+                "旅行伙伴队长设置为 BLACK ROSE 区域的アウル或其任意变种，并在同一局连续游玩 3 首（单人）或 4 首（双人）不重复的言ノ葉Project 曲目",
             songs: purpleKeySongs,
         },
         lifePhases: [
@@ -441,8 +430,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "メトロポリス区域 9",
         openedAt: "2026-04-28T10:00:00+08:00",
         keyCondition: {
-            summary: "门更新后，游玩全部 11 首 KOP6 及以前的 KOP 曲目",
-            notes: ["11 首均需至少游玩一次。", "不限难度；宴谱不计入。"],
+            summary: "游玩全部 11 首 KOP6 及以前的 KOP 曲目",
             songs: blackKeySongs,
         },
         lifePhases: [
@@ -481,11 +469,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "七彩区域",
         openedAt: "2026-06-10T10:00:00+08:00",
         keyCondition: {
-            summary: "使用游戏内随机选曲抽到下列 12 首之一，并游玩其中 1 首",
-            notes: [
-                "不需要完成全部 12 首；可先加入收藏夹后使用「随机收藏夹」。",
-                "难度不限；宴谱与段位不计入。",
-            ],
+            summary: "使用游戏内随机选曲抽到版本主题曲之一，并游玩其中 1 首",
             songs: yellowKeySongs,
         },
         lifePhases: [
@@ -519,11 +503,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "龙之区域 4",
         openedAt: "2026-08-05T10:00:00+08:00",
         keyCondition: {
-            summary: "完成龙之区域 4，并在门更新后游玩全部 10 首钥匙曲目",
-            notes: [
-                "10 首均需至少游玩一次，完成后在结算画面确认钥匙。",
-                "不限难度，可以 SKIP；宴谱与段位不计入。",
-            ],
+            summary: "游玩全部 10 首下列曲目",
             songs: redKeySongs,
         },
         lifePhases: [
