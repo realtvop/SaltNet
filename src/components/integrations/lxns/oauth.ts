@@ -9,7 +9,7 @@ import {
     drainAndDiscardScoreHistoryForUser,
     resetUserForNewIdentity,
 } from "@/components/data/user/scoreHistory";
-import { cancelPendingUserUpdates } from "@/components/data/user/update";
+import { cancelPendingUserUpdates } from "@/components/data/user/update/updateUser";
 
 export { refreshLXNSOAuthToken } from "./token";
 
