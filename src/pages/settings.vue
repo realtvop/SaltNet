@@ -6,6 +6,9 @@
             <div class="btns-container">
                 <mdui-button variant="tonal" @click="userData.import">导入</mdui-button>
                 <mdui-button variant="tonal" @click="userData.export">导出</mdui-button>
+                <mdui-button variant="tonal" @click="clearAllScoreHistory">
+                    清除成绩历史
+                </mdui-button>
             </div>
         </mdui-card>
         <mdui-card variant="filled" class="settings-item">
@@ -66,6 +69,15 @@
     import { useShared, type SongsCardTopRightDisplay } from "@/components/app/shared";
     import { snackbar, confirm } from "mdui";
     import { markDialogClosed, markDialogOpen } from "@/components/app/router";
+    import {
+        clearScoreHistory,
+        createUserDataBackup,
+        decodeUserDataBackup,
+        flushScoreHistoryQueue,
+        hasPendingScoreHistoryWrites,
+        replaceImportedUserData,
+    } from "@/components/data/user/scoreHistory";
+    import { cancelPendingUserUpdates, hasPendingUserUpdates } from "@/components/data/user/update";
 
     const shared = useShared();
     type RatingDisplayMode = "简洁" | "吃分" | "完整";
@@ -80,45 +92,83 @@
                 if (!file) return;
                 try {
                     const text = await file.text();
-                    const data = JSON.parse(text);
-                    const decoded = userData.dataDecoder[0](data);
+                    const decoded = decodeUserDataBackup(JSON.parse(text));
+                    if (hasPendingUserUpdates() || hasPendingScoreHistoryWrites()) {
+                        throw new Error("仍有用户更新或成绩历史等待保存，请稍后重试");
+                    }
+                    const confirmed = await confirm({
+                        headline: "替换全部用户数据与成绩历史？",
+                        description: "导入会覆盖当前全部用户及曲目成绩历史，建议先导出当前数据。",
+                        confirmText: "导入",
+                        cancelText: "取消",
+                        closeOnEsc: true,
+                        closeOnOverlayClick: true,
+                        onOpen: markDialogOpen,
+                        onClose: markDialogClosed,
+                    })
+                        .then(() => true)
+                        .catch(() => false);
+                    if (!confirmed) return;
+
+                    cancelPendingUserUpdates();
+                    await replaceImportedUserData(decoded.users, decoded.events);
                     shared.users = decoded.users;
                     snackbar({
-                        message: "导入成功，正在同步曲目数据...",
-                        autoCloseDelay: 500,
+                        message: "用户数据与成绩历史导入成功",
+                        autoCloseDelay: 1000,
                     });
                 } catch (err) {
                     snackbar({
-                        message: "导入失败，文件格式错误或数据损坏",
-                        autoCloseDelay: 1000,
+                        message:
+                            err instanceof Error
+                                ? `导入失败：${err.message}`
+                                : "导入失败，文件格式错误或数据损坏",
+                        autoCloseDelay: 3000,
                     });
                 }
             };
             input.click();
         },
-        export: () => {
+        export: async () => {
             snackbar({
                 message: "正在导出",
                 autoCloseDelay: 500,
             });
             if (shared.users) {
-                const data = {
-                    version: 0,
-                    tip: "为简单保护用户id，以下内容使用base64编码",
-                    users: btoa(unescape(encodeURIComponent(JSON.stringify(shared.users)))),
-                };
-                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "SaltNet_用户数据.json";
-                a.click();
-                URL.revokeObjectURL(url);
+                try {
+                    if (hasPendingUserUpdates()) {
+                        snackbar({ message: "用户数据仍在更新，请稍后导出", autoCloseDelay: 2000 });
+                        return;
+                    }
+                    if (!(await flushScoreHistoryQueue())) {
+                        snackbar({
+                            message: "成绩历史仍有未保存内容，导出已取消",
+                            autoCloseDelay: 3000,
+                        });
+                        return;
+                    }
+                    const data = await createUserDataBackup(shared.users);
+                    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "SaltNet_用户数据.json";
+                    a.click();
+                    URL.revokeObjectURL(url);
 
-                snackbar({
-                    message: "已导出",
-                    autoCloseDelay: 500,
-                });
+                    snackbar({
+                        message: "已导出",
+                        autoCloseDelay: 500,
+                    });
+                } catch (error) {
+                    snackbar({
+                        message:
+                            error instanceof Error
+                                ? `导出失败：${error.message}`
+                                : "用户数据导出失败",
+                        autoCloseDelay: 3000,
+                    });
+                }
             } else {
                 snackbar({
                     message: "没有数据可导出",
@@ -126,15 +176,33 @@
                 });
             }
         },
-        dataDecoder: [
-            (data: { users: string }) => {
-                const users = JSON.parse(decodeURIComponent(escape(atob(data.users))));
-                return {
-                    users,
-                };
-            },
-        ],
     };
+
+    function clearAllScoreHistory() {
+        void confirm({
+            headline: "清除全部曲目成绩历史？",
+            description: "当前成绩不会受影响，历史删除后无法恢复。",
+            confirmText: "清除",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+            onConfirm: async () => {
+                if (hasPendingScoreHistoryWrites() || hasPendingUserUpdates()) {
+                    snackbar({ message: "仍有成绩正在更新，请稍后重试", autoCloseDelay: 2000 });
+                    return;
+                }
+                try {
+                    await clearScoreHistory();
+                    snackbar({ message: "已清除全部曲目成绩历史", autoCloseDelay: 1000 });
+                } catch (error) {
+                    console.error("Failed to clear score history:", error);
+                    snackbar({ message: "成绩历史清除失败", autoCloseDelay: 3000 });
+                }
+            },
+        }).catch(() => undefined);
+    }
 
     const displayName = {
         Covers: "图片资源",

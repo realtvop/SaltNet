@@ -12,6 +12,9 @@ export function applyLXNSAuth(user: User, auth: LXNSAuth, expiresIn?: number): L
     if (!auth.accessToken) throw new Error("No access token available");
 
     const { name, id } = jwtDecode<{ name: string; id: number }>(auth.accessToken);
+    if (user.lxns?.id && user.lxns.id !== id) {
+        throw new Error("LXNS token identity changed unexpectedly");
+    }
 
     const nextAuth: LXNSAuth = {
         ...auth,

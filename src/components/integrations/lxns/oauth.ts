@@ -1,7 +1,15 @@
 import { useShared } from "@/components/app/shared";
 import type { LXNSAuth, LXNSResponse } from "./type";
 import { applyLXNSAuth } from "./token";
-import { snackbar } from "mdui";
+import { confirm, snackbar } from "mdui";
+import { jwtDecode } from "jwt-decode";
+import { markDialogClosed, markDialogOpen } from "@/components/app/router";
+import {
+    deleteScoreHistoryForUser,
+    drainAndDiscardScoreHistoryForUser,
+    resetUserForNewIdentity,
+} from "@/components/data/user/scoreHistory";
+import { cancelPendingUserUpdates } from "@/components/data/user/update";
 
 export { refreshLXNSOAuthToken } from "./token";
 
@@ -70,11 +78,36 @@ async function getLXNSOAuthToken(code: string): Promise<LXNSTokenResult> {
     };
 }
 
-function saveLXNSAuth(userIndex: number, auth: LXNSAuth, expiresIn?: number): void {
+async function saveLXNSAuth(userIndex: number, auth: LXNSAuth, expiresIn?: number): Promise<void> {
     const shared = useShared();
     const user = shared.users[userIndex];
 
     if (!user) throw new Error("User not found");
+    if (!auth.accessToken) throw new Error("No access token available");
+    const nextLXNSId = jwtDecode<{ id: number }>(auth.accessToken).id;
+    if (user.lxns?.id && user.lxns.id !== nextLXNSId) {
+        const confirmed = await confirm({
+            headline: "将落雪绑定改为新的用户？",
+            description: "确认后会清除当前成绩与历史，并作为新的本地用户开始记录。",
+            confirmText: "创建新身份",
+            cancelText: "取消",
+            closeOnEsc: true,
+            closeOnOverlayClick: true,
+            onOpen: markDialogOpen,
+            onClose: markDialogClosed,
+        })
+            .then(() => true)
+            .catch(() => false);
+        if (!confirmed) throw new Error("已取消更换落雪帐号");
+        const oldUid = user.uid;
+        if (oldUid) {
+            cancelPendingUserUpdates(oldUid);
+            await drainAndDiscardScoreHistoryForUser(oldUid);
+            await deleteScoreHistoryForUser(oldUid);
+        }
+        Object.assign(user, resetUserForNewIdentity(user));
+        user.lxns = { auth: null, name: null, id: null };
+    }
     applyLXNSAuth(user, auth, expiresIn);
     snackbar({
         message: "落雪绑定成功！",
@@ -95,7 +128,7 @@ export async function handleLXNSOAuthCallback(code: string, state: string): Prom
 
     try {
         const { auth, expiresIn } = await getLXNSOAuthToken(code);
-        saveLXNSAuth(userIndex, auth, expiresIn);
+        await saveLXNSAuth(userIndex, auth, expiresIn);
     } finally {
         clearOAuthSessionStorage();
     }

@@ -17,64 +17,30 @@ import { toHalfWidth } from "@/utils/toHalfWidth";
 import { migrateB50, migrateRecordList, supplementRecordList, supplementB50 } from "./migrateData";
 
 self.onmessage = event => {
-    const { type, user, qrCode } = event.data;
+    const { type, user, qrCode, requestId } = event.data;
     if (type === "updateUser") {
-        let result = null;
-        let status = "success";
-        let message = "";
         try {
             if (user.inGame.enabled) {
-                fromInGame(user, qrCode).then(data => {
-                    result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
-                });
+                runUserUpdate(fromInGame(user, qrCode), requestId);
             } else if (user.lxns?.auth?.accessToken) {
-                fromLXNS(user).then(data => {
-                    result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
-                });
+                runUserUpdate(fromLXNS(user), requestId);
             } else if (user.divingFish.importToken) {
-                fromDivingFishByImportToken(user).then(data => {
-                    result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
-                });
+                runUserUpdate(fromDivingFishByImportToken(user), requestId);
             } else if (user.divingFish.name) {
-                fromDFLikeInGame(user).then(data => {
-                    result = data;
-                    self.postMessage({
-                        type: `updateUserResult::${user.uid}`,
-                        result,
-                        status,
-                        message,
-                    });
-                });
+                runUserUpdate(fromDFLikeInGame(user), requestId);
             } else {
-                status = "fail";
                 self.postMessage({
-                    type: `updateUserResult::${user.uid}`,
-                    result,
-                    status,
-                    message,
+                    type: "updateUserResult",
+                    requestId,
+                    result: null,
+                    status: "fail",
+                    message: "没有可用的成绩数据源",
                 });
             }
         } catch (e) {
             self.postMessage({
                 type: "updateUserError",
+                requestId,
                 error: e?.toString?.() || "Unknown error",
             });
         }
@@ -102,6 +68,26 @@ self.onmessage = event => {
     }
 };
 
+function runUserUpdate(update: Promise<unknown>, requestId: string): void {
+    void update
+        .then(result => {
+            self.postMessage({
+                type: "updateUserResult",
+                requestId,
+                result,
+                status: result ? "success" : "fail",
+                message: "",
+            });
+        })
+        .catch(error => {
+            self.postMessage({
+                type: "updateUserError",
+                requestId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+}
+
 async function fromLXNS(user: User) {
     info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
     try {
@@ -120,6 +106,7 @@ async function fromLXNS(user: User) {
             detailed: convertDetailed(detailedRecords),
             updateTime: data.updateTime,
             lxns: user.lxns,
+            scoreHistorySource: "lxns",
         };
     } catch (e) {
         const errorMsg = e?.toString?.() || "Unknown error";
@@ -139,6 +126,7 @@ async function fromDivingFish(user: User) {
                 b50: migrateB50(getExistingScoreData(user), data.charts, updateTime),
                 updateTime,
                 name: data.nickname,
+                scoreHistorySource: "divingFishPublic",
             };
         })
         .catch(e => {
@@ -220,6 +208,7 @@ async function fromInGame(user: User, qrCodeInput?: string) {
         items: data.items || [],
         characters: data.characters || [],
         info: data.info,
+        scoreHistorySource: "inGame",
     };
 }
 async function fromDFLikeInGame(user: User) {
@@ -238,6 +227,7 @@ async function fromDFLikeInGame(user: User) {
             b50: migrateB50(existingScores, data.b50, updateTime),
             detailed: convertDetailed(divingFishData),
             updateTime,
+            scoreHistorySource: "divingFishPublic",
         };
     } else {
         return await fromDivingFish(user);
@@ -259,6 +249,7 @@ async function fromDivingFishByImportToken(user: User) {
             b50: migrateB50(existingScores, b50, updateTime),
             detailed: convertDetailed(detailedRecords),
             updateTime,
+            scoreHistorySource: "divingFishImport",
         };
     } catch (e) {
         const errorMsg = e?.toString?.() || "Unknown error";

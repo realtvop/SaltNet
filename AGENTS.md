@@ -11,7 +11,7 @@ SaltNet is a two-package pnpm workspace:
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
-- `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `course/` for static dan-course definitions and ordered chart matching, `kaleidxscope/` for CN gate conditions, life calendars, draw pools, and the songs-page overview backed by the shared `ScoreSection`, `user/` for profiles, updates, backups, and rating history, and `collection/` for cached LXNS collections, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
+- `src/components/data/` contains domain logic: `music/` for chart metadata, `chart/` for score/rating UI and calculations, `course/` for static dan-course definitions and ordered chart matching, `kaleidxscope/` for CN gate conditions, life calendars, draw pools, and the songs-page overview backed by the shared `ScoreSection`, `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for cached LXNS collections, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
@@ -44,6 +44,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:kaleidxscope` validates the six-gate snapshot, life-phase boundaries, and chart matching.
 - `pnpm test:collection-index` runs focused tests for collection caching, initialization, and
   ChartInfo reverse associations.
+- `pnpm test:score-history` validates score-change detection, IndexedDB history, generations, and
+  user-backup compatibility.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
 

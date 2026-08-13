@@ -2,6 +2,13 @@ import { type User } from "@/components/data/user/type";
 import { appendRatingHistory } from "@/components/data/user/ratingHistory";
 import { alert, snackbar, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
+import {
+    createScoreHistoryCandidates,
+    createUserUid,
+    enqueueScoreHistoryBatch,
+    getExistingScoreData,
+    type ScoreHistorySource,
+} from "@/components/data/user/scoreHistory";
 
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
@@ -17,23 +24,86 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
             action: errorMsg ? "复制错误" : undefined,
             onActionClick: errorMsg ? () => navigator.clipboard.writeText(errorMsg) : undefined,
         });
-    } else if (type.startsWith("updateUserResult::")) {
+    } else if (type === "updateUserResult") {
+        const requestId = event.data.requestId as string;
+        const pending = pendingUsers[requestId];
+        if (!pending) return;
+        delete pendingUsers[requestId];
+        if (latestRequestByUser[pending.userUid] !== requestId) return;
+        delete latestRequestByUser[pending.userUid];
+
         const { result: data } = event.data;
         if (data) {
-            const user = pendingUsers[type.slice(18)];
-            const { lxns, ...nextData } = data;
-            appendRatingHistory(user, nextData.rating, nextData.updateTime);
+            const user = pending.user;
+            const {
+                lxns,
+                scoreHistorySource,
+                userId,
+                ...nextData
+            }: {
+                lxns?: User["lxns"];
+                scoreHistorySource: ScoreHistorySource;
+                userId?: number;
+                [key: string]: unknown;
+            } = data;
+            const existing = getExistingScoreData(user.data.detailed, user.data.b50);
+            const incomingDetailed = nextData.detailed
+                ? Object.values(nextData.detailed as NonNullable<User["data"]["detailed"]>)
+                : [];
+            const incomingB50 = nextData.b50
+                ? [
+                      ...(nextData.b50 as NonNullable<User["data"]["b50"]>).sd,
+                      ...(nextData.b50 as NonNullable<User["data"]["b50"]>).dx,
+                  ]
+                : [];
+            const incoming = [...incomingDetailed, ...incomingB50];
+            const observedAt =
+                typeof nextData.updateTime === "number" ? nextData.updateTime : Date.now();
+            const candidates = createScoreHistoryCandidates(existing, incoming, observedAt);
+            appendRatingHistory(user, nextData.rating, observedAt);
 
-            user.data = { ...user.data, ...nextData };
+            user.data = {
+                ...user.data,
+                ...(nextData as Partial<User["data"]>),
+                ...(userId !== undefined ? { userId } : {}),
+            };
             if (lxns) user.lxns = { ...user.lxns, ...lxns };
-            if (data.userId) user.inGame.id = data.userId;
+            if (userId) user.inGame.id = userId;
             if (
                 user.inGame.id &&
                 typeof user.inGame.id === "number" &&
                 user.inGame.id.toString().length === 8
             )
                 user.inGame.name = data.name;
+
+            void enqueueScoreHistoryBatch({
+                batchId: requestId,
+                userUid: pending.userUid,
+                source: scoreHistorySource,
+                candidates,
+            }).then(saved => {
+                if (!saved) {
+                    snackbar({
+                        message: "成绩已更新，历史记录保存失败，将在稍后重试",
+                        placement: "bottom",
+                        autoCloseDelay: 3000,
+                    });
+                }
+            });
         }
+    } else if (type === "updateUserError") {
+        const requestId = event.data.requestId as string;
+        const pending = pendingUsers[requestId];
+        if (pending) {
+            delete pendingUsers[requestId];
+            if (latestRequestByUser[pending.userUid] === requestId)
+                delete latestRequestByUser[pending.userUid];
+        }
+        snackbar({
+            message: event.data.error || "更新用户失败",
+            placement: "bottom",
+            autoCloseDelay: 3000,
+        });
     } else if (type === "alert") {
         void alert({
             ...event.data.data,
@@ -51,14 +121,30 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
     }
 };
 
-const pendingUsers: { [key: string]: User } = {};
+const pendingUsers: Record<string, { user: User; userUid: string }> = {};
+const latestRequestByUser: Record<string, string> = {};
+
+function createRequestId(): string {
+    return (
+        globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
+}
+
+function postUpdateRequest(user: User, plainUser: User, qrCode?: string): void {
+    const requestId = createRequestId();
+    const userUid = user.uid as string;
+    const previousRequest = latestRequestByUser[userUid];
+    if (previousRequest) delete pendingUsers[previousRequest];
+    latestRequestByUser[userUid] = requestId;
+    pendingUsers[requestId] = { user, userUid };
+    updateUserWorker.postMessage({ type: "updateUser", requestId, user: plainUser, qrCode });
+}
 
 export function updateUserWithWorker(user: User) {
     // 检查并生成 uid
     if (!user.uid) {
-        user.uid = `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+        user.uid = createUserUid();
     }
-    const userUid = user.uid;
 
     const plainUser: User = JSON.parse(JSON.stringify(user));
     const shouldPromptQrCode = user.inGame?.enabled && !user.inGame?.useFastUpdate;
@@ -82,20 +168,26 @@ export function updateUserWithWorker(user: User) {
                     });
                     return false;
                 }
-                pendingUsers[userUid] = user;
-                updateUserWorker.postMessage({
-                    type: "updateUser",
-                    user: plainUser,
-                    qrCode: value,
-                });
+                postUpdateRequest(user, plainUser, value);
                 return true;
             },
         }).catch(() => undefined);
         return;
     }
 
-    pendingUsers[userUid] = user;
-    updateUserWorker.postMessage({ type: "updateUser", user: plainUser });
+    postUpdateRequest(user, plainUser);
+}
+
+export function hasPendingUserUpdates(): boolean {
+    return Object.keys(pendingUsers).length > 0;
+}
+
+export function cancelPendingUserUpdates(userUid?: string): void {
+    for (const [requestId, pending] of Object.entries(pendingUsers)) {
+        if (!userUid || pending.userUid === userUid) delete pendingUsers[requestId];
+    }
+    if (userUid) delete latestRequestByUser[userUid];
+    else for (const key of Object.keys(latestRequestByUser)) delete latestRequestByUser[key];
 }
 
 export function checkLoginWithWorker(user: User) {
