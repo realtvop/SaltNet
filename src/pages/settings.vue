@@ -46,12 +46,24 @@
                     @change="handleReverseSongsDifficultyAndVersionTabsChange"
                 />
             </div>
+            <div class="setting-row">
+                <span class="setting-label">谱面卡片右上角默认显示</span>
+                <mdui-select
+                    :value="shared.appSettings.songsCardTopRightDisplay"
+                    style="width: 8em; --mdui-comp-select-menu-container-shape: 8px"
+                    @change="handleSongsCardTopRightDisplayChange"
+                >
+                    <mdui-menu-item value="排序">排序</mdui-menu-item>
+                    <mdui-menu-item value="无">无</mdui-menu-item>
+                    <mdui-menu-item value="游玩次数">游玩次数</mdui-menu-item>
+                </mdui-select>
+            </div>
         </mdui-card>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { useShared } from "@/components/app/shared";
+    import { useShared, type SongsCardTopRightDisplay } from "@/components/app/shared";
     import { snackbar, confirm } from "mdui";
     import { markDialogClosed, markDialogOpen } from "@/components/app/router";
 
@@ -168,6 +180,13 @@
     function handleReverseSongsDifficultyAndVersionTabsChange(event: Event) {
         const target = event.target as HTMLInputElement;
         shared.appSettings.reverseSongsDifficultyAndVersionTabs = target.checked;
+    }
+
+    function handleSongsCardTopRightDisplayChange(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        const value = target.value as SongsCardTopRightDisplay;
+        if (!value) return;
+        shared.appSettings.songsCardTopRightDisplay = value;
     }
 </script>
 

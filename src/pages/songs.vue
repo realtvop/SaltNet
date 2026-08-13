@@ -609,6 +609,20 @@
         chartInfoDialog.value.open = !chartInfoDialog.value.open;
     }
 
+    function getCardRating(chart: Chart): string | number | undefined {
+        const setting = shared.appSettings.songsCardTopRightDisplay;
+        if (setting === "无") {
+            return undefined;
+        }
+        if (setting === "游玩次数") {
+            const count = chart.score?.playCount ?? 0;
+            return `${count} 次`;
+        }
+        const diff = chart.score?.index?.difficult;
+        if (!diff) return undefined;
+        return `${diff.index}/${diff.total + 1}`;
+    }
+
     const itemsToRender = computed(() => {
         if (!chartListFiltered.value) return [];
         return chartListFiltered.value[selectedDifficulty.value] || [];
@@ -1617,6 +1631,7 @@
                         :chartInfoDialog="chartInfoDialog"
                         hideStats
                         hideTitle
+                        :getRating="getCardRating"
                     >
                         <template #prepend>
                             <ScoreCard
@@ -1720,6 +1735,7 @@
                                 @click="openChartInfoDialog(chart)"
                                 :compact="compactMode"
                                 :compact-filter="compactFilter"
+                                :rating="getCardRating(chart)"
                             />
                         </div>
                     </template>

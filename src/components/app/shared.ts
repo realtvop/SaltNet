@@ -9,10 +9,12 @@ import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
+export type SongsCardTopRightDisplay = "排序" | "无" | "游玩次数";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
     showDxScoreInB50: boolean;
     reverseSongsDifficultyAndVersionTabs: boolean;
+    songsCardTopRightDisplay: SongsCardTopRightDisplay;
 };
 
 function toStorageValue<T>(value: T): T {
@@ -44,6 +46,7 @@ export const useShared = defineStore("shared", () => {
         defaultChartRatingDisplayMode: "简洁",
         showDxScoreInB50: false,
         reverseSongsDifficultyAndVersionTabs: false,
+        songsCardTopRightDisplay: "排序",
     });
 
     const handleScreenSizeChange = () => {
@@ -120,6 +123,8 @@ export const useShared = defineStore("shared", () => {
                 reverseSongsDifficultyAndVersionTabs:
                     v.reverseSongsDifficultyAndVersionTabs ??
                     appSettings.value.reverseSongsDifficultyAndVersionTabs,
+                songsCardTopRightDisplay:
+                    v.songsCardTopRightDisplay ?? appSettings.value.songsCardTopRightDisplay,
             };
         });
 
