@@ -615,8 +615,8 @@
             return undefined;
         }
         if (setting === "游玩次数") {
-            const count = chart.score?.playCount ?? 0;
-            return `${count} 次`;
+            if (!chart.score?.playCount) return undefined;
+            return `${chart.score.playCount} 次`;
         }
         const diff = chart.score?.index?.difficult;
         if (!diff) return undefined;
