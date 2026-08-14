@@ -46,6 +46,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   ChartInfo reverse associations.
 - `pnpm test:score-history` validates score-change detection, IndexedDB history, generations, and
   user-backup compatibility.
+- `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
 

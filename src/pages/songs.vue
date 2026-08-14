@@ -33,7 +33,17 @@
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
+    import {
+        DIFFICULTY_TABS,
+        getDifficultyTabs,
+        getRecentCharts,
+    } from "@/components/data/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
+    import {
+        formatPlayCount,
+        getScoreHistoryChartKey,
+        getUserPlayCountEstimates,
+    } from "@/components/data/user/scoreHistory";
     import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
     import type { Course } from "@/components/data/course";
     import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
@@ -71,8 +81,7 @@
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
-    // prettier-ignore
-    const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
+    const difficulties = DIFFICULTY_TABS;
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref<{
@@ -119,8 +128,7 @@
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
         if (tabCategory === Category.InGame) {
-            if (!shared.appSettings.reverseSongsDifficultyAndVersionTabs) return difficulties;
-            return [difficulties[0], ...difficulties.slice(1).reverse()];
+            return getDifficultyTabs(!!shared.appSettings.reverseSongsDifficultyAndVersionTabs);
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
@@ -348,11 +356,27 @@
         const charts: Chart[] = [];
         const sourceCharts = Object.values(musicInfo.chartList) as Chart[];
         const detailedLookup = createDetailedScoreLookup(userData?.data?.detailed);
+        const playCountEstimates = userData?.uid
+            ? await getUserPlayCountEstimates(userData.uid, userData.data?.detailed)
+            : null;
+        if (requestId !== loadChartsRequestId) return;
+
         for (const [index, chart] of sourceCharts.entries()) {
             if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (detailedLookup) chartScore = toChartScore(detailedLookup.findScoreForChart(chart));
+            if (detailedLookup) {
+                const record = detailedLookup.findScoreForChart(chart);
+                chartScore = toChartScore(record);
+                if (chartScore && playCountEstimates && record) {
+                    const chartKey = getScoreHistoryChartKey(record);
+                    const estimate = playCountEstimates.get(chartKey);
+                    if (estimate && estimate.playCount !== null) {
+                        chartScore.playCount = estimate.playCount;
+                        chartScore.isPlayCountEstimated = estimate.isEstimated;
+                    }
+                }
+            }
             charts.push({
                 ...chart,
                 score: chartScore,
@@ -405,6 +429,8 @@
                 filteredCharts = shared.chartsSort.charts.filter(
                     (chart: Chart) => chart.info.grade === difficultyFilter.value
                 );
+            } else if (selectedDifficulty.value === "最近") {
+                filteredCharts = getRecentCharts(shared.chartsSort.charts);
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
                     (chart: Chart) => chart.info.level === selectedDifficulty.value
@@ -616,7 +642,7 @@
         }
         if (setting === "游玩次数") {
             if (!chart.score?.playCount) return undefined;
-            return `${chart.score.playCount} 次`;
+            return formatPlayCount(chart.score.playCount, chart.score.isPlayCountEstimated);
         }
         const diff = chart.score?.index?.difficult;
         if (!diff) return undefined;
@@ -796,7 +822,8 @@
         const isInGame =
             category.value === Category.InGame &&
             groupBy.value !== "none" &&
-            selectedDifficulty.value !== "ALL";
+            selectedDifficulty.value !== "ALL" &&
+            selectedDifficulty.value !== "最近";
         const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
         const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
 
@@ -1432,6 +1459,20 @@
                 id="search-input"
             ></mdui-text-field>
         </div>
+        <div
+            v-else-if="category === Category.InGame && selectedDifficulty === '最近'"
+            class="search-input"
+        >
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
+        </div>
         <div v-else-if="category === Category.Favorite" class="search-input">
             <mdui-select
                 style="width: 4.1rem"
@@ -1713,7 +1754,8 @@
                         <ScoreCard
                             v-if="
                                 !(category in versionPlates) &&
-                                (category !== Category.Favorite || shared.favorites.length > 0)
+                                (category !== Category.Favorite || shared.favorites.length > 0) &&
+                                selectedDifficulty !== '最近'
                             "
                             cover="/icons/random.png"
                             :data="randomChartDummy"

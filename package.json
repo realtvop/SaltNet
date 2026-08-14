@@ -16,6 +16,7 @@
         "test:kaleidxscope": "vitest run src/components/data/kaleidxscope/index.test.ts",
         "test:collection-index": "vitest run src/components/data/collection/index.test.ts src/components/data/collection/relatedCollections.test.ts",
         "test:score-history": "vitest run src/components/data/user/update/migrateData.test.ts src/components/data/user/scoreHistory/index.test.ts src/components/data/user/scoreHistory/queue.test.ts",
+        "test:recent": "vitest run src/components/data/chart/recent.test.ts",
         "test:build-info": "node --test script/generateBuildInfo.test.cjs"
     },
     "dependencies": {
