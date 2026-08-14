@@ -1,3 +1,9 @@
+import type { DetailedData } from "../type";
+import {
+    calculatePlayCountEstimate,
+    calculateUserPlayCountEstimates,
+    type PlayCountEstimate,
+} from "./estimate";
 import {
     SCORE_HISTORY_PAGE_SIZE,
     SCORE_HISTORY_SCHEMA_VERSION,
@@ -209,6 +215,25 @@ export async function getScoreHistoryPage(
         entries,
         nextOffset: offset + entries.length < filtered.length ? offset + entries.length : null,
     };
+}
+
+export async function getChartPlayCountEstimate(
+    userUid: string,
+    chartKey: string,
+    currentPlayCount?: number | null
+): Promise<PlayCountEstimate> {
+    const generationId = await getActiveScoreHistoryGeneration();
+    const events = await getChartEvents(generationId, userUid, chartKey);
+    return calculatePlayCountEstimate(events, currentPlayCount);
+}
+
+export async function getUserPlayCountEstimates(
+    userUid: string,
+    currentDetailed?: DetailedData
+): Promise<Map<string, PlayCountEstimate>> {
+    const generationId = await getActiveScoreHistoryGeneration();
+    const events = await getUserEvents(generationId, userUid);
+    return calculateUserPlayCountEstimates(events, currentDetailed);
 }
 
 export async function exportScoreHistoryEvents(): Promise<ScoreHistoryEventV1[]> {

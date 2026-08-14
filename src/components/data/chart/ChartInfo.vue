@@ -135,8 +135,8 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value" v-if="currentChartScore.playCount">
-                                {{ currentChartScore.playCount }} 次
+                            <div class="dx-score-value" v-if="displayedPlayCount">
+                                {{ displayedPlayCount }}
                             </div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
@@ -678,10 +678,13 @@
     import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
     import { getRelatedCollectionsForChart } from "@/components/data/collection/relatedCollections";
     import {
+        formatPlayCount,
+        getChartPlayCountEstimate,
         getScoreHistoryChartKey,
         getScoreHistoryDisplayChanges,
         getScoreHistoryPage,
         formatScoreHistorySource,
+        type PlayCountEstimate,
         type ScoreHistoryTimelineEntry,
     } from "@/components/data/user/scoreHistory";
 
@@ -726,6 +729,7 @@
     const scoreHistoryLoading = ref(false);
     const scoreHistoryError = ref<string | null>(null);
     const includePlayCountOnlyHistory = ref(false);
+    const currentPlayCountEstimate = ref<PlayCountEstimate | null>(null);
     let scoreHistoryRequestToken = 0;
     const relatedCollectionsExpanded = ref(false);
     const relatedCollectionsCollapseItemRef = ref<any>(null);
@@ -968,8 +972,39 @@
         void loadScoreHistory();
     }
 
-    watch([() => currentUser.value?.uid, currentScoreHistoryChartKey], () =>
-        resetScoreHistoryView()
+    const displayedPlayCount = computed(() => {
+        if (currentPlayCountEstimate.value && currentPlayCountEstimate.value.playCount !== null) {
+            return currentPlayCountEstimate.value.displayText;
+        }
+        if (currentChartScore.value?.playCount) {
+            return formatPlayCount(
+                currentChartScore.value.playCount,
+                currentChartScore.value.isPlayCountEstimated
+            );
+        }
+        return null;
+    });
+
+    watch(
+        [() => currentUser.value?.uid, currentScoreHistoryChartKey],
+        async ([userUid, chartKey]) => {
+            resetScoreHistoryView();
+            currentPlayCountEstimate.value = null;
+            if (userUid && chartKey) {
+                const estimate = await getChartPlayCountEstimate(
+                    userUid,
+                    chartKey,
+                    currentChartScore.value?.playCount
+                );
+                if (
+                    currentUser.value?.uid === userUid &&
+                    currentScoreHistoryChartKey.value === chartKey
+                ) {
+                    currentPlayCountEstimate.value = estimate;
+                }
+            }
+        },
+        { immediate: true }
     );
 
     function getCurrentScoreHistoryDisplayChanges() {
@@ -990,7 +1025,9 @@
             {
                 label: "游玩次数",
                 before: null,
-                after: score.playCount === undefined ? "未知" : `${score.playCount} 次`,
+                after:
+                    displayedPlayCount.value ??
+                    (score.playCount === undefined ? "未知" : `${score.playCount} 次`),
             },
         ];
     }

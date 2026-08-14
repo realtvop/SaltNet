@@ -60,6 +60,7 @@ export interface ChartScore {
     deluxeRating: number; // 单曲rating
 
     playCount?: number; // 游玩次数
+    isPlayCountEstimated?: boolean; // 游玩次数是否为预估
     lastChangedAt?: number; // SaltNet 观测到该成绩最后发生变动的时间
 
     index?: {

@@ -18,6 +18,11 @@ import {
     hasStrongIdentityChanged,
     getScoreHistoryDisplayChanges,
     formatScoreHistorySource,
+    formatPlayCount,
+    calculatePlayCountEstimate,
+    calculateUserPlayCountEstimates,
+    getChartPlayCountEstimate,
+    getUserPlayCountEstimates,
     isPlayCountOnlyHistory,
     recoverPendingUserDataImport,
     resetScoreHistoryDatabaseForTests,
@@ -359,5 +364,309 @@ describe("score history user identity", () => {
         expect(reset.uid).not.toBe(existing.uid);
         expect(reset.data).toEqual({ updateTime: null, name: null, rating: null });
         expect(reset.inGame.id).toBe(87_654_321);
+    });
+});
+
+describe("play count estimation", () => {
+    it("formats play count properly for exact and estimated values", () => {
+        expect(formatPlayCount(null)).toBe("未知");
+        expect(formatPlayCount(undefined)).toBe("未知");
+        expect(formatPlayCount(5, false)).toBe("5 次");
+        expect(formatPlayCount(5, true)).toBe("≥ 5 次");
+    });
+
+    it("returns exact play count when no uncounted score changes exist", () => {
+        const estimate = calculatePlayCountEstimate([], 10);
+        expect(estimate).toEqual({
+            recordedPlayCount: 10,
+            uncountedScoreChanges: 0,
+            playCount: 10,
+            isEstimated: false,
+            displayText: "10 次",
+        });
+    });
+
+    it("adds uncounted score changes and marks as estimated (≥ n 次)", () => {
+        const initialEvent: ScoreHistoryEventV1 = {
+            id: "1",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b1",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 1_000,
+            sequence: 0,
+            source: "inGame",
+            kind: "initial",
+            changedMask: 0,
+            state: {
+                achievements: 98,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: 5,
+            },
+        };
+        const change1: ScoreHistoryEventV1 = {
+            id: "2",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b2",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 2_000,
+            sequence: 0,
+            source: "lxns",
+            kind: "change",
+            changedMask: ScoreHistoryChange.Achievements,
+            state: {
+                achievements: 99,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: 5,
+            },
+        };
+        const change2: ScoreHistoryEventV1 = {
+            id: "3",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b3",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 3_000,
+            sequence: 0,
+            source: "divingFishPublic",
+            kind: "change",
+            changedMask: ScoreHistoryChange.DxScore | ScoreHistoryChange.ComboStatus,
+            state: {
+                achievements: 99,
+                dxScore: 2100,
+                fc: ComboStatus.FullCombo,
+                fs: SyncStatus.None,
+                playCount: 5,
+            },
+        };
+
+        const estimate = calculatePlayCountEstimate([initialEvent, change1, change2], 5);
+        expect(estimate).toEqual({
+            recordedPlayCount: 5,
+            uncountedScoreChanges: 2,
+            playCount: 7,
+            isEstimated: true,
+            displayText: "≥ 7 次",
+        });
+    });
+
+    it("resets uncounted accumulator when playCount is updated officially", () => {
+        const initialEvent: ScoreHistoryEventV1 = {
+            id: "1",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b1",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 1_000,
+            sequence: 0,
+            source: "inGame",
+            kind: "initial",
+            changedMask: 0,
+            state: {
+                achievements: 98,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: 5,
+            },
+        };
+        const change1: ScoreHistoryEventV1 = {
+            id: "2",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b2",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 2_000,
+            sequence: 0,
+            source: "lxns",
+            kind: "change",
+            changedMask: ScoreHistoryChange.Achievements,
+            state: {
+                achievements: 99,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: 5,
+            },
+        };
+        const officialUpdate: ScoreHistoryEventV1 = {
+            id: "3",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b3",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 3_000,
+            sequence: 0,
+            source: "inGame",
+            kind: "change",
+            changedMask: ScoreHistoryChange.PlayCount | ScoreHistoryChange.Achievements,
+            state: {
+                achievements: 100,
+                dxScore: 2200,
+                fc: ComboStatus.FullCombo,
+                fs: SyncStatus.None,
+                playCount: 10,
+            },
+        };
+        const laterChange: ScoreHistoryEventV1 = {
+            id: "4",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b4",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 4_000,
+            sequence: 0,
+            source: "divingFishImport",
+            kind: "change",
+            changedMask: ScoreHistoryChange.Achievements,
+            state: {
+                achievements: 100.5,
+                dxScore: 2200,
+                fc: ComboStatus.FullCombo,
+                fs: SyncStatus.None,
+                playCount: 10,
+            },
+        };
+
+        const estimateAfterOfficial = calculatePlayCountEstimate(
+            [initialEvent, change1, officialUpdate],
+            10
+        );
+        expect(estimateAfterOfficial).toEqual({
+            recordedPlayCount: 10,
+            uncountedScoreChanges: 0,
+            playCount: 10,
+            isEstimated: false,
+            displayText: "10 次",
+        });
+
+        const estimateAfterLaterChange = calculatePlayCountEstimate(
+            [initialEvent, change1, officialUpdate, laterChange],
+            10
+        );
+        expect(estimateAfterLaterChange).toEqual({
+            recordedPlayCount: 10,
+            uncountedScoreChanges: 1,
+            playCount: 11,
+            isEstimated: true,
+            displayText: "≥ 11 次",
+        });
+    });
+
+    it("handles null base play count with score changes", () => {
+        const initialEvent: ScoreHistoryEventV1 = {
+            id: "1",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b1",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 1_000,
+            sequence: 0,
+            source: "divingFishPublic",
+            kind: "initial",
+            changedMask: 0,
+            state: {
+                achievements: 98,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: null,
+            },
+        };
+        const change1: ScoreHistoryEventV1 = {
+            id: "2",
+            schemaVersion: 1,
+            generationId: "default",
+            batchId: "b2",
+            userUid: "user-1",
+            chartKey: "10001-3",
+            observedAt: 2_000,
+            sequence: 0,
+            source: "divingFishPublic",
+            kind: "change",
+            changedMask: ScoreHistoryChange.Achievements,
+            state: {
+                achievements: 99,
+                dxScore: 2000,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                playCount: null,
+            },
+        };
+
+        const estimate = calculatePlayCountEstimate([initialEvent, change1], null);
+        expect(estimate).toEqual({
+            recordedPlayCount: null,
+            uncountedScoreChanges: 1,
+            playCount: 2,
+            isEstimated: true,
+            displayText: "≥ 2 次",
+        });
+    });
+
+    it("queries user play count estimates from repository IndexedDB", async () => {
+        const existing = convertDetailed([createRecord({ play_count: 5, lastChangedAt: 500 })]);
+        const candidates = createScoreHistoryCandidates(
+            existing,
+            [createRecord({ achievements: 100.6, play_count: 5 })],
+            1_000
+        );
+        await appendScoreHistoryBatch({
+            batchId: "est-batch",
+            userUid: "user-1",
+            source: "divingFishImport",
+            candidates,
+        });
+
+        const singleEstimate = await getChartPlayCountEstimate("user-1", candidates[0].chartKey, 5);
+        expect(singleEstimate.isEstimated).toBe(true);
+        expect(singleEstimate.playCount).toBe(6);
+        expect(singleEstimate.displayText).toBe("≥ 6 次");
+
+        const pureMap = calculateUserPlayCountEstimates(
+            [
+                {
+                    id: "e1",
+                    schemaVersion: 1,
+                    generationId: "default",
+                    batchId: "b1",
+                    userUid: "user-1",
+                    chartKey: candidates[0].chartKey,
+                    observedAt: 1_000,
+                    sequence: 0,
+                    source: "divingFishImport",
+                    kind: "change",
+                    changedMask: ScoreHistoryChange.Achievements,
+                    state: {
+                        achievements: 100.6,
+                        dxScore: 2500,
+                        fc: ComboStatus.None,
+                        fs: SyncStatus.None,
+                        playCount: 5,
+                    },
+                },
+            ],
+            existing
+        );
+        expect(pureMap.get(candidates[0].chartKey)?.displayText).toBe("≥ 6 次");
+
+        const userEstimates = await getUserPlayCountEstimates("user-1", existing);
+        const chartEst = userEstimates.get(candidates[0].chartKey);
+        expect(chartEst?.isEstimated).toBe(true);
+        expect(chartEst?.playCount).toBe(6);
+        expect(chartEst?.displayText).toBe("≥ 6 次");
     });
 });

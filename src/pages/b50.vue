@@ -92,6 +92,14 @@
         return false;
     });
 
+    const isPc50Mode = computed(() => {
+        const queryValue = route.query.pc50;
+        if (typeof queryValue === "string") return queryValue.toLowerCase() === "y";
+        if (Array.isArray(queryValue))
+            return queryValue.some(item => typeof item === "string" && item.toLowerCase() === "y");
+        return false;
+    });
+
     type ComboFilterMode = "ap" | "fc" | null;
 
     const comboFilterMode = computed((): ComboFilterMode => {
@@ -106,15 +114,17 @@
     const modeLabel = computed(() => {
         if (comboFilterMode.value === "ap") return "AP50";
         if (comboFilterMode.value === "fc") return "FC50";
+        if (isPc50Mode.value) return "PC50";
         if (isNb50Mode.value) return "牛逼 50";
         if (isFitDiffMode.value) return "拟合 B50";
         return null;
     });
 
-    function setMode(mode: "fit" | "ap" | "fc" | "nb") {
+    function setMode(mode: "fit" | "ap" | "fc" | "nb" | "pc") {
         const query: Record<string, string> = {};
         if (mode === "fit") query.fit_diff = "y";
         else if (mode === "nb") query.nb50 = "y";
+        else if (mode === "pc") query.pc50 = "y";
         else query.combo_filter = mode;
         router.replace({ query });
     }
@@ -139,8 +149,9 @@
 
         const useFitDiff = isFitDiffMode.value || isNb50Mode.value;
         const comboFilter = comboFilterMode.value;
+        const isPc50 = isPc50Mode.value;
 
-        let records = getSourceRecords(useFitDiff || !!comboFilter);
+        let records = getSourceRecords(useFitDiff || !!comboFilter || isPc50);
         records = filterByComboStatus(records, comboFilter);
 
         let charts = records
@@ -161,8 +172,8 @@
         const newCharts = charts.filter(chart => chart.music.info.isNew === true);
 
         return {
-            old: sortCharts(oldCharts, 35),
-            newer: sortCharts(newCharts, 15),
+            old: sortCharts(oldCharts, 35, isPc50),
+            newer: sortCharts(newCharts, 15, isPc50),
         };
     });
 
@@ -258,8 +269,14 @@
         );
     }
 
-    function sortCharts(charts: Chart[], limit: number): Chart[] {
+    function sortCharts(charts: Chart[], limit: number, sortByPlayCount = false): Chart[] {
         const sorted = [...charts].sort((a, b) => {
+            if (sortByPlayCount) {
+                const countA = a.score?.playCount ?? 0;
+                const countB = b.score?.playCount ?? 0;
+                if (countA !== countB) return countB - countA;
+            }
+
             const ratingA = a.score?.deluxeRating ?? 0;
             const ratingB = b.score?.deluxeRating ?? 0;
             if (ratingA !== ratingB) return ratingB - ratingA;
@@ -644,6 +661,9 @@
                     @click="comboFilterMode === 'fc' ? clearMode() : setMode('fc')"
                 >
                     FC50
+                </mdui-chip>
+                <mdui-chip :selected="isPc50Mode" @click="isPc50Mode ? clearMode() : setMode('pc')">
+                    PC50
                 </mdui-chip>
                 <mdui-chip :selected="isNb50Mode" @click="isNb50Mode ? clearMode() : setMode('nb')">
                     牛逼 50

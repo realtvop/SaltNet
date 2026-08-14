@@ -1,4 +1,4 @@
-export type B50ModeLabel = "B50" | "拟合 B50" | "AP50" | "FC50" | "牛逼 50" | string;
+export type B50ModeLabel = "B50" | "拟合 B50" | "AP50" | "FC50" | "PC50" | "牛逼 50" | string;
 
 export interface B50RenderChart {
     songId: number;
