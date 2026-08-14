@@ -37,6 +37,7 @@
         DIFFICULTY_TABS,
         getDifficultyTabs,
         getRecentCharts,
+        hasAnyScoreChangedTime,
     } from "@/components/data/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
@@ -125,10 +126,15 @@
         handleSelectChange(event, versionGroupBy);
     }
 
+    const hasRecentCharts = computed(() => hasAnyScoreChangedTime(shared.chartsSort?.charts));
+
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
     function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
         if (tabCategory === Category.InGame) {
-            return getDifficultyTabs(!!shared.appSettings.reverseSongsDifficultyAndVersionTabs);
+            return getDifficultyTabs(
+                !!shared.appSettings.reverseSongsDifficultyAndVersionTabs,
+                hasRecentCharts.value
+            );
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
@@ -986,6 +992,12 @@
         groupBy.value = "none";
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
+    });
+
+    watch(hasRecentCharts, hasRecent => {
+        if (!hasRecent && selectedTab.value[Category.InGame] === "最近") {
+            selectedTab.value[Category.InGame] = getTabsForCategory(Category.InGame)[0] || "ALL";
+        }
     });
 
     watch(category, newCategory => {

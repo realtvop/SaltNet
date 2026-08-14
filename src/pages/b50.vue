@@ -92,7 +92,24 @@
         return false;
     });
 
+    const hasLastChangedAt = computed(() => {
+        const detailed = player.value?.data?.detailed;
+        if (detailed) {
+            return Object.values(detailed).some(
+                r => typeof r.lastChangedAt === "number" && r.lastChangedAt > 0
+            );
+        }
+        const b50 = player.value?.data?.b50;
+        if (b50) {
+            return [...(b50.sd ?? []), ...(b50.dx ?? [])].some(
+                r => typeof r.lastChangedAt === "number" && r.lastChangedAt > 0
+            );
+        }
+        return false;
+    });
+
     const isPc50Mode = computed(() => {
+        if (!hasLastChangedAt.value) return false;
         const queryValue = route.query.pc50;
         if (typeof queryValue === "string") return queryValue.toLowerCase() === "y";
         if (Array.isArray(queryValue))
@@ -662,7 +679,11 @@
                 >
                     FC50
                 </mdui-chip>
-                <mdui-chip :selected="isPc50Mode" @click="isPc50Mode ? clearMode() : setMode('pc')">
+                <mdui-chip
+                    v-if="hasLastChangedAt"
+                    :selected="isPc50Mode"
+                    @click="isPc50Mode ? clearMode() : setMode('pc')"
+                >
                     PC50
                 </mdui-chip>
                 <mdui-chip :selected="isNb50Mode" @click="isNb50Mode ? clearMode() : setMode('nb')">

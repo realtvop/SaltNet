@@ -1,6 +1,34 @@
 import type { Chart } from "@/components/data/music/type";
 
 // prettier-ignore
+export const BASE_DIFFICULTY_TABS: string[] = [
+    "ALL",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "7+",
+    "8",
+    "8+",
+    "9",
+    "9+",
+    "10",
+    "10+",
+    "11",
+    "11+",
+    "12",
+    "12+",
+    "13",
+    "13+",
+    "14",
+    "14+",
+    "15",
+];
+
+// prettier-ignore
 export const DIFFICULTY_TABS: string[] = [
     "ALL",
     "最近",
@@ -29,9 +57,20 @@ export const DIFFICULTY_TABS: string[] = [
     "15",
 ];
 
-export function getDifficultyTabs(reverse: boolean): string[] {
-    if (!reverse) return [...DIFFICULTY_TABS];
-    return [DIFFICULTY_TABS[0], DIFFICULTY_TABS[1], ...DIFFICULTY_TABS.slice(2).reverse()];
+export function getDifficultyTabs(reverse: boolean, includeRecent: boolean = true): string[] {
+    const tabs = includeRecent ? DIFFICULTY_TABS : BASE_DIFFICULTY_TABS;
+    if (!reverse) return [...tabs];
+    if (includeRecent) {
+        return [tabs[0], tabs[1], ...tabs.slice(2).reverse()];
+    }
+    return [tabs[0], ...tabs.slice(1).reverse()];
+}
+
+export function hasAnyScoreChangedTime(charts: Chart[] | null | undefined): boolean {
+    if (!charts || !charts.length) return false;
+    return charts.some(
+        c => typeof c.score?.lastChangedAt === "number" && c.score.lastChangedAt > 0
+    );
 }
 
 export function getRecentCharts(charts: Chart[], limit: number = 50): Chart[] {
