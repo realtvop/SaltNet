@@ -430,7 +430,10 @@
                 </mdui-list>
             </div>
 
-            <section v-if="currentUser?.uid && currentChartScore" class="score-history-section">
+            <section
+                v-if="currentUser?.uid && currentChartScore?.lastChangedAt"
+                class="score-history-section"
+            >
                 <mdui-collapse>
                     <mdui-collapse-item
                         ref="scoreHistoryCollapseItemRef"
@@ -441,7 +444,7 @@
                         <div slot="header" class="score-history-header">
                             <h3>成绩历史</h3>
                             <div class="score-history-summary">
-                                <mdui-dropdown @open.stop @close.stop>
+                                <mdui-dropdown v-if="scoreHistoryExpanded" @open.stop @close.stop>
                                     <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
                                         {{
                                             includePlayCountOnlyHistory
