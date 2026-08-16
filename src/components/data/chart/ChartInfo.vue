@@ -326,105 +326,6 @@
                 </mdui-collapse>
             </mdui-card>
 
-            <section v-if="currentUser?.uid && currentChartScore" class="score-history-section">
-                <mdui-collapse>
-                    <mdui-collapse-item
-                        ref="scoreHistoryCollapseItemRef"
-                        trigger=".score-history-toggle"
-                        @open="openScoreHistory"
-                        @close="scoreHistoryExpanded = false"
-                    >
-                        <div slot="header" class="score-history-header">
-                            <h3>成绩历史</h3>
-                            <mdui-button-icon
-                                class="score-history-toggle"
-                                :icon="`keyboard_arrow_${scoreHistoryExpanded ? 'up' : 'down'}`"
-                                :aria-label="scoreHistoryExpanded ? '折叠成绩历史' : '展开成绩历史'"
-                            ></mdui-button-icon>
-                        </div>
-                        <div class="score-history-content">
-                            <label class="score-history-filter">
-                                <span>显示仅游玩次数变化</span>
-                                <mdui-switch
-                                    :checked="includePlayCountOnlyHistory"
-                                    @change="handleScoreHistoryFilterChange"
-                                ></mdui-switch>
-                            </label>
-                            <div v-if="scoreHistoryLoading" class="score-history-state">
-                                <mdui-circular-progress></mdui-circular-progress>
-                                <span>正在加载成绩历史…</span>
-                            </div>
-                            <div v-else-if="scoreHistoryError" class="score-history-state">
-                                <span>{{ scoreHistoryError }}</span>
-                                <mdui-button variant="text" @click.stop="reloadScoreHistory">
-                                    重试
-                                </mdui-button>
-                            </div>
-                            <div v-else-if="scoreHistoryEntries.length" class="score-history-list">
-                                <article
-                                    v-for="entry in scoreHistoryEntries"
-                                    :key="entry.event.id"
-                                    class="score-history-event"
-                                >
-                                    <div class="score-history-event-header">
-                                        <strong>
-                                            {{
-                                                entry.event.kind === "initial"
-                                                    ? "最早已知成绩"
-                                                    : formatScoreHistorySource(entry.event.source)
-                                            }}
-                                        </strong>
-                                        <time>
-                                            {{ formatScoreChangedAt(entry.event.observedAt) }}
-                                        </time>
-                                    </div>
-                                    <div
-                                        v-for="change in getScoreHistoryDisplayChanges(entry)"
-                                        :key="change.label"
-                                        class="score-history-change"
-                                    >
-                                        <span>{{ change.label }}</span>
-                                        <span>
-                                            <template v-if="change.before !== null">
-                                                {{ change.before }} →
-                                            </template>
-                                            {{ change.after }}
-                                        </span>
-                                    </div>
-                                </article>
-                                <mdui-button
-                                    v-if="scoreHistoryNextOffset !== null"
-                                    variant="text"
-                                    @click.stop="loadMoreScoreHistory"
-                                >
-                                    加载更多
-                                </mdui-button>
-                            </div>
-                            <article
-                                v-else-if="currentChartScore.lastChangedAt"
-                                class="score-history-event"
-                            >
-                                <div class="score-history-event-header">
-                                    <strong>最早已知成绩</strong>
-                                    <time>
-                                        {{ formatScoreChangedAt(currentChartScore.lastChangedAt) }}
-                                    </time>
-                                </div>
-                                <div
-                                    v-for="change in getCurrentScoreHistoryDisplayChanges()"
-                                    :key="change.label"
-                                    class="score-history-change"
-                                >
-                                    <span>{{ change.label }}</span>
-                                    <span>{{ change.after }}</span>
-                                </div>
-                            </article>
-                            <div v-else class="score-history-state">将在下次成功更新后开始记录</div>
-                        </div>
-                    </mdui-collapse-item>
-                </mdui-collapse>
-            </section>
-
             <!-- Rating 阶段 -->
             <div
                 style="
@@ -528,6 +429,137 @@
                     </mdui-list-item>
                 </mdui-list>
             </div>
+
+            <section v-if="currentUser?.uid && currentChartScore" class="score-history-section">
+                <mdui-collapse>
+                    <mdui-collapse-item
+                        ref="scoreHistoryCollapseItemRef"
+                        trigger=".score-history-toggle"
+                        @open="openScoreHistory"
+                        @close="scoreHistoryExpanded = false"
+                    >
+                        <div slot="header" class="score-history-header">
+                            <h3>成绩历史</h3>
+                            <div class="score-history-summary">
+                                <mdui-dropdown @open.stop @close.stop>
+                                    <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
+                                        {{
+                                            includePlayCountOnlyHistory
+                                                ? "包含仅游玩次数"
+                                                : "仅成绩变动"
+                                        }}
+                                    </mdui-chip>
+                                    <mdui-menu>
+                                        <mdui-menu-item
+                                            :value="false"
+                                            @click="setScoreHistoryFilter(false)"
+                                            :style="{
+                                                backgroundColor: !includePlayCountOnlyHistory
+                                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                                    : '',
+                                            }"
+                                            :icon="!includePlayCountOnlyHistory ? 'check' : ''"
+                                        >
+                                            仅成绩变动
+                                        </mdui-menu-item>
+                                        <mdui-menu-item
+                                            :value="true"
+                                            @click="setScoreHistoryFilter(true)"
+                                            :style="{
+                                                backgroundColor: includePlayCountOnlyHistory
+                                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                                    : '',
+                                            }"
+                                            :icon="includePlayCountOnlyHistory ? 'check' : ''"
+                                        >
+                                            包含仅游玩次数
+                                        </mdui-menu-item>
+                                    </mdui-menu>
+                                </mdui-dropdown>
+                                <mdui-button-icon
+                                    class="score-history-toggle"
+                                    :icon="`keyboard_arrow_${scoreHistoryExpanded ? 'up' : 'down'}`"
+                                    :aria-label="
+                                        scoreHistoryExpanded ? '折叠成绩历史' : '展开成绩历史'
+                                    "
+                                ></mdui-button-icon>
+                            </div>
+                        </div>
+                        <div class="score-history-content">
+                            <div v-if="scoreHistoryLoading" class="score-history-state">
+                                <mdui-circular-progress></mdui-circular-progress>
+                                <span>正在加载成绩历史…</span>
+                            </div>
+                            <div v-else-if="scoreHistoryError" class="score-history-state">
+                                <span>{{ scoreHistoryError }}</span>
+                                <mdui-button variant="text" @click.stop="reloadScoreHistory">
+                                    重试
+                                </mdui-button>
+                            </div>
+                            <div v-else-if="scoreHistoryEntries.length" class="score-history-list">
+                                <article
+                                    v-for="entry in scoreHistoryEntries"
+                                    :key="entry.event.id"
+                                    class="score-history-event"
+                                >
+                                    <div class="score-history-event-header">
+                                        <strong>
+                                            {{
+                                                entry.event.kind === "initial"
+                                                    ? "最早已知成绩"
+                                                    : formatScoreHistorySource(entry.event.source)
+                                            }}
+                                        </strong>
+                                        <time>
+                                            {{ formatScoreChangedAt(entry.event.observedAt) }}
+                                        </time>
+                                    </div>
+                                    <div
+                                        v-for="change in getScoreHistoryDisplayChanges(entry)"
+                                        :key="change.label"
+                                        class="score-history-change"
+                                    >
+                                        <span>{{ change.label }}</span>
+                                        <span>
+                                            <template v-if="change.before !== null">
+                                                {{ change.before }} →
+                                            </template>
+                                            {{ change.after }}
+                                        </span>
+                                    </div>
+                                </article>
+                                <mdui-button
+                                    v-if="scoreHistoryNextOffset !== null"
+                                    variant="text"
+                                    @click.stop="loadMoreScoreHistory"
+                                >
+                                    加载更多
+                                </mdui-button>
+                            </div>
+                            <article
+                                v-else-if="currentChartScore.lastChangedAt"
+                                class="score-history-event"
+                            >
+                                <div class="score-history-event-header">
+                                    <strong>最早已知成绩</strong>
+                                    <time>
+                                        {{ formatScoreChangedAt(currentChartScore.lastChangedAt) }}
+                                    </time>
+                                </div>
+                                <div
+                                    v-for="change in getCurrentScoreHistoryDisplayChanges()"
+                                    :key="change.label"
+                                    class="score-history-change"
+                                >
+                                    <span>{{ change.label }}</span>
+                                    <span>{{ change.after }}</span>
+                                </div>
+                            </article>
+                            <div v-else class="score-history-state">将在下次成功更新后开始记录</div>
+                        </div>
+                    </mdui-collapse-item>
+                </mdui-collapse>
+            </section>
         </div>
 
         <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
@@ -771,10 +803,16 @@
     watch(
         () => props.open,
         async newValue => {
-            if (newValue) relatedCollectionsExpanded.value = false;
+            if (newValue) {
+                relatedCollectionsExpanded.value = false;
+                scoreHistoryExpanded.value = false;
+            }
             await nextTick();
             if (newValue && relatedCollectionsCollapseItemRef.value) {
                 relatedCollectionsCollapseItemRef.value.open = false;
+            }
+            if (newValue && scoreHistoryCollapseItemRef.value) {
+                scoreHistoryCollapseItemRef.value.open = false;
             }
             if (dialogRef.value) {
                 dialogRef.value.open = newValue;
@@ -965,11 +1003,14 @@
             void loadScoreHistory(scoreHistoryNextOffset.value);
     }
 
-    function handleScoreHistoryFilterChange(event: Event): void {
-        includePlayCountOnlyHistory.value = (event.target as HTMLInputElement).checked;
+    function setScoreHistoryFilter(includePlayCountOnly: boolean): void {
+        if (includePlayCountOnlyHistory.value === includePlayCountOnly) return;
+        includePlayCountOnlyHistory.value = includePlayCountOnly;
         scoreHistoryEntries.value = [];
         scoreHistoryNextOffset.value = null;
-        void loadScoreHistory();
+        if (scoreHistoryExpanded.value) {
+            void loadScoreHistory();
+        }
     }
 
     const displayedPlayCount = computed(() => {
@@ -2101,33 +2142,38 @@
     }
 
     .score-history-section {
+        margin-top: 1rem;
         margin-bottom: 1rem;
-        padding: 0 1rem;
-        border: 1px solid rgb(var(--mdui-color-outline-variant));
-        border-radius: 12px;
     }
 
-    .score-history-header,
-    .score-history-filter,
-    .score-history-event-header,
-    .score-history-change {
+    .score-history-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
+        gap: 12px;
     }
 
     .score-history-header h3 {
         margin: 0;
     }
 
-    .score-history-content {
-        padding-bottom: 1rem;
+    .score-history-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-right: 8px;
     }
 
-    .score-history-filter {
-        margin-bottom: 0.75rem;
-        color: rgb(var(--mdui-color-on-surface-variant));
+    .score-history-content {
+        padding-top: 10px;
+    }
+
+    .score-history-event-header,
+    .score-history-change {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
     }
 
     .score-history-list {
