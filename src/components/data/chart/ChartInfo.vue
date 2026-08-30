@@ -697,6 +697,7 @@
     import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
     import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
     import { getChartDifficultyBadgeLabel } from "./difficulty";
+    import { formatScoreChangedAt } from "./recent";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";
@@ -1355,10 +1356,6 @@
     const dxScoreStarsImg = computed(() => {
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
-
-    function formatScoreChangedAt(timestamp: number): string {
-        return new Date(timestamp).toLocaleString();
-    }
 
     const isSavedInAnyFavoriteList = computed(() => {
         if (!currentChart.value) return false;

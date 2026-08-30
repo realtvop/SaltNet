@@ -73,6 +73,27 @@ export function hasAnyScoreChangedTime(charts: Chart[] | null | undefined): bool
     );
 }
 
+export function formatScoreChangedAt(timestamp: number): string {
+    return new Date(timestamp).toLocaleString();
+}
+
+export function sortRecentGroupCharts(charts: Chart[]): Chart[] {
+    return [...charts].sort((a: Chart, b: Chart) => {
+        const achA = a.score?.achievements ?? 0;
+        const achB = b.score?.achievements ?? 0;
+        if (achB !== achA) return achB - achA;
+        const raA = a.score?.deluxeRating ?? 0;
+        const raB = b.score?.deluxeRating ?? 0;
+        if (raB !== raA) return raB - raA;
+        const constA = a.info.constant ?? 0;
+        const constB = b.info.constant ?? 0;
+        if (constB !== constA) return constB - constA;
+        const dxA = a.score?.deluxeScore ?? 0;
+        const dxB = b.score?.deluxeScore ?? 0;
+        return dxB - dxA;
+    });
+}
+
 export function getRecentCharts(charts: Chart[], limit: number = 50): Chart[] {
     return charts
         .filter(
@@ -84,7 +105,40 @@ export function getRecentCharts(charts: Chart[], limit: number = 50): Chart[] {
             if (diff !== 0) return diff;
             const achA = a.score?.achievements ?? 0;
             const achB = b.score?.achievements ?? 0;
-            return achB - achA;
+            if (achB !== achA) return achB - achA;
+            const raA = a.score?.deluxeRating ?? 0;
+            const raB = b.score?.deluxeRating ?? 0;
+            if (raB !== raA) return raB - raA;
+            const constA = a.info.constant ?? 0;
+            const constB = b.info.constant ?? 0;
+            return constB - constA;
         })
         .slice(0, limit);
+}
+
+export interface RecentChartSection {
+    timestamp: number;
+    title: string;
+    items: Chart[];
+}
+
+export function getRecentChartSections(charts: Chart[], limit: number = 50): RecentChartSection[] {
+    const recentCharts = getRecentCharts(charts, limit);
+    const groups = new Map<number, Chart[]>();
+    for (const chart of recentCharts) {
+        const timestamp = chart.score?.lastChangedAt ?? 0;
+        const existing = groups.get(timestamp);
+        if (existing) {
+            existing.push(chart);
+        } else {
+            groups.set(timestamp, [chart]);
+        }
+    }
+    return Array.from(groups.entries())
+        .sort(([tsA], [tsB]) => tsB - tsA)
+        .map(([timestamp, items]) => ({
+            timestamp,
+            title: formatScoreChangedAt(timestamp),
+            items: sortRecentGroupCharts(items),
+        }));
 }

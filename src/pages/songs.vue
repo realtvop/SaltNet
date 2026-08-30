@@ -35,9 +35,11 @@
     } from "@/components/data/chart/difficulty";
     import {
         DIFFICULTY_TABS,
+        formatScoreChangedAt,
         getDifficultyTabs,
         getRecentCharts,
         hasAnyScoreChangedTime,
+        sortRecentGroupCharts,
     } from "@/components/data/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
@@ -825,6 +827,7 @@
     };
 
     const groupedItems = computed(() => {
+        const isRecent = category.value === Category.InGame && selectedDifficulty.value === "最近";
         const isInGame =
             category.value === Category.InGame &&
             groupBy.value !== "none" &&
@@ -833,9 +836,13 @@
         const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
         const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
 
-        if (!isInGame && !isVersion && !isFavorite) return null;
+        if (!isRecent && !isInGame && !isVersion && !isFavorite) return null;
 
-        const activeGroupBy = isVersion || isFavorite ? versionGroupBy.value : groupBy.value;
+        const activeGroupBy = isRecent
+            ? "recent"
+            : isVersion || isFavorite
+              ? versionGroupBy.value
+              : groupBy.value;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -843,7 +850,9 @@
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
             let key: string;
-            if (activeGroupBy === "level") {
+            if (activeGroupBy === "recent") {
+                key = String(chart.score?.lastChangedAt ?? 0);
+            } else if (activeGroupBy === "level") {
                 key = chart.info.level;
             } else if (activeGroupBy === "version") {
                 key = chart.music.info.from as unknown as string;
@@ -863,6 +872,7 @@
         });
 
         const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
+            if (activeGroupBy === "recent") return Number(b[0]) - Number(a[0]);
             if (activeGroupBy === "level") {
                 const ia = difficulties.indexOf(a[0]);
                 const ib = difficulties.indexOf(b[0]);
@@ -903,15 +913,24 @@
             .sort(sortFn)
             .map(([key, items]) => {
                 let title: string;
-                if (displayNames) title = displayNames[key] || key;
-                else if (activeGroupBy === "difficulty")
+                if (activeGroupBy === "recent") {
+                    title = formatScoreChangedAt(Number(key));
+                } else if (displayNames) {
+                    title = displayNames[key] || key;
+                } else if (activeGroupBy === "difficulty") {
                     title = getChartDifficultyFullLabel(Number(key));
-                else title = key;
+                } else {
+                    title = key;
+                }
+
+                const sortedItems =
+                    activeGroupBy === "recent" ? sortRecentGroupCharts(items) : items;
+
                 return {
                     title,
-                    count: items.length,
-                    stats: countChartStats(items),
-                    items,
+                    count: sortedItems.length,
+                    stats: countChartStats(sortedItems),
+                    items: sortedItems,
                 };
             });
     });
@@ -1653,11 +1672,12 @@
                             <span
                                 class="stats-info"
                                 v-else-if="
-                                    group.stats.sss ||
-                                    group.stats.sssp ||
-                                    group.stats.fc ||
-                                    group.stats.ap ||
-                                    group.stats.fsdx
+                                    selectedDifficulty !== '最近' &&
+                                    (group.stats.sss ||
+                                        group.stats.sssp ||
+                                        group.stats.fc ||
+                                        group.stats.ap ||
+                                        group.stats.fsdx)
                                 "
                             >
                                 <span class="stat-item" v-if="group.stats.sss">

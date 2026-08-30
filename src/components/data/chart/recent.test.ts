@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { Chart } from "@/components/data/music/type";
 import { ChartType } from "@/components/data/maiTypes";
-import { getDifficultyTabs, getRecentCharts, hasAnyScoreChangedTime } from "./recent";
+import {
+    formatScoreChangedAt,
+    getDifficultyTabs,
+    getRecentCharts,
+    getRecentChartSections,
+    hasAnyScoreChangedTime,
+    sortRecentGroupCharts,
+} from "./recent";
 
-function createMockChart(id: number, lastChangedAt?: number, achievements?: number): Chart {
+function createMockChart(
+    id: number,
+    lastChangedAt?: number,
+    achievements?: number,
+    options?: { deluxeRating?: number; constant?: number; deluxeScore?: number }
+): Chart {
     const chart: Chart = {
         id,
         music: {
@@ -25,7 +37,7 @@ function createMockChart(id: number, lastChangedAt?: number, achievements?: numb
             grade: 3,
             level: "13",
             charter: "Charter",
-            constant: 13.0,
+            constant: options?.constant ?? 13.0,
             deluxeScoreMax: 1200,
         },
         score:
@@ -35,8 +47,8 @@ function createMockChart(id: number, lastChangedAt?: number, achievements?: numb
                       comboStatus: "" as any,
                       syncStatus: "" as any,
                       rankRate: "SSS" as any,
-                      deluxeScore: 1000,
-                      deluxeRating: 200,
+                      deluxeScore: options?.deluxeScore ?? 1000,
+                      deluxeRating: options?.deluxeRating ?? 200,
                       lastChangedAt,
                   }
                 : undefined,
@@ -96,6 +108,27 @@ describe("hasAnyScoreChangedTime", () => {
     });
 });
 
+describe("formatScoreChangedAt", () => {
+    it("formats epoch timestamp into a localized date string", () => {
+        const ts = 1700000000000;
+        expect(formatScoreChangedAt(ts)).toBe(new Date(ts).toLocaleString());
+    });
+});
+
+describe("sortRecentGroupCharts", () => {
+    it("sorts charts within a group by achievements descending, then rating, then constant", () => {
+        const charts: Chart[] = [
+            createMockChart(1, 1000, 100.0, { deluxeRating: 200, constant: 13.0 }),
+            createMockChart(2, 1000, 100.5, { deluxeRating: 250, constant: 13.5 }),
+            createMockChart(3, 1000, 100.0, { deluxeRating: 220, constant: 13.2 }),
+            createMockChart(4, 1000, 100.0, { deluxeRating: 220, constant: 13.7 }),
+        ];
+
+        const sorted = sortRecentGroupCharts(charts);
+        expect(sorted.map(c => c.music.id)).toEqual([2, 4, 3, 1]);
+    });
+});
+
 describe("getRecentCharts", () => {
     it("filters out charts without lastChangedAt", () => {
         const charts: Chart[] = [
@@ -141,5 +174,31 @@ describe("getRecentCharts", () => {
         expect(recent).toHaveLength(50);
         expect(recent[0].music.id).toBe(70);
         expect(recent[49].music.id).toBe(21);
+    });
+});
+
+describe("getRecentChartSections", () => {
+    it("groups recent charts by score change timestamp descending and sorts within groups", () => {
+        const charts: Chart[] = [
+            createMockChart(1, 1000, 99.0),
+            createMockChart(2, 2000, 100.0),
+            createMockChart(3, 1000, 100.5),
+            createMockChart(4, 2000, 100.8),
+            createMockChart(5, 500, 98.0),
+        ];
+
+        const sections = getRecentChartSections(charts);
+        expect(sections).toHaveLength(3);
+        expect(sections[0].timestamp).toBe(2000);
+        expect(sections[0].title).toBe(formatScoreChangedAt(2000));
+        expect(sections[0].items.map(c => c.music.id)).toEqual([4, 2]);
+
+        expect(sections[1].timestamp).toBe(1000);
+        expect(sections[1].title).toBe(formatScoreChangedAt(1000));
+        expect(sections[1].items.map(c => c.music.id)).toEqual([3, 1]);
+
+        expect(sections[2].timestamp).toBe(500);
+        expect(sections[2].title).toBe(formatScoreChangedAt(500));
+        expect(sections[2].items.map(c => c.music.id)).toEqual([5]);
     });
 });
