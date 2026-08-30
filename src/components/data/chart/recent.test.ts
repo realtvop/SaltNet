@@ -109,9 +109,15 @@ describe("hasAnyScoreChangedTime", () => {
 });
 
 describe("formatScoreChangedAt", () => {
-    it("formats epoch timestamp into a localized date string", () => {
-        const ts = 1700000000000;
-        expect(formatScoreChangedAt(ts)).toBe(new Date(ts).toLocaleString());
+    it("formats epoch timestamp into zero-padded YYYY-MM-DD HH:mm string", () => {
+        const date = new Date(2026, 7, 30, 21, 18, 5);
+        const ts = date.getTime();
+        expect(formatScoreChangedAt(ts)).toBe("2026-08-30 21:18");
+    });
+
+    it("returns empty string for invalid timestamp", () => {
+        expect(formatScoreChangedAt(0)).toBe("");
+        expect(formatScoreChangedAt(Number.NaN)).toBe("");
     });
 });
 
