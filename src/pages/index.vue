@@ -1,13 +1,48 @@
 <script setup lang="ts">
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
+    import { onBeforeUnmount, onMounted, ref } from "vue";
     import { useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
     import { updateUser } from "@/components/data/user/update";
     import { snackbar } from "mdui";
     import { getUserDisplayName } from "@/components/data/user/type";
 
+    interface PwaInstallPromptEvent extends Event {
+        prompt(): Promise<void>;
+        userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+    }
+
     const router = useRouter();
     const shared = useShared();
+    const installPrompt = ref<PwaInstallPromptEvent | null>(null);
+
+    function handleBeforeInstallPrompt(event: Event) {
+        event.preventDefault();
+        installPrompt.value = event as PwaInstallPromptEvent;
+    }
+
+    function handleAppInstalled() {
+        installPrompt.value = null;
+    }
+
+    async function installPwa() {
+        const event = installPrompt.value;
+        if (!event) return;
+
+        installPrompt.value = null;
+        await event.prompt();
+        await event.userChoice;
+    }
+
+    onMounted(() => {
+        window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+        window.addEventListener("appinstalled", handleAppInstalled);
+    });
+
+    onBeforeUnmount(() => {
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+        window.removeEventListener("appinstalled", handleAppInstalled);
+    });
 
     function reloadPage() {
         window.location.reload();
@@ -40,6 +75,16 @@
             </mdui-button>
         </mdui-list-item>
         <mdui-list-item
+            v-if="installPrompt"
+            class="pwa-install-prompt"
+            rounded
+            icon="install_mobile"
+            @click="installPwa"
+        >
+            想将 SaltNet 安装为应用吗？点击安装
+        </mdui-list-item>
+        <mdui-list-item
+            v-else
             class="pwa-install-prompt"
             rounded
             icon="install_mobile"
