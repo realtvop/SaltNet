@@ -12,6 +12,10 @@
         maimaiVersionsCN,
         isMusicDataLoading,
     } from "@/components/data/music";
+    import {
+        createMusicSearchQuery,
+        matchesMusicSearchIndex,
+    } from "@/components/data/music/search";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
@@ -580,18 +584,12 @@
         let finalFilteredCharts = chartsWithOriginalIndex;
 
         if (query.value) {
+            const searchTerms = createMusicSearchQuery(query.value);
             finalFilteredCharts = chartsWithOriginalIndex.filter(chart => {
                 const chartData = chart.score;
                 return (
-                    // 曲名 曲师 谱师 别名
-                    chart.music.info.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.music.info.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.info.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-                    (chart.music.info.aliases &&
-                        chart.music.info.aliases
-                            .join()
-                            .toLowerCase()
-                            .includes(query.value.toLowerCase())) ||
+                    matchesMusicSearchIndex(chart.music.info.searchIndex, searchTerms) ||
+                    matchesMusicSearchIndex(chart.info.searchIndex, searchTerms) ||
                     chart.music.info.id.toString() === query.value ||
                     (chartData &&
                         // 达成率 fc sync
