@@ -602,9 +602,15 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
             summary: "通关棱镜塔",
             songs: [],
         },
-        lifePhases: [],
-        lifeNote:
-            "阶段配置：MASTER · LIFE 1 → 10 → 30 → 50，EXPERT · LIFE 100，BASIC · LIFE 999。各阶段生效日期待确认。",
+        lifePhases: [
+            phase("2026-10-01T07:00:00+08:00", "MASTER", 1),
+            phase("2026-10-04T07:00:00+08:00", "MASTER", 10),
+            phase("2026-10-07T07:00:00+08:00", "MASTER", 30),
+            phase("2026-10-10T07:00:00+08:00", "MASTER", 50),
+            phase("2026-10-13T07:00:00+08:00", "EXPERT", 100),
+            phase("2026-10-16T07:00:00+08:00", "BASIC", 999),
+        ],
+        lifeNote: "按开放首日 LIFE 1、每 3 天放宽一次推算，生效时间统一为 07:00。",
         selectionPools: [
             {
                 track: 1,

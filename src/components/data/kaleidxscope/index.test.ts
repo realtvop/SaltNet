@@ -128,14 +128,33 @@ describe("KALEIDXSCOPE data", () => {
         }
     });
 
-    it("keeps the noise calendar unconfirmed and distinguishes its special chart", () => {
+    it("estimates noise phases every three days and distinguishes its special chart", () => {
         const noise = getKaleidxscopeGate("乱码")!;
         expect(noise.openedAt).toBe("2026-10-01T07:00:00+08:00");
         expect(noise.keyCondition.summary).toBe("通关棱镜塔");
-        expect(noise.lifePhases).toEqual([]);
-        expect(noise.lifeNote).toContain("各阶段生效日期待确认");
-        expect(getKaleidxscopeCurrentPhase(noise, new Date(noise.openedAt))).toBeNull();
-        expect(getKaleidxscopeNextPhase(noise, new Date(noise.openedAt))).toBeNull();
+        expect(
+            noise.lifePhases.map(phase => [phase.startsAt, phase.difficulty, phase.life])
+        ).toEqual([
+            ["2026-10-01T07:00:00+08:00", "MASTER", 1],
+            ["2026-10-04T07:00:00+08:00", "MASTER", 10],
+            ["2026-10-07T07:00:00+08:00", "MASTER", 30],
+            ["2026-10-10T07:00:00+08:00", "MASTER", 50],
+            ["2026-10-13T07:00:00+08:00", "EXPERT", 100],
+            ["2026-10-16T07:00:00+08:00", "BASIC", 999],
+        ]);
+        expect(noise.lifeNote).toContain("推算");
+        for (const [index, phase] of noise.lifePhases.entries()) {
+            expect(getKaleidxscopeCurrentPhase(noise, new Date(phase.startsAt))).toEqual(phase);
+            if (index > 0) {
+                const previous = noise.lifePhases[index - 1];
+                expect(
+                    new Date(phase.startsAt).getTime() - new Date(previous.startsAt).getTime()
+                ).toBe(3 * 24 * 60 * 60 * 1000);
+                const before = new Date(new Date(phase.startsAt).getTime() - 1);
+                expect(getKaleidxscopeCurrentPhase(noise, before)).toEqual(previous);
+                expect(getKaleidxscopeNextPhase(noise, before)).toEqual(phase);
+            }
+        }
         expect(noise.selectionPools[2].songs).toEqual([
             { musicId: 11879, title: "Xaleid◆scopiX (2)" },
         ]);
