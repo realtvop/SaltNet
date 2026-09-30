@@ -57,9 +57,8 @@
     import {
         formatKaleidxscopeDateTime,
         getKaleidxscopeCurrentPhase,
-        getKaleidxscopeGate,
         getKaleidxscopeNextPhase,
-        kaleidxscopeGates,
+        getOpenedKaleidxscopeGates,
     } from "@/components/data/kaleidxscope";
     import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
@@ -135,6 +134,11 @@
     const hasRecentCharts = computed(() => hasAnyScoreChangedTime(shared.chartsSort?.charts));
 
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
+    const kaleidxscopeNow = ref(new Date());
+    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
+    const openedKaleidxscopeGates = computed(() =>
+        getOpenedKaleidxscopeGates(kaleidxscopeNow.value)
+    );
     function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
         if (tabCategory === Category.InGame) {
             return getDifficultyTabs(
@@ -145,7 +149,7 @@
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
         if (tabCategory === Category.Kaleidxscope) {
-            const gateTabs = kaleidxscopeGates.map(gate => gate.shortName);
+            const gateTabs = openedKaleidxscopeGates.value.map(gate => gate.shortName);
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
                 ? gateTabs.reverse()
                 : gateTabs;
@@ -191,10 +195,12 @@
 
     const selectedKaleidxscopeGate = computed(() => {
         if (category.value !== Category.Kaleidxscope) return null;
-        return getKaleidxscopeGate(selectedDifficulty.value);
+        return (
+            openedKaleidxscopeGates.value.find(
+                gate => gate.shortName === selectedDifficulty.value
+            ) ?? null
+        );
     });
-    const kaleidxscopeNow = ref(new Date());
-    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
     const selectedKaleidxscopeCurrentPhase = computed(() => {
         const gate = selectedKaleidxscopeGate.value;
         return gate ? getKaleidxscopeCurrentPhase(gate, kaleidxscopeNow.value) : null;
@@ -1014,6 +1020,13 @@
     watch(hasRecentCharts, hasRecent => {
         if (!hasRecent && selectedTab.value[Category.InGame] === "最近") {
             selectedTab.value[Category.InGame] = getTabsForCategory(Category.InGame)[0] || "ALL";
+        }
+    });
+
+    watch(openedKaleidxscopeGates, gates => {
+        if (!gates.some(gate => gate.shortName === selectedTab.value[Category.Kaleidxscope])) {
+            selectedTab.value[Category.Kaleidxscope] =
+                getTabsForCategory(Category.Kaleidxscope)[0] || "";
         }
     });
 

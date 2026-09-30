@@ -6,6 +6,7 @@ import {
     getKaleidxscopeGate,
     getKaleidxscopeNextPhase,
     getKaleidxscopePhaseStatus,
+    getOpenedKaleidxscopeGates,
     kaleidxscopeGates,
     resolveKaleidxscopeSongChart,
 } from "./index";
@@ -19,6 +20,29 @@ function makeChart(musicId: number, grade: number): Chart {
 }
 
 describe("KALEIDXSCOPE data", () => {
+    it("only exposes gates at or after their opening time", () => {
+        const idsAt = (timestamp: string) =>
+            getOpenedKaleidxscopeGates(new Date(timestamp)).map(gate => gate.id);
+        expect(idsAt("2026-09-30T23:59:59+08:00")).toEqual([
+            "blue",
+            "white",
+            "purple",
+            "black",
+            "yellow",
+            "red",
+        ]);
+        expect(idsAt("2026-10-01T06:59:59+08:00")).not.toContain("prism");
+        expect(idsAt("2026-10-01T07:00:00+08:00").slice(6)).toEqual(["prism", "noise"]);
+        expect(idsAt("2026-10-02T06:59:59+08:00")).not.toContain("hope");
+        expect(idsAt("2026-10-02T07:00:00+08:00").slice(6)).toEqual([
+            "prism",
+            "noise",
+            "hope",
+            "final",
+        ]);
+        expect(idsAt("2025-01-01T00:00:00+08:00")).toEqual([]);
+    });
+
     it("contains all six CN gates with complete life calendars and draw pools", () => {
         const colorGates = kaleidxscopeGates.slice(0, 6);
         expect(colorGates.map(gate => gate.id)).toEqual([
@@ -115,9 +139,7 @@ describe("KALEIDXSCOPE data", () => {
         expect(noise.selectionPools[2].songs).toEqual([
             { musicId: 11879, title: "Xaleid◆scopiX (2)" },
         ]);
-        expect(noise.selectionPools[2].unlistedDescription).toBe(
-            "乱码版 Xaleid◆scopiX"
-        );
+        expect(noise.selectionPools[2].unlistedDescription).toBe("乱码版 Xaleid◆scopiX");
         expect(getKaleidxscopeGate("希望之门")!.keyCondition.summary).toBe(
             "完成乱码阶段，获得希望钥匙"
         );
