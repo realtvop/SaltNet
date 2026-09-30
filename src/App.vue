@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { useRoute, useRouter } from "vue-router";
-    import { snackbar } from "mdui";
+    import { snackbar, type TextField } from "mdui";
     import TopAppBar from "@/components/app/TopAppBar.vue";
     import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
     import { useShared } from "./components/app/shared";
@@ -12,9 +12,12 @@
 
     function handleSongsNavigation() {
         if (route.path === "/songs") {
-            const searchInput = document.getElementById("search-input");
+            const searchInput = document.getElementById("search-input") as TextField | null;
             if (searchInput) {
                 searchInput.focus();
+                if (searchInput.value) {
+                    searchInput.select();
+                }
             }
         } else {
             router.push("/songs");
