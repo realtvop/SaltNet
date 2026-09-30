@@ -41,7 +41,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.
 - `pnpm test:course` validates the static dan-course snapshot and ordered chart matching.
-- `pnpm test:kaleidxscope` validates the six-gate snapshot, life-phase boundaries, and chart matching.
+- `pnpm test:kaleidxscope` validates the gate and final-sequence snapshot, life-phase boundaries, and chart matching.
 - `pnpm test:collection-index` runs focused tests for collection caching, initialization, and
   ChartInfo reverse associations.
 - `pnpm test:score-history` validates score-change detection, IndexedDB history, generations, and

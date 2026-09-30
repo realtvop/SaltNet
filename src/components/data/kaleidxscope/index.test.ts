@@ -20,7 +20,8 @@ function makeChart(musicId: number, grade: number): Chart {
 
 describe("KALEIDXSCOPE data", () => {
     it("contains all six CN gates with complete life calendars and draw pools", () => {
-        expect(kaleidxscopeGates.map(gate => gate.id)).toEqual([
+        const colorGates = kaleidxscopeGates.slice(0, 6);
+        expect(colorGates.map(gate => gate.id)).toEqual([
             "blue",
             "white",
             "purple",
@@ -29,7 +30,7 @@ describe("KALEIDXSCOPE data", () => {
             "red",
         ]);
         expect(
-            kaleidxscopeGates.map(gate => ({
+            colorGates.map(gate => ({
                 id: gate.id,
                 keySongs: gate.keyCondition.songs.length,
                 poolSizes: gate.selectionPools.map(pool => pool.songs.length),
@@ -41,10 +42,10 @@ describe("KALEIDXSCOPE data", () => {
             { id: "purple", keySongs: 28, poolSizes: [11, 17, 1], bossId: 11749 },
             { id: "black", keySongs: 11, poolSizes: [30, 10, 1], bossId: 11753 },
             { id: "yellow", keySongs: 12, poolSizes: [33, 11, 1], bossId: 11809 },
-            { id: "red", keySongs: 10, poolSizes: [14, 4, 1], bossId: 11814 },
+            { id: "red", keySongs: 10, poolSizes: [11, 4, 1], bossId: 11814 },
         ]);
 
-        for (const gate of kaleidxscopeGates) {
+        for (const gate of colorGates) {
             expect(gate.lifePhases).toHaveLength(6);
             expect(gate.selectionPools.map(pool => pool.track)).toEqual([1, 2, 3]);
             expect(gate.selectionPools[2]).toMatchObject({ selection: "fixed" });
@@ -62,6 +63,70 @@ describe("KALEIDXSCOPE data", () => {
                 )
             ).toBe(true);
         }
+    });
+
+    it("contains the tower, hope gate and single-track final sequence", () => {
+        expect(
+            kaleidxscopeGates.slice(6).map(gate => ({
+                id: gate.id,
+                keySongs: gate.keyCondition.songs.length,
+                poolSizes: gate.selectionPools.map(pool => pool.songs.length),
+                bossId: gate.selectionPools.at(-1)?.songs[0].musicId,
+            }))
+        ).toEqual([
+            { id: "prism", keySongs: 0, poolSizes: [10, 4, 1], bossId: 11818 },
+            { id: "hope", keySongs: 0, poolSizes: [1, 1, 1], bossId: 1819 },
+            { id: "final", keySongs: 0, poolSizes: [1], bossId: 11820 },
+        ]);
+        expect(new Set(kaleidxscopeGates.map(gate => gate.shortName)).size).toBe(
+            kaleidxscopeGates.length
+        );
+        for (const gate of kaleidxscopeGates) {
+            expect(gate.lifePhases[0].startsAt).toBe(gate.openedAt);
+            for (const [index, current] of gate.lifePhases.entries()) {
+                if (index > 0) {
+                    expect(new Date(current.startsAt).getTime()).toBeGreaterThan(
+                        new Date(gate.lifePhases[index - 1].startsAt).getTime()
+                    );
+                }
+            }
+        }
+    });
+
+    it("uses 07:00 for new schedules and shifts the hope and final calendars by one day", () => {
+        const [prism, hope, final] = kaleidxscopeGates.slice(6);
+        expect(prism.lifePhases.map(phase => phase.startsAt)).toEqual(
+            ["01", "04", "07", "10", "14", "21"].map(day => `2026-10-${day}T07:00:00+08:00`)
+        );
+        expect(hope.lifePhases.map(phase => phase.startsAt)).toEqual(
+            ["02", "05", "08", "11", "15", "22"].map(day => `2026-10-${day}T07:00:00+08:00`)
+        );
+        expect(final.lifePhases.map(phase => phase.startsAt)).toEqual(
+            ["02", "04", "06", "07", "08", "12", "14", "16", "23"].map(
+                day => `2026-10-${day}T07:00:00+08:00`
+            )
+        );
+        expect(final.lifePhases.map(phase => [phase.difficulty, phase.life])).toEqual([
+            ["Re:MASTER", 1],
+            ["Re:MASTER", 5],
+            ["Re:MASTER", 10],
+            ["Re:MASTER", 30],
+            ["MASTER", 30],
+            ["MASTER", 50],
+            ["MASTER", 100],
+            ["EXPERT", "100 / 999"],
+            ["BASIC", 999],
+        ]);
+        expect(getKaleidxscopeCurrentPhase(hope, new Date("2026-10-02T06:59:59+08:00"))).toBeNull();
+        expect(getKaleidxscopeCurrentPhase(hope, new Date(hope.openedAt))).toMatchObject({
+            life: 1,
+        });
+        expect(
+            getKaleidxscopeCurrentPhase(hope, new Date("2026-10-05T06:59:59+08:00"))
+        ).toMatchObject({ life: 1 });
+        expect(
+            getKaleidxscopeCurrentPhase(hope, new Date("2026-10-05T07:00:00+08:00"))
+        ).toMatchObject({ life: 10 });
     });
 
     it("marks history, current life, and future phases at an exact switch boundary", () => {

@@ -50,6 +50,18 @@
                 props.gate.selectionPools.map(pool => [pool.track, resolveSongCharts(pool.songs)])
             )
     );
+    const pendingPoolSongs = computed(
+        () =>
+            new Map(
+                props.gate.selectionPools.map(pool => [
+                    pool.track,
+                    pool.songs
+                        .filter(song => !chartsByMusicId.value.has(song.musicId))
+                        .map(song => song.title)
+                        .join("、"),
+                ])
+            )
+    );
 
     const statusLabels: Record<KaleidxscopePhaseStatus, string> = {
         past: "历史",
@@ -93,13 +105,14 @@
         <section class="score-group">
             <div class="section-heading">
                 <h2 class="section-title">
-                    <span>钥匙曲目</span>
+                    <span>{{ gate.keyCondition.songs.length ? "钥匙曲目" : "进入条件" }}</span>
                     <span class="section-description key-description">
                         <span>{{ gate.keyCondition.summary }}</span>
                     </span>
                 </h2>
             </div>
             <ScoreSection
+                v-if="gate.keyCondition.songs.length"
                 title=""
                 :scores="keyCharts"
                 :chart-info-dialog="chartInfoDialog"
@@ -143,10 +156,16 @@
             <div class="section-heading">
                 <h2 class="section-title">
                     <span>TRACK {{ pool.track }}</span>
-                    <small v-if="pool.track !== 3" class="section-description">
+                    <small v-if="pool.track !== 3 && pool.description" class="section-description">
                         {{ formatSelectionPoolSource(pool) }}
                     </small>
                 </h2>
+                <p
+                    v-if="pendingPoolSongs.get(pool.track)"
+                    class="section-description pending-songs"
+                >
+                    曲库待更新：{{ pendingPoolSongs.get(pool.track) }}
+                </p>
             </div>
             <ScoreSection
                 title=""
@@ -160,6 +179,11 @@
 </template>
 
 <style scoped>
+    .pending-songs {
+        margin: 0 0 8px;
+        overflow-wrap: anywhere;
+    }
+
     .kaleidxscope-overview {
         width: 100%;
         padding-bottom: calc(56px + 1rem);

@@ -11,7 +11,7 @@ function makeSongs(entries: Array<[number, string]>): KaleidxscopeSong[] {
 function phase(
     startsAt: string,
     difficulty: KaleidxscopeLifePhase["difficulty"],
-    life: number
+    life: KaleidxscopeLifePhase["life"]
 ): KaleidxscopeLifePhase {
     return { startsAt, difficulty, life };
 }
@@ -303,15 +303,12 @@ const redTrack1 = makeSongs([
     [11016, "キリキリ舞Mine"],
     [11017, "福宿音屋魂音泉"],
     [11018, "Now or Never"],
-    [11015, "一か罰"],
     [11545, "隠密あんみつDX"],
     [11546, "地球"],
     [11547, "Churros Parlor"],
-    [11548, "超熊猫的周遊記（ワンダーパンダートラベラー）"],
     [11678, "RE:INCARNATED DRAGNER"],
     [11679, "Beginning together!"],
     [11680, "Shining Ray ～僕らの絆～"],
-    [11681, "DEVOTION"],
     [11811, "概して過誤"],
     [11812, "Unfinished Epic"],
 ]);
@@ -321,6 +318,26 @@ const redTrack2 = makeSongs([
     [11548, "超熊猫的周遊記（ワンダーパンダートラベラー）"],
     [11681, "DEVOTION"],
     [11813, "忙シー日"],
+]);
+
+const prismTrack1 = makeSongs([
+    [11310, "Trick tear"],
+    [11309, "前衛的Landscape"],
+    [11395, "Jouez Avec Moi?"],
+    [11393, "白花の天使"],
+    [11392, "Metamorphosism"],
+    [11534, "The Great Banquet"],
+    [11535, "Redemption"],
+    [11536, "Ether Second"],
+    [11815, "IMBRUED:FLUX"],
+    [11816, "砂の函"],
+]);
+
+const prismTrack2 = makeSongs([
+    [11311, "躯樹の墓守"],
+    [11394, "World's end loneliness"],
+    [11537, "Straight into the lights"],
+    [11817, "Amereistr"],
 ]);
 
 export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
@@ -532,6 +549,109 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
                 description: "固定门曲",
                 selection: "fixed",
                 songs: [song(11814, "FLΛME/FRΦST")],
+            },
+        ],
+    },
+    {
+        id: "prism",
+        name: "棱镜塔",
+        shortName: "棱镜塔",
+        region: "7sRef 区域 4",
+        openedAt: "2026-10-01T07:00:00+08:00",
+        keyCondition: {
+            summary: "通关全部六色门，并完成 7sRef 区域 4 第 27 格（2000km）",
+            songs: [],
+        },
+        lifePhases: [
+            phase("2026-10-01T07:00:00+08:00", "MASTER", 1),
+            phase("2026-10-04T07:00:00+08:00", "MASTER", 10),
+            phase("2026-10-07T07:00:00+08:00", "MASTER", 30),
+            phase("2026-10-10T07:00:00+08:00", "MASTER", 50),
+            phase("2026-10-14T07:00:00+08:00", "EXPERT", 100),
+            phase("2026-10-21T07:00:00+08:00", "BASIC", 999),
+        ],
+        selectionPools: [
+            {
+                track: 1,
+                description: "7sRef 区域 1～4 课题曲",
+                selection: "random",
+                songs: prismTrack1,
+            },
+            {
+                track: 2,
+                description: "7sRef 区域完美挑战曲",
+                selection: "random",
+                songs: prismTrack2,
+            },
+            {
+                track: 3,
+                description: "",
+                selection: "fixed",
+                songs: [song(11818, "World's end BLACKBOX")],
+            },
+        ],
+    },
+    {
+        id: "hope",
+        name: "希望之门",
+        shortName: "希望门",
+        region: "棱镜区域",
+        openedAt: "2026-10-02T07:00:00+08:00",
+        keyCondition: {
+            summary: "通关棱镜塔及 Phase #???（ERROR），无需 DX PASS 实体卡",
+            songs: [],
+        },
+        lifePhases: [
+            phase("2026-10-02T07:00:00+08:00", "MASTER", 1),
+            phase("2026-10-05T07:00:00+08:00", "MASTER", 10),
+            phase("2026-10-08T07:00:00+08:00", "MASTER", 30),
+            phase("2026-10-11T07:00:00+08:00", "MASTER", 50),
+            phase("2026-10-15T07:00:00+08:00", "EXPERT", 100),
+            phase("2026-10-22T07:00:00+08:00", "BASIC", 999),
+        ],
+        selectionPools: [
+            {
+                track: 1,
+                description: "",
+                selection: "fixed",
+                songs: [song(1736, "プリズム△▽リズム")],
+            },
+            {
+                track: 2,
+                description: "",
+                selection: "fixed",
+                songs: [song(10835, "Believe the Rainbow")],
+            },
+            { track: 3, description: "", selection: "fixed", songs: [song(1819, "AFTER PANDORA")] },
+        ],
+    },
+    {
+        id: "final",
+        name: "KALEIDXSCOPE · 最终相",
+        shortName: "最终相",
+        region: "FINAL SEQUENCE",
+        openedAt: "2026-10-02T07:00:00+08:00",
+        keyCondition: {
+            summary: "通关希望之门",
+            songs: [],
+        },
+        lifePhases: [
+            phase("2026-10-02T07:00:00+08:00", "Re:MASTER", 1),
+            phase("2026-10-04T07:00:00+08:00", "Re:MASTER", 5),
+            phase("2026-10-06T07:00:00+08:00", "Re:MASTER", 10),
+            phase("2026-10-07T07:00:00+08:00", "Re:MASTER", 30),
+            phase("2026-10-08T07:00:00+08:00", "MASTER", 30),
+            phase("2026-10-12T07:00:00+08:00", "MASTER", 50),
+            phase("2026-10-14T07:00:00+08:00", "MASTER", 100),
+            phase("2026-10-16T07:00:00+08:00", "EXPERT", "100 / 999"),
+            phase("2026-10-23T07:00:00+08:00", "BASIC", 999),
+        ],
+        selectionPools: [
+            {
+                track: 1,
+                description: "",
+                selection: "fixed",
+                songs: [song(11820, "Xaleid◆scopiX")],
             },
         ],
     },

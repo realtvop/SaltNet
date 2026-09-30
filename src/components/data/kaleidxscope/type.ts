@@ -1,6 +1,15 @@
-export type KaleidxscopeGateId = "blue" | "white" | "purple" | "black" | "yellow" | "red";
+export type KaleidxscopeGateId =
+    | "blue"
+    | "white"
+    | "purple"
+    | "black"
+    | "yellow"
+    | "red"
+    | "prism"
+    | "hope"
+    | "final";
 
-export type KaleidxscopeDifficulty = "BASIC" | "EXPERT" | "MASTER";
+export type KaleidxscopeDifficulty = "BASIC" | "EXPERT" | "MASTER" | "Re:MASTER";
 
 export interface KaleidxscopeSong {
     musicId: number;
@@ -11,7 +20,7 @@ export interface KaleidxscopeLifePhase {
     /** ISO 8601 timestamp. CN schedules use UTC+8. */
     startsAt: string;
     difficulty: KaleidxscopeDifficulty;
-    life: number;
+    life: number | `${number} / ${number}`;
 }
 
 export interface KaleidxscopeKeyCondition {
