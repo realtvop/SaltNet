@@ -592,13 +592,63 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         ],
     },
     {
+        id: "noise",
+        name: "乱码",
+        shortName: "乱码",
+        region: "棱镜区域",
+        description: "完成第三曲的乱码演出后获得希望钥匙；提前结束或跳过第三曲不会获得。",
+        openedAt: "2026-10-01T07:00:00+08:00",
+        keyCondition: {
+            summary: "通关棱镜塔",
+            songs: [],
+        },
+        lifePhases: [],
+        lifeNote:
+            "阶段配置：MASTER · LIFE 1 → 10 → 30 → 50，EXPERT · LIFE 100，BASIC · LIFE 999。各阶段生效日期待确认。",
+        selectionPools: [
+            {
+                track: 1,
+                description: "六色区域与 7sRef 区域完美挑战曲",
+                selection: "random",
+                songs: makeSongs([
+                    [11739, "184億回のマルチトニック"],
+                    [11744, "Deicide"],
+                    [11752, "雨露霜雪"],
+                    [11808, "Feel The Luv"],
+                    [11813, "忙シー日"],
+                    [11817, "Amereistr"],
+                ]),
+            },
+            {
+                track: 2,
+                description: "六色门与棱镜塔曲目",
+                selection: "random",
+                songs: makeSongs([
+                    [11740, "果ての空、僕らが見た光。"],
+                    [11745, "氷滅の135小節"],
+                    [11749, "有明/Ariake"],
+                    [11753, "宙天"],
+                    [11809, "Åntinomiε"],
+                    [11814, "FLΛME/FRΦST"],
+                    [11818, "World's end BLACKBOX"],
+                ]),
+            },
+            {
+                track: 3,
+                description: "",
+                selection: "fixed",
+                songs: [song(11879, "Xaleid◆scopiX (2)")],
+            },
+        ],
+    },
+    {
         id: "hope",
         name: "希望之门",
         shortName: "希望之门",
         region: "棱镜区域",
         openedAt: "2026-10-02T07:00:00+08:00",
         keyCondition: {
-            summary: "通关棱镜塔及乱码",
+            summary: "完成乱码阶段，获得希望钥匙",
             songs: [],
         },
         lifePhases: [

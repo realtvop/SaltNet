@@ -65,9 +65,10 @@ describe("KALEIDXSCOPE data", () => {
         }
     });
 
-    it("contains the tower, hope gate and single-track final sequence", () => {
+    it("contains the tower, noise stage, hope gate and single-track final sequence", () => {
         expect(kaleidxscopeGates.slice(6).map(gate => [gate.name, gate.shortName])).toEqual([
             ["棱镜塔", "棱镜塔"],
+            ["乱码", "乱码"],
             ["希望之门", "希望之门"],
             ["KALEIDXSCOPE", "KALEIDXSCOPE"],
         ]);
@@ -80,6 +81,7 @@ describe("KALEIDXSCOPE data", () => {
             }))
         ).toEqual([
             { id: "prism", keySongs: 0, poolSizes: [10, 4, 1], bossId: 11818 },
+            { id: "noise", keySongs: 0, poolSizes: [6, 7, 1], bossId: 11879 },
             { id: "hope", keySongs: 0, poolSizes: [1, 1, 1], bossId: 1819 },
             { id: "final", keySongs: 0, poolSizes: [1], bossId: 11820 },
         ]);
@@ -87,7 +89,11 @@ describe("KALEIDXSCOPE data", () => {
             kaleidxscopeGates.length
         );
         for (const gate of kaleidxscopeGates) {
-            expect(gate.lifePhases[0].startsAt).toBe(gate.openedAt);
+            if (gate.lifePhases.length) {
+                expect(gate.lifePhases[0].startsAt).toBe(gate.openedAt);
+            } else {
+                expect(gate.lifeNote).toBeTruthy();
+            }
             for (const [index, current] of gate.lifePhases.entries()) {
                 if (index > 0) {
                     expect(new Date(current.startsAt).getTime()).toBeGreaterThan(
@@ -98,8 +104,24 @@ describe("KALEIDXSCOPE data", () => {
         }
     });
 
+    it("keeps the noise calendar unconfirmed and distinguishes its special chart", () => {
+        const noise = getKaleidxscopeGate("乱码")!;
+        expect(noise.openedAt).toBe("2026-10-01T07:00:00+08:00");
+        expect(noise.keyCondition.summary).toBe("通关棱镜塔");
+        expect(noise.lifePhases).toEqual([]);
+        expect(noise.lifeNote).toContain("各阶段生效日期待确认");
+        expect(getKaleidxscopeCurrentPhase(noise, new Date(noise.openedAt))).toBeNull();
+        expect(getKaleidxscopeNextPhase(noise, new Date(noise.openedAt))).toBeNull();
+        expect(noise.selectionPools[2].songs).toEqual([
+            { musicId: 11879, title: "Xaleid◆scopiX (2)" },
+        ]);
+        expect(getKaleidxscopeGate("希望之门")!.keyCondition.summary).toBe(
+            "完成乱码阶段，获得希望钥匙"
+        );
+    });
+
     it("uses 07:00 for new schedules and shifts the hope and final calendars by one day", () => {
-        const [prism, hope, final] = kaleidxscopeGates.slice(6);
+        const [prism, , hope, final] = kaleidxscopeGates.slice(6);
         expect(prism.lifePhases.map(phase => phase.startsAt)).toEqual(
             ["01", "04", "07", "10", "14", "21"].map(day => `2026-10-${day}T07:00:00+08:00`)
         );

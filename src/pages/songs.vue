@@ -1447,6 +1447,9 @@
                 {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
                 {{ selectedKaleidxscopeNextPhase.life }}
             </span>
+            <span v-else-if="selectedKaleidxscopeGate?.lifeNote" class="challenge-life-rules">
+                血量日历待确认
+            </span>
             <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
                 最终阶段
             </span>

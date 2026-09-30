@@ -6,6 +6,7 @@ export type KaleidxscopeGateId =
     | "yellow"
     | "red"
     | "prism"
+    | "noise"
     | "hope"
     | "final";
 
@@ -40,6 +41,8 @@ export interface KaleidxscopeGate {
     name: string;
     shortName: string;
     region: string;
+    description?: string;
+    lifeNote?: string;
     openedAt: string;
     keyCondition: KaleidxscopeKeyCondition;
     lifePhases: KaleidxscopeLifePhase[];

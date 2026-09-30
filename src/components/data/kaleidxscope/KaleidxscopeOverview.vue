@@ -99,6 +99,7 @@
                 <p>
                     {{ gate.region }}
                 </p>
+                <p v-if="gate.description">{{ gate.description }}</p>
             </header>
         </div>
 
@@ -128,7 +129,8 @@
                     <h3>血量日历</h3>
                     <span>北京时间</span>
                 </div>
-                <mdui-list class="phase-list">
+                <p v-if="gate.lifeNote" class="calendar-note">{{ gate.lifeNote }}</p>
+                <mdui-list v-if="gate.lifePhases.length" class="phase-list">
                     <mdui-list-item
                         v-for="(lifePhase, index) in gate.lifePhases"
                         :key="lifePhase.startsAt"
@@ -179,6 +181,14 @@
 </template>
 
 <style scoped>
+    .calendar-note {
+        margin: 0;
+        padding: 0 16px 16px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: var(--mdui-typescale-body-small-size);
+        line-height: var(--mdui-typescale-body-small-line-height);
+    }
+
     .pending-songs {
         margin: 0 0 8px;
         overflow-wrap: anywhere;
