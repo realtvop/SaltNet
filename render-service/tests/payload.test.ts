@@ -16,6 +16,15 @@ describe("parseB50Payload", () => {
         expect(payload.playerName).toBe("Salt");
         expect(payload.sd[0].songId).toBe(123);
         expect(payload.showDxScore).toBe(true);
+
+        const pc50Payload = parseB50Payload({
+            playerName: "Salt",
+            modeLabel: "PC50",
+            showDxScore: false,
+            sd: [sampleChart()],
+            dx: [],
+        });
+        expect(pc50Payload.modeLabel).toBe("PC50");
     });
 
     it("allows empty optional display and achievement icon fields", () => {

@@ -604,6 +604,7 @@ const styles = {
         fontSize: 9.5,
         textAlign: "center",
         padding: "0 2.25px",
+        paddingTop: 1,
         lineHeight: 1,
     } satisfies CSSProperties,
     charttype: (chartType: string): CSSProperties => ({

@@ -135,8 +135,8 @@
                     </div>
                     <div class="rating-display" v-if="currentChartScore.deluxeRating">
                         <div class="rating-score-display">
-                            <div class="dx-score-value" v-if="currentChartScore.playCount">
-                                {{ currentChartScore.playCount }} 次
+                            <div class="dx-score-value" v-if="displayedPlayCount">
+                                {{ displayedPlayCount }}
                             </div>
                             <div class="dx-score-value">
                                 {{ currentChartScore.deluxeRating }}
@@ -429,6 +429,140 @@
                     </mdui-list-item>
                 </mdui-list>
             </div>
+
+            <section
+                v-if="currentUser?.uid && currentChartScore?.lastChangedAt"
+                class="score-history-section"
+            >
+                <mdui-collapse>
+                    <mdui-collapse-item
+                        ref="scoreHistoryCollapseItemRef"
+                        trigger=".score-history-toggle"
+                        @open="openScoreHistory"
+                        @close="scoreHistoryExpanded = false"
+                    >
+                        <div slot="header" class="score-history-header">
+                            <h3>成绩历史</h3>
+                            <div class="score-history-summary">
+                                <mdui-dropdown v-if="scoreHistoryExpanded" @open.stop @close.stop>
+                                    <mdui-chip slot="trigger" end-icon="keyboard_arrow_down">
+                                        {{
+                                            includePlayCountOnlyHistory
+                                                ? "包含仅游玩次数"
+                                                : "仅成绩变动"
+                                        }}
+                                    </mdui-chip>
+                                    <mdui-menu>
+                                        <mdui-menu-item
+                                            :value="false"
+                                            @click="setScoreHistoryFilter(false)"
+                                            :style="{
+                                                backgroundColor: !includePlayCountOnlyHistory
+                                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                                    : '',
+                                            }"
+                                            :icon="!includePlayCountOnlyHistory ? 'check' : ''"
+                                        >
+                                            仅成绩变动
+                                        </mdui-menu-item>
+                                        <mdui-menu-item
+                                            :value="true"
+                                            @click="setScoreHistoryFilter(true)"
+                                            :style="{
+                                                backgroundColor: includePlayCountOnlyHistory
+                                                    ? 'rgba(var(--mdui-color-primary),12%)'
+                                                    : '',
+                                            }"
+                                            :icon="includePlayCountOnlyHistory ? 'check' : ''"
+                                        >
+                                            包含仅游玩次数
+                                        </mdui-menu-item>
+                                    </mdui-menu>
+                                </mdui-dropdown>
+                                <mdui-button-icon
+                                    class="score-history-toggle"
+                                    :icon="`keyboard_arrow_${scoreHistoryExpanded ? 'up' : 'down'}`"
+                                    :aria-label="
+                                        scoreHistoryExpanded ? '折叠成绩历史' : '展开成绩历史'
+                                    "
+                                ></mdui-button-icon>
+                            </div>
+                        </div>
+                        <div class="score-history-content">
+                            <div v-if="scoreHistoryLoading" class="score-history-state">
+                                <mdui-circular-progress></mdui-circular-progress>
+                                <span>正在加载成绩历史…</span>
+                            </div>
+                            <div v-else-if="scoreHistoryError" class="score-history-state">
+                                <span>{{ scoreHistoryError }}</span>
+                                <mdui-button variant="text" @click.stop="reloadScoreHistory">
+                                    重试
+                                </mdui-button>
+                            </div>
+                            <div v-else-if="scoreHistoryEntries.length" class="score-history-list">
+                                <article
+                                    v-for="entry in scoreHistoryEntries"
+                                    :key="entry.event.id"
+                                    class="score-history-event"
+                                >
+                                    <div class="score-history-event-header">
+                                        <strong>
+                                            {{
+                                                entry.event.kind === "initial"
+                                                    ? "最早已知成绩"
+                                                    : formatScoreHistorySource(entry.event.source)
+                                            }}
+                                        </strong>
+                                        <time>
+                                            {{ formatScoreChangedAt(entry.event.observedAt) }}
+                                        </time>
+                                    </div>
+                                    <div
+                                        v-for="change in getScoreHistoryDisplayChanges(entry)"
+                                        :key="change.label"
+                                        class="score-history-change"
+                                    >
+                                        <span>{{ change.label }}</span>
+                                        <span>
+                                            <template v-if="change.before !== null">
+                                                {{ change.before }} →
+                                            </template>
+                                            {{ change.after }}
+                                        </span>
+                                    </div>
+                                </article>
+                                <mdui-button
+                                    v-if="scoreHistoryNextOffset !== null"
+                                    variant="text"
+                                    @click.stop="loadMoreScoreHistory"
+                                >
+                                    加载更多
+                                </mdui-button>
+                            </div>
+                            <article
+                                v-else-if="currentChartScore.lastChangedAt"
+                                class="score-history-event"
+                            >
+                                <div class="score-history-event-header">
+                                    <strong>最早已知成绩</strong>
+                                    <time>
+                                        {{ formatScoreChangedAt(currentChartScore.lastChangedAt) }}
+                                    </time>
+                                </div>
+                                <div
+                                    v-for="change in getCurrentScoreHistoryDisplayChanges()"
+                                    :key="change.label"
+                                    class="score-history-change"
+                                >
+                                    <span>{{ change.label }}</span>
+                                    <span>{{ change.after }}</span>
+                                </div>
+                            </article>
+                            <div v-else class="score-history-state">将在下次成功更新后开始记录</div>
+                        </div>
+                    </mdui-collapse-item>
+                </mdui-collapse>
+            </section>
         </div>
 
         <h3 v-if="chart?.music && chart?.music.info.aliases && chart.music.info.aliases.length">
@@ -563,6 +697,7 @@
     import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
     import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
     import { getChartDifficultyBadgeLabel } from "./difficulty";
+    import { formatScoreChangedAt } from "./recent";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";
@@ -578,6 +713,16 @@
     } from "@/components/data/collection";
     import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
     import { getRelatedCollectionsForChart } from "@/components/data/collection/relatedCollections";
+    import {
+        formatPlayCount,
+        getChartPlayCountEstimate,
+        getScoreHistoryChartKey,
+        getScoreHistoryDisplayChanges,
+        getScoreHistoryPage,
+        formatScoreHistorySource,
+        type PlayCountEstimate,
+        type ScoreHistoryTimelineEntry,
+    } from "@/components/data/user/scoreHistory";
 
     const shared = useShared();
 
@@ -613,6 +758,15 @@
     const expandedChartId = ref<number | null>(null);
     const showScoreCalculator = ref(false);
     const chartBasicInfoExpanded = ref(false);
+    const scoreHistoryExpanded = ref(false);
+    const scoreHistoryCollapseItemRef = ref<any>(null);
+    const scoreHistoryEntries = ref<ScoreHistoryTimelineEntry[]>([]);
+    const scoreHistoryNextOffset = ref<number | null>(null);
+    const scoreHistoryLoading = ref(false);
+    const scoreHistoryError = ref<string | null>(null);
+    const includePlayCountOnlyHistory = ref(false);
+    const currentPlayCountEstimate = ref<PlayCountEstimate | null>(null);
+    let scoreHistoryRequestToken = 0;
     const relatedCollectionsExpanded = ref(false);
     const relatedCollectionsCollapseItemRef = ref<any>(null);
     const relatedCollectionDialog = ref<{ open: boolean; collection: Collection | null }>({
@@ -627,6 +781,7 @@
 
     // 对话框打开动画完成后，滚动内容到顶部
     function scrollDialogToTopAndMarkClosed(event: Event) {
+        resetScoreHistoryView();
         markDialogClosed(event);
         emit("update:open", false);
         if (dialogRef.value) {
@@ -652,10 +807,16 @@
     watch(
         () => props.open,
         async newValue => {
-            if (newValue) relatedCollectionsExpanded.value = false;
+            if (newValue) {
+                relatedCollectionsExpanded.value = false;
+                scoreHistoryExpanded.value = false;
+            }
             await nextTick();
             if (newValue && relatedCollectionsCollapseItemRef.value) {
                 relatedCollectionsCollapseItemRef.value.open = false;
+            }
+            if (newValue && scoreHistoryCollapseItemRef.value) {
+                scoreHistoryCollapseItemRef.value.open = false;
             }
             if (dialogRef.value) {
                 dialogRef.value.open = newValue;
@@ -784,6 +945,137 @@
         if (!score) return null;
         return chartScoreFromDF(score);
     });
+    const currentDetailedScore = computed(() => {
+        if (!currentUser.value?.data.detailed || !currentChart.value) return null;
+        return (
+            findDetailedScoreForChart(currentUser.value.data.detailed, currentChart.value) ?? null
+        );
+    });
+    const currentScoreHistoryChartKey = computed(() => {
+        if (currentDetailedScore.value) return getScoreHistoryChartKey(currentDetailedScore.value);
+        if (!currentChart.value) return null;
+        return `${currentChart.value.music.id}-${currentChart.value.info.grade}`;
+    });
+
+    function resetScoreHistoryView(): void {
+        scoreHistoryRequestToken++;
+        scoreHistoryExpanded.value = false;
+        scoreHistoryEntries.value = [];
+        scoreHistoryNextOffset.value = null;
+        scoreHistoryLoading.value = false;
+        scoreHistoryError.value = null;
+        if (scoreHistoryCollapseItemRef.value) scoreHistoryCollapseItemRef.value.open = false;
+    }
+
+    async function loadScoreHistory(offset = 0): Promise<void> {
+        const userUid = currentUser.value?.uid;
+        const chartKey = currentScoreHistoryChartKey.value;
+        if (!userUid || !chartKey) return;
+        const token = ++scoreHistoryRequestToken;
+        scoreHistoryLoading.value = true;
+        scoreHistoryError.value = null;
+        try {
+            const page = await getScoreHistoryPage(userUid, chartKey, {
+                offset,
+                includePlayCountOnly: includePlayCountOnlyHistory.value,
+            });
+            if (token !== scoreHistoryRequestToken) return;
+            scoreHistoryEntries.value =
+                offset === 0 ? page.entries : [...scoreHistoryEntries.value, ...page.entries];
+            scoreHistoryNextOffset.value = page.nextOffset;
+        } catch (error) {
+            if (token !== scoreHistoryRequestToken) return;
+            console.error("Failed to load score history:", error);
+            scoreHistoryError.value = "成绩历史加载失败";
+        } finally {
+            if (token === scoreHistoryRequestToken) scoreHistoryLoading.value = false;
+        }
+    }
+
+    function openScoreHistory(): void {
+        scoreHistoryExpanded.value = true;
+        if (!scoreHistoryEntries.value.length && !scoreHistoryLoading.value)
+            void loadScoreHistory();
+    }
+
+    function reloadScoreHistory(): void {
+        void loadScoreHistory();
+    }
+
+    function loadMoreScoreHistory(): void {
+        if (scoreHistoryNextOffset.value !== null)
+            void loadScoreHistory(scoreHistoryNextOffset.value);
+    }
+
+    function setScoreHistoryFilter(includePlayCountOnly: boolean): void {
+        if (includePlayCountOnlyHistory.value === includePlayCountOnly) return;
+        includePlayCountOnlyHistory.value = includePlayCountOnly;
+        scoreHistoryEntries.value = [];
+        scoreHistoryNextOffset.value = null;
+        if (scoreHistoryExpanded.value) {
+            void loadScoreHistory();
+        }
+    }
+
+    const displayedPlayCount = computed(() => {
+        if (currentPlayCountEstimate.value && currentPlayCountEstimate.value.playCount !== null) {
+            return currentPlayCountEstimate.value.displayText;
+        }
+        if (currentChartScore.value?.playCount) {
+            return formatPlayCount(
+                currentChartScore.value.playCount,
+                currentChartScore.value.isPlayCountEstimated
+            );
+        }
+        return null;
+    });
+
+    watch(
+        [() => currentUser.value?.uid, currentScoreHistoryChartKey],
+        async ([userUid, chartKey]) => {
+            resetScoreHistoryView();
+            currentPlayCountEstimate.value = null;
+            if (userUid && chartKey) {
+                const estimate = await getChartPlayCountEstimate(
+                    userUid,
+                    chartKey,
+                    currentChartScore.value?.playCount
+                );
+                if (
+                    currentUser.value?.uid === userUid &&
+                    currentScoreHistoryChartKey.value === chartKey
+                ) {
+                    currentPlayCountEstimate.value = estimate;
+                }
+            }
+        },
+        { immediate: true }
+    );
+
+    function getCurrentScoreHistoryDisplayChanges() {
+        if (!currentChartScore.value) return [];
+        const score = currentChartScore.value;
+        return [
+            {
+                label: "达成率",
+                before: null,
+                after:
+                    typeof score.achievements === "number"
+                        ? `${score.achievements.toFixed(4)}%`
+                        : "未知",
+            },
+            { label: "DX 分", before: null, after: String(score.deluxeScore) },
+            { label: "FC", before: null, after: String(score.comboStatus || "无").toUpperCase() },
+            { label: "FS", before: null, after: String(score.syncStatus || "无").toUpperCase() },
+            {
+                label: "游玩次数",
+                before: null,
+                after:
+                    displayedPlayCount.value ??
+                    (score.playCount === undefined ? "未知" : `${score.playCount} 次`),
+            },
+        ];
+    }
 
     const noteCounts = computed(() => {
         const notes = (currentChart.value?.info.notes ?? []) as Array<number | undefined>;
@@ -1064,10 +1356,6 @@
     const dxScoreStarsImg = computed(() => {
         return getDeluxeScoreStarsImg(dxScoreStarsCount.value);
     });
-
-    function formatScoreChangedAt(timestamp: number): string {
-        return new Date(timestamp).toLocaleString();
-    }
 
     const isSavedInAnyFavoriteList = computed(() => {
         if (!currentChart.value) return false;
@@ -1851,6 +2139,77 @@
         padding-top: 4px;
         font-weight: 600;
         color: rgb(var(--mdui-color-primary));
+    }
+
+    .score-history-section {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .score-history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .score-history-header h3 {
+        margin: 0;
+    }
+
+    .score-history-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-right: 8px;
+    }
+
+    .score-history-content {
+        padding-top: 10px;
+    }
+
+    .score-history-event-header,
+    .score-history-change {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .score-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .score-history-event {
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: rgb(var(--mdui-color-surface-container));
+    }
+
+    .score-history-event-header {
+        margin-bottom: 0.5rem;
+    }
+
+    .score-history-event-header time,
+    .score-history-change {
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: 0.875rem;
+    }
+
+    .score-history-change + .score-history-change {
+        margin-top: 0.25rem;
+    }
+
+    .score-history-state {
+        display: flex;
+        min-height: 5rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        text-align: center;
     }
 
     /* 移除折叠头部布局样式，保留需要的通用样式 */

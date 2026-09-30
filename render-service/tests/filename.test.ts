@@ -15,6 +15,14 @@ describe("B50 download filename", () => {
                 timestamp,
             })
         ).toBe("拟合 B50_SaltNet_Salt_User_01_2026-07-16_15-07.png");
+
+        expect(
+            createB50DownloadFilename({
+                modeLabel: "PC50",
+                playerName: "Salt",
+                timestamp,
+            })
+        ).toBe("PC50_SaltNet_Salt_2026-07-16_15-07.png");
     });
 
     it("falls back for blank or unusable filename parts", () => {

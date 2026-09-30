@@ -2,6 +2,7 @@ import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "./type"
 import type { ChartStats } from "@/components/integrations/diving-fish/type";
 import { ChartType, MusicGenre, MusicOrigin } from "@/components/data/maiTypes";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
+import { indexMusicSearchData } from "./search";
 
 export const SALTMETA_NEXT_COMPACTED_URL =
     "https://meta.salt.realtvop.top/meta.next.compacted.json";
@@ -443,8 +444,8 @@ export function convertSaltMetaNextToSavedMusicList(
         }
     }
 
-    return {
+    return indexMusicSearchData({
         musicList,
         chartList,
-    };
+    });
 }

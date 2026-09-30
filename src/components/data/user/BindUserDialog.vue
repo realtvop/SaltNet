@@ -139,6 +139,7 @@
     import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
     import { useShared } from "@/components/app/shared";
+    import { createUserUid } from "@/components/data/user/scoreHistory";
 
     const props = defineProps<{
         modelValue: boolean;
@@ -328,6 +329,7 @@
         let targetIndex: number;
         if (props.isEditingNewUser) {
             shared.users.push({
+                uid: createUserUid(),
                 remark: localUser.value.remark ?? null,
                 divingFish: {
                     name: localUser.value.divingFish?.name ?? null,

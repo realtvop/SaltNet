@@ -12,6 +12,10 @@
         maimaiVersionsCN,
         isMusicDataLoading,
     } from "@/components/data/music";
+    import {
+        createMusicSearchQuery,
+        matchesMusicSearchIndex,
+    } from "@/components/data/music/search";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
@@ -33,16 +37,28 @@
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@/components/data/chart/difficulty";
+    import {
+        DIFFICULTY_TABS,
+        formatScoreChangedAt,
+        getDifficultyTabs,
+        getRecentCharts,
+        hasAnyScoreChangedTime,
+        sortRecentGroupCharts,
+    } from "@/components/data/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
+    import {
+        formatPlayCount,
+        getScoreHistoryChartKey,
+        getUserPlayCountEstimates,
+    } from "@/components/data/user/scoreHistory";
     import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
     import type { Course } from "@/components/data/course";
     import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
     import {
         formatKaleidxscopeDateTime,
         getKaleidxscopeCurrentPhase,
-        getKaleidxscopeGate,
         getKaleidxscopeNextPhase,
-        kaleidxscopeGates,
+        getOpenedKaleidxscopeGates,
     } from "@/components/data/kaleidxscope";
     import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
@@ -71,8 +87,7 @@
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
-    // prettier-ignore
-    const difficulties = [ "ALL","1","2","3","4","5","6","7","7+","8","8+","9","9+","10","10+","11","11+","12","12+","13","13+","14","14+","15", ];
+    const difficulties = DIFFICULTY_TABS;
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref<{
@@ -116,16 +131,25 @@
         handleSelectChange(event, versionGroupBy);
     }
 
+    const hasRecentCharts = computed(() => hasAnyScoreChangedTime(shared.chartsSort?.charts));
+
     const category = ref<Category | VersionPlateCategory>(Category.InGame);
+    const kaleidxscopeNow = ref(new Date());
+    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
+    const openedKaleidxscopeGates = computed(() =>
+        getOpenedKaleidxscopeGates(kaleidxscopeNow.value)
+    );
     function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
         if (tabCategory === Category.InGame) {
-            if (!shared.appSettings.reverseSongsDifficultyAndVersionTabs) return difficulties;
-            return [difficulties[0], ...difficulties.slice(1).reverse()];
+            return getDifficultyTabs(
+                !!shared.appSettings.reverseSongsDifficultyAndVersionTabs,
+                hasRecentCharts.value
+            );
         }
         if (tabCategory === Category.Banquet) return banquetDifficulties;
         if (tabCategory === Category.Favorite) return shared.favorites.map(f => f.name);
         if (tabCategory === Category.Kaleidxscope) {
-            const gateTabs = kaleidxscopeGates.map(gate => gate.shortName);
+            const gateTabs = openedKaleidxscopeGates.value.map(gate => gate.shortName);
             return shared.appSettings.reverseSongsDifficultyAndVersionTabs
                 ? gateTabs.reverse()
                 : gateTabs;
@@ -171,10 +195,12 @@
 
     const selectedKaleidxscopeGate = computed(() => {
         if (category.value !== Category.Kaleidxscope) return null;
-        return getKaleidxscopeGate(selectedDifficulty.value);
+        return (
+            openedKaleidxscopeGates.value.find(
+                gate => gate.shortName === selectedDifficulty.value
+            ) ?? null
+        );
     });
-    const kaleidxscopeNow = ref(new Date());
-    let kaleidxscopeClock: ReturnType<typeof setInterval> | undefined;
     const selectedKaleidxscopeCurrentPhase = computed(() => {
         const gate = selectedKaleidxscopeGate.value;
         return gate ? getKaleidxscopeCurrentPhase(gate, kaleidxscopeNow.value) : null;
@@ -348,11 +374,27 @@
         const charts: Chart[] = [];
         const sourceCharts = Object.values(musicInfo.chartList) as Chart[];
         const detailedLookup = createDetailedScoreLookup(userData?.data?.detailed);
+        const playCountEstimates = userData?.uid
+            ? await getUserPlayCountEstimates(userData.uid, userData.data?.detailed)
+            : null;
+        if (requestId !== loadChartsRequestId) return;
+
         for (const [index, chart] of sourceCharts.entries()) {
             if (requestId !== loadChartsRequestId) return;
             // 仅在用户成绩字段齐全且类型匹配时赋值，否则保持原结构
             let chartScore: Chart["score"] = undefined;
-            if (detailedLookup) chartScore = toChartScore(detailedLookup.findScoreForChart(chart));
+            if (detailedLookup) {
+                const record = detailedLookup.findScoreForChart(chart);
+                chartScore = toChartScore(record);
+                if (chartScore && playCountEstimates && record) {
+                    const chartKey = getScoreHistoryChartKey(record);
+                    const estimate = playCountEstimates.get(chartKey);
+                    if (estimate && estimate.playCount !== null) {
+                        chartScore.playCount = estimate.playCount;
+                        chartScore.isPlayCountEstimated = estimate.isEstimated;
+                    }
+                }
+            }
             charts.push({
                 ...chart,
                 score: chartScore,
@@ -405,6 +447,8 @@
                 filteredCharts = shared.chartsSort.charts.filter(
                     (chart: Chart) => chart.info.grade === difficultyFilter.value
                 );
+            } else if (selectedDifficulty.value === "最近") {
+                filteredCharts = getRecentCharts(shared.chartsSort.charts);
             } else {
                 filteredCharts = shared.chartsSort.charts.filter(
                     (chart: Chart) => chart.info.level === selectedDifficulty.value
@@ -546,18 +590,12 @@
         let finalFilteredCharts = chartsWithOriginalIndex;
 
         if (query.value) {
+            const searchTerms = createMusicSearchQuery(query.value);
             finalFilteredCharts = chartsWithOriginalIndex.filter(chart => {
                 const chartData = chart.score;
                 return (
-                    // 曲名 曲师 谱师 别名
-                    chart.music.info.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.music.info.artist.toLowerCase().includes(query.value.toLowerCase()) ||
-                    chart.info.charter.toLowerCase().includes(query.value.toLowerCase()) ||
-                    (chart.music.info.aliases &&
-                        chart.music.info.aliases
-                            .join()
-                            .toLowerCase()
-                            .includes(query.value.toLowerCase())) ||
+                    matchesMusicSearchIndex(chart.music.info.searchIndex, searchTerms) ||
+                    matchesMusicSearchIndex(chart.info.searchIndex, searchTerms) ||
                     chart.music.info.id.toString() === query.value ||
                     (chartData &&
                         // 达成率 fc sync
@@ -607,6 +645,20 @@
     function openChartInfoDialog(chart: Chart) {
         chartInfoDialog.value.chart = chart;
         chartInfoDialog.value.open = !chartInfoDialog.value.open;
+    }
+
+    function getCardRating(chart: Chart): string | number | undefined {
+        const setting = shared.appSettings.songsCardTopRightDisplay;
+        if (setting === "无") {
+            return undefined;
+        }
+        if (setting === "游玩次数") {
+            if (!chart.score?.playCount) return undefined;
+            return formatPlayCount(chart.score.playCount, chart.score.isPlayCountEstimated);
+        }
+        const diff = chart.score?.index?.difficult;
+        if (!diff) return undefined;
+        return `${diff.index}/${diff.total + 1}`;
     }
 
     const itemsToRender = computed(() => {
@@ -779,16 +831,22 @@
     };
 
     const groupedItems = computed(() => {
+        const isRecent = category.value === Category.InGame && selectedDifficulty.value === "最近";
         const isInGame =
             category.value === Category.InGame &&
             groupBy.value !== "none" &&
-            selectedDifficulty.value !== "ALL";
+            selectedDifficulty.value !== "ALL" &&
+            selectedDifficulty.value !== "最近";
         const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
         const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
 
-        if (!isInGame && !isVersion && !isFavorite) return null;
+        if (!isRecent && !isInGame && !isVersion && !isFavorite) return null;
 
-        const activeGroupBy = isVersion || isFavorite ? versionGroupBy.value : groupBy.value;
+        const activeGroupBy = isRecent
+            ? "recent"
+            : isVersion || isFavorite
+              ? versionGroupBy.value
+              : groupBy.value;
 
         const charts = itemsToRender.value;
         if (!charts.length) return null;
@@ -796,7 +854,9 @@
         const groups: Record<string, Chart[]> = {};
         charts.forEach(chart => {
             let key: string;
-            if (activeGroupBy === "level") {
+            if (activeGroupBy === "recent") {
+                key = String(chart.score?.lastChangedAt ?? 0);
+            } else if (activeGroupBy === "level") {
                 key = chart.info.level;
             } else if (activeGroupBy === "version") {
                 key = chart.music.info.from as unknown as string;
@@ -816,6 +876,7 @@
         });
 
         const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
+            if (activeGroupBy === "recent") return Number(b[0]) - Number(a[0]);
             if (activeGroupBy === "level") {
                 const ia = difficulties.indexOf(a[0]);
                 const ib = difficulties.indexOf(b[0]);
@@ -856,15 +917,24 @@
             .sort(sortFn)
             .map(([key, items]) => {
                 let title: string;
-                if (displayNames) title = displayNames[key] || key;
-                else if (activeGroupBy === "difficulty")
+                if (activeGroupBy === "recent") {
+                    title = formatScoreChangedAt(Number(key));
+                } else if (displayNames) {
+                    title = displayNames[key] || key;
+                } else if (activeGroupBy === "difficulty") {
                     title = getChartDifficultyFullLabel(Number(key));
-                else title = key;
+                } else {
+                    title = key;
+                }
+
+                const sortedItems =
+                    activeGroupBy === "recent" ? sortRecentGroupCharts(items) : items;
+
                 return {
                     title,
-                    count: items.length,
-                    stats: countChartStats(items),
-                    items,
+                    count: sortedItems.length,
+                    stats: countChartStats(sortedItems),
+                    items: sortedItems,
                 };
             });
     });
@@ -945,6 +1015,19 @@
         groupBy.value = "none";
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: "instant" });
+    });
+
+    watch(hasRecentCharts, hasRecent => {
+        if (!hasRecent && selectedTab.value[Category.InGame] === "最近") {
+            selectedTab.value[Category.InGame] = getTabsForCategory(Category.InGame)[0] || "ALL";
+        }
+    });
+
+    watch(openedKaleidxscopeGates, gates => {
+        if (!gates.some(gate => gate.shortName === selectedTab.value[Category.Kaleidxscope])) {
+            selectedTab.value[Category.Kaleidxscope] =
+                getTabsForCategory(Category.Kaleidxscope)[0] || "";
+        }
     });
 
     watch(category, newCategory => {
@@ -1377,6 +1460,9 @@
                 {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
                 {{ selectedKaleidxscopeNextPhase.life }}
             </span>
+            <span v-else-if="selectedKaleidxscopeGate?.lifeNote" class="challenge-life-rules">
+                血量日历待确认
+            </span>
             <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
                 最终阶段
             </span>
@@ -1408,6 +1494,20 @@
                     {{ option.label }}
                 </mdui-menu-item>
             </mdui-select>
+            <mdui-text-field
+                clearable
+                icon="search"
+                label="搜索"
+                placeholder="曲名 别名 id 曲师 谱师"
+                @input="query = $event.target.value"
+                style="flex: 1"
+                id="search-input"
+            ></mdui-text-field>
+        </div>
+        <div
+            v-else-if="category === Category.InGame && selectedDifficulty === '最近'"
+            class="search-input"
+        >
             <mdui-text-field
                 clearable
                 icon="search"
@@ -1586,11 +1686,12 @@
                             <span
                                 class="stats-info"
                                 v-else-if="
-                                    group.stats.sss ||
-                                    group.stats.sssp ||
-                                    group.stats.fc ||
-                                    group.stats.ap ||
-                                    group.stats.fsdx
+                                    selectedDifficulty !== '最近' &&
+                                    (group.stats.sss ||
+                                        group.stats.sssp ||
+                                        group.stats.fc ||
+                                        group.stats.ap ||
+                                        group.stats.fsdx)
                                 "
                             >
                                 <span class="stat-item" v-if="group.stats.sss">
@@ -1617,6 +1718,7 @@
                         :chartInfoDialog="chartInfoDialog"
                         hideStats
                         hideTitle
+                        :getRating="getCardRating"
                     >
                         <template #prepend>
                             <ScoreCard
@@ -1698,7 +1800,8 @@
                         <ScoreCard
                             v-if="
                                 !(category in versionPlates) &&
-                                (category !== Category.Favorite || shared.favorites.length > 0)
+                                (category !== Category.Favorite || shared.favorites.length > 0) &&
+                                selectedDifficulty !== '最近'
                             "
                             cover="/icons/random.png"
                             :data="randomChartDummy"
@@ -1720,6 +1823,7 @@
                                 @click="openChartInfoDialog(chart)"
                                 :compact="compactMode"
                                 :compact-filter="compactFilter"
+                                :rating="getCardRating(chart)"
                             />
                         </div>
                     </template>

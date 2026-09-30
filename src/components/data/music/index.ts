@@ -9,6 +9,7 @@ import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type
 import type { MaimaidxRegion } from "./type";
 import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
+import { indexMusicSearchData, MUSIC_SEARCH_INDEX_VERSION } from "./search";
 
 // Cache key for localForage
 const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v4";
@@ -48,6 +49,7 @@ async function saveToCache(
             musicList: data.musicList,
             chartList: data.chartList,
             metadata: musicMetadataState ?? undefined,
+            searchIndexVersion: MUSIC_SEARCH_INDEX_VERSION,
             metadataUpdatedAt,
             region,
             cachedAt: Date.now(),
@@ -72,10 +74,16 @@ function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
         }
     }
 
-    return {
+    const data = {
         musicList: cached.musicList,
         chartList,
     };
+
+    if (cached.searchIndexVersion !== MUSIC_SEARCH_INDEX_VERSION) {
+        indexMusicSearchData(data);
+    }
+
+    return data;
 }
 
 function applyMusicMetadata(metadata: MusicMetadataState | null): void {
@@ -101,6 +109,13 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
+            if (cached.searchIndexVersion !== MUSIC_SEARCH_INDEX_VERSION) {
+                saveToCache(
+                    musicData,
+                    region,
+                    cached.metadataUpdatedAt ?? cached.cachedAt ?? Date.now()
+                );
+            }
             applyMusicMetadata(cached.metadata ?? null);
             chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;
@@ -133,6 +148,13 @@ async function loadMusicData(forceRefresh: boolean = false): Promise<SavedMusicL
         const cached = await loadFromCache();
         if (cached && cached.region === region) {
             musicData = restoreCachedMusicData(cached);
+            if (cached.searchIndexVersion !== MUSIC_SEARCH_INDEX_VERSION) {
+                saveToCache(
+                    musicData,
+                    region,
+                    cached.metadataUpdatedAt ?? cached.cachedAt ?? Date.now()
+                );
+            }
             applyMusicMetadata(cached.metadata ?? null);
             chartMetadataUpdatedAt.value = cached.metadataUpdatedAt ?? cached.cachedAt ?? null;
             currentRegion = region;

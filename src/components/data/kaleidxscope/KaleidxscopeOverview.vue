@@ -50,6 +50,20 @@
                 props.gate.selectionPools.map(pool => [pool.track, resolveSongCharts(pool.songs)])
             )
     );
+    const pendingPoolSongs = computed(
+        () =>
+            new Map(
+                props.gate.selectionPools.map(pool => [
+                    pool.track,
+                    pool.unlistedDescription
+                        ? ""
+                        : pool.songs
+                              .filter(song => !chartsByMusicId.value.has(song.musicId))
+                              .map(song => song.title)
+                              .join("、"),
+                ])
+            )
+    );
 
     const statusLabels: Record<KaleidxscopePhaseStatus, string> = {
         past: "历史",
@@ -87,19 +101,21 @@
                 <p>
                     {{ gate.region }}
                 </p>
+                <p v-if="gate.description">{{ gate.description }}</p>
             </header>
         </div>
 
         <section class="score-group">
             <div class="section-heading">
                 <h2 class="section-title">
-                    <span>钥匙曲目</span>
+                    <span>{{ gate.keyCondition.songs.length ? "钥匙曲目" : "进入条件" }}</span>
                     <span class="section-description key-description">
                         <span>{{ gate.keyCondition.summary }}</span>
                     </span>
                 </h2>
             </div>
             <ScoreSection
+                v-if="gate.keyCondition.songs.length"
                 title=""
                 :scores="keyCharts"
                 :chart-info-dialog="chartInfoDialog"
@@ -115,7 +131,8 @@
                     <h3>血量日历</h3>
                     <span>北京时间</span>
                 </div>
-                <mdui-list class="phase-list">
+                <p v-if="gate.lifeNote" class="calendar-note">{{ gate.lifeNote }}</p>
+                <mdui-list v-if="gate.lifePhases.length" class="phase-list">
                     <mdui-list-item
                         v-for="(lifePhase, index) in gate.lifePhases"
                         :key="lifePhase.startsAt"
@@ -143,12 +160,22 @@
             <div class="section-heading">
                 <h2 class="section-title">
                     <span>TRACK {{ pool.track }}</span>
-                    <small v-if="pool.track !== 3" class="section-description">
+                    <small v-if="pool.track !== 3 && pool.description" class="section-description">
                         {{ formatSelectionPoolSource(pool) }}
                     </small>
                 </h2>
+                <p v-if="pool.unlistedDescription" class="section-description pending-songs">
+                    {{ pool.unlistedDescription }}
+                </p>
+                <p
+                    v-if="pendingPoolSongs.get(pool.track)"
+                    class="section-description pending-songs"
+                >
+                    曲库待更新：{{ pendingPoolSongs.get(pool.track) }}
+                </p>
             </div>
             <ScoreSection
+                v-if="!pool.unlistedDescription"
                 title=""
                 :scores="selectionPoolCharts.get(pool.track) ?? []"
                 :chart-info-dialog="chartInfoDialog"
@@ -160,6 +187,19 @@
 </template>
 
 <style scoped>
+    .calendar-note {
+        margin: 0;
+        padding: 0 16px 16px;
+        color: rgb(var(--mdui-color-on-surface-variant));
+        font-size: var(--mdui-typescale-body-small-size);
+        line-height: var(--mdui-typescale-body-small-line-height);
+    }
+
+    .pending-songs {
+        margin: 0 0 8px;
+        overflow-wrap: anywhere;
+    }
+
     .kaleidxscope-overview {
         width: 100%;
         padding-bottom: calc(56px + 1rem);

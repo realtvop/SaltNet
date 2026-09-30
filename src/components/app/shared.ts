@@ -6,13 +6,19 @@ import type { ChartsSortCached, FavoriteList, User } from "@/components/data/use
 import type { Chart } from "@/components/data/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
 import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
+import {
+    ensureUniqueUserUids,
+    recoverPendingUserDataImport,
+} from "@/components/data/user/scoreHistory";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 type RatingDisplayMode = "简洁" | "吃分" | "完整";
+export type SongsCardTopRightDisplay = "排序" | "无" | "游玩次数";
 type AppSettings = {
     defaultChartRatingDisplayMode: RatingDisplayMode;
     showDxScoreInB50: boolean;
     reverseSongsDifficultyAndVersionTabs: boolean;
+    songsCardTopRightDisplay: SongsCardTopRightDisplay;
 };
 
 function toStorageValue<T>(value: T): T {
@@ -44,6 +50,7 @@ export const useShared = defineStore("shared", () => {
         defaultChartRatingDisplayMode: "简洁",
         showDxScoreInB50: false,
         reverseSongsDifficultyAndVersionTabs: false,
+        songsCardTopRightDisplay: "排序",
     });
 
     const handleScreenSizeChange = () => {
@@ -60,11 +67,14 @@ export const useShared = defineStore("shared", () => {
         resolveUsersLoaded = r;
     });
 
-    localForage
-        .getItem<User[]>("users")
+    recoverPendingUserDataImport()
+        .catch((err: unknown) => {
+            console.error("Failed to recover pending user data import:", err);
+        })
+        .then(() => localForage.getItem<User[]>("users"))
         .then((v: User[] | null) => {
             if (Array.isArray(v)) {
-                const migratedUsers = v.map(user => {
+                const migratedUsers = ensureUniqueUserUids(v).map(user => {
                     const hasValidInGameId =
                         typeof user.inGame?.id === "number" &&
                         Number.isFinite(user.inGame.id) &&
@@ -120,6 +130,8 @@ export const useShared = defineStore("shared", () => {
                 reverseSongsDifficultyAndVersionTabs:
                     v.reverseSongsDifficultyAndVersionTabs ??
                     appSettings.value.reverseSongsDifficultyAndVersionTabs,
+                songsCardTopRightDisplay:
+                    v.songsCardTopRightDisplay ?? appSettings.value.songsCardTopRightDisplay,
             };
         });
 

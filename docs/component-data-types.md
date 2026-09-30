@@ -307,6 +307,7 @@ interface Props {
 
 ```typescript
 interface User {
+    uid?: string; // 本地稳定用户标识；加载旧数据时自动补齐
     divingFish: {
         name: string | null; // 水鱼查分器用户名
         importToken?: string | null;
@@ -531,12 +532,17 @@ enum MusicGenre {
 
 ### 1. 用户数据缓存
 
-- **存储位置**: localStorage
+- **存储位置**: IndexedDB / localForage
 - **缓存key**: "users"
 - **数据结构**: `User[]`
 - **更新时机**: 用户手动更新成绩时
 - **逐谱面变动时间**: `detailed` 与 B50 成绩使用 `lastChangedAt` 记录 SaltNet
   首次获得该成绩，或达成率、DX 分、FC/FS 状态、游玩次数最后发生变化的时间；旧缓存会在下次成功更新时开始记录
+- **曲目成绩历史**: 独立存放在原生 IndexedDB `saltnet-score-history` 中，以用户 `uid`、
+  `${musicId}-${level_index}` 和观察时间建立索引；事件只保存达成率、DX 分、FC、FS、
+  游玩次数，不进入 `User.data.detailed`、B50、外部上传或游戏内数据备份
+- **历史导入导出**: SaltNet 用户数据备份 version 1 在原 `users` 字段旁增加可选的
+  `scoreHistory`；version 0 仍可导入，并按整体恢复语义启用空历史 generation
 
 ### 2. 音乐库缓存
 

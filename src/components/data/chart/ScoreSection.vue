@@ -15,6 +15,7 @@
         showDxScoreNum?: boolean;
         hideStats?: boolean;
         hideTitle?: boolean;
+        getRating?: (chart: Chart) => string | number | undefined;
     }>();
 
     // Calculate statistics for the scores based on deluxeRating values
@@ -79,7 +80,9 @@
                     <ScoreCard
                         @click="openDialog(score)"
                         :data="score"
-                        :rating="score.score?.deluxeRating"
+                        :rating="
+                            props.getRating ? props.getRating(score) : score.score?.deluxeRating
+                        "
                         :rendering="props.rendering"
                         :showDxScoreNum="props.showDxScoreNum"
                     />

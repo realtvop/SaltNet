@@ -5,12 +5,23 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
-    import { updateUser, checkLogin } from "@/components/data/user/update";
+    import {
+        updateUser,
+        checkLogin,
+        cancelPendingUserUpdates,
+    } from "@/components/data/user/update";
     import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
     import type { UserInfo } from "@/components/data/inGame";
     import type { LXNSAuth } from "@/components/integrations/lxns";
     import { exportUserBackup } from "@/components/data/user/exportBackup";
+    import {
+        createUserUid,
+        deleteScoreHistoryForUser,
+        drainAndDiscardScoreHistoryForUser,
+        hasStrongIdentityChanged,
+        resetUserForNewIdentity,
+    } from "@/components/data/user/scoreHistory";
 
     const shared = useShared();
 
@@ -19,6 +30,19 @@
     const editingUserIndex = ref<number | null>(null);
 
     const router = useRouter();
+
+    async function removeUserScoreHistory(userUid: string): Promise<boolean> {
+        cancelPendingUserUpdates(userUid);
+        await drainAndDiscardScoreHistoryForUser(userUid);
+        try {
+            await deleteScoreHistoryForUser(userUid);
+            return true;
+        } catch (error) {
+            console.error("Failed to delete user score history:", error);
+            snackbar({ message: "成绩历史删除失败，请稍后重试", autoCloseDelay: 3000 });
+            return false;
+        }
+    }
 
     const openEditDialog = (user: User, index: number) => {
         currentUserToEdit.value = toRaw(user);
@@ -53,10 +77,14 @@
             closeOnOverlayClick: true,
             onOpen: markDialogOpen,
             onClose: markDialogClosed,
-            onConfirm: () => {
-                if (index !== null && index >= 0 && index < shared.users.length)
+            onConfirm: async () => {
+                if (index !== null && index >= 0 && index < shared.users.length) {
+                    const userUid = shared.users[index].uid;
+                    if (userUid) {
+                        if (!(await removeUserScoreHistory(userUid))) return;
+                    }
                     shared.users.splice(index, 1);
-                return true;
+                }
             },
         }).catch(() => undefined);
     };
@@ -118,9 +146,10 @@
         settings: { manuallyUpdate: boolean };
     }
 
-    const handleUserSave = (updatedUserData: UpdatedUserData) => {
+    const handleUserSave = async (updatedUserData: UpdatedUserData) => {
         if (editingUserIndex.value === null) {
             shared.users.push({
+                uid: createUserUid(),
                 remark: updatedUserData.remark,
                 divingFish: {
                     name: updatedUserData.divingFish.name,
@@ -156,7 +185,7 @@
         if (index >= 0 && index < shared.users.length) {
             const originalUser = shared.users[index];
             const defaultSettings = { manuallyUpdate: false };
-            shared.users[index] = {
+            const updatedUser: User = {
                 ...originalUser,
                 remark: updatedUserData.remark,
                 divingFish: {
@@ -185,6 +214,28 @@
                     ...(updatedUserData.settings ?? {}),
                 },
             };
+            if (hasStrongIdentityChanged(originalUser, updatedUser)) {
+                const confirmed = await confirm({
+                    headline: "将绑定改为新的用户？",
+                    description:
+                        "帐号身份发生变化。确认后会清除当前成绩与历史，并作为新的本地用户开始记录。",
+                    confirmText: "创建新身份",
+                    cancelText: "取消",
+                    closeOnEsc: true,
+                    closeOnOverlayClick: true,
+                    onOpen: markDialogOpen,
+                    onClose: markDialogClosed,
+                })
+                    .then(() => true)
+                    .catch(() => false);
+                if (!confirmed) return;
+                if (originalUser.uid) {
+                    if (!(await removeUserScoreHistory(originalUser.uid))) return;
+                }
+                shared.users[index] = resetUserForNewIdentity(updatedUser);
+            } else {
+                shared.users[index] = updatedUser;
+            }
         } else {
             console.warn("Invalid user index for update:", index);
         }

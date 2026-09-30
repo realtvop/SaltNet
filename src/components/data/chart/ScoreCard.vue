@@ -111,15 +111,15 @@
                 <div class="result-header">
                     <div class="header-pill">
                         <div class="pill-section charttype" :type="data.music.info.type">
-                            <span>
-                                {{ data.music.info.type }}
-                            </span>
+                            <span>{{ data.music.info.type }}</span>
                         </div>
                         <div class="pill-section level" :difficulty="data.info.grade">
-                            {{ constantToDisplay !== null ? constantToDisplay.toFixed(1) : "" }}
+                            <span>
+                                {{ constantToDisplay !== null ? constantToDisplay.toFixed(1) : "" }}
+                            </span>
                         </div>
                         <div class="pill-section points">
-                            {{ rating }}
+                            <span>{{ rating }}</span>
                         </div>
                     </div>
                 </div>
@@ -325,6 +325,15 @@
         text-align: center;
         padding: 0 2.25px;
         line-height: 1;
+    }
+
+    .pill-section > span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        line-height: 1;
+        padding-top: 1px;
     }
 
     .pill-section.charttype {

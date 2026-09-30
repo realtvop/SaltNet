@@ -11,6 +11,10 @@ export function getKaleidxscopeGate(shortName: string): KaleidxscopeGate | null 
     return kaleidxscopeGates.find(gate => gate.shortName === shortName) ?? null;
 }
 
+export function getOpenedKaleidxscopeGates(now: Date = new Date()): readonly KaleidxscopeGate[] {
+    return kaleidxscopeGates.filter(gate => new Date(gate.openedAt).getTime() <= now.getTime());
+}
+
 export function getKaleidxscopeCurrentPhase(
     gate: KaleidxscopeGate,
     now: Date = new Date()
