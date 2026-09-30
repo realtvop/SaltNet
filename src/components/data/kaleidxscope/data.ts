@@ -559,7 +559,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         region: "7sRef 区域 4",
         openedAt: "2026-10-01T07:00:00+08:00",
         keyCondition: {
-            summary: "通关全部六色门，并完成 7sRef 区域 4 第 27 格（2000km）",
+            summary: "通关全部六色门，并完成 7sRef 区域 4",
             songs: [],
         },
         lifePhases: [
@@ -594,11 +594,11 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
     {
         id: "hope",
         name: "希望之门",
-        shortName: "希望门",
+        shortName: "希望之门",
         region: "棱镜区域",
         openedAt: "2026-10-02T07:00:00+08:00",
         keyCondition: {
-            summary: "通关棱镜塔及 Phase #???（ERROR），无需 DX PASS 实体卡",
+            summary: "通关棱镜塔及乱码",
             songs: [],
         },
         lifePhases: [
@@ -627,8 +627,8 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
     },
     {
         id: "final",
-        name: "KALEIDXSCOPE · 最终相",
-        shortName: "最终相",
+        name: "KALEIDXSCOPE",
+        shortName: "KALEIDXSCOPE",
         region: "FINAL SEQUENCE",
         openedAt: "2026-10-02T07:00:00+08:00",
         keyCondition: {

@@ -66,6 +66,11 @@ describe("KALEIDXSCOPE data", () => {
     });
 
     it("contains the tower, hope gate and single-track final sequence", () => {
+        expect(kaleidxscopeGates.slice(6).map(gate => [gate.name, gate.shortName])).toEqual([
+            ["棱镜塔", "棱镜塔"],
+            ["希望之门", "希望之门"],
+            ["KALEIDXSCOPE", "KALEIDXSCOPE"],
+        ]);
         expect(
             kaleidxscopeGates.slice(6).map(gate => ({
                 id: gate.id,
