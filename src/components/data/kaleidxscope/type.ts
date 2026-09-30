@@ -34,6 +34,7 @@ export interface KaleidxscopeSelectionPool {
     description: string;
     selection: "random" | "fixed";
     songs: KaleidxscopeSong[];
+    unlistedDescription?: string;
 }
 
 export interface KaleidxscopeGate {

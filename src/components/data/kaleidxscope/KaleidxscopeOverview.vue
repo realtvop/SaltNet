@@ -55,10 +55,12 @@
             new Map(
                 props.gate.selectionPools.map(pool => [
                     pool.track,
-                    pool.songs
-                        .filter(song => !chartsByMusicId.value.has(song.musicId))
-                        .map(song => song.title)
-                        .join("、"),
+                    pool.unlistedDescription
+                        ? ""
+                        : pool.songs
+                              .filter(song => !chartsByMusicId.value.has(song.musicId))
+                              .map(song => song.title)
+                              .join("、"),
                 ])
             )
     );
@@ -162,6 +164,9 @@
                         {{ formatSelectionPoolSource(pool) }}
                     </small>
                 </h2>
+                <p v-if="pool.unlistedDescription" class="section-description pending-songs">
+                    {{ pool.unlistedDescription }}
+                </p>
                 <p
                     v-if="pendingPoolSongs.get(pool.track)"
                     class="section-description pending-songs"
@@ -170,6 +175,7 @@
                 </p>
             </div>
             <ScoreSection
+                v-if="!pool.unlistedDescription"
                 title=""
                 :scores="selectionPoolCharts.get(pool.track) ?? []"
                 :chart-info-dialog="chartInfoDialog"

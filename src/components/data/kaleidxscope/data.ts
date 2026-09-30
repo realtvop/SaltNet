@@ -638,6 +638,7 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
                 description: "",
                 selection: "fixed",
                 songs: [song(11879, "Xaleid◆scopiX (2)")],
+                unlistedDescription: "乱码版 Xaleid◆scopiX",
             },
         ],
     },

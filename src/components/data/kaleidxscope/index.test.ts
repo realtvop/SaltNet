@@ -115,6 +115,9 @@ describe("KALEIDXSCOPE data", () => {
         expect(noise.selectionPools[2].songs).toEqual([
             { musicId: 11879, title: "Xaleid◆scopiX (2)" },
         ]);
+        expect(noise.selectionPools[2].unlistedDescription).toBe(
+            "乱码版 Xaleid◆scopiX"
+        );
         expect(getKaleidxscopeGate("希望之门")!.keyCondition.summary).toBe(
             "完成乱码阶段，获得希望钥匙"
         );
