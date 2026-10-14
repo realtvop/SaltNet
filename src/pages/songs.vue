@@ -1034,9 +1034,11 @@
         groupBy.value = "none";
         // 切换分类时，重置到该分类的默认选项
         selectedTab.value[newCategory] = getTabsForCategory(newCategory)[0] || "";
-        if (newCategory === Category.InGame) {
-            if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
-        } else if (newCategory === Category.Version) {
+        if (
+            newCategory === Category.InGame ||
+            newCategory === Category.Version ||
+            newCategory === Category.Kaleidxscope
+        ) {
             if (difficultyFilter.value === UTAGE_GRADE) difficultyFilter.value = 3;
         }
         query.value = "";
@@ -1442,36 +1444,50 @@
                 </span>
             </div>
         </div>
-        <div
-            v-else-if="category === Category.Kaleidxscope"
-            class="search-input challenge-life-summary"
-        >
-            <span v-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-value">
-                <mdui-icon name="favorite"></mdui-icon>
-                {{ selectedKaleidxscopeCurrentPhase.life }}
-                <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
-            </span>
-            <span v-else-if="selectedKaleidxscopeGate" class="challenge-life-value pending">
-                <mdui-icon name="event"></mdui-icon>
-                {{ formatKaleidxscopeDateTime(selectedKaleidxscopeGate.openedAt, true) }} 开放
-            </span>
-            <span v-if="selectedKaleidxscopeNextPhase" class="challenge-life-rules">
-                下次放宽 {{ formatKaleidxscopeDateTime(selectedKaleidxscopeNextPhase.startsAt) }} →
-                {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
-                {{ selectedKaleidxscopeNextPhase.life }}
-            </span>
-            <span
-                v-else-if="
-                    selectedKaleidxscopeGate?.lifeNote &&
-                    !selectedKaleidxscopeGate.lifePhases.length
-                "
-                class="challenge-life-rules"
+        <div v-else-if="category === Category.Kaleidxscope" class="search-input">
+            <mdui-select
+                style="width: 4.1rem; flex-shrink: 0"
+                label="难度"
+                :value="difficultyFilter.toString()"
+                @change="onDifficultyFilterChange"
             >
-                血量日历待确认
-            </span>
-            <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
-                最终阶段
-            </span>
+                <mdui-menu-item
+                    v-for="option in difficultyFilterOptions"
+                    :key="option.grade"
+                    :value="option.grade.toString()"
+                >
+                    {{ option.label }}
+                </mdui-menu-item>
+            </mdui-select>
+            <div class="challenge-life-summary">
+                <span v-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-value">
+                    <mdui-icon name="favorite"></mdui-icon>
+                    {{ selectedKaleidxscopeCurrentPhase.life }}
+                    <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
+                </span>
+                <span v-else-if="selectedKaleidxscopeGate" class="challenge-life-value pending">
+                    <mdui-icon name="event"></mdui-icon>
+                    {{ formatKaleidxscopeDateTime(selectedKaleidxscopeGate.openedAt, true) }} 开放
+                </span>
+                <span v-if="selectedKaleidxscopeNextPhase" class="challenge-life-rules">
+                    下次放宽
+                    {{ formatKaleidxscopeDateTime(selectedKaleidxscopeNextPhase.startsAt) }} →
+                    {{ selectedKaleidxscopeNextPhase.difficulty }} · LIFE
+                    {{ selectedKaleidxscopeNextPhase.life }}
+                </span>
+                <span
+                    v-else-if="
+                        selectedKaleidxscopeGate?.lifeNote &&
+                        !selectedKaleidxscopeGate.lifePhases.length
+                    "
+                    class="challenge-life-rules"
+                >
+                    血量日历待确认
+                </span>
+                <span v-else-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-rules">
+                    最终阶段
+                </span>
+            </div>
         </div>
         <div v-else-if="category === Category.Course" class="search-input challenge-life-summary">
             <span class="challenge-life-value">
@@ -1635,6 +1651,7 @@
             :charts="shared.chartsSort.charts"
             :now="kaleidxscopeNow"
             :chart-info-dialog="chartInfoDialog"
+            v-model:preferred-grade="difficultyFilter"
         />
         <div v-else-if="isMusicDataLoading" class="songs-loading-container">
             <mdui-circular-progress></mdui-circular-progress>
@@ -1943,6 +1960,8 @@
     }
 
     .challenge-life-summary {
+        flex: 1;
+        min-width: 0;
         justify-content: flex-start !important;
         overflow-x: auto;
         white-space: nowrap;

@@ -6,6 +6,7 @@
         formatKaleidxscopeDateTime,
         getKaleidxscopePhaseEnd,
         getKaleidxscopePhaseStatus,
+        getKaleidxscopePreferredGrade,
         resolveKaleidxscopeSongChart,
     } from "./index";
     import type {
@@ -15,14 +16,24 @@
         KaleidxscopeSong,
     } from "./type";
 
-    const props = defineProps<{
-        gate: KaleidxscopeGate;
-        charts: readonly Chart[];
-        now: Date;
-        chartInfoDialog: {
-            open: boolean;
-            chart: Chart | null;
-        };
+    const props = withDefaults(
+        defineProps<{
+            gate: KaleidxscopeGate;
+            charts: readonly Chart[];
+            now: Date;
+            chartInfoDialog: {
+                open: boolean;
+                chart: Chart | null;
+            };
+            preferredGrade?: number;
+        }>(),
+        {
+            preferredGrade: 3,
+        }
+    );
+
+    const emit = defineEmits<{
+        (e: "update:preferredGrade", grade: number): void;
     }>();
 
     const chartsByMusicId = computed(() => {
@@ -38,7 +49,11 @@
     function resolveSongCharts(songs: readonly KaleidxscopeSong[]): Chart[] {
         return songs
             .map(song =>
-                resolveKaleidxscopeSongChart(song, chartsByMusicId.value.get(song.musicId) ?? [], 3)
+                resolveKaleidxscopeSongChart(
+                    song,
+                    chartsByMusicId.value.get(song.musicId) ?? [],
+                    props.preferredGrade
+                )
             )
             .filter((chart): chart is Chart => chart !== null);
     }
@@ -137,12 +152,15 @@
                         v-for="(lifePhase, index) in gate.lifePhases"
                         :key="lifePhase.startsAt"
                         rounded
-                        nonclickable
                         :active="getPhaseStatus(index) === 'current'"
                         :icon="statusIcons[getPhaseStatus(index)]"
                         :headline="`LIFE ${lifePhase.life} · ${lifePhase.difficulty}`"
                         :description="formatPhaseRange(index)"
                         description-line="2"
+                        :title="`切换至 ${lifePhase.difficulty} 难度`"
+                        @click="
+                            emit('update:preferredGrade', getKaleidxscopePreferredGrade(lifePhase))
+                        "
                     >
                         <span slot="end-icon" class="phase-status">
                             {{ statusLabels[getPhaseStatus(index)] }}

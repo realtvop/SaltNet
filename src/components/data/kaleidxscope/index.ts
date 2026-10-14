@@ -63,6 +63,7 @@ export function getKaleidxscopePhaseStatus(
 export function getKaleidxscopePreferredGrade(lifePhase: KaleidxscopeLifePhase | null): number {
     if (lifePhase?.difficulty === "BASIC") return 0;
     if (lifePhase?.difficulty === "EXPERT") return 2;
+    if (lifePhase?.difficulty === "Re:MASTER") return 4;
     return 3;
 }
 

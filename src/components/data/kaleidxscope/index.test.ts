@@ -6,6 +6,7 @@ import {
     getKaleidxscopeGate,
     getKaleidxscopeNextPhase,
     getKaleidxscopePhaseStatus,
+    getKaleidxscopePreferredGrade,
     getOpenedKaleidxscopeGates,
     kaleidxscopeGates,
     resolveKaleidxscopeSongChart,
@@ -246,5 +247,58 @@ describe("KALEIDXSCOPE data", () => {
         expect(resolveKaleidxscopeSongChart(song, [master, expert], 2)).toBe(expert);
         expect(resolveKaleidxscopeSongChart(song, [master, expert], 0)).toBe(master);
         expect(resolveKaleidxscopeSongChart({ musicId: 1, title: "missing" }, [], 3)).toBeNull();
+    });
+
+    it("maps life phase difficulty to preferred grade", () => {
+        expect(
+            getKaleidxscopePreferredGrade({
+                startsAt: "2026-08-05T10:00:00+08:00",
+                difficulty: "BASIC",
+                life: 999,
+            })
+        ).toBe(0);
+        expect(
+            getKaleidxscopePreferredGrade({
+                startsAt: "2026-08-05T10:00:00+08:00",
+                difficulty: "EXPERT",
+                life: 100,
+            })
+        ).toBe(2);
+        expect(
+            getKaleidxscopePreferredGrade({
+                startsAt: "2026-08-05T10:00:00+08:00",
+                difficulty: "MASTER",
+                life: 50,
+            })
+        ).toBe(3);
+        expect(
+            getKaleidxscopePreferredGrade({
+                startsAt: "2026-08-05T10:00:00+08:00",
+                difficulty: "Re:MASTER",
+                life: 1,
+            })
+        ).toBe(4);
+        expect(getKaleidxscopePreferredGrade(null)).toBe(3);
+    });
+
+    it("resolves charts for any chosen difficulty with fallbacks", () => {
+        const song = { musicId: 11820, title: "Xaleid◆scopiX" };
+        const basic = makeChart(song.musicId, 0);
+        const advanced = makeChart(song.musicId, 1);
+        const expert = makeChart(song.musicId, 2);
+        const master = makeChart(song.musicId, 3);
+        const remaster = makeChart(song.musicId, 4);
+
+        const allCharts = [basic, advanced, expert, master, remaster];
+
+        expect(resolveKaleidxscopeSongChart(song, allCharts, 0)).toBe(basic);
+        expect(resolveKaleidxscopeSongChart(song, allCharts, 1)).toBe(advanced);
+        expect(resolveKaleidxscopeSongChart(song, allCharts, 2)).toBe(expert);
+        expect(resolveKaleidxscopeSongChart(song, allCharts, 3)).toBe(master);
+        expect(resolveKaleidxscopeSongChart(song, allCharts, 4)).toBe(remaster);
+
+        // Without Re:MASTER chart, falls back to MASTER
+        const noRemaster = [basic, advanced, expert, master];
+        expect(resolveKaleidxscopeSongChart(song, noRemaster, 4)).toBe(master);
     });
 });
