@@ -4,6 +4,7 @@
     import type { Chart } from "@/components/data/music/type";
     import {
         formatKaleidxscopeDateTime,
+        formatKaleidxscopeLife,
         getKaleidxscopePhaseEnd,
         getKaleidxscopePhaseStatus,
         getKaleidxscopePreferredGrade,
@@ -154,7 +155,7 @@
                         rounded
                         :active="getPhaseStatus(index) === 'current'"
                         :icon="statusIcons[getPhaseStatus(index)]"
-                        :headline="`LIFE ${lifePhase.life} · ${lifePhase.difficulty}`"
+                        :headline="`${formatKaleidxscopeLife(lifePhase.life)} · ${lifePhase.difficulty}`"
                         :description="formatPhaseRange(index)"
                         description-line="2"
                         :title="`切换至 ${lifePhase.difficulty} 难度`"
@@ -177,7 +178,7 @@
         >
             <div class="section-heading">
                 <h2 class="section-title">
-                    <span>TRACK {{ pool.track }}</span>
+                    <span>{{ pool.label ?? `TRACK ${pool.track}` }}</span>
                     <small v-if="pool.track !== 3 && pool.description" class="section-description">
                         {{ formatSelectionPoolSource(pool) }}
                     </small>

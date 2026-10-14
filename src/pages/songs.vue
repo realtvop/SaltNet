@@ -56,6 +56,7 @@
     import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
     import {
         formatKaleidxscopeDateTime,
+        formatKaleidxscopeLife,
         getKaleidxscopeCurrentPhase,
         getKaleidxscopeNextPhase,
         getOpenedKaleidxscopeGates,
@@ -1462,7 +1463,7 @@
             <div class="challenge-life-summary">
                 <span v-if="selectedKaleidxscopeCurrentPhase" class="challenge-life-value">
                     <mdui-icon name="favorite"></mdui-icon>
-                    {{ selectedKaleidxscopeCurrentPhase.life }}
+                    {{ formatKaleidxscopeLife(selectedKaleidxscopeCurrentPhase.life) }}
                     <small>{{ selectedKaleidxscopeCurrentPhase.difficulty }}</small>
                 </span>
                 <span v-else-if="selectedKaleidxscopeGate" class="challenge-life-value pending">

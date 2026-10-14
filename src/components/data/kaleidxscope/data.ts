@@ -16,6 +16,10 @@ function phase(
     return { startsAt, difficulty, life };
 }
 
+function pairedLife(first: number, second: number): KaleidxscopeLifePhase["life"] {
+    return { first, second };
+}
+
 const blueKeySongs = makeSongs([
     [11009, "STEREOSCAPE"],
     [11008, "Crazy Circle"],
@@ -687,28 +691,37 @@ export const kaleidxscopeGates: readonly KaleidxscopeGate[] = [
         name: "KALEIDXSCOPE",
         shortName: "KALEIDXSCOPE",
         region: "FINAL SEQUENCE",
+        description: "前半段与后半段共用完成度，但使用两个独立血条。",
         openedAt: "2026-10-02T07:00:00+08:00",
         keyCondition: {
             summary: "通关希望之门",
             songs: [],
         },
         lifePhases: [
-            phase("2026-10-02T07:00:00+08:00", "Re:MASTER", 1),
-            phase("2026-10-04T07:00:00+08:00", "Re:MASTER", 5),
-            phase("2026-10-06T07:00:00+08:00", "Re:MASTER", 10),
-            phase("2026-10-07T07:00:00+08:00", "Re:MASTER", 30),
-            phase("2026-10-08T07:00:00+08:00", "MASTER", 30),
-            phase("2026-10-12T07:00:00+08:00", "MASTER", 50),
-            phase("2026-10-14T07:00:00+08:00", "MASTER", 100),
-            phase("2026-10-16T07:00:00+08:00", "EXPERT", "100 / 999"),
-            phase("2026-10-23T07:00:00+08:00", "BASIC", 999),
+            phase("2026-10-02T07:00:00+08:00", "Re:MASTER", pairedLife(1, 100)),
+            phase("2026-10-04T07:00:00+08:00", "Re:MASTER", pairedLife(5, 300)),
+            phase("2026-10-06T07:00:00+08:00", "Re:MASTER", pairedLife(10, 500)),
+            phase("2026-10-07T07:00:00+08:00", "Re:MASTER", pairedLife(30, 500)),
+            phase("2026-10-08T07:00:00+08:00", "MASTER", pairedLife(30, 500)),
+            phase("2026-10-12T07:00:00+08:00", "MASTER", pairedLife(50, 600)),
+            phase("2026-10-14T07:00:00+08:00", "MASTER", pairedLife(100, 700)),
+            phase("2026-10-16T07:00:00+08:00", "EXPERT", pairedLife(100, 999)),
+            phase("2026-10-23T07:00:00+08:00", "BASIC", pairedLife(999, 999)),
         ],
+        lifeNote: "前半段为普通 LIFE，后半段为特殊 LIFE；两段血条互不共用。",
         selectionPools: [
             {
                 track: 1,
                 description: "",
                 selection: "fixed",
                 songs: [song(11820, "Xaleid◆scopiX")],
+            },
+            {
+                track: 2,
+                label: "BONUS TRACK",
+                description: "首次通关后追加，强制游玩且不可跳过",
+                selection: "fixed",
+                songs: [song(11821, "Ref:rain (for 7th Heaven)")],
             },
         ],
     },

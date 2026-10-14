@@ -67,6 +67,11 @@ export function getKaleidxscopePreferredGrade(lifePhase: KaleidxscopeLifePhase |
     return 3;
 }
 
+export function formatKaleidxscopeLife(life: KaleidxscopeLifePhase["life"]): string {
+    if (typeof life === "number") return `LIFE ${life}`;
+    return `前 LIFE ${life.first} · 后 LIFE ${life.second}`;
+}
+
 export function formatKaleidxscopeDateTime(value: string | Date, includeYear = false): string {
     const parts = new Intl.DateTimeFormat("zh-CN", {
         timeZone: "Asia/Shanghai",
@@ -108,6 +113,8 @@ export type {
     KaleidxscopeGate,
     KaleidxscopeGateId,
     KaleidxscopeKeyCondition,
+    KaleidxscopeLife,
+    KaleidxscopeLifePair,
     KaleidxscopeLifePhase,
     KaleidxscopePhaseStatus,
     KaleidxscopeSelectionPool,

@@ -90,7 +90,7 @@ describe("KALEIDXSCOPE data", () => {
         }
     });
 
-    it("contains the tower, noise stage, hope gate and single-track final sequence", () => {
+    it("contains the tower, noise stage, hope gate and final sequence", () => {
         expect(kaleidxscopeGates.slice(6).map(gate => [gate.name, gate.shortName])).toEqual([
             ["棱镜塔", "棱镜塔"],
             ["乱码", "乱码"],
@@ -102,13 +102,16 @@ describe("KALEIDXSCOPE data", () => {
                 id: gate.id,
                 keySongs: gate.keyCondition.songs.length,
                 poolSizes: gate.selectionPools.map(pool => pool.songs.length),
-                bossId: gate.selectionPools.at(-1)?.songs[0].musicId,
+                mainSongId: (gate.id === "final"
+                    ? gate.selectionPools[0]
+                    : gate.selectionPools.at(-1)
+                )?.songs[0].musicId,
             }))
         ).toEqual([
-            { id: "prism", keySongs: 0, poolSizes: [10, 4, 1], bossId: 11818 },
-            { id: "noise", keySongs: 0, poolSizes: [6, 7, 1], bossId: 11879 },
-            { id: "hope", keySongs: 0, poolSizes: [1, 1, 1], bossId: 1819 },
-            { id: "final", keySongs: 0, poolSizes: [1], bossId: 11820 },
+            { id: "prism", keySongs: 0, poolSizes: [10, 4, 1], mainSongId: 11818 },
+            { id: "noise", keySongs: 0, poolSizes: [6, 7, 1], mainSongId: 11879 },
+            { id: "hope", keySongs: 0, poolSizes: [1, 1, 1], mainSongId: 1819 },
+            { id: "final", keySongs: 0, poolSizes: [1, 1], mainSongId: 11820 },
         ]);
         expect(new Set(kaleidxscopeGates.map(gate => gate.shortName)).size).toBe(
             kaleidxscopeGates.length
@@ -179,16 +182,23 @@ describe("KALEIDXSCOPE data", () => {
             )
         );
         expect(final.lifePhases.map(phase => [phase.difficulty, phase.life])).toEqual([
-            ["Re:MASTER", 1],
-            ["Re:MASTER", 5],
-            ["Re:MASTER", 10],
-            ["Re:MASTER", 30],
-            ["MASTER", 30],
-            ["MASTER", 50],
-            ["MASTER", 100],
-            ["EXPERT", "100 / 999"],
-            ["BASIC", 999],
+            ["Re:MASTER", { first: 1, second: 100 }],
+            ["Re:MASTER", { first: 5, second: 300 }],
+            ["Re:MASTER", { first: 10, second: 500 }],
+            ["Re:MASTER", { first: 30, second: 500 }],
+            ["MASTER", { first: 30, second: 500 }],
+            ["MASTER", { first: 50, second: 600 }],
+            ["MASTER", { first: 100, second: 700 }],
+            ["EXPERT", { first: 100, second: 999 }],
+            ["BASIC", { first: 999, second: 999 }],
         ]);
+        expect(final.description).toContain("两个独立血条");
+        expect(final.lifeNote).toContain("特殊 LIFE");
+        expect(final.selectionPools[1]).toMatchObject({
+            track: 2,
+            label: "BONUS TRACK",
+            songs: [{ musicId: 11821, title: "Ref:rain (for 7th Heaven)" }],
+        });
         expect(getKaleidxscopeCurrentPhase(hope, new Date("2026-10-02T06:59:59+08:00"))).toBeNull();
         expect(getKaleidxscopeCurrentPhase(hope, new Date(hope.openedAt))).toMatchObject({
             life: 1,

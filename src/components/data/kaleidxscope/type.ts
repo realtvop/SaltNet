@@ -17,11 +17,18 @@ export interface KaleidxscopeSong {
     title: string;
 }
 
+export interface KaleidxscopeLifePair {
+    first: number;
+    second: number;
+}
+
+export type KaleidxscopeLife = number | KaleidxscopeLifePair;
+
 export interface KaleidxscopeLifePhase {
     /** ISO 8601 timestamp. CN schedules use UTC+8. */
     startsAt: string;
     difficulty: KaleidxscopeDifficulty;
-    life: number | `${number} / ${number}`;
+    life: KaleidxscopeLife;
 }
 
 export interface KaleidxscopeKeyCondition {
@@ -31,6 +38,7 @@ export interface KaleidxscopeKeyCondition {
 
 export interface KaleidxscopeSelectionPool {
     track: 1 | 2 | 3;
+    label?: string;
     description: string;
     selection: "random" | "fixed";
     songs: KaleidxscopeSong[];
