@@ -22,6 +22,11 @@ Static assets belong in `public/`; structured source assets belong in `src/asset
 
 Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates and search indexing, check `src/components/data/music/saltmeta.ts`, `src/components/data/music/musicApi.ts`, and `src/components/data/music/search.ts`. For dan-course data or its songs-page category, inspect `src/components/data/course/` and `src/pages/songs.vue`. For KALEIDXSCOPE gate data or its songs-page category, inspect `src/components/data/kaleidxscope/` and `src/pages/songs.vue`; life timestamps are stored with the CN UTC+8 offset. For collection or version-plate data, trace `src/components/integrations/lxns/fetchCollection.ts`, `src/components/data/collection/`, then `src/pages/collections.vue` or `src/pages/songs.vue`. Broader data-shape notes are documented in `docs/component-data-types.md`.
 
+Bottom navigation spacing is derived from `env(safe-area-inset-bottom, 0px)` in `src/style.css`.
+Keep overlays aligned with `--nav-bar-height` and `--nav-bar-padding-bottom` instead of adding
+fixed iOS standalone offsets. `index.html` retains `viewport-fit=contain` for browser-managed
+screen-edge insets.
+
 Dialogs add same-URL browser-history entries under `history.state.__saltnetDialog`. Closed,
 unmounted, or reload-stale dialog entries are skipped during `popstate`/initial reconciliation so
 they cannot become empty navigation stops. Register every MDUI function dialog with

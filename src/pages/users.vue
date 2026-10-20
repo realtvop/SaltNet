@@ -565,23 +565,10 @@
         display: flex;
         flex-direction: row-reverse;
         gap: 15px;
-        bottom: 96px;
+        bottom: calc(var(--nav-bar-height) + 16px);
 
         @media (min-aspect-ratio: 1.001/1) {
-            bottom: 16px;
-        }
-        @media (max-aspect-ratio: 0.999/1) or (aspect-ratio: 1/1) {
-            bottom: 96px;
-        }
-    }
-    @supports (-webkit-touch-callout: none) {
-        @media all and (display-mode: standalone) {
-            .fab-container {
-                bottom: 112px;
-            }
-            .user-cards-container {
-                padding-bottom: calc(4.5rem + 32px);
-            }
+            bottom: calc(var(--nav-bar-padding-bottom) + 16px);
         }
     }
 </style>

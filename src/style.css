@@ -15,8 +15,8 @@
 
     /* 一堆变量 */
 
-    --nav-bar-height: 5rem;
-    --nav-bar-padding-bottom: 0px;
+    --nav-bar-padding-bottom: env(safe-area-inset-bottom, 0px);
+    --nav-bar-height: calc(5rem + var(--nav-bar-padding-bottom));
     --content-left-padding: 0px;
 
     /* 难度颜色（浅色模式） */
@@ -29,10 +29,6 @@
     --difficulty-10-color: #ff6b9b;
 
     @supports (-webkit-touch-callout: none) {
-        @media all and (display-mode: standalone) {
-            --nav-bar-height: 6rem !important;
-            --nav-bar-padding-bottom: 1rem !important;
-        }
         -webkit-tap-highlight-color: transparent;
     }
     @media (min-aspect-ratio: 1.001/1) {
@@ -77,20 +73,12 @@ body {
 }
 
 mdui-snackbar {
-    margin-bottom: 5rem;
+    margin-bottom: var(--nav-bar-height);
 }
 
 @media (min-aspect-ratio: 1.001/1) {
     mdui-snackbar {
-        margin-bottom: 0;
-    }
-}
-
-@supports (-webkit-touch-callout: none) {
-    mdui-snackbar {
-        @media all and (display-mode: standalone) {
-            margin-bottom: 6rem;
-        }
+        margin-bottom: var(--nav-bar-padding-bottom);
     }
 }
 
