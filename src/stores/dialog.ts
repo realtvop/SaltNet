@@ -47,6 +47,12 @@ export const useDialogStore = defineStore("dialog", () => {
     const entries: DialogEntry[] = [];
     const openCount = ref(0);
     let nextDialogId = 0;
+    let initialHistoryReady = Promise.resolve();
+    let resolveInitialHistory: (() => void) | null = null;
+
+    function waitForInitialHistory(): Promise<void> {
+        return initialHistoryReady;
+    }
 
     function syncOpenCount() {
         openCount.value = entries.filter(entry => !entry.closed).length;
@@ -150,6 +156,10 @@ export const useDialogStore = defineStore("dialog", () => {
             }
         }
 
+        if (destinationDialogId === null) {
+            resolveInitialHistory?.();
+            resolveInitialHistory = null;
+        }
         syncOpenCount();
         return handled;
     }
@@ -162,6 +172,9 @@ export const useDialogStore = defineStore("dialog", () => {
         if (isRestorableEntry(entry, dialogId)) return false;
 
         // 刷新或冷恢复不会保留内存中的 dialog 实例，因此主动退回其页面历史项。
+        initialHistoryReady = new Promise<void>(resolve => {
+            resolveInitialHistory = resolve;
+        });
         history.back();
         return true;
     }
@@ -175,6 +188,9 @@ export const useDialogStore = defineStore("dialog", () => {
     }
 
     function reset() {
+        resolveInitialHistory?.();
+        resolveInitialHistory = null;
+        initialHistoryReady = Promise.resolve();
         entries.forEach(entry => {
             if (entry.backTimer !== null) window.clearTimeout(entry.backTimer);
         });
@@ -189,6 +205,7 @@ export const useDialogStore = defineStore("dialog", () => {
         markClosed,
         handlePopstate,
         reconcileInitialHistory,
+        waitForInitialHistory,
         syncWithDOM,
         reset,
     };

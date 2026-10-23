@@ -45,6 +45,16 @@ SaltNet 的图标由 青葉もち / 青叶团子 ([X](https://x.com/AlicitruSalt
 - [Prettier](https://prettier.io/): 代码格式化
 - [PNPM](https://pnpm.io/): 包管理器
 
+### 落雪 OAuth
+
+配置 `VITE_LXNS_OAUTH_CLIENT_ID` 与 `VITE_LXNS_OAUTH_REDIRECT_URI`，回调地址须包含
+`?lxns_auth_complete`，并与落雪开发者面板登记的地址完全一致。本地 `.env.local` 会覆盖
+生产模式的本地构建配置；发布前请确认没有把本地回调地址打包进去。
+
+若 PWA 授权后回到了独立浏览器，请在回调对话框中复制链接，返回原 SaltNet 的用户绑定
+对话框，在落雪页面选择“继续落雪授权”并粘贴。授权进度保留 15 分钟；过期后需要重新授权。
+网络错误可在回调对话框中重试，刷新页面也会恢复尚未完成的回调。
+
 ## 🤝 贡献
 
 欢迎贡献！请随时提交 [Issue](https://github.com/realtvop/SaltNet/issues) 和 [Pull Request](https://github.com/realtvop/SaltNet/pulls)。

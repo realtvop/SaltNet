@@ -13,6 +13,7 @@ import ShopPage from "../../pages/Shop.vue";
 
 import { useRouterStore } from "../../stores/router";
 import { useDialogStore } from "../../stores/dialog";
+import { captureLXNSOAuthCallback } from "../integrations/lxns/oauthSession";
 
 const routes = [
     { path: "/", component: IndexPage },
@@ -27,6 +28,8 @@ const routes = [
     { path: "/collections", component: CollectionsPage },
     { path: "/nearcade", component: ShopPage },
 ];
+
+captureLXNSOAuthCallback();
 
 const router = createRouter({
     history: import.meta.env.PROD ? createWebHashHistory() : createWebHistory(),

@@ -1,14 +1,15 @@
 <script setup lang="ts">
     import { useRoute, useRouter } from "vue-router";
-    import { snackbar, type TextField } from "mdui";
+    import type { TextField } from "mdui";
     import TopAppBar from "@/components/app/TopAppBar.vue";
-    import { handleLXNSOAuthCallback } from "./components/integrations/lxns";
-    import { useShared } from "./components/app/shared";
+    import LxnsOauthDialog from "@/components/integrations/lxns/LXNSOAuthDialog.vue";
+    import { getInitialLXNSOAuthCallback } from "@/components/integrations/lxns/oauthSession";
     import { initializeMusicData } from "@/components/data/music";
     import { initializeCollectionData } from "@/components/data/collection";
 
     const route = useRoute();
     const router = useRouter();
+    const oauthCallback = getInitialLXNSOAuthCallback();
 
     function handleSongsNavigation() {
         if (route.path === "/songs") {
@@ -24,29 +25,6 @@
         }
     }
 
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has("lxns_auth_complete")) {
-        if (searchParams.has("error")) {
-            const errorDesc = searchParams.get("error_description") || searchParams.get("error");
-            snackbar({ message: `落雪授权失败: ${errorDesc}`, autoCloseDelay: 3000 });
-        } else if (searchParams.has("code")) {
-            const code = searchParams.get("code")!;
-            const state = searchParams.get("state") || "";
-            const shared = useShared();
-            shared.usersLoaded.then(() => {
-                handleLXNSOAuthCallback(code, state).catch((err: Error) => {
-                    snackbar({
-                        message: err.message || "落雪绑定失败，请重试",
-                        autoCloseDelay: 3000,
-                    });
-                });
-            });
-        } else {
-            snackbar({ message: "落雪授权回调参数缺失", autoCloseDelay: 3000 });
-        }
-    }
-    if (searchParams.size) router.replace({ path: route.path, query: {} });
-
     // Initialize music data from database on app startup
     initializeMusicData().catch(() => {
         // Music data init error - silent fail, will retry on demand
@@ -57,6 +35,7 @@
 </script>
 
 <template>
+    <lxns-oauth-dialog :callback="oauthCallback" resume-pending />
     <mdui-layout>
         <component :is="TopAppBar" />
         <mdui-navigation-bar

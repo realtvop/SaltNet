@@ -33,6 +33,15 @@ they cannot become empty navigation stops. Register every MDUI function dialog w
 `markDialogOpen`/`markDialogClosed`; custom dialogs containing nested MDUI components must use
 `.self` lifecycle listeners.
 
+LXNS OAuth callbacks are captured and removed from the URL in `oauthSession.ts` before router
+history initialization. Pending authorizations use expiring, state-keyed local storage records
+and stable user UIDs; user writes are awaited through `shared.persistUsers()` before navigation
+and completion. `LXNSOAuthDialog.vue` handles retries and manual callback-link transfer back to
+the originating PWA when a browser uses isolated storage. Never exchange a code without its
+matching local transaction and PKCE verifier. Token endpoints accept flat OAuth responses as
+well as the legacy API envelope. Startup callback dialogs wait for
+`dialogStore.waitForInitialHistory()` so restored dialog entries cannot close the new dialog.
+
 ## Build, Test, and Development Commands
 
 Install all workspace dependencies with `pnpm install`. From the repository root:
@@ -55,6 +64,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
+- `pnpm test:oauth` validates callback cleanup, authorization recovery, user identity targeting,
+  token response compatibility, refresh-token handling, serialized durable user writes, and
+  initial dialog-history reconciliation.
 
 ## Coding Style & Naming Conventions
 

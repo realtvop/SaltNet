@@ -135,11 +135,20 @@ export const useShared = defineStore("shared", () => {
             };
         });
 
+    let usersWrite: Promise<void> = Promise.resolve();
+    function persistUsers(): Promise<void> {
+        const snapshot = toStorageValue(users.value);
+        usersWrite = usersWrite
+            .catch(() => undefined)
+            .then(() => localForage.setItem("users", snapshot))
+            .then(() => undefined);
+        return usersWrite;
+    }
+
     watch(
         users,
-        (newUsers: User[]) => {
-            if (!newUsers) return;
-            localForage.setItem("users", toStorageValue(newUsers)).catch((err: unknown) => {
+        () => {
+            persistUsers().catch((err: unknown) => {
                 console.error("Failed to save users:", err);
             });
         },
@@ -179,6 +188,7 @@ export const useShared = defineStore("shared", () => {
     return {
         users,
         usersLoaded,
+        persistUsers,
         chartsSort,
         favorites,
         isUpdated,

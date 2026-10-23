@@ -63,8 +63,11 @@
 
             <mdui-tab value="lxns">落雪</mdui-tab>
             <mdui-tab-panel slot="panel" value="lxns">
-                <mdui-button full-width @click="startBindingLXNS">
+                <mdui-button full-width :disabled="isStartingLXNS" @click="startBindingLXNS">
                     {{ userLXNSBindStatus ? "换绑" : "绑定" }}落雪帐号
+                </mdui-button>
+                <mdui-button full-width variant="text" @click="showOAuthRecovery = true">
+                    继续落雪授权
                 </mdui-button>
                 <mdui-button
                     full-width
@@ -129,6 +132,7 @@
             </mdui-tab-panel>
         </mdui-tabs>
     </mdui-dialog>
+    <lxns-oauth-dialog v-model="showOAuthRecovery" @complete="requestClose" />
 </template>
 
 <script setup lang="ts">
@@ -140,6 +144,7 @@
     import { initLXNSOAuth } from "@/components/integrations/lxns";
     import { useShared } from "@/components/app/shared";
     import { createUserUid } from "@/components/data/user/scoreHistory";
+    import LxnsOauthDialog from "@/components/integrations/lxns/LXNSOAuthDialog.vue";
 
     const props = defineProps<{
         modelValue: boolean;
@@ -155,6 +160,8 @@
     const dialogRef = ref<any>(null);
 
     const localUser = ref<Partial<User>>({});
+    const isStartingLXNS = ref(false);
+    const showOAuthRecovery = ref(false);
 
     const ensureUserSettings = (user: Partial<User>) => {
         if (!user.settings) {
@@ -326,32 +333,43 @@
     }
 
     async function startBindingLXNS() {
-        let targetIndex: number;
-        if (props.isEditingNewUser) {
-            shared.users.push({
-                uid: createUserUid(),
-                remark: localUser.value.remark ?? null,
-                divingFish: {
-                    name: localUser.value.divingFish?.name ?? null,
-                    importToken: localUser.value.divingFish?.importToken ?? null,
-                },
-                lxns: { auth: null, name: null, id: null },
-                inGame: {
-                    id: localUser.value.inGame?.id ?? null,
-                    enabled: localUser.value.inGame?.enabled ?? false,
-                    useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
-                },
-                settings: {
-                    manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
-                },
-                data: { updateTime: null, name: null, rating: null },
+        if (isStartingLXNS.value) return;
+        isStartingLXNS.value = true;
+        try {
+            let targetIndex: number;
+            if (props.isEditingNewUser) {
+                shared.users.push({
+                    uid: createUserUid(),
+                    remark: localUser.value.remark ?? null,
+                    divingFish: {
+                        name: localUser.value.divingFish?.name ?? null,
+                        importToken: localUser.value.divingFish?.importToken ?? null,
+                    },
+                    lxns: { auth: null, name: null, id: null },
+                    inGame: {
+                        id: localUser.value.inGame?.id ?? null,
+                        enabled: localUser.value.inGame?.enabled ?? false,
+                        useFastUpdate: localUser.value.inGame?.useFastUpdate ?? false,
+                    },
+                    settings: {
+                        manuallyUpdate: localUser.value.settings?.manuallyUpdate ?? false,
+                    },
+                    data: { updateTime: null, name: null, rating: null },
+                });
+                targetIndex = shared.users.length - 1;
+            } else {
+                targetIndex = props.userIndex!;
+            }
+            const url = await initLXNSOAuth(targetIndex);
+            window.location.href = url;
+        } catch (error) {
+            snackbar({
+                message: error instanceof Error ? error.message : "无法开始落雪授权，请重试",
+                autoCloseDelay: 3000,
             });
-            targetIndex = shared.users.length - 1;
-        } else {
-            targetIndex = props.userIndex!;
+        } finally {
+            isStartingLXNS.value = false;
         }
-        const url = await initLXNSOAuth(targetIndex);
-        window.location.href = url;
     }
     function unbindLXNS() {
         void confirm({
