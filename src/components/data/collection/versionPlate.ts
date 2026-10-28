@@ -9,6 +9,31 @@ const syncOrder = Object.values(SyncStatus);
 
 const requirementLookupCache = new WeakMap<Collection, Map<number, CollectionRequired[]>>();
 
+export function getVersionPlateTabs(plates: VersionPlate[]): { value: string; label: string }[] {
+    const tabs: { value: string; label: string }[] = [];
+    let previousKey: string | undefined;
+    for (const plate of plates) {
+        const requirements = plate.required?.map(requirement => ({
+            difficulties: [...(requirement.difficulties ?? [])].sort((a, b) => a - b),
+            rate: requirement.rate,
+            fc: requirement.fc,
+            fs: requirement.fs,
+            songs: requirement.songs?.map(song => `${song.type}:${song.id}`).sort(),
+        }));
+        const key = isCollectionScoreEvaluable(plate)
+            ? JSON.stringify([plate.category, requirements])
+            : undefined;
+        const previous = tabs.at(-1);
+        if (previous && key !== undefined && key === previousKey) {
+            previous.label = `${previous.label.slice(0, -plate.category.length)}${plate.name}`;
+        } else {
+            tabs.push({ value: plate.name, label: plate.name });
+        }
+        previousKey = key;
+    }
+    return tabs;
+}
+
 function reachesThreshold<T extends string>(current: T, required: T, order: T[]): boolean {
     const currentIndex = order.indexOf(current);
     const requiredIndex = order.indexOf(required);

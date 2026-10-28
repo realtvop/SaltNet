@@ -29,6 +29,7 @@
         getCollectionCharts,
         getPlateCompactPresentation,
         getVersionPlateConditionText,
+        getVersionPlateTabs,
     } from "@/components/data/collection/versionPlate";
     import type { VersionPlate, VersionPlateCategory } from "@/components/data/collection/type";
     import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
@@ -140,6 +141,21 @@
     const openedKaleidxscopeGates = computed(() =>
         getOpenedKaleidxscopeGates(kaleidxscopeNow.value)
     );
+    const versionPlateTabs = computed(
+        () =>
+            Object.fromEntries(
+                versionPlateCategories.map(key => [key, getVersionPlateTabs(versionPlates[key])])
+            ) as Record<VersionPlateCategory, { value: string; label: string }[]>
+    );
+    const tabLabels = computed(
+        () =>
+            new Map(
+                versionPlateTabs.value[category.value as VersionPlateCategory]?.map(tab => [
+                    tab.value,
+                    tab.label,
+                ])
+            )
+    );
     function getTabsForCategory(tabCategory: Category | VersionPlateCategory): string[] {
         if (tabCategory === Category.InGame) {
             return getDifficultyTabs(
@@ -163,7 +179,7 @@
         }
         if (tabCategory in versionPlates) {
             const plateType = tabCategory as VersionPlateCategory;
-            return versionPlates[plateType]?.map(plate => plate.name) || [];
+            return versionPlateTabs.value[plateType].map(tab => tab.value);
         }
         return [];
     }
@@ -229,9 +245,9 @@
 
     function syncVersionPlateSelections(): void {
         for (const plateCategory of versionPlateCategories) {
-            const available = versionPlates[plateCategory];
-            if (!available.some(plate => plate.name === selectedTab.value[plateCategory])) {
-                selectedTab.value[plateCategory] = available[0]?.name ?? "";
+            const available = versionPlateTabs.value[plateCategory];
+            if (!available.some(tab => tab.value === selectedTab.value[plateCategory])) {
+                selectedTab.value[plateCategory] = available[0]?.value ?? "";
             }
         }
     }
@@ -1374,7 +1390,7 @@
                         }
                     "
                 >
-                    {{ tab }}
+                    {{ tabLabels.get(tab) ?? tab }}
                 </mdui-tab>
             </mdui-tabs>
             <!-- 收藏选项 -->
