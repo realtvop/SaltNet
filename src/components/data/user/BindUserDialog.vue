@@ -30,29 +30,23 @@
             <mdui-tab value="divingFish">水鱼</mdui-tab>
             <mdui-tab-panel slot="panel" value="divingFish">
                 <mdui-text-field
-                    v-if="
-                        localUser.divingFish &&
-                        !(localUser.inGame && localUser.inGame.id) &&
-                        !userLXNSBindStatus
-                    "
+                    v-if="localUser.divingFish"
                     label="水鱼用户名"
                     :value="localUser.divingFish.name ?? ''"
                     @input="localUser.divingFish.name = $event.target.value || null"
-                    helper="用于获取数据，绑定了游戏则可以不填"
+                    :disabled="Boolean(localUser.divingFish.importToken)"
+                    :helper="localUser.divingFish.importToken ? '改用Token获取' : undefined"
                     autocapitalize="off"
                     autocomplete="off"
                     autocorrect="off"
                     spellcheck="false"
+                    :clearable="!localUser.divingFish.importToken"
                 ></mdui-text-field>
-                <!-- <span v-else>
-                    已绑定其他数据源，暂不可绑定水鱼
-                </span> -->
                 <mdui-text-field
-                    v-if="localUser.divingFish && localUser.inGame && localUser.inGame.id"
+                    v-if="localUser.divingFish"
                     label="水鱼成绩导入 Token"
                     :value="localUser.divingFish.importToken ?? ''"
-                    @input="localUser.divingFish.importToken = $event.target.value || null"
-                    helper="用于上传数据，若不绑定游戏则可以不填"
+                    @input="handleImportTokenInput"
                     autocapitalize="off"
                     autocomplete="off"
                     autocorrect="off"
@@ -234,13 +228,22 @@
         emit("update:modelValue", false);
     };
 
+    const handleImportTokenInput = (event: Event) => {
+        const val = (event.target as HTMLInputElement).value?.trim() || null;
+        if (localUser.value.divingFish) {
+            localUser.value.divingFish.importToken = val;
+        }
+    };
+
     function saveUser() {
         ensureUserSettings(localUser.value);
         ensureInGame(localUser.value);
         emit("save", {
             remark: localUser.value.remark ?? null,
             divingFish: {
-                name: localUser.value.divingFish?.name ?? null,
+                name: localUser.value.divingFish?.importToken
+                    ? null
+                    : (localUser.value.divingFish?.name ?? null),
                 importToken: localUser.value.divingFish?.importToken ?? null,
             },
             lxns: {

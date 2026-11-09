@@ -363,20 +363,15 @@
                 <div class="user-badges">
                     <mdui-chip
                         icon="videogame_asset"
-                        :disabled="!user.divingFish?.name"
+                        :disabled="!user.divingFish?.name && !user.divingFish?.importToken"
                         v-if="
                             user.divingFish &&
-                            (user.divingFish.name ||
-                                (user.divingFish?.importToken && user.inGame?.id))
+                            (user.divingFish.name || user.divingFish?.importToken)
                         "
                     >
                         {{
                             user.divingFish?.name ??
-                            (user.divingFish?.importToken &&
-                            user.inGame?.id &&
-                            !(user.lxns && user.lxns.auth)
-                                ? "上传"
-                                : "未绑定水鱼")
+                            (user.inGame?.id && !(user.lxns && user.lxns.auth) ? "上传" : "水鱼")
                         }}
                     </mdui-chip>
                     <mdui-chip icon="videogame_asset" v-if="user.lxns && user.lxns.auth">
