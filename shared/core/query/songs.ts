@@ -1,17 +1,17 @@
-import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
-import type { Course } from "@core/course";
-import type { Chart, ChartScore } from "@core/music/type";
-import { getChartDifficultyFullLabel, UTAGE_GRADE } from "@core/chart/difficulty";
+import type { VersionPlate, VersionPlateCategory } from "../collection/type";
+import type { Course } from "../course";
+import type { Chart, ChartScore } from "../music/type";
+import { getChartDifficultyFullLabel, UTAGE_GRADE } from "../chart/difficulty";
 import {
     DIFFICULTY_TABS,
     formatScoreChangedAt,
     getRecentCharts,
     sortRecentGroupCharts,
-} from "@core/chart/recent";
-import { checkCollectionChartFinish, getCollectionCharts } from "@core/collection/versionPlate";
-import { getCourseCharts } from "@core/course";
-import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import { createMusicSearchQuery, matchesMusicSearchIndex } from "@core/music/search";
+} from "../chart/recent";
+import { checkCollectionChartFinish, getCollectionCharts } from "../collection/versionPlate";
+import { getCourseCharts } from "../course";
+import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
+import { createMusicSearchQuery, matchesMusicSearchIndex } from "../music/search";
 
 /**
  * Query logic of the songs page: ordering, category filtering, position indexes, text search,

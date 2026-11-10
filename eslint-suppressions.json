@@ -322,6 +322,14 @@
       "count": 3
     }
   },
+  "shared/core/query/songs.ts": {
+    "one-var": {
+      "count": 4
+    },
+    "antfu/curly": {
+      "count": 3
+    }
+  },
   "shared/core/user/inGame.ts": {
     "ts/consistent-type-imports": {
       "count": 1
@@ -824,14 +832,6 @@
     },
     "style/operator-linebreak": {
       "count": 4
-    }
-  },
-  "src/components/data/chart/songsQuery.ts": {
-    "one-var": {
-      "count": 4
-    },
-    "antfu/curly": {
-      "count": 3
     }
   },
   "src/components/data/collection/CollectionInfo.vue": {

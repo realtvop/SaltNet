@@ -34,7 +34,6 @@
         UTAGE_GRADE,
     } from "@core/chart/difficulty";
     import { getDifficultyTabs, hasAnyScoreChangedTime } from "@core/chart/recent";
-    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
         addChartPositionIndexes,
         addQueriedPositionIndexes,
@@ -45,7 +44,8 @@
         filterChartsForCategory,
         groupCharts,
         searchCharts,
-    } from "@/components/data/chart/songsQuery";
+    } from "@core/query/songs";
+    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
         formatPlayCount,
         getScoreHistoryChartKey,

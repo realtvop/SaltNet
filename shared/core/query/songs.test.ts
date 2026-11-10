@@ -1,13 +1,13 @@
-import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
-import type { Course } from "@core/course";
-import type { Chart, ChartScore } from "@core/music/type";
-import type { SongsFavoriteList, SongsGroupBy, SongsVersionGroupBy } from "./songsQuery";
-import { formatScoreChangedAt } from "@core/chart/recent";
-import { CollectionKind } from "@core/collection/type";
-import { createFixtureMusicList } from "@core/fixtures/saltmeta";
-import { ComboStatus, getRankRateByAchievement, SyncStatus } from "@core/mai/types";
-import MusicSort from "@core/music/sort.json";
+import type { VersionPlate, VersionPlateCategory } from "../collection/type";
+import type { Course } from "../course";
+import type { Chart, ChartScore } from "../music/type";
+import type { SongsFavoriteList, SongsGroupBy, SongsVersionGroupBy } from "./songs";
 import { describe, expect, it } from "vitest";
+import { formatScoreChangedAt } from "../chart/recent";
+import { CollectionKind } from "../collection/type";
+import { createFixtureMusicList } from "../fixtures/saltmeta";
+import { ComboStatus, getRankRateByAchievement, SyncStatus } from "../mai/types";
+import MusicSort from "../music/sort.json";
 import {
     addChartPositionIndexes,
     addQueriedPositionIndexes,
@@ -18,14 +18,14 @@ import {
     groupCharts,
     searchCharts,
     SongsCategory,
-} from "./songsQuery";
+} from "./songs";
 
 /*
  * Snapshot tests for the songs-page query helpers. They chain the helpers the way the songs page
  * does (filter, position indexes, search, queried indexes, grouping and statistics) on fixed data:
  * the trimmed SaltMeta fixture plus synthetic scores from a seeded generator. The snapshots record
- * what the page showed when the helpers were extracted from it, and they must keep passing
- * unchanged when the helpers move to shared/core.
+ * what the page showed when the helpers were extracted from it. They were not changed when the
+ * helpers moved to shared/core, and they are what keeps the web app and the CLI in agreement.
  */
 
 // MARK: fixed data
