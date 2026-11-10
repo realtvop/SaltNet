@@ -4,7 +4,7 @@ import type { LXNSScore, LXNSUser } from "./type";
 import { calculateB50FromRecords } from "../diving-fish/player";
 import { fetchLXNSApi } from "./fetch";
 import { toHalfWidth } from "@/utils/toHalfWidth";
-import { ComboStatus, SyncStatus } from "@/components/data/maiTypes";
+import { ComboStatus, SyncStatus } from "@core/mai/types";
 
 function LXNS2DF(score: LXNSScore): DivingFishFullRecord {
     return {

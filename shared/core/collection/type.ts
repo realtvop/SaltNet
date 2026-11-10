@@ -1,4 +1,4 @@
-import type { ComboStatus, SyncStatus, RankRate } from "../maiTypes";
+import type { ComboStatus, SyncStatus, RankRate } from "../mai/types";
 
 export enum CollectionKind {
     Plate = 1, // 姓名框

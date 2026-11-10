@@ -31,8 +31,8 @@
         getVersionPlateConditionText,
         getVersionPlateTabs,
     } from "@/components/data/collection/versionPlate";
-    import type { VersionPlate, VersionPlateCategory } from "@/components/data/collection/type";
-    import { ComboStatus, RankRate, SyncStatus } from "@/components/data/maiTypes";
+    import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
+    import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
     import {
         getDifficultyFilterOptions,
         getChartDifficultyFullLabel,

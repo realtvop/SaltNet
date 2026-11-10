@@ -5,7 +5,7 @@ import type {
 } from "@/components/integrations/diving-fish/type";
 import type { Chart } from "../music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
-import type { Level, UserItem, UserInfo, UserCharacter } from "../inGame";
+import type { Level, UserItem, UserInfo, UserCharacter } from "@core/user/inGame";
 import type { LXNSAuth } from "@/components/integrations/lxns";
 
 export interface User {

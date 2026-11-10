@@ -682,7 +682,7 @@
 <script setup lang="ts">
     import type { Chart } from "@/components/data/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
-    import { RANK_RATE_DISPLAY_NAMES } from "@/components/data/maiTypes";
+    import { RANK_RATE_DISPLAY_NAMES } from "@core/mai/types";
     import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
@@ -711,7 +711,7 @@
         refreshCollectionData,
         titles,
     } from "@/components/data/collection";
-    import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
+    import { CollectionKind, type Collection, type Title } from "@core/collection/type";
     import { getRelatedCollectionsForChart } from "@/components/data/collection/relatedCollections";
     import {
         formatPlayCount,

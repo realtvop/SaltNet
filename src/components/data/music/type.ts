@@ -6,7 +6,7 @@ import type {
     ComboStatus,
     SyncStatus,
     RankRate,
-} from "../maiTypes";
+} from "@core/mai/types";
 
 export type MaimaidxRegion = "jp" | "cn" | "ex";
 

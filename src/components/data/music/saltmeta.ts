@@ -1,6 +1,6 @@
 import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "./type";
 import type { ChartStats } from "@/components/integrations/diving-fish/type";
-import { ChartType, MusicGenre, MusicOrigin } from "@/components/data/maiTypes";
+import { ChartType, MusicGenre, MusicOrigin } from "@core/mai/types";
 import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 import { indexMusicSearchData } from "./search";
 

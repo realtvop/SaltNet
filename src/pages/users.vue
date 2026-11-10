@@ -12,7 +12,7 @@
     } from "@/components/data/user/update";
     import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
-    import type { UserInfo } from "@/components/data/inGame";
+    import type { UserInfo } from "@core/user/inGame";
     import type { LXNSAuth } from "@/components/integrations/lxns";
     import { exportUserBackup } from "@/components/data/user/exportBackup";
     import {

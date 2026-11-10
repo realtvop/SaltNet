@@ -58,32 +58,33 @@
     - 网页端引用 core 用的 `@core/*` 别名（vite、tsconfig）
     - 在临时探针文件里确认 `window`、`import.meta.env`、`import "vue"` 都会被拦住（探针不提交）
 
-**直接搬纯逻辑**（`git mv`，改网页端 import，测试和 `test:*` 脚本路径跟着走）
+**直接搬纯逻辑**（`git mv`，改网页端 import，测试和 `test:*` 脚本路径跟着走；顺序按依赖关系排，见「实现中的决定」第 9 条）
 
-- [ ] P0-2 `refactor(core): move mai enums and in-game types to shared/core`
-- [ ] P0-3 `refactor(core): move music types, SaltMeta conversion and sort data to shared/core`
-- [ ] P0-4 `refactor(core): move music search index to shared/core`（`test:music-search`）
-- [ ] P0-5 `refactor(core): move chart difficulty, identity, rating and score lookup to shared/core`
-- [ ] P0-6 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
-- [ ] P0-7 `refactor(core): move course data to shared/core`（`test:course`）
-- [ ] P0-8 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
-- [ ] P0-9 `refactor(core): move collection types and version plate logic to shared/core`
+- [x] P0-2 `refactor(core): move mai enums, in-game types and collection types to shared/core`
+- [ ] P0-3 `refactor(core): move music and diving-fish types to shared/core`
+- [ ] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
+- [ ] P0-5 `refactor(core): move music search index to shared/core`（`test:music-search`）
+- [ ] P0-6 `refactor(core): move SaltMeta conversion to shared/core`
+- [ ] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
+- [ ] P0-8 `refactor(core): move course data to shared/core`（`test:course`）
+- [ ] P0-9 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
+- [ ] P0-10 `refactor(core): move version plate logic to shared/core`
 
 **拆混合模块**
 
-- [ ] P0-10 `refactor(core): split SaltMeta fetching from music cache and vue state`：拉取与校验进 core（地址由 `CoreConfig` 传入），IndexedDB 缓存、Vue 状态、提示条留在网页端
-- [ ] P0-11 `refactor(core): split collection mapping and lxns fetching from vue state`：落雪收藏品的拉取和数据映射进 core，缓存和 Vue 数组留在网页端（`test:collection-index`）
-- [ ] P0-12 `refactor(core): extract related collection index builder`：纯索引构建进 core，`shallowRef` 包装留在网页端
+- [ ] P0-11 `refactor(core): split SaltMeta fetching from music cache and vue state`：拉取与校验进 core（地址由 `CoreConfig` 传入），IndexedDB 缓存、Vue 状态、提示条留在网页端
+- [ ] P0-12 `refactor(core): split collection mapping and lxns fetching from vue state`：落雪收藏品的拉取和数据映射（连同 `lxns/type.ts`）进 core，缓存和 Vue 数组留在网页端（`test:collection-index`）
+- [ ] P0-13 `refactor(core): extract related collection index builder`：纯索引构建进 core，`shallowRef` 包装留在网页端
 
 **曲目页的查询逻辑 → `core/query`**
 
-- [ ] P0-13 `refactor(songs): extract page query helpers into a module without behavior changes`：只做原样搬动，不改一行逻辑，用网页端实测对照
-- [ ] P0-14 `test(query): snapshot songs query helpers with fixed data`：筛选、排序、分组、统计在固定数据上的现状快照（新增脚本 `test:query`）
-- [ ] P0-15 `refactor(core): move songs query helpers to shared/core/query`：快照不改动，原样通过
+- [ ] P0-14 `refactor(songs): extract page query helpers into a module without behavior changes`：只做原样搬动，不改一行逻辑，用网页端实测对照
+- [ ] P0-15 `test(query): snapshot songs query helpers with fixed data`：筛选、排序、分组、统计在固定数据上的现状快照（新增脚本 `test:query`）
+- [ ] P0-16 `refactor(core): move songs query helpers to shared/core/query`：快照不改动，原样通过
 
 **收尾**
 
-- [ ] P0-16 `docs: update agents guide for shared/core`：整理 `AGENTS.md` 的结构说明、命令和测试；网页端实测（曲目页、谱面弹窗、收藏品页，含前进/后退），结论记入「实现中的决定」
+- [ ] P0-17 `docs: update agents guide for shared/core`：整理 `AGENTS.md` 的结构说明、命令和测试；网页端实测（曲目页、谱面弹窗、收藏品页，含前进/后退），结论记入「实现中的决定」
 
 ### P1 骨架和曲库
 
@@ -115,7 +116,7 @@
 
 **P2-0 先抽这一期要用的模块**
 
-- [ ] P2-1 `refactor(core): move user types and rating history to shared/core`
+- [ ] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬
 - [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）
 - [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`
 - [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`
@@ -196,7 +197,7 @@
     - 新目录（`shared/core/`、`cli/`）里 ESLint 的格式规则和 Prettier 仍会冲突（例如 `else` 的换行），所以建这些目录时给它们单独关掉由 Prettier 负责的格式规则，其余规则照常生效、新代码必须零违规。
 2. **core 的类型环境**：`shared/core/tsconfig.json` 用 `lib: ["ES2023", "WebWorker"]` 加 `types: []`。这样没有 `window`、`document`、`localStorage` 等 DOM 全局，也没有 node 类型，但 `fetch`、`URL`、`TextEncoder` 这些 Web 标准全局还在（core 要联网，必须有）。`import.meta.env` 因为没引 vite 的类型也会报错。
 3. **网页端引用 core 的别名**：新增 `@core/*` → `shared/core/*`（vite 和 tsconfig），只给 `src/` 用，避免十几层 `../`。core 内部仍然只用相对路径。
-4. **目录**：`maiTypes.ts` 和 `inGame.ts` 放 `shared/core/mai/`（设计文档的目录图没列，属于补充）。
+4. **目录**：`maiTypes.ts` 放 `shared/core/mai/types.ts`（设计文档的目录图没列 `mai/`，属于补充）；`inGame.ts` 是游戏里的用户数据类型，放 `shared/core/user/inGame.ts`。
 5. **分期抽取**：按设计文档 6.3 的「P0 可以拆开做」，P0 只抽 P1 要用的模块，外加曲目页里全部的纯查询逻辑（同一个文件，一次读完一次搬完，CLI 在 P1 用不带成绩的部分，P2 再用带成绩的部分）。用户、成绩历史、B50、阶段表、同步、各接口的客户端留到对应期的 P2-0、P3-0。
 6. **页面逻辑的快照**：页面里的函数不能直接 import，所以每处都分三个 commit：先原样搬出成模块（不改逻辑，用网页端实测对照），再对这个模块写快照，最后搬进 `core/query`，快照原样通过。
 7. **宴谱重复条目只在 CLI 里合并**：网页端行为不变，合并函数放在 core 里供 CLI 显式调用。
@@ -206,3 +207,5 @@
     - UA 默认 `saltnet-cli/<版本>`，可在 `config.json` 里改
     - 重复宴谱：CLI 里合并，并在 `status` 里列出
     - 二维码属于另一个账号：默认和网页端一致（改写游戏 id），做成配置项，可改成报错
+9. **P0 的搬迁顺序按依赖排**：`inGame.ts` 依赖 `collection/type.ts`，`music/type.ts` 依赖水鱼的类型，`saltmeta.ts` 依赖 `search.ts` 和 `difficulty.ts`，所以先搬 `mai/`、`collection/type`、`inGame`，再搬音乐类型和水鱼类型，然后是 `difficulty`、`search`、`saltmeta`。`chart/scoreLookup.ts` 依赖 `user/type.ts`（P2 才搬），`chart/rating/` 也只有 P2 用得到，这两个挪到 P2-1。步骤因此重新编号。
+10. **import 搬动后的 lint 基线**：路径改写会让文件里 import 的位置变化，已经有存量 import 排序违规的文件，违规数可能多 1 到 2（`perfectionist/sort-imports`），Prettier 因路径变长而折行也会让 `style/indent` 的数目增加。这类只在原本就违规的文件里增加的计数，随搬迁 commit 一起更新 `eslint-suppressions.json`；原来没有违规的文件则必须改到零违规。绝不在存量文件上跑 `eslint --fix`（会把整份 Vue 文件按 ESLint 的缩进规则重排，和 Prettier 冲突）。

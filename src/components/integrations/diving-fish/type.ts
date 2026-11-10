@@ -5,7 +5,7 @@ import type {
     MusicOrigin,
     RankRate,
     SyncStatus,
-} from "../../data/maiTypes";
+} from "@core/mai/types";
 
 export interface DivingFishFullRecord {
     achievements: number;

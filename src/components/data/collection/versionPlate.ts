@@ -1,7 +1,7 @@
-import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
+import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import type { Chart, ChartScore } from "../music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
-import type { Collection, CollectionRequired, VersionPlate } from "./type";
+import type { Collection, CollectionRequired, VersionPlate } from "@core/collection/type";
 
 const rankOrder = Object.values(RankRate);
 const comboOrder = Object.values(ComboStatus);

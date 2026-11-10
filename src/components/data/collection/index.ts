@@ -18,7 +18,7 @@ import {
     TitleColor,
     type VersionPlate,
     type VersionPlateCategory,
-} from "./type";
+} from "@core/collection/type";
 import additionalCollections from "./additionalCollections.json";
 import { updateRelatedCollectionsIndex } from "./relatedCollections";
 

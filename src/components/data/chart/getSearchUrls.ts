@@ -1,4 +1,4 @@
-import { ChartType } from "../maiTypes";
+import { ChartType } from "@core/mai/types";
 import type { Chart } from "../music/type";
 import { getChartDifficultySearchLabel } from "./difficulty";
 

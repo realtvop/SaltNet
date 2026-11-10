@@ -7,7 +7,7 @@
     import type { Chart } from "@/components/data/music/type";
     import { getUserDisplayName } from "@/components/data/user/type";
     import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-    import { ComboStatus } from "@/components/data/maiTypes";
+    import { ComboStatus } from "@core/mai/types";
     import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";
     import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
     import { useShared } from "@/components/app/shared";

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Chart } from "../music/type";
-import type { Collection, CollectionRequired, CollectionSongType } from "./type";
+import type { Collection, CollectionRequired, CollectionSongType } from "@core/collection/type";
 import { getRelatedCollectionsForChart, updateRelatedCollectionsIndex } from "./relatedCollections";
 
 function makeChart(musicId: number, grade: number): Chart {

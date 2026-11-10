@@ -1,7 +1,7 @@
 import localForage from "localforage";
 import type { User } from "../type";
 import { normalizeRatingHistory } from "../ratingHistory";
-import { ComboStatus, SyncStatus } from "../../maiTypes";
+import { ComboStatus, SyncStatus } from "@core/mai/types";
 import {
     activateStagedScoreHistoryImport,
     exportScoreHistoryEvents,

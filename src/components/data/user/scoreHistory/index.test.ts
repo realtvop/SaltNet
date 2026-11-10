@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import localForage from "localforage";
-import { ComboStatus, RankRate, SyncStatus } from "../../maiTypes";
+import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
 import { convertDetailed, type User } from "../type";
 import {

@@ -8,7 +8,12 @@
     import { getCollectionImageURL } from "@/components/integrations/assets";
     import CollectionProgress from "./CollectionProgress.vue";
     import CollectionTitle from "./CollectionTitle.vue";
-    import { type Collection, type CollectionRequired, CollectionKind, type Title } from "./type";
+    import {
+        type Collection,
+        type CollectionRequired,
+        CollectionKind,
+        type Title,
+    } from "@core/collection/type";
     import { isCollectionScoreEvaluable } from "./versionPlate";
 
     const props = defineProps<{

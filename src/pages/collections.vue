@@ -13,7 +13,7 @@
         partners,
         refreshCollectionData,
     } from "@/components/data/collection";
-    import { CollectionKind, type Collection, type Title } from "@/components/data/collection/type";
+    import { CollectionKind, type Collection, type Title } from "@core/collection/type";
     import { useShared } from "@/components/app/shared";
     // import { copyTextToClipboard } from "@/components/app/utils";
     import { useVirtualScroll, handleSelectChange } from "@/utils";

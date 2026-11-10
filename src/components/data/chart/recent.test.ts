@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Chart } from "@/components/data/music/type";
-import { ChartType } from "@/components/data/maiTypes";
+import { ChartType } from "@core/mai/types";
 import {
     formatScoreChangedAt,
     getDifficultyTabs,

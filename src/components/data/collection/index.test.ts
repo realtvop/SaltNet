@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LXNSCollectionLists } from "@/components/integrations/lxns";
 import { getVersionPlateTabs } from "./versionPlate";
-import { CollectionKind, type VersionPlate, type VersionPlateCategory } from "./type";
-import { ComboStatus } from "../maiTypes";
+import {
+    CollectionKind,
+    type VersionPlate,
+    type VersionPlateCategory,
+} from "@core/collection/type";
+import { ComboStatus } from "@core/mai/types";
 
 const mocks = vi.hoisted(() => ({
     fetchLXNSCollections: vi.fn(),

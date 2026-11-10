@@ -5,8 +5,8 @@
     import { getMusicInfoAsync } from "@/components/data/music";
     import type { Chart } from "@/components/data/music/type";
     import type { User } from "@/components/data/user/type";
-    import { RankRate } from "@/components/data/maiTypes";
-    import type { Collection } from "./type";
+    import { RankRate } from "@core/mai/types";
+    import type { Collection } from "@core/collection/type";
     import {
         getCollectionCharts,
         getCollectionProgress,
