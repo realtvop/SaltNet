@@ -13,6 +13,8 @@ SaltNet is a three-package pnpm workspace:
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
 - `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and the reactive wrapper (`relatedCollections.ts`) around the shared reverse-association index used by ChartInfo.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
+  SaltNet's `postAPI` checks HTTP errors and switches to the fallback backend; `postAPIJSON`
+  also parses JSON and propagates backend errors or a friendly message for invalid responses.
 - `shared/core/` holds platform-neutral domain logic shared by the web app and the CLI. It must not
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
   imports are relative, and web code imports it through the `@core/*` alias. `pnpm check` type-checks

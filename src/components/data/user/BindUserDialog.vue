@@ -134,7 +134,7 @@
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import type { User } from "@/components/data/user/type";
     import { confirm, prompt, snackbar } from "mdui";
-    import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+    import { postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";
     import { useShared } from "@/components/app/shared";
     import { createUserUid } from "@/components/data/user/scoreHistory";
@@ -320,11 +320,10 @@
 
     function getUserIdFromQRCode(qrCode: string) {
         qrCode = qrCode.slice(-64);
-        return postAPI(SaltAPIEndpoints.GetQRInfo, { qrCode } as Record<string, unknown>)
-            .then(r => r.json())
+        return postAPIJSON(SaltAPIEndpoints.GetQRInfo, { qrCode } as Record<string, unknown>)
             .then(data => {
                 if (data.errorID === 0) {
-                    if (!localUser.value.inGame) localUser.value.inGame = { name: null, id: null };
+                    localUser.value.inGame ??= { name: null, id: null };
                     localUser.value.inGame.id = data.userID;
                 } else {
                     snackbar({
@@ -332,7 +331,8 @@
                         autoCloseDelay: 1000,
                     });
                 }
-            });
+            })
+            .catch((e: Error) => void snackbar({ message: e.message, autoCloseDelay: 3000 }));
     }
 
     async function startBindingLXNS() {

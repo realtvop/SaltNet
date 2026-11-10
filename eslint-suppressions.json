@@ -996,7 +996,7 @@
       "count": 2
     },
     "antfu/if-newline": {
-      "count": 8
+      "count": 7
     },
     "antfu/top-level-function": {
       "count": 8
@@ -1385,7 +1385,7 @@
       "count": 8
     },
     "style/arrow-parens": {
-      "count": 12
+      "count": 10
     },
     "style/brace-style": {
       "count": 18
@@ -1394,7 +1394,7 @@
       "count": 6
     },
     "antfu/if-newline": {
-      "count": 10
+      "count": 9
     },
     "style/quotes": {
       "count": 4
@@ -1410,16 +1410,7 @@
     }
   },
   "src/components/integrations/SaltNet/index.ts": {
-    "antfu/curly": {
-      "count": 1
-    },
-    "style/arrow-parens": {
-      "count": 1
-    },
     "style/comma-dangle": {
-      "count": 1
-    },
-    "ts/no-wrapper-object-types": {
       "count": 1
     }
   },

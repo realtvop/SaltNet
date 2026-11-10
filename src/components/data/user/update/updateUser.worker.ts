@@ -7,7 +7,7 @@ import {
 import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
-import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+import { postAPI, postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
 import { toHalfWidth } from "@/utils/toHalfWidth";
@@ -266,24 +266,17 @@ function fetchInGameData(
     importToken?: string,
     qrCode?: string
 ): Promise<UpdateUserResponse | null> {
-    return postAPI(SaltAPIEndpoints.UpdateUser, {
+    return postAPIJSON(SaltAPIEndpoints.UpdateUser, {
         userId,
         importToken,
         ...(qrCode ? { qrCode } : {}),
-    })
-        .then(r => r.json())
-        .catch(e => {
-            info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
-            return null;
-        });
+    });
 }
 function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | null> {
-    return postAPI(SaltAPIEndpoints.UpdateUserFromDivingFish, { userName })
-        .then(r => r.json())
-        .catch(e => {
-            info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
-            return null;
-        });
+    return postAPIJSON(SaltAPIEndpoints.UpdateUserFromDivingFish, { userName }).catch(e => {
+        info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
+        return null;
+    });
 }
 
 function checkLogin(user: User, qrCodeInput?: string) {
@@ -293,8 +286,7 @@ function checkLogin(user: User, qrCodeInput?: string) {
         info(`检查登录状态失败：${userName}，二维码无效`);
         return;
     }
-    return postAPI(SaltAPIEndpoints.CheckLogin, { qrCode })
-        .then(r => r.json())
+    return postAPIJSON(SaltAPIEndpoints.CheckLogin, { qrCode })
         .then((data: { isLogin: string } | null) => {
             if (data) {
                 self.postMessage({
@@ -311,7 +303,7 @@ function checkLogin(user: User, qrCodeInput?: string) {
             }
         })
         .catch(e => {
-            info(`获取 InGame 数据失败：${userName} - ${e.toString()}`, e.toString());
+            info(e instanceof Error ? e.message : "请求游戏API失败，请稍候重试");
         });
 }
 function normalizeQrCodeFromInput(raw?: string): string | null {
@@ -335,19 +327,15 @@ function clearIllegalTickets(user: User, qrCodeInput?: string) {
     }
     info(`正在清理 ${userName} 的非法倍券，请稍等约1分钟`);
     return postAPI(SaltAPIEndpoints.ClearIllegalTickets, { qrCode })
-        .then(r => {
-            if (r.ok) info(`已清理 ${userName} 的非法倍券`);
-            else info(`清理 ${userName} 的非法倍券失败，请检查是否已获取二维码或已被登录`);
-        })
+        .then(() => info(`已清理 ${userName} 的非法倍券`))
         .catch(e => {
-            info(`清理 ${userName} 的非法倍券失败: ${e.toString()}`, e.toString());
+            info(e instanceof Error ? e.message : "请求游戏API失败，请稍候重试");
         });
 }
 function previewStockedTickets(user: User) {
     const userName = getUserDisplayName(user);
     info(`正在获取 ${userName} 的倍券`);
-    return postAPI(SaltAPIEndpoints.GetStockedTickets, { userId: user.inGame?.id })
-        .then(r => r.json())
+    return postAPIJSON(SaltAPIEndpoints.GetStockedTickets, { userId: user.inGame?.id })
         .then(
             (
                 data:
@@ -383,7 +371,7 @@ function previewStockedTickets(user: User) {
             }
         )
         .catch(e => {
-            info(`获取 ${userName} 的倍券失败：${e.toString()}`, e.toString());
+            info(e instanceof Error ? e.message : "请求游戏API失败，请稍候重试");
             return [];
         });
 }
