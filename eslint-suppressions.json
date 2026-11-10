@@ -1,0 +1,2494 @@
+{
+  ".devcontainer/devcontainer.json": {
+    "jsonc/indent": {
+      "count": 34
+    }
+  },
+  ".devcontainer/docker-compose.yml": {
+    "yaml/indent": {
+      "count": 25
+    },
+    "yaml/quotes": {
+      "count": 1
+    }
+  },
+  ".github/workflows/pr-check.yml": {
+    "yaml/indent": {
+      "count": 21
+    }
+  },
+  ".vscode/extensions.json": {
+    "jsonc/indent": {
+      "count": 1
+    }
+  },
+  ".vscode/settings.json": {
+    "jsonc/indent": {
+      "count": 8
+    }
+  },
+  "api/render/[...path].ts": {
+    "node/prefer-global/process": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "docs/component-data-types.md": {
+    "object-shorthand": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 63
+    },
+    "style/semi-spacing": {
+      "count": 1
+    }
+  },
+  "docs/spark/2026-11-10-saltnet-cli-design.md": {
+    "jsonc/indent": {
+      "count": 60
+    }
+  },
+  "index.html": {
+    "format/prettier": {
+      "count": 79
+    }
+  },
+  "package.json": {
+    "jsonc/indent": {
+      "count": 53
+    },
+    "jsonc/sort-keys": {
+      "count": 2
+    }
+  },
+  "pnpm-workspace.yaml": {
+    "pnpm/yaml-enforce-settings": {
+      "count": 2
+    },
+    "yaml/indent": {
+      "count": 7
+    },
+    "yaml/plain-scalar": {
+      "count": 2
+    },
+    "yaml/quotes": {
+      "count": 3
+    },
+    "yaml/sort-keys": {
+      "count": 1
+    }
+  },
+  "render-service/api/render/[...path].ts": {
+    "node/prefer-global/process": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "render-service/package.json": {
+    "jsonc/indent": {
+      "count": 22
+    },
+    "jsonc/sort-keys": {
+      "count": 1
+    }
+  },
+  "render-service/src/env.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    }
+  },
+  "render-service/src/globals.d.ts": {
+    "style/member-delimiter-style": {
+      "count": 1
+    }
+  },
+  "render-service/src/http.tsx": {
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 12
+    },
+    "style/comma-dangle": {
+      "count": 8
+    },
+    "style/indent-binary-ops": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    },
+    "style/operator-linebreak": {
+      "count": 8
+    }
+  },
+  "render-service/src/worker.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "render-service/tests/filename.test.ts": {
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "render-service/tests/fonts.test.ts": {
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "render-service/tests/http.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "render-service/tests/payload.test.ts": {
+    "style/comma-dangle": {
+      "count": 2
+    }
+  },
+  "render-service/tests/template.test.tsx": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/jsx-indent-props": {
+      "count": 2
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "render-service/tsconfig.json": {
+    "jsonc/indent": {
+      "count": 15
+    },
+    "jsonc/sort-keys": {
+      "count": 3
+    }
+  },
+  "render-service/tsconfig.vercel.json": {
+    "jsonc/indent": {
+      "count": 14
+    },
+    "jsonc/sort-keys": {
+      "count": 1
+    }
+  },
+  "render-service/vercel.json": {
+    "jsonc/indent": {
+      "count": 7
+    }
+  },
+  "render-service/wrangler.toml": {
+    "style/no-multiple-empty-lines": {
+      "count": 1
+    },
+    "toml/array-bracket-spacing": {
+      "count": 2
+    }
+  },
+  "script/generateBuildInfo.cjs": {
+    "antfu/if-newline": {
+      "count": 15
+    },
+    "node/prefer-global/process": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 4
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    },
+    "style/quotes": {
+      "count": 2
+    },
+    "unicorn/prefer-node-protocol": {
+      "count": 3
+    }
+  },
+  "script/generateBuildInfo.test.cjs": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "shared/rendering/b50-filename.ts": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    }
+  },
+  "shared/rendering/b50-fonts.ts": {
+    "antfu/if-newline": {
+      "count": 4
+    },
+    "regexp/strict": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    }
+  },
+  "shared/rendering/b50-image.tsx": {
+    "antfu/if-newline": {
+      "count": 11
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 6
+    },
+    "style/jsx-indent-props": {
+      "count": 34
+    },
+    "style/jsx-one-expression-per-line": {
+      "count": 8
+    },
+    "style/member-delimiter-style": {
+      "count": 13
+    },
+    "style/multiline-ternary": {
+      "count": 22
+    },
+    "style/operator-linebreak": {
+      "count": 5
+    },
+    "style/quotes": {
+      "count": 1
+    },
+    "ts/no-use-before-define": {
+      "count": 46
+    }
+  },
+  "shared/rendering/b50-payload.ts": {
+    "antfu/if-newline": {
+      "count": 12
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 19
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    },
+    "unicorn/prefer-type-error": {
+      "count": 1
+    }
+  },
+  "src/App.vue": {
+    "format/prettier": {
+      "count": 85
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 30
+    },
+    "vue/html-indent": {
+      "count": 74
+    }
+  },
+  "src/assets/plates.json": {
+    "jsonc/indent": {
+      "count": 12
+    },
+    "style/eol-last": {
+      "count": 1
+    }
+  },
+  "src/components/app/TopAppBar.vue": {
+    "format/prettier": {
+      "count": 27
+    },
+    "style/indent": {
+      "count": 4
+    },
+    "vue/html-indent": {
+      "count": 40
+    },
+    "vue/operator-linebreak": {
+      "count": 3
+    }
+  },
+  "src/components/app/checkForUpdate.ts": {
+    "antfu/curly": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    }
+  },
+  "src/components/app/router.ts": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "no-useless-return": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 6
+    },
+    "style/arrow-parens": {
+      "count": 1
+    }
+  },
+  "src/components/app/shared.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    }
+  },
+  "src/components/app/shared.ts": {
+    "antfu/if-newline": {
+      "count": 6
+    },
+    "perfectionist/sort-imports": {
+      "count": 4
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 4
+    },
+    "style/member-delimiter-style": {
+      "count": 4
+    },
+    "style/operator-linebreak": {
+      "count": 5
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/ChartInfo.vue": {
+    "antfu/curly": {
+      "count": 1
+    },
+    "antfu/if-newline": {
+      "count": 37
+    },
+    "format/prettier": {
+      "count": 732
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 5
+    },
+    "import/no-duplicates": {
+      "count": 2
+    },
+    "no-undef-init": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 9
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 6
+    },
+    "style/arrow-parens": {
+      "count": 6
+    },
+    "style/brace-style": {
+      "count": 12
+    },
+    "style/comma-dangle": {
+      "count": 16
+    },
+    "style/indent": {
+      "count": 621
+    },
+    "style/indent-binary-ops": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 22
+    },
+    "style/operator-linebreak": {
+      "count": 9
+    },
+    "ts/no-use-before-define": {
+      "count": 1
+    },
+    "unicorn/prefer-number-properties": {
+      "count": 1
+    },
+    "vue/block-order": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 3
+    },
+    "vue/define-macros-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 648
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 9
+    },
+    "vue/no-use-v-if-with-v-for": {
+      "count": 1
+    },
+    "vue/operator-linebreak": {
+      "count": 2
+    }
+  },
+  "src/components/data/chart/ScoreCalculatorDialog.vue": {
+    "antfu/if-newline": {
+      "count": 5
+    },
+    "format/prettier": {
+      "count": 109
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "prefer-template": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 137
+    },
+    "style/indent-binary-ops": {
+      "count": 4
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 10
+    },
+    "ts/no-unsafe-function-type": {
+      "count": 1
+    },
+    "unicorn/prefer-number-properties": {
+      "count": 2
+    },
+    "vue/block-order": {
+      "count": 1
+    },
+    "vue/define-macros-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 142
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/ScoreCard.vue": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "dot-notation": {
+      "count": 1
+    },
+    "format/prettier": {
+      "count": 373
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 46
+    },
+    "style/indent-binary-ops": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 7
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    },
+    "vue/define-macros-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 131
+    },
+    "vue/no-unused-vars": {
+      "count": 2
+    },
+    "vue/no-use-v-if-with-v-for": {
+      "count": 1
+    },
+    "vue/require-v-for-key": {
+      "count": 2
+    }
+  },
+  "src/components/data/chart/ScoreSection.vue": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "format/prettier": {
+      "count": 159
+    },
+    "object-shorthand": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 46
+    },
+    "style/member-delimiter-style": {
+      "count": 10
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 35
+    },
+    "vue/no-mutating-props": {
+      "count": 2
+    },
+    "vue/prefer-separate-static-class": {
+      "count": 5
+    },
+    "vue/quote-props": {
+      "count": 5
+    }
+  },
+  "src/components/data/chart/chartIdentity.ts": {
+    "style/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/chartPosition.ts": {
+    "antfu/if-newline": {
+      "count": 5
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 3
+    },
+    "style/comma-dangle": {
+      "count": 4
+    },
+    "style/operator-linebreak": {
+      "count": 5
+    }
+  },
+  "src/components/data/chart/difficulty.ts": {
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/getSearchUrls.ts": {
+    "eqeqeq": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/quotes": {
+      "count": 3
+    },
+    "ts/no-use-before-define": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/rating/ScoreCoefficient.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent-binary-ops": {
+      "count": 14
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/components/data/chart/rating/index.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "one-var": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 2
+    }
+  },
+  "src/components/data/chart/recent.test.ts": {
+    "antfu/consistent-list-newline": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 8
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    }
+  },
+  "src/components/data/chart/recent.ts": {
+    "antfu/if-newline": {
+      "count": 9
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    }
+  },
+  "src/components/data/chart/scoreLookup.ts": {
+    "antfu/if-newline": {
+      "count": 8
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 5
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/collection/CollectionInfo.vue": {
+    "antfu/if-newline": {
+      "count": 5
+    },
+    "format/prettier": {
+      "count": 130
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 87
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "vue/comma-dangle": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 3
+    },
+    "vue/html-indent": {
+      "count": 119
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 1
+    },
+    "vue/operator-linebreak": {
+      "count": 2
+    }
+  },
+  "src/components/data/collection/CollectionProgress.vue": {
+    "antfu/if-newline": {
+      "count": 4
+    },
+    "format/prettier": {
+      "count": 41
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 118
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 34
+    }
+  },
+  "src/components/data/collection/CollectionTitle.vue": {
+    "format/prettier": {
+      "count": 64
+    },
+    "style/indent": {
+      "count": 19
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 4
+    }
+  },
+  "src/components/data/collection/additionalCollections.json": {
+    "jsonc/indent": {
+      "count": 922
+    },
+    "jsonc/key-spacing": {
+      "count": 3446
+    },
+    "jsonc/object-curly-spacing": {
+      "count": 1834
+    },
+    "no-irregular-whitespace": {
+      "count": 15
+    },
+    "style/comma-spacing": {
+      "count": 2896
+    },
+    "style/eol-last": {
+      "count": 1
+    }
+  },
+  "src/components/data/collection/index.test.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "style/arrow-parens": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 2
+    }
+  },
+  "src/components/data/collection/index.ts": {
+    "antfu/if-newline": {
+      "count": 12
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 9
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 7
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/indent-binary-ops": {
+      "count": 5
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 29
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/collection/relatedCollections.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    }
+  },
+  "src/components/data/collection/relatedCollections.ts": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    }
+  },
+  "src/components/data/collection/type.ts": {
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 30
+    }
+  },
+  "src/components/data/collection/versionPlate.ts": {
+    "antfu/if-newline": {
+      "count": 9
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 6
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/course/courses.json": {
+    "jsonc/indent": {
+      "count": 950
+    },
+    "no-irregular-whitespace": {
+      "count": 1
+    }
+  },
+  "src/components/data/course/index.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 3
+    }
+  },
+  "src/components/data/course/index.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-exports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    }
+  },
+  "src/components/data/course/type.ts": {
+    "style/member-delimiter-style": {
+      "count": 23
+    }
+  },
+  "src/components/data/inGame.ts": {
+    "style/member-delimiter-style": {
+      "count": 32
+    },
+    "ts/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/components/data/kaleidxscope/KaleidxscopeOverview.vue": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "format/prettier": {
+      "count": 157
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 7
+    },
+    "style/indent": {
+      "count": 98
+    },
+    "style/member-delimiter-style": {
+      "count": 8
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 2
+    },
+    "vue/html-indent": {
+      "count": 90
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 1
+    }
+  },
+  "src/components/data/kaleidxscope/data.ts": {
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/quotes": {
+      "count": 2
+    }
+  },
+  "src/components/data/kaleidxscope/index.test.ts": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 21
+    },
+    "style/indent-binary-ops": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 2
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "src/components/data/kaleidxscope/index.ts": {
+    "antfu/if-newline": {
+      "count": 7
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 4
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    }
+  },
+  "src/components/data/kaleidxscope/type.ts": {
+    "style/indent-binary-ops": {
+      "count": 10
+    },
+    "style/member-delimiter-style": {
+      "count": 25
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/components/data/maiTypes.ts": {
+    "antfu/top-level-function": {
+      "count": 1
+    }
+  },
+  "src/components/data/music/index.ts": {
+    "import/no-duplicates": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 4
+    },
+    "style/comma-dangle": {
+      "count": 4
+    },
+    "ts/no-use-before-define": {
+      "count": 14
+    }
+  },
+  "src/components/data/music/musicApi.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/components/data/music/saltmeta.ts": {
+    "antfu/if-newline": {
+      "count": 11
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 7
+    },
+    "style/member-delimiter-style": {
+      "count": 44
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    },
+    "style/quote-props": {
+      "count": 16
+    },
+    "ts/consistent-type-definitions": {
+      "count": 8
+    },
+    "ts/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/components/data/music/search.ts": {
+    "antfu/if-newline": {
+      "count": 8
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    }
+  },
+  "src/components/data/music/sort.json": {
+    "antfu/consistent-list-newline": {
+      "count": 1099
+    },
+    "jsonc/indent": {
+      "count": 77
+    }
+  },
+  "src/components/data/music/type.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 57
+    }
+  },
+  "src/components/data/user/BindUserDialog.vue": {
+    "antfu/curly": {
+      "count": 2
+    },
+    "antfu/if-newline": {
+      "count": 8
+    },
+    "antfu/top-level-function": {
+      "count": 8
+    },
+    "format/prettier": {
+      "count": 39
+    },
+    "no-useless-return": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "style/arrow-parens": {
+      "count": 3
+    },
+    "style/brace-style": {
+      "count": 6
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 240
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "unicorn/prefer-number-properties": {
+      "count": 2
+    },
+    "vue/block-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 124
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 8
+    }
+  },
+  "src/components/data/user/RatingPlate.vue": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "format/prettier": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 13
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "vue/block-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 20
+    }
+  },
+  "src/components/data/user/exportBackup.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "no-control-regex": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 19
+    },
+    "unicorn/escape-case": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/index.ts": {
+    "perfectionist/sort-exports": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/ratingHistory.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 8
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    }
+  },
+  "src/components/data/user/scoreHistory/backup.ts": {
+    "antfu/if-newline": {
+      "count": 11
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "style/arrow-parens": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/indent-binary-ops": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 11
+    },
+    "style/operator-linebreak": {
+      "count": 45
+    }
+  },
+  "src/components/data/user/scoreHistory/candidates.ts": {
+    "antfu/if-newline": {
+      "count": 9
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/scoreHistory/estimate.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 4
+    },
+    "style/indent-binary-ops": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 7
+    }
+  },
+  "src/components/data/user/scoreHistory/index.test.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 4
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 6
+    },
+    "style/comma-dangle": {
+      "count": 17
+    },
+    "style/indent-binary-ops": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    }
+  },
+  "src/components/data/user/scoreHistory/index.ts": {
+    "perfectionist/sort-exports": {
+      "count": 5
+    }
+  },
+  "src/components/data/user/scoreHistory/presentation.ts": {
+    "antfu/if-newline": {
+      "count": 3
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    }
+  },
+  "src/components/data/user/scoreHistory/queue.test.ts": {
+    "import/first": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    }
+  },
+  "src/components/data/user/scoreHistory/queue.ts": {
+    "antfu/if-newline": {
+      "count": 7
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    }
+  },
+  "src/components/data/user/scoreHistory/repository.ts": {
+    "antfu/curly": {
+      "count": 1
+    },
+    "antfu/if-newline": {
+      "count": 4
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 6
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 13
+    },
+    "style/indent": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 4
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    }
+  },
+  "src/components/data/user/scoreHistory/type.ts": {
+    "style/member-delimiter-style": {
+      "count": 35
+    }
+  },
+  "src/components/data/user/scoreHistory/userIdentity.ts": {
+    "antfu/if-newline": {
+      "count": 3
+    },
+    "style/arrow-parens": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/type.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 37
+    },
+    "style/operator-linebreak": {
+      "count": 4
+    }
+  },
+  "src/components/data/user/update/index.ts": {
+    "perfectionist/sort-named-exports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    }
+  },
+  "src/components/data/user/update/migrateData.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/update/migrateData.ts": {
+    "antfu/if-newline": {
+      "count": 3
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/components/data/user/update/updateUser.ts": {
+    "antfu/curly": {
+      "count": 3
+    },
+    "antfu/if-newline": {
+      "count": 7
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 3
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/indent": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    },
+    "style/quotes": {
+      "count": 1
+    },
+    "ts/no-import-type-side-effects": {
+      "count": 1
+    },
+    "ts/no-use-before-define": {
+      "count": 8
+    }
+  },
+  "src/components/data/user/update/updateUser.type.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 13
+    }
+  },
+  "src/components/data/user/update/updateUser.worker.ts": {
+    "antfu/if-newline": {
+      "count": 10
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "no-restricted-globals": {
+      "count": 8
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 12
+    },
+    "style/brace-style": {
+      "count": 18
+    },
+    "style/comma-dangle": {
+      "count": 6
+    },
+    "style/indent": {
+      "count": 6
+    },
+    "style/indent-binary-ops": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/quotes": {
+      "count": 4
+    }
+  },
+  "src/components/integrations/SaltNet/index.ts": {
+    "antfu/curly": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "ts/no-wrapper-object-types": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/assets/index.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/diving-fish/docs/zh-api-document.md": {
+    "jsonc/indent": {
+      "count": 89
+    }
+  },
+  "src/components/integrations/diving-fish/index.ts": {
+    "import/newline-after-import": {
+      "count": 1
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/diving-fish/player.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 3
+    }
+  },
+  "src/components/integrations/diving-fish/type.ts": {
+    "style/member-delimiter-style": {
+      "count": 76
+    }
+  },
+  "src/components/integrations/lxns/LXNSOAuthDialog.vue": {
+    "antfu/if-newline": {
+      "count": 3
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 5
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 100
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/quote-props": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 43
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 3
+    }
+  },
+  "src/components/integrations/lxns/fetch.ts": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/fetchCollection.ts": {
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "unicorn/prefer-type-error": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/fetchScore.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    }
+  },
+  "src/components/integrations/lxns/index.ts": {
+    "perfectionist/sort-exports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-exports": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/oauth.test.ts": {
+    "import/first": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 3
+    },
+    "style/comma-dangle": {
+      "count": 13
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/oauth.ts": {
+    "antfu/if-newline": {
+      "count": 12
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    }
+  },
+  "src/components/integrations/lxns/oauthSession.test.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/oauthSession.ts": {
+    "antfu/if-newline": {
+      "count": 5
+    },
+    "regexp/prefer-w": {
+      "count": 1
+    },
+    "regexp/use-ignore-case": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 5
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 13
+    },
+    "style/operator-linebreak": {
+      "count": 13
+    }
+  },
+  "src/components/integrations/lxns/token.test.ts": {
+    "antfu/top-level-function": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/lxns/token.ts": {
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 8
+    }
+  },
+  "src/components/integrations/lxns/type.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 58
+    }
+  },
+  "src/components/integrations/lxns/uploadScore.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/nearcade/setAPIKey.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/nearcade/type.ts": {
+    "style/member-delimiter-style": {
+      "count": 3
+    }
+  },
+  "src/components/integrations/nearcade/types/Attendance.ts": {
+    "style/member-delimiter-style": {
+      "count": 27
+    }
+  },
+  "src/components/integrations/nearcade/types/Shop.ts": {
+    "style/member-delimiter-style": {
+      "count": 23
+    }
+  },
+  "src/components/rendering/takumiB50.tsx": {
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 1
+    }
+  },
+  "src/main.ts": {
+    "perfectionist/sort-imports": {
+      "count": 3
+    }
+  },
+  "src/pages/About.vue": {
+    "format/prettier": {
+      "count": 112
+    },
+    "style/indent": {
+      "count": 2
+    },
+    "vue/html-indent": {
+      "count": 117
+    }
+  },
+  "src/pages/Shop.vue": {
+    "antfu/curly": {
+      "count": 1
+    },
+    "antfu/if-newline": {
+      "count": 6
+    },
+    "format/prettier": {
+      "count": 20
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 8
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 8
+    },
+    "style/indent": {
+      "count": 218
+    },
+    "style/member-delimiter-style": {
+      "count": 2
+    },
+    "style/operator-linebreak": {
+      "count": 1
+    },
+    "style/quote-props": {
+      "count": 4
+    },
+    "unicorn/prefer-number-properties": {
+      "count": 1
+    },
+    "vue/comma-dangle": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 132
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 15
+    },
+    "vue/valid-v-on": {
+      "count": 1
+    }
+  },
+  "src/pages/b50.vue": {
+    "antfu/if-newline": {
+      "count": 29
+    },
+    "format/prettier": {
+      "count": 83
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 7
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 3
+    },
+    "style/arrow-parens": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 9
+    },
+    "style/comma-dangle": {
+      "count": 8
+    },
+    "style/indent": {
+      "count": 530
+    },
+    "style/member-delimiter-style": {
+      "count": 9
+    },
+    "style/operator-linebreak": {
+      "count": 13
+    },
+    "style/spaced-comment": {
+      "count": 1
+    },
+    "ts/method-signature-style": {
+      "count": 3
+    },
+    "ts/no-import-type-side-effects": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 4
+    },
+    "vue/html-indent": {
+      "count": 97
+    },
+    "vue/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/pages/collections.vue": {
+    "antfu/if-newline": {
+      "count": 7
+    },
+    "antfu/top-level-function": {
+      "count": 4
+    },
+    "format/prettier": {
+      "count": 324
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 5
+    },
+    "style/arrow-parens": {
+      "count": 3
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 223
+    },
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "style/operator-linebreak": {
+      "count": 3
+    },
+    "ts/no-use-before-define": {
+      "count": 2
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 2
+    },
+    "vue/html-indent": {
+      "count": 228
+    },
+    "vue/operator-linebreak": {
+      "count": 22
+    }
+  },
+  "src/pages/index.vue": {
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "format/prettier": {
+      "count": 116
+    },
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "style/indent": {
+      "count": 50
+    },
+    "style/member-delimiter-style": {
+      "count": 3
+    },
+    "ts/method-signature-style": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 106
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 1
+    }
+  },
+  "src/pages/rating-history.vue": {
+    "antfu/consistent-list-newline": {
+      "count": 1
+    },
+    "antfu/if-newline": {
+      "count": 1
+    },
+    "format/prettier": {
+      "count": 229
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "prefer-template": {
+      "count": 1
+    },
+    "style/brace-style": {
+      "count": 2
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/indent": {
+      "count": 181
+    },
+    "style/indent-binary-ops": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 22
+    },
+    "style/operator-linebreak": {
+      "count": 6
+    },
+    "ts/consistent-type-definitions": {
+      "count": 2
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 188
+    },
+    "vue/operator-linebreak": {
+      "count": 1
+    }
+  },
+  "src/pages/settings.vue": {
+    "antfu/if-newline": {
+      "count": 4
+    },
+    "format/prettier": {
+      "count": 29
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 4
+    },
+    "style/indent": {
+      "count": 174
+    },
+    "vue/block-order": {
+      "count": 1
+    },
+    "vue/html-indent": {
+      "count": 64
+    }
+  },
+  "src/pages/songs.vue": {
+    "antfu/curly": {
+      "count": 4
+    },
+    "antfu/if-newline": {
+      "count": 60
+    },
+    "antfu/top-level-function": {
+      "count": 5
+    },
+    "format/prettier": {
+      "count": 335
+    },
+    "import/no-duplicates": {
+      "count": 2
+    },
+    "no-undef-init": {
+      "count": 1
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "one-var": {
+      "count": 4
+    },
+    "perfectionist/sort-imports": {
+      "count": 11
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 8
+    },
+    "prefer-template": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 18
+    },
+    "style/brace-style": {
+      "count": 29
+    },
+    "style/comma-dangle": {
+      "count": 32
+    },
+    "style/indent": {
+      "count": 1177
+    },
+    "style/indent-binary-ops": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 14
+    },
+    "style/operator-linebreak": {
+      "count": 26
+    },
+    "ts/no-use-before-define": {
+      "count": 5
+    },
+    "unicorn/prefer-number-properties": {
+      "count": 1
+    },
+    "vue/comma-dangle": {
+      "count": 1
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 7
+    },
+    "vue/eqeqeq": {
+      "count": 3
+    },
+    "vue/html-indent": {
+      "count": 556
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 3
+    },
+    "vue/operator-linebreak": {
+      "count": 15
+    },
+    "vue/prefer-template": {
+      "count": 2
+    }
+  },
+  "src/pages/users.vue": {
+    "antfu/if-newline": {
+      "count": 6
+    },
+    "antfu/top-level-function": {
+      "count": 9
+    },
+    "format/prettier": {
+      "count": 57
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 4
+    },
+    "prefer-template": {
+      "count": 2
+    },
+    "style/arrow-parens": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 3
+    },
+    "style/comma-dangle": {
+      "count": 3
+    },
+    "style/indent": {
+      "count": 303
+    },
+    "style/indent-binary-ops": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 12
+    },
+    "style/operator-linebreak": {
+      "count": 8
+    },
+    "vue/component-name-in-template-casing": {
+      "count": 2
+    },
+    "vue/html-indent": {
+      "count": 127
+    },
+    "vue/no-deprecated-slot-attribute": {
+      "count": 10
+    },
+    "vue/operator-linebreak": {
+      "count": 2
+    }
+  },
+  "src/stores/dialog.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "src/stores/dialog.ts": {
+    "antfu/if-newline": {
+      "count": 12
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 3
+    },
+    "style/brace-style": {
+      "count": 1
+    },
+    "style/comma-dangle": {
+      "count": 1
+    },
+    "style/member-delimiter-style": {
+      "count": 5
+    },
+    "style/operator-linebreak": {
+      "count": 6
+    }
+  },
+  "src/stores/router.ts": {
+    "prefer-template": {
+      "count": 1
+    },
+    "style/arrow-parens": {
+      "count": 1
+    }
+  },
+  "src/style.css": {
+    "format/prettier": {
+      "count": 55
+    }
+  },
+  "src/utils/deluxeScoreTier.ts": {
+    "antfu/if-newline": {
+      "count": 2
+    }
+  },
+  "src/utils/index.ts": {
+    "perfectionist/sort-exports": {
+      "count": 2
+    },
+    "perfectionist/sort-named-exports": {
+      "count": 2
+    }
+  },
+  "src/utils/toHalfWidth.ts": {
+    "style/arrow-parens": {
+      "count": 1
+    }
+  },
+  "src/utils/useSelectValue.ts": {
+    "style/comma-dangle": {
+      "count": 2
+    }
+  },
+  "src/utils/useVirtualScroll.ts": {
+    "antfu/if-newline": {
+      "count": 3
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "perfectionist/sort-named-imports": {
+      "count": 2
+    },
+    "style/member-delimiter-style": {
+      "count": 12
+    }
+  },
+  "src/vite-env.d.ts": {
+    "style/member-delimiter-style": {
+      "count": 1
+    }
+  },
+  "tsconfig.app.json": {
+    "jsonc/indent": {
+      "count": 18
+    },
+    "jsonc/sort-keys": {
+      "count": 4
+    }
+  },
+  "tsconfig.json": {
+    "jsonc/indent": {
+      "count": 16
+    },
+    "jsonc/sort-keys": {
+      "count": 4
+    }
+  },
+  "tsconfig.node.json": {
+    "jsonc/indent": {
+      "count": 20
+    },
+    "jsonc/sort-keys": {
+      "count": 5
+    }
+  },
+  "vercel.json": {
+    "jsonc/indent": {
+      "count": 29
+    }
+  },
+  "vite.config.ts": {
+    "perfectionist/sort-imports": {
+      "count": 3
+    },
+    "unicorn/prefer-node-protocol": {
+      "count": 2
+    }
+  }
+}

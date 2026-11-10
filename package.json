@@ -42,6 +42,7 @@
         "@vitejs/plugin-vue": "^6.0.1",
         "@vue/tsconfig": "^0.7.0",
         "eslint": "^9.39.2",
+        "eslint-plugin-format": "^2.0.1",
         "fake-indexeddb": "^6.2.5",
         "path": "^0.12.7",
         "prettier": "^3.5.3",

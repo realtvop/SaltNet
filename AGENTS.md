@@ -48,7 +48,10 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 
 - `pnpm dev` starts the frontend Vite server.
 - `pnpm check` runs Vue/TypeScript checks and verifies Prettier formatting.
-- `pnpm lint` runs ESLint across the repository.
+- `pnpm lint` runs ESLint across the repository. Violations that predate the CLI work are frozen in
+  `eslint-suppressions.json` (ESLint bulk suppressions), so only new violations fail. After fixing
+  old ones, run `pnpm exec eslint . --prune-suppressions` to shrink that file; when moving a file
+  that has suppressed violations, move its entry along with it.
 - `pnpm build` type-checks, builds the frontend, and generates build metadata.
 - `pnpm preview` serves the production frontend build locally.
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.

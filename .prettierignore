@@ -18,3 +18,4 @@ src/components/data/music/*.json
 src/components/data/collection/*.json
 
 .pnpm-store
+eslint-suppressions.json
