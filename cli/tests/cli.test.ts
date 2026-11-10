@@ -1,5 +1,6 @@
+import type { Store } from "../src/store/store";
 import type { Harness } from "./harness";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +10,7 @@ import { CliError } from "../src/errors";
 import { paginate } from "../src/output/paging";
 import { COMMAND_GROUPS, demo, favAdd, needsTarget, userBind, userList } from "./commands/fixtures";
 import { createHarness, run as runWith } from "./harness";
+import { useTempHome } from "./tempHome";
 
 const failing = defineCommand(
     {
@@ -134,6 +136,50 @@ const brokenList = defineCommand(
     () => ({ data: { rows: [] } })
 );
 
+/** The store the last database command opened, so a test can look at it after the command ends. */
+let openedStore: Store | undefined;
+
+const dbUse = defineCommand(
+    { name: "db-use", summary: "用数据库", category: "data", effect: "local", output: "object" },
+    (_args, ctx) => {
+        const store = ctx.store();
+        openedStore = store;
+        store.db.exec("CREATE TABLE IF NOT EXISTS t (x INTEGER)");
+        return { data: { again: ctx.store() === store, version: store.migration.to } };
+    }
+);
+
+const dbFail = defineCommand(
+    {
+        name: "db-fail",
+        summary: "用了数据库然后失败",
+        category: "data",
+        effect: "local",
+        output: "object",
+    },
+    (_args, ctx) => {
+        openedStore = ctx.store();
+        throw new Error("boom");
+    }
+);
+
+const dbBusy = defineCommand(
+    {
+        name: "db-busy",
+        summary: "数据库被占用",
+        category: "data",
+        effect: "local",
+        output: "object",
+    },
+    () => {
+        throw Object.assign(new Error("database is locked"), {
+            code: "ERR_SQLITE_ERROR",
+            errcode: 5,
+            errstr: "database is locked",
+        });
+    }
+);
+
 const registry = buildRegistry({
     commands: [
         demo,
@@ -149,6 +195,9 @@ const registry = buildRegistry({
         guide,
         settings,
         brokenList,
+        dbUse,
+        dbFail,
+        dbBusy,
     ],
     groups: COMMAND_GROUPS,
 });
@@ -586,5 +635,81 @@ describe("settings with errors", () => {
     it("only warns about a setting it does not know", async () => {
         const harness = createHarness({ env: { SALTNET_HOME: homeWith('{"whatever": 1}') } });
         expect(await run(harness, "info")).toBe(0);
+    });
+});
+
+describe("the database", () => {
+    const makeHome = useTempHome();
+
+    it("is not opened, and nothing is created on disk, by a command that does not ask for it", async () => {
+        const { home } = makeHome();
+        const harness = createHarness({ env: { SALTNET_HOME: home } });
+
+        expect(await run(harness, "info")).toBe(0);
+        expect(await run(harness, "rows")).toBe(0);
+        expect(await run(harness, "--help")).toBe(0);
+
+        expect(existsSync(home)).toBe(false);
+    });
+
+    it("is opened on first use, once, and closed when the command ends", async () => {
+        const paths = makeHome();
+        const harness = createHarness({ env: { SALTNET_HOME: paths.home } });
+
+        expect(await run(harness, "db-use")).toBe(0);
+
+        const { data } = JSON.parse(harness.stdout());
+        expect(data.again).toBe(true);
+        expect(data.version).toBeGreaterThan(0);
+        expect(existsSync(paths.database)).toBe(true);
+        expect(() => openedStore?.db.exec("SELECT 1")).toThrow(/not open/);
+    });
+
+    it("keeps what a command wrote for the next one", async () => {
+        const paths = makeHome();
+        const first = createHarness({ env: { SALTNET_HOME: paths.home } });
+        await run(first, "db-use");
+        const second = createHarness({ env: { SALTNET_HOME: paths.home } });
+        await run(second, "db-use");
+
+        expect(JSON.parse(second.stdout()).data.version).toBe(
+            JSON.parse(first.stdout()).data.version
+        );
+        expect(second.stderr()).toBe("");
+    });
+
+    it("is closed even when the command fails", async () => {
+        const paths = makeHome();
+        const harness = createHarness({ env: { SALTNET_HOME: paths.home } });
+
+        expect(await run(harness, "db-fail")).toBe(1);
+
+        expect(JSON.parse(harness.stdout()).error.code).toBe("INTERNAL");
+        expect(() => openedStore?.db.exec("SELECT 1")).toThrow(/not open/);
+    });
+
+    it("reports a busy database as DB_LOCKED, not as an internal error", async () => {
+        const harness = createHarness();
+
+        expect(await run(harness, "db-busy")).toBe(7);
+
+        expect(JSON.parse(harness.stdout()).error).toMatchObject({
+            code: "DB_LOCKED",
+            retryable: true,
+        });
+    });
+
+    it("explains a data directory that cannot be used instead of crashing", async () => {
+        // A file where the data directory should be.
+        const blocked = path.join(path.dirname(makeHome().home), "blocked");
+        writeFileSync(blocked, "");
+        const harness = createHarness({ env: { SALTNET_HOME: blocked } });
+
+        expect(await run(harness, "db-use")).toBe(1);
+
+        const { error } = JSON.parse(harness.stdout());
+        expect(error.code).toBe("INTERNAL");
+        expect(error.message).toContain("不是目录");
+        expect(error.message).toContain("SALTNET_HOME");
     });
 });

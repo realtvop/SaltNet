@@ -8,6 +8,7 @@ import type { Warning } from "../output/warning";
 import type { ResolvedConfig } from "../runtime/config";
 import type { Io } from "../runtime/io";
 import type { RuntimePaths } from "../runtime/paths";
+import type { Store } from "../store/store";
 
 /** How far a command reaches (design 5.4). */
 export type EffectLevel = "none" | "local" | "remote" | "account";
@@ -270,6 +271,11 @@ export interface CommandContext {
     readonly paths: RuntimePaths;
     /** The settings, already layered from the environment, `config.json` and the defaults. */
     readonly config: ResolvedConfig;
+    /**
+     * The database. It is opened (and the data directory created) on the first call and closed by
+     * the runner when the command ends, so a command that never calls it leaves the disk alone.
+     */
+    readonly store: () => Store;
     /**
      * Progress and diagnostics, one line each. They go to stderr when a person is watching
      * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's

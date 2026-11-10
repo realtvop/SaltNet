@@ -94,7 +94,7 @@
 - [x] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
 - [x] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
 - [x] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
-- [ ] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
+- [x] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
 - [ ] P1-6 `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
 - [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入
 - [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
@@ -295,3 +295,15 @@
     - stdout 和 stderr（`cli.ts`、`main.ts`）：stderr 默认静默，只有 stderr 是终端或写了 `--verbose` 才输出进度（命令调用 `ctx.log`）和 `INTERNAL` 的堆栈。`| head` 提前关掉管道（EPIPE）时安静退出，不打印堆栈。
     - 配置有错（P1-2 的 `ConfigProblem`）：命令运行前就返回 `USAGE`，`fix` 是 `saltnet config list`（P1-15 提供），`extra.problems` 列出每一项；`config`、`schema`、`guide` 设 `allowBadConfig`，所以改坏配置后还能用 `config` 修。每条问题的消息已经说明是哪个环境变量或 `config.json` 里的哪一项，外层只负责拼接。
     - 小事：`CommandContext` 现在带 `paths`、`config`、`version`、`log`；`echo` 从 `values.ts` 挪到 `util/echo.ts`，输出模块和解析器都要用；`tests/harness.ts` 在进程内跑一行命令并收集输出，默认把命令看到的环境指向沙盒 `SALTNET_HOME`；测试夹具里的 `demo` 命令改成 `output: "object"`，因为它返回的是收到的参数，不是列表，而渲染器现在会检查列表的形状。
+23. **SQLite 存储、迁移和锁（P1-5）**：
+    - 加载（`store/sqlite.ts`）：用 `process.getBuiltinModule("node:sqlite")` 同步加载并缓存，所以打开数据库也是同步的；加载期间临时包住 `process.emitWarning`，只丢掉提到 SQLite 的 ExperimentalWarning，其他警告原样放行（第 19 条记下的问题 (b)）。Node 24.15 已经不输出这条警告，更早的 24.x 会输出。不碰数据库的命令（`--help`、`schema`、`guide`、`config`）连模块都不加载。
+    - 打开（`store/store.ts`）：`openStore(paths)` 建数据目录（0700）和库文件（0600，WAL 的附带文件和备份同样是 0600），`PRAGMA journal_mode = WAL`；外键约束沿用 `node:sqlite` 的默认值（开）；忙等待 5 秒（`busyTimeoutMs`）；`synchronous` 保持默认（FULL），写入量小，宁可慢几毫秒也不丢成绩。
+    - 迁移（`store/migrations.ts`）：`MIGRATIONS` 按版本号 1、2、3… 排列，不许有空缺（每次迁移前检查），`PRAGMA user_version` 记已经做到第几步。每一步和 `user_version` 的更新在同一个 `BEGIN IMMEDIATE` 事务里，失败整步回滚，错误信息说明是哪一步、已回滚、备份在哪。拿到写锁之后会再读一次版本，别的进程已经做完的步骤跳过，所以两个 saltnet 同时第一次运行不会重复建表。库是更新版本的 saltnet 建的（`user_version` 比已知的大）时直接报 `INTERNAL`、让用户升级，不动它；没有为此发明新的错误码。事务里改不了 `PRAGMA foreign_keys`，要重建被引用的表的步骤得用 `defer_foreign_keys`（写在 `Migration.up` 的注释里）。
+    - 备份：库里已有数据（`user_version > 0`）而要升级时，先用 `VACUUM INTO` 复制到 `cache/saltnet-v<旧版本>-<UTC 时间>.db`（同一秒已有同名文件就加 `-2`、`-3`），权限 0600。不直接复制文件，因为 `VACUUM INTO` 在别的进程正在写入时也是一致的，并且会带上 WAL 里还没合并的内容。新建的库没什么可备份，不做。备份不会自动清理（设计 2.2 没规定保留数量），需要时直接删 `cache/` 里的文件。
+    - 第 1 版迁移只有 `locks` 表。曲库、用户、成绩等表跟着各自的步骤（P1-6 起）用新的迁移加，而不是现在一次建全，这样每个提交里的表结构都有对应的代码和测试。
+    - 事务（`store.transaction`）：外层是 `BEGIN IMMEDIATE`（一上来就拿写锁，不会读到一半升级写锁失败），嵌套调用变成 `SAVEPOINT`，所以内层失败而外层捕获时只撤销内层的改动。回调必须是同步的：返回 Promise 会抛 `TypeError` 并回滚，因为那样会在工作做完之前就提交。
+    - 锁（`store/locks.ts`）：`locks` 表每个名字一行，记持有者（随机 owner 和 pid）与过期时间；过期的行在下一次获取时清掉，进程崩溃不会永远占着。`acquireLock` 不等待，抢不到就返回当前持有者，忙了怎么办由调用方定（同步报 `SYNC_IN_PROGRESS`，元数据刷新用缓存继续，见设计 2.2）。`renew` 给超过存活时间的工作续期，`release` 只删自己的那一行，已经过期并被别人拿走的锁不动。`withLock` 保证无论成功失败都释放。
+    - 错误（`store/errors.ts`）：SQLite 的 `BUSY`、`LOCKED` 变成 `DB_LOCKED`（可重试，退出码 7）；库损坏或不是 SQLite 文件、打不开、没权限、只读、磁盘满、IO 错误变成带处理办法的 `INTERNAL`（把坏库挪开、检查目录权限和磁盘、用 `SALTNET_HOME` 换目录），不会覆盖或删除用户的文件。其他 SQLite 错误仍是 `INTERNAL` 的 bug。转换统一放在运行器的 `toCliError`，命令里不用各自处理。
+    - 运行器（`cli.ts`）：`CommandContext.store` 是个函数，第一次调用才打开数据库，命令结束时（成功、失败、抛异常）在 `finally` 里关闭，所以没用到数据库的命令不碰磁盘。
+    - 顺带修了 P1-2 留下的一个问题：`SALTNET_HOME` 指到一个普通文件的下面（`blocked/x`，`blocked` 是文件）时，读 `config.json` 得到 `ENOTDIR`，被当成「配置读不了」而返回 `USAGE`，用户看不到真正的原因；现在 `ENOTDIR` 和 `ENOENT` 一样按没有配置文件处理，后面建目录时会报出「不是目录」的明确错误。
+    - 测试：`cli/tests/tempHome.ts` 的 `useTempHome()` 给每个用例一个全新的、还不存在的数据目录，用完删掉。`tests/store/` 覆盖加载与警告过滤、错误映射、迁移（新库、升级、失败回滚、拒绝新版本、两个连接并发）、打开（权限、WAL、备份命名、损坏的文件、`DB_LOCKED`）、事务（提交、回滚、嵌套、异步回调）和锁（获取、过期、续期、释放）。另外用 esbuild 把 store 单独打成一个文件，在临时 `SALTNET_HOME` 下运行，stderr 为空，目录 0700、库文件 0600。

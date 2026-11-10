@@ -347,6 +347,15 @@ describe("readConfigFile and loadConfig", () => {
         expect(loadConfig(homeWith(), { env: {}, buildDefaults: noBuild }).problems).toEqual([]);
     });
 
+    it("treats a data directory that is really a file as having no configuration", () => {
+        const blocker = path.join(mkdtempSync(path.join(tmpdir(), "saltnet-config-")), "blocker");
+        writeFileSync(blocker, "");
+        expect(readConfigFile(path.join(blocker, "config.json"))).toEqual({
+            data: undefined,
+            problems: [],
+        });
+    });
+
     it("loads settings from the file in the data directory", () => {
         const paths = homeWith(
             `${JSON.stringify({ metadata: { maxAgeHours: 12 }, lxns: { clientId: "c" } })}\n`

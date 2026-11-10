@@ -498,7 +498,9 @@ export function readConfigFile(file: string): ConfigFile {
         text = readFileSync(file, "utf8");
     } catch (error) {
         const code = (error as NodeJS.ErrnoException).code;
-        if (code === "ENOENT") return { data: undefined, problems: [] };
+        // ENOTDIR: part of the path is a file, so there is no config file either. What is wrong
+        // with the data directory is for whatever needs the disk to report (`ensureRuntimeDirs`).
+        if (code === "ENOENT" || code === "ENOTDIR") return { data: undefined, problems: [] };
         return {
             data: undefined,
             problems: [

@@ -5,6 +5,7 @@
 import type { CommandDefinition, CommandSpec, RawCommandArgs, Registry } from "./commands/registry";
 import type { ResolvedConfig } from "./runtime/config";
 import type { Io } from "./runtime/io";
+import type { Store } from "./store/store";
 import { renderHelp } from "./commands/help";
 import { parseArgv } from "./commands/parse";
 import { CliError, usageError } from "./errors";
@@ -13,6 +14,8 @@ import { chooseFormat } from "./output/format";
 import { renderSuccess } from "./output/render";
 import { loadConfig } from "./runtime/config";
 import { resolveRuntimePaths } from "./runtime/paths";
+import { storeError } from "./store/errors";
+import { openStore } from "./store/store";
 
 export interface CliRuntime {
     readonly io: Io;
@@ -22,6 +25,9 @@ export interface CliRuntime {
 
 function toCliError(error: unknown): CliError {
     if (error instanceof CliError) return error;
+    // A busy or damaged database is something to tell the caller about, not an internal bug.
+    const stored = storeError(error);
+    if (stored) return stored;
     const detail = error instanceof Error ? error.message : String(error);
     return new CliError("INTERNAL", `内部错误：${detail}`, { cause: error });
 }
@@ -69,6 +75,7 @@ async function run(
 ): Promise<number> {
     const { io, registry, version } = runtime;
     const spec: CommandSpec = command.spec;
+    let store: Store | undefined;
     try {
         const paths = resolveRuntimePaths({ env: io.env, cwd: io.cwd });
         const config = loadConfig(paths, { env: io.env, version });
@@ -88,6 +95,7 @@ async function run(
             version,
             paths,
             config,
+            store: () => (store ??= openStore(paths, { now: () => io.now() })),
             log: logTo(io, args),
         });
 
@@ -110,6 +118,12 @@ async function run(
             );
         }
         return fail(io, spec.name, cliError, args.global.pretty);
+    } finally {
+        try {
+            store?.close();
+        } catch {
+            // The command's own outcome matters more than a close that failed.
+        }
     }
 }
 
