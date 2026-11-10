@@ -49,8 +49,8 @@
         getScoreHistoryChartKey,
         getUserPlayCountEstimates,
     } from "@/components/data/user/scoreHistory";
-    import { courses, getCourseCharts, getCourseTrackKey } from "@/components/data/course";
-    import type { Course } from "@/components/data/course";
+    import { courses, getCourseCharts, getCourseTrackKey } from "@core/course";
+    import type { Course } from "@core/course";
     import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
     import {
         formatKaleidxscopeDateTime,

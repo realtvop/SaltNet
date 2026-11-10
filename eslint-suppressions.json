@@ -250,6 +250,24 @@
       "count": 1
     }
   },
+  "shared/core/course/courses.json": {
+    "no-irregular-whitespace": {
+      "count": 1
+    }
+  },
+  "shared/core/course/index.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "shared/core/course/index.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "perfectionist/sort-named-exports": {
+      "count": 1
+    }
+  },
   "shared/core/mai/types.ts": {
     "antfu/top-level-function": {
       "count": 1
@@ -970,41 +988,6 @@
     },
     "style/operator-linebreak": {
       "count": 1
-    }
-  },
-  "src/components/data/course/courses.json": {
-    "jsonc/indent": {
-      "count": 950
-    },
-    "no-irregular-whitespace": {
-      "count": 1
-    }
-  },
-  "src/components/data/course/index.test.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 3
-    }
-  },
-  "src/components/data/course/index.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 1
-    },
-    "style/arrow-parens": {
-      "count": 1
-    },
-    "perfectionist/sort-named-exports": {
-      "count": 1
-    }
-  },
-  "src/components/data/course/type.ts": {
-    "style/member-delimiter-style": {
-      "count": 23
     }
   },
   "src/components/data/kaleidxscope/KaleidxscopeOverview.vue": {

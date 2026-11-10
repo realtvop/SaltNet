@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Chart } from "@core/music/type";
+import type { Chart } from "../music/type";
 import { courseNetOpenId, courses, courseSourceVersion, getCourseCharts } from "./index";
 
 function makeChart(musicId: number, difficulty: number): Chart {
