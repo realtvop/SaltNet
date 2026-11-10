@@ -13,6 +13,7 @@ import { failureEnvelope, serializeEnvelope } from "./output/envelope";
 import { chooseFormat } from "./output/format";
 import { renderSuccess } from "./output/render";
 import { loadConfig } from "./runtime/config";
+import { createHttp } from "./runtime/http";
 import { resolveRuntimePaths } from "./runtime/paths";
 import { storeError } from "./store/errors";
 import { openStore } from "./store/store";
@@ -96,6 +97,12 @@ async function run(
             paths,
             config,
             store: () => (store ??= openStore(paths, { now: () => io.now() })),
+            http: ({ timeoutMs } = {}) =>
+                createHttp({
+                    fetch: io.fetch,
+                    userAgent: config.values.network.userAgent,
+                    timeoutMs: timeoutMs ?? config.values.network.timeoutMs,
+                }),
             log: logTo(io, args),
         });
 

@@ -3,6 +3,7 @@
  * examples) from which the parser, `--help`, `schema` and `guide` are all generated, so the
  * documentation cannot disagree with the behavior (design 4.7).
  */
+import type { FetchLike } from "@core/http";
 import type { ErrorCode } from "../errors";
 import type { Warning } from "../output/warning";
 import type { ResolvedConfig } from "../runtime/config";
@@ -276,6 +277,12 @@ export interface CommandContext {
      * the runner when the command ends, so a command that never calls it leaves the disk alone.
      */
     readonly store: () => Store;
+    /**
+     * `fetch` for shared/core: it adds the User-Agent and a deadline (`network.timeoutMs` unless
+     * `timeoutMs` says otherwise) and reports a failed connection as `NETWORK` and an unreadable
+     * answer as `UPSTREAM_ERROR`. A status that is not a success is left to the caller.
+     */
+    readonly http: (options?: { timeoutMs?: number }) => FetchLike;
     /**
      * Progress and diagnostics, one line each. They go to stderr when a person is watching
      * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's

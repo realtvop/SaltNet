@@ -1,3 +1,4 @@
+import type { FetchInit, FetchResponse } from "@core/http";
 import process from "node:process";
 import { usageError } from "../errors";
 
@@ -7,9 +8,17 @@ export interface OutputStream {
     readonly isTTY: boolean;
 }
 
+/** What a request may carry: core's options plus the signal the HTTP layer sets its deadline with. */
+export interface HttpInit extends FetchInit {
+    signal?: AbortSignal;
+}
+
+/** `fetch` as far as the CLI uses it. A test passes a function that answers from a table. */
+export type HttpFetch = (input: string, init?: HttpInit) => Promise<FetchResponse>;
+
 /**
  * Everything a command reaches the outside world through, so a test can run the whole CLI
- * in-process with its own streams, environment and clock.
+ * in-process with its own streams, environment, clock and network.
  */
 export interface Io {
     readonly stdout: OutputStream;
@@ -19,6 +28,8 @@ export interface Io {
     /** The whole of stdin as text. It is only called when a command is given `-`. */
     readStdin: () => Promise<string>;
     now: () => Date;
+    /** The raw network. Commands go through `ctx.http()`, which adds the deadline and the errors. */
+    fetch: HttpFetch;
 }
 
 /** The parts of the `process` object the real `Io` uses. */
@@ -44,7 +55,10 @@ async function readAll(stdin: ProcessLike["stdin"]): Promise<string> {
     return text + decoder.decode();
 }
 
-export function createProcessIo(source: ProcessLike = process): Io {
+export function createProcessIo(
+    source: ProcessLike = process,
+    doFetch: HttpFetch = (input, init) => fetch(input, init)
+): Io {
     let stdin: Promise<string> | undefined;
     return {
         stdout: {
@@ -60,5 +74,6 @@ export function createProcessIo(source: ProcessLike = process): Io {
         // Read once: a second call gets the same text rather than an already drained stream.
         readStdin: () => (stdin ??= readAll(source.stdin)),
         now: () => new Date(),
+        fetch: doFetch,
     };
 }

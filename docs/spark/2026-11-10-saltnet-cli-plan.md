@@ -95,8 +95,9 @@
 - [x] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
 - [x] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
 - [x] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
-- [x] P1-6a `refactor(core): split saltmeta download from conversion and merge duplicate banquet songs`：core 里的准备工作：`fetchSaltMetaCompacted`/`buildSaltMetaMusicList`、`mergeDuplicateMusics`、`LXNSCollectionError`、落雪收藏品固定数据（见「实现中的决定」第 24 条，它也记着 P1-6b 的设计备忘）
-- [ ] P1-6b `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
+- [x] P1-6a `refactor(core): split saltmeta download from conversion and merge duplicate banquet songs`：core 里的准备工作：`fetchSaltMetaCompacted`/`buildSaltMetaMusicList`、`mergeDuplicateMusics`、`LXNSCollectionError`、落雪收藏品固定数据（见「实现中的决定」第 24 条，它也记着 P1-6c 的设计备忘）
+- [x] P1-6b `feat(cli): add injectable fetch with deadline and error mapping`：`Io.fetch`、`ctx.http()`、统一的超时和 `NETWORK`/`UPSTREAM_ERROR` 错误映射、测试用的模拟网络（见「实现中的决定」第 25 条）
+- [ ] P1-6c `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
 - [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入
 - [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [ ] P1-9 `feat(cli): add search, song and chart commands`
@@ -308,14 +309,19 @@
     - 运行器（`cli.ts`）：`CommandContext.store` 是个函数，第一次调用才打开数据库，命令结束时（成功、失败、抛异常）在 `finally` 里关闭，所以没用到数据库的命令不碰磁盘。
     - 顺带修了 P1-2 留下的一个问题：`SALTNET_HOME` 指到一个普通文件的下面（`blocked/x`，`blocked` 是文件）时，读 `config.json` 得到 `ENOTDIR`，被当成「配置读不了」而返回 `USAGE`，用户看不到真正的原因；现在 `ENOTDIR` 和 `ENOENT` 一样按没有配置文件处理，后面建目录时会报出「不是目录」的明确错误。
     - 测试：`cli/tests/tempHome.ts` 的 `useTempHome()` 给每个用例一个全新的、还不存在的数据目录，用完删掉。`tests/store/` 覆盖加载与警告过滤、错误映射、迁移（新库、升级、失败回滚、拒绝新版本、两个连接并发）、打开（权限、WAL、备份命名、损坏的文件、`DB_LOCKED`）、事务（提交、回滚、嵌套、异步回调）和锁（获取、过期、续期、释放）。另外用 esbuild 把 store 单独打成一个文件，在临时 `SALTNET_HOME` 下运行，stderr 为空，目录 0700、库文件 0600。
-24. **P1-6 拆成两步：core 准备（P1-6a）和 CLI 刷新（P1-6b）**：
-    - 拆分原因：P1-6 要同时改 core（网页端共用，必须带 `pnpm build` 验证）和 CLI（库表、快照、命令），放进一个提交太大，所以 core 的准备工作先单独提交，CLI 刷新留给 P1-6b。
+24. **P1-6 拆成三步：core 准备（P1-6a）、联网这一层（P1-6b）和 CLI 刷新（P1-6c）**：
+    - 拆分原因：P1-6 要同时改 core（网页端共用，必须带 `pnpm build` 验证）和 CLI（联网、库表、快照、命令），放进一个提交太大，所以 core 的准备工作先单独提交，联网这一层是第二个提交（第 25 条），CLI 刷新留给 P1-6c。
     - `fetchSaltMetaCompacted`（只下载并检查格式版本）和 `buildSaltMetaMusicList`（转换，可选 `mergeDuplicates`）是从 `fetchSaltMetaMusicList` 拆出来的两半，后者现在就是两者相接，参数和返回值不变，网页端行为不变（`fetch.test.ts` 断言了：默认不合并，`110851` 仍有两张碰撞的谱面）。
     - `mergeDuplicateMusics`（`shared/core/music/duplicates.ts`）：按 SaltMeta id 把同 id 的条目折成一条。保留带地区前缀（`[幸]`、`【宴】`）的那条；都没有前缀就保留知道更多地区的，再不行取第一条。另一个标题和它的别名并入 `aliases.cn`；谱面按（类型、难度）合并，保留条目的值优先，缺的地区、拟合数据、谱师从另一条补；合并后的条目占第一次出现的位置；返回 `merged` 清单（给 `status` 用）。不修改输入，对自己的输出再合并是空操作。
     - `LXNSCollectionError`（`kind: "http" | "malformed"`、`collectionType`、`status`）：原来抛普通 `Error`，CLI 要分清 HTTP 错误和格式错误才能映射成 `UPSTREAM_ERROR`。消息不变，网页端不受影响。
     - 落雪收藏品固定数据 `shared/core/fixtures/lxns-collections.json`（22 KB）：真实接口 `/api/v0/maimai/{trophy,icon,plate,frame}/list?required=true` 的裁剪版，保留上游字段（含网页端不用的 `release_date`）。内容有版本牌子 真極…超舞舞、五种称号颜色、有多条要求的牌子（覇者）、引用没有国服谱面的歌（千本桜）；要求里的曲目裁到几首固定数据里有的歌。这是公开的只读接口，数据里没有账号信息。`fixtures/lxns.ts` 的 `getFixtureLXNSCollections()` 每次返回一份新副本。
-    - 给 P1-6b 的设计备忘（还没写代码）：
+    - 给 P1-6b 和 P1-6c 的设计备忘（第一条是 P1-6b，已经做完，见第 25 条；其余留给 P1-6c，还没写代码）：
         - `Io` 加 `fetch`（带 `signal`），`createProcessIo` 用全局 `fetch`；测试 harness 的默认 `fetch` 必须直接拒绝并说明「测试没有模拟网络」，避免测试误连真实网络。`runtime/http.ts` 包一层：加 `User-Agent` 和 `AbortSignal.timeout`；连接失败、超时、读响应体时中断都变成 `NETWORK`，非法 JSON 是 `UPSTREAM_ERROR`；错误消息里只写主机名。HTTP 非 2xx 是 `UPSTREAM_ERROR`（5xx 和 429 可重试），格式版本不符是 `UPSTREAM_ERROR` 并提示升级。
         - 迁移 2（全部 `STRICT`）：`meta_state(source PK, fetched_at, upstream_version, builder, detail JSON)`、`versions`、`songs(id PK, meta_id, title, artist, genre, bpm REAL 可空, version, is_new, type, aliases JSON 可空, search_index JSON 可空)`、`charts(chart_key PK, id UNIQUE, song_id FK, position, difficulty, level, constant, charter, notes JSON, deluxe_score_max, fit_constant, stat JSON, search_index JSON)`、`collections((kind, id) PK, position, name, genre, description, color, release_date, required JSON 原样)`。`bpm` 和 `notes` 要保留上游的 `null`（宴谱没有物量），P1-7 还原时才和网页端的结构完全一致；`meta_id` 由 `type` 反推（SD 是 id，其余是 id − 10000）。
         - 刷新顺序：加锁 `metadata`（TTL 120 秒）→ 并行下载 → 校验和转换（曲库为空算 `UPSTREAM_ERROR`）→ 先原子写 `cache/` 快照（临时文件加改名）→ 再用一个事务整体替换并写 `meta_state`。曲库和收藏品各自独立替换：一个失败时它的旧数据保留，命令以失败退出，`extra.sources` 给出各自结果。`refresh --offline` 是 `USAGE`；`refresh` 撞锁是 `SYNC_IN_PROGRESS`。
         - `ensureMetadata`（给后面的命令用）：过期（`metadata.maxAgeHours`）或 `builder` 不一致就刷新；失败时有缓存就带 `STALE_METADATA`，没缓存就报错；`--offline` 没缓存是 `OFFLINE_NO_CACHE`；`builder` 变了而有快照时，不联网直接从快照重建。`builder` 由 CLI 自己的构建号加 `MUSIC_SEARCH_INDEX_VERSION` 组成。
+25. **联网这一层（P1-6b）**：
+    - `Io.fetch`（类型 `HttpFetch`：core 的 `FetchInit` 加一个 `signal`）是原始网络，进程里用全局 `fetch`。命令不直接用它，而是用 `ctx.http({ timeoutMs? })`，它返回 core 要的 `FetchLike`；超时默认取 `network.timeoutMs`，刷新曲库传 `metadata.timeoutMs`，账号更新传 `network.updateTimeoutMs`，由各命令自己传。
+    - 每个请求加 `User-Agent`（`network.userAgent`，默认 `saltnet-cli/<版本>`，调用方自己写的头优先）和一个 `AbortSignal.timeout`。这个期限管整个往返，包括读响应体，因为慢服务器常常卡在读响应体这一步。
+    - 失败映射：连接失败、DNS 失败、超时（包括 undici 自己的 `UND_ERR_*_TIMEOUT`）、读响应体时中断都是 `NETWORK`（可重试）；`json()` 读到的不是合法 JSON 是 `UPSTREAM_ERROR`；HTTP 状态不是成功的由调用方判断，`upstreamStatusError(url, status)` 做出 `UPSTREAM_ERROR`（5xx 和 429 可重试）。消息里只写主机名，不写路径和查询串（URL 里可能带 token）；原因取错误链里第一个字符串 `code`（`ECONNREFUSED`、`ENOTFOUND` 等），没有就用消息。
+    - 测试：`createHarness` 的 `fetch` 默认是一个没有任何路由的模拟网络，请求任何地址都会失败并写明地址，所以测试不会误连真实网络；要用网络的测试传 `mockFetch({ [url]: jsonResponse(...) })`（`tests/mockHttp.ts`，按完整 URL 匹配并记录请求）。`createProcessIo` 的第二个参数可以换掉 `fetch`；`io.test.ts` 同时验证了不传时用的是全局 `fetch`。

@@ -1,6 +1,7 @@
 import type { ProcessLike } from "../../src/runtime/io";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createProcessIo } from "../../src/runtime/io";
+import { jsonResponse } from "../mockHttp";
 
 function fakeProcess(options: {
     chunks?: (string | Uint8Array)[];
@@ -61,6 +62,29 @@ describe("process io", () => {
         const io = createProcessIo(fakeProcess({ chunks: ["once"] }).source);
         expect(await io.readStdin()).toBe("once");
         expect(await io.readStdin()).toBe("once");
+    });
+
+    it("hands requests to the fetch it was given", async () => {
+        const doFetch = vi.fn(async () => jsonResponse({ ok: 1 }));
+        const io = createProcessIo(fakeProcess({}).source, doFetch);
+
+        const response = await io.fetch("https://example.com/a", { method: "GET" });
+        expect(doFetch).toHaveBeenCalledWith("https://example.com/a", { method: "GET" });
+        expect(await response.json()).toEqual({ ok: 1 });
+    });
+
+    it("uses the global fetch when none is given", async () => {
+        const original = globalThis.fetch;
+        const spy = vi.fn(async () => new Response('{"a":1}'));
+        globalThis.fetch = spy as unknown as typeof fetch;
+        try {
+            const io = createProcessIo(fakeProcess({}).source);
+            const response = await io.fetch("https://example.com/b");
+            expect(spy).toHaveBeenCalledWith("https://example.com/b", undefined);
+            expect(await response.json()).toEqual({ a: 1 });
+        } finally {
+            globalThis.fetch = original;
+        }
     });
 
     it("refuses to wait on a terminal", async () => {
