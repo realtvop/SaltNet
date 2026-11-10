@@ -1,5 +1,5 @@
 import { shallowRef } from "vue";
-import type { Chart } from "../music/type";
+import type { Chart } from "@core/music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 import type { Collection, CollectionRequired } from "@core/collection/type";
 import { requirementMatchesChart } from "./versionPlate";

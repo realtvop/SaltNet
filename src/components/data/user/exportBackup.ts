@@ -1,4 +1,4 @@
-import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import { getUserDisplayName, type User } from "./type";
 import { snackbar } from "mdui";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";

@@ -4,10 +4,7 @@ import {
     fetchPlayerRecordsByImportToken,
     calculateB50FromRecords,
 } from "@/components/integrations/diving-fish/player";
-import type {
-    DivingFishFullRecord,
-    DivingFishResponse,
-} from "@/components/integrations/diving-fish/type";
+import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
 import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
 import { postAPI, SaltAPIEndpoints } from "@/components/integrations/SaltNet";

@@ -2,7 +2,7 @@
     import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
-    import type { Chart, ChartScore } from "@/components/data/music/type";
+    import type { Chart, ChartScore } from "@core/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";

@@ -1,4 +1,4 @@
-import type { Chart } from "@/components/data/music/type";
+import type { Chart } from "@core/music/type";
 import rawCourseData from "./courses.json";
 import type { Course, CourseDataSet, CourseTrack } from "./type";
 

@@ -1,5 +1,5 @@
-import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-import type { Chart, ChartScore } from "@/components/data/music/type";
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
+import type { Chart, ChartScore } from "@core/music/type";
 import type { DetailedData } from "@/components/data/user/type";
 import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
 import { isUtageGrade } from "./difficulty";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Chart } from "@/components/data/music/type";
+import type { Chart } from "@core/music/type";
 import { ChartType } from "@core/mai/types";
 import {
     formatScoreChangedAt,

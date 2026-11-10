@@ -3,7 +3,7 @@
  * Fetches music data from SaltMeta next metadata.
  */
 
-import type { MusicMetadataState, SavedMusicList } from "./type";
+import type { MusicMetadataState, SavedMusicList } from "@core/music/type";
 import {
     convertSaltMetaNextCompactedToNormal,
     convertSaltMetaNextToSavedMusicList,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import { convertDetailed } from "..";
 import { migrateRecordList } from "./migrateData";
 

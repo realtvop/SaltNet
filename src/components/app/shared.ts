@@ -3,7 +3,7 @@ import { ref, watch, toRaw } from "vue";
 import localForage from "localforage";
 
 import type { ChartsSortCached, FavoriteList, User } from "@/components/data/user/type";
-import type { Chart } from "@/components/data/music/type";
+import type { Chart } from "@core/music/type";
 import type { NearcadeData } from "../integrations/nearcade/type";
 import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
 import {

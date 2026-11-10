@@ -5,8 +5,8 @@
 
 import localForage from "localforage";
 import { reactive, ref } from "vue";
-import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "./type";
-import type { MaimaidxRegion } from "./type";
+import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "@core/music/type";
+import type { MaimaidxRegion } from "@core/music/type";
 import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
 import { indexMusicSearchData, MUSIC_SEARCH_INDEX_VERSION } from "./search";

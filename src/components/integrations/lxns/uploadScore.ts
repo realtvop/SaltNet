@@ -1,5 +1,5 @@
 import type { User } from "@/components/data/user/type";
-import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { LXNSUploadScore, LXNSUploadScoreRequest } from "./type";
 import { fetchLXNSApi } from "./fetch";
 

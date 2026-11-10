@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreCard from "./ScoreCard.vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
 
     // Define props for the component
     const props = defineProps<{

@@ -61,7 +61,7 @@
 **直接搬纯逻辑**（`git mv`，改网页端 import，测试和 `test:*` 脚本路径跟着走；顺序按依赖关系排，见「实现中的决定」第 9 条）
 
 - [x] P0-2 `refactor(core): move mai enums, in-game types and collection types to shared/core`
-- [ ] P0-3 `refactor(core): move music and diving-fish types to shared/core`
+- [x] P0-3 `refactor(core): move music and diving-fish types to shared/core`
 - [ ] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
 - [ ] P0-5 `refactor(core): move music search index to shared/core`（`test:music-search`）
 - [ ] P0-6 `refactor(core): move SaltMeta conversion to shared/core`

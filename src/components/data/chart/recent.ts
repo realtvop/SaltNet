@@ -1,4 +1,4 @@
-import type { Chart } from "@/components/data/music/type";
+import type { Chart } from "@core/music/type";
 
 // prettier-ignore
 export const BASE_DIFFICULTY_TABS: string[] = [

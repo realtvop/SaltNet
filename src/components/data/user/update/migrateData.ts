@@ -1,7 +1,4 @@
-import type {
-    DivingFishB50,
-    DivingFishFullRecord,
-} from "@/components/integrations/diving-fish/type";
+import type { DivingFishB50, DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { DetailedData } from "..";
 import { getSaltNetMusicIdForChartType } from "../../music/saltmeta";
 

@@ -1,5 +1,5 @@
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import type { Chart, ChartScore } from "../music/type";
+import type { Chart, ChartScore } from "@core/music/type";
 import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 import type { Collection, CollectionRequired, VersionPlate } from "@core/collection/type";
 

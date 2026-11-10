@@ -6,13 +6,13 @@ import {
     SALTMETA_NEXT_COMPACTED_VERSION,
     type SaltMetaMusicMetadataNextCompacted,
 } from "@/components/data/music/saltmeta";
-import type { SavedMusicList } from "@/components/data/music/type";
+import type { SavedMusicList } from "@core/music/type";
 import type {
     DivingFishB50,
     DivingFishFullRecord,
     DivingFishRecordsResponse,
     DivingFishResponse,
-} from "./type";
+} from "@core/integrations/diving-fish/type";
 
 const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
 

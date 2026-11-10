@@ -4,9 +4,9 @@
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import { getUserDisplayName } from "@/components/data/user/type";
-    import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
+    import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
     import { ComboStatus } from "@core/mai/types";
     import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";
     import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";

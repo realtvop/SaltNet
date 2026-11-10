@@ -3,7 +3,7 @@
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { getMusicInfoAsync } from "@/components/data/music";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import type { User } from "@/components/data/user/type";
     import { RankRate } from "@core/mai/types";
     import type { Collection } from "@core/collection/type";

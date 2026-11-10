@@ -680,7 +680,7 @@
 </template>
 
 <script setup lang="ts">
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@core/mai/types";
     import { computed, nextTick, ref, watch } from "vue";
@@ -690,7 +690,7 @@
     import { copyTextToClipboard } from "@/components/app/utils";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
-    import type { ChartStats } from "@/components/integrations/diving-fish/type";
+    import type { ChartStats } from "@core/integrations/diving-fish/type";
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
     import { type User, getUserDisplayName } from "@/components/data/user/type";
     import { getCollectionImageURL, getCoverURL } from "@/components/integrations/assets";

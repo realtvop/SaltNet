@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import {
         formatKaleidxscopeDateTime,
         formatKaleidxscopeLife,

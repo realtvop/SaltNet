@@ -1,4 +1,4 @@
-import type { Chart } from "@/components/data/music/type";
+import type { Chart } from "@core/music/type";
 
 type ChartLike = Pick<Chart, "music" | "info">;
 

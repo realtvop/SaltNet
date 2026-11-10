@@ -1,5 +1,5 @@
-import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@/components/data/music/type";
-import type { DivingFishMusicChart, MusicDataResponse } from "./type";
+import type { Music, MusicInfo, Chart, ChartInfo, ChartScore } from "@core/music/type";
+import type { DivingFishMusicChart, MusicDataResponse } from "@core/integrations/diving-fish/type";
 import { isBanquetGenre, UTAGE_GRADE } from "@/components/data/chart/difficulty";
 export {
     calculateB50FromRecords,

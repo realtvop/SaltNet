@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { Chart } from "../music/type";
+import type { Chart } from "@core/music/type";
 import type { Collection, CollectionRequired, CollectionSongType } from "@core/collection/type";
 import { getRelatedCollectionsForChart, updateRelatedCollectionsIndex } from "./relatedCollections";
 

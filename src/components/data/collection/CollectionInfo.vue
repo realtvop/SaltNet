@@ -4,7 +4,7 @@
     import { markDialogClosed, markDialogOpen } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import { getCollectionImageURL } from "@/components/integrations/assets";
     import CollectionProgress from "./CollectionProgress.vue";
     import CollectionTitle from "./CollectionTitle.vue";
