@@ -826,6 +826,14 @@
       "count": 4
     }
   },
+  "src/components/data/chart/songsQuery.ts": {
+    "one-var": {
+      "count": 4
+    },
+    "antfu/curly": {
+      "count": 3
+    }
+  },
   "src/components/data/collection/CollectionInfo.vue": {
     "style/indent": {
       "count": 92
@@ -1991,7 +1999,7 @@
   },
   "src/pages/songs.vue": {
     "style/indent": {
-      "count": 1174
+      "count": 811
     },
     "perfectionist/sort-named-imports": {
       "count": 8
@@ -2006,10 +2014,10 @@
       "count": 14
     },
     "style/comma-dangle": {
-      "count": 32
+      "count": 24
     },
     "antfu/if-newline": {
-      "count": 60
+      "count": 46
     },
     "ts/no-use-before-define": {
       "count": 5
@@ -2021,10 +2029,10 @@
       "count": 1
     },
     "style/operator-linebreak": {
-      "count": 26
+      "count": 8
     },
     "antfu/curly": {
-      "count": 4
+      "count": 1
     },
     "no-undef-init": {
       "count": 1
@@ -2032,20 +2040,14 @@
     "object-shorthand": {
       "count": 1
     },
-    "style/brace-style": {
-      "count": 29
-    },
-    "style/arrow-parens": {
-      "count": 18
-    },
-    "style/indent-binary-ops": {
-      "count": 2
-    },
     "antfu/top-level-function": {
       "count": 5
     },
-    "one-var": {
-      "count": 4
+    "style/brace-style": {
+      "count": 5
+    },
+    "style/arrow-parens": {
+      "count": 14
     },
     "vue/html-indent": {
       "count": 556

@@ -2,7 +2,7 @@
     import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
     import type { User } from "@/components/data/user/type";
-    import type { Chart, ChartScore } from "@core/music/type";
+    import type { Chart } from "@core/music/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
@@ -12,7 +12,6 @@
         maimaiVersionsCN,
         isMusicDataLoading,
     } from "@/components/data/music";
-    import { createMusicSearchQuery, matchesMusicSearchIndex } from "@core/music/search";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
@@ -24,32 +23,35 @@
     import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
     import {
         checkCollectionChartFinish,
-        getCollectionCharts,
         getPlateCompactPresentation,
         getVersionPlateConditionText,
         getVersionPlateTabs,
     } from "@core/collection/versionPlate";
-    import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+    import type { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
     import {
         getDifficultyFilterOptions,
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
     } from "@core/chart/difficulty";
-    import {
-        DIFFICULTY_TABS,
-        formatScoreChangedAt,
-        getDifficultyTabs,
-        getRecentCharts,
-        hasAnyScoreChangedTime,
-        sortRecentGroupCharts,
-    } from "@core/chart/recent";
+    import { getDifficultyTabs, hasAnyScoreChangedTime } from "@core/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
+    import {
+        addChartPositionIndexes,
+        addQueriedPositionIndexes,
+        SongsCategory as Category,
+        countChartStats,
+        createGameOrderComparator,
+        createPlayedFirstComparator,
+        filterChartsForCategory,
+        groupCharts,
+        searchCharts,
+    } from "@/components/data/chart/songsQuery";
     import {
         formatPlayCount,
         getScoreHistoryChartKey,
         getUserPlayCountEstimates,
     } from "@/components/data/user/scoreHistory";
-    import { courses, getCourseCharts, getCourseTrackKey } from "@core/course";
+    import { courses, getCourseTrackKey } from "@core/course";
     import type { Course } from "@core/course";
     import KaleidxscopeOverview from "@/components/data/kaleidxscope/KaleidxscopeOverview.vue";
     import {
@@ -70,15 +72,6 @@
         }
     }
 
-    enum Category {
-        InGame = "难度",
-        Version = "版本",
-        Favorite = "收藏夹",
-        Banquet = "宴会场",
-        Kaleidxscope = "万花筒",
-        Course = "段位",
-    }
-
     const primaryCategories = Object.values(Category).filter(
         item => item !== Category.Kaleidxscope && item !== Category.Course
     );
@@ -86,7 +79,6 @@
     const route = useRoute();
     const shared = useShared();
     const userId = ref(route.params.id as string);
-    const difficulties = DIFFICULTY_TABS;
     const banquetDifficulties = ["11?", "12?", "12+?", "13?", "13+?", "14?", "14+?"];
     const query = ref<string>("");
     const chartInfoDialog = ref<{
@@ -336,24 +328,7 @@
         return new Promise(resolve => window.setTimeout(resolve, 0));
     }
 
-    const musicSortOrder = new Map<number, number>(MusicSort.map((id, index) => [id, index]));
-
-    function getMusicSortIndex(chart: Chart): number {
-        return musicSortOrder.get(chart.music.id) ?? -1;
-    }
-
-    function getChartBaseScore(chart: Chart): ChartScore {
-        return (
-            chart.score ?? {
-                rankRate: "" as any,
-                achievements: null,
-                comboStatus: "" as any,
-                syncStatus: "" as any,
-                deluxeScore: 0,
-                deluxeRating: 0,
-            }
-        );
-    }
+    const compareChartsByGameOrder = createGameOrderComparator(MusicSort);
 
     async function loadChartsWithCache(userData?: User | null) {
         const requestId = ++loadChartsRequestId;
@@ -419,27 +394,12 @@
 
         await yieldToMainThread();
         if (requestId !== loadChartsRequestId) return;
-        charts.sort(
-            (a, b) =>
-                getMusicSortIndex(b) +
-                b.info.grade * 100000 -
-                getMusicSortIndex(a) -
-                a.info.grade * 100000
-        );
+        charts.sort(compareChartsByGameOrder);
 
         if (detailedLookup) {
             await yieldToMainThread();
             if (requestId !== loadChartsRequestId) return;
-            charts.sort((a, b) => {
-                const chartDataA = detailedLookup.findScoreForChart(a);
-                const chartDataB = detailedLookup.findScoreForChart(b);
-                const playedA = typeof chartDataA?.achievements === "number";
-                const playedB = typeof chartDataB?.achievements === "number";
-                if (playedA && playedB) return chartDataB.achievements - chartDataA.achievements;
-                if (playedA) return -1;
-                if (playedB) return 1;
-                return 0;
-            });
+            charts.sort(createPlayedFirstComparator(detailedLookup.findScoreForChart));
         }
 
         if (requestId !== loadChartsRequestId) return;
@@ -452,191 +412,25 @@
     const chartListFiltered = computed(() => {
         if (!shared.chartsSort.charts || !shared.chartsSort.charts.length) return null;
 
-        let filteredCharts: Chart[];
-
-        // 根据当前分类模式筛选曲目
-        if (category.value === Category.InGame) {
-            // 游戏内难度模式
-            if (selectedDifficulty.value === "ALL") {
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.grade === difficultyFilter.value
-                );
-            } else if (selectedDifficulty.value === "最近") {
-                filteredCharts = getRecentCharts(shared.chartsSort.charts);
-            } else {
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.level === selectedDifficulty.value
-                );
-            }
-        } else if (category.value === Category.Banquet) {
-            // 宴会场模式
-            if (selectedDifficulty.value === "ALL") {
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) =>
-                        chart.info.grade === UTAGE_GRADE && chart.info.level.endsWith("?")
-                );
-            } else {
-                filteredCharts = shared.chartsSort.charts.filter(
-                    (chart: Chart) => chart.info.level === selectedDifficulty.value
-                );
-            }
-        } else if (category.value === Category.Version) {
-            // 版本模式
-            // 创建版本名称映射
-            const versionMapping: Record<string, string> = {};
-
-            const targetVersion =
-                versionMapping[selectedDifficulty.value] || selectedDifficulty.value;
-            filteredCharts = shared.chartsSort.charts.filter((chart: Chart) => {
-                const matchVersion = (chart.music.info.from as unknown as string) === targetVersion;
-                if (!matchVersion) return false;
-                return chart.info.grade === difficultyFilter.value;
-            });
-        } else if (category.value === Category.Favorite) {
-            // 收藏夹模式
-            const currentFavorite = shared.favorites.find(f => f.name === selectedDifficulty.value);
-            if (!currentFavorite) {
-                filteredCharts = [];
-            } else {
-                // 根据收藏夹中的曲目ID和指定难度筛选
-                const favoriteChartIds = new Set(
-                    currentFavorite.charts.map(fc => `${fc.i}-${difficultyFilter.value}`)
-                );
-                filteredCharts = shared.chartsSort.charts.filter((chart: Chart) =>
-                    favoriteChartIds.has(`${chart.music.id}-${chart.info.grade}`)
-                );
-            }
-        } else if (category.value === Category.Kaleidxscope) {
-            // 万花筒有独立的钥匙条件、血量日历与抽选曲池视图。
-            filteredCharts = [];
-        } else if (category.value === Category.Course) {
-            filteredCharts = selectedCourse.value
-                ? getCourseCharts(selectedCourse.value, shared.chartsSort.charts)
-                : [];
-        } else if (category.value in versionPlates) {
-            // 牌子模式
-            const plateType = category.value as VersionPlateCategory;
-            // 通过第一个字找到完整的牌子名称
-            const selectedPlate = versionPlates[plateType]?.find(
-                plate => plate.name === selectedDifficulty.value
-            );
-
-            if (!selectedPlate) {
-                filteredCharts = [];
-            } else {
-                filteredCharts = getCollectionCharts(selectedPlate, shared.chartsSort.charts);
-
-                // 按照牌子的达成条件进行排序
-                if (plateFinishSort.value === "constant-desc") {
-                    // 按定数排序（从高到低）
-                    filteredCharts.sort((a, b) => {
-                        const constantA = a.info.constant || 0;
-                        const constantB = b.info.constant || 0;
-                        return constantB - constantA;
-                    });
-                } else if (plateFinishSort.value === "constant-asc") {
-                    // 按定数排序（从低到高）
-                    filteredCharts.sort((a, b) => {
-                        const constantA = a.info.constant || 0;
-                        const constantB = b.info.constant || 0;
-                        return constantA - constantB;
-                    });
-                } else {
-                    // 按条件排序（原有逻辑）
-                    filteredCharts.sort((a, b) => {
-                        const scoreA = a.score;
-                        const scoreB = b.score;
-                        const completedA = checkCollectionChartFinish(selectedPlate, a);
-                        const completedB = checkCollectionChartFinish(selectedPlate, b);
-
-                        // 已完成的排在前面
-                        if (completedA && !completedB) return -1;
-                        if (!completedA && completedB) return 1;
-
-                        // 同样完成状态下按达成率排序
-                        if (
-                            typeof scoreA?.achievements === "number" &&
-                            typeof scoreB?.achievements === "number"
-                        ) {
-                            return scoreB.achievements - scoreA.achievements;
-                        }
-
-                        return 0;
-                    });
-                }
-            }
-        } else {
-            filteredCharts = [];
-        }
-
-        const allChartsByGrade: Record<number, Chart[]> = {};
-        const gradeChartPositions = new Map<Chart, number>();
-        [0, 1, 2, 3, 4, 10].forEach(grade => {
-            allChartsByGrade[grade] = shared.chartsSort.charts.filter(
-                (chart: Chart) => chart.info.grade === grade
-            );
-            allChartsByGrade[grade].forEach((chart, index, gradeCharts) => {
-                gradeChartPositions.set(chart, gradeCharts.length - index);
-            });
+        const filteredCharts = filterChartsForCategory({
+            charts: shared.chartsSort.charts,
+            category: category.value,
+            selectedTab: selectedDifficulty.value,
+            difficultyFilter: difficultyFilter.value,
+            favorites: shared.favorites,
+            selectedCourse: selectedCourse.value,
+            versionPlates,
+            plateSort: plateFinishSort.value,
         });
-
-        // 先给所有符合难度条件的曲目添加原始排序索引
-        const chartsWithOriginalIndex = filteredCharts.map((chart, index) => {
-            const gradeCharts = allChartsByGrade[chart.info.grade] || [];
-            return {
-                ...chart,
-                score: {
-                    ...getChartBaseScore(chart),
-                    index: {
-                        all: {
-                            index: gradeChartPositions.get(chart) ?? 0,
-                            total: gradeCharts.length,
-                        },
-                        difficult: {
-                            index: filteredCharts.length - index,
-                            total: filteredCharts.length,
-                        },
-                    },
-                },
-            };
-        });
-
-        let finalFilteredCharts = chartsWithOriginalIndex;
-
-        if (query.value) {
-            const searchTerms = createMusicSearchQuery(query.value);
-            finalFilteredCharts = chartsWithOriginalIndex.filter(chart => {
-                const chartData = chart.score;
-                return (
-                    matchesMusicSearchIndex(chart.music.info.searchIndex, searchTerms) ||
-                    matchesMusicSearchIndex(chart.info.searchIndex, searchTerms) ||
-                    chart.music.info.id.toString() === query.value ||
-                    (chartData &&
-                        // 达成率 fc sync
-                        (chartData.achievements?.toString().includes(query.value) ||
-                            chartData.comboStatus?.toString().includes(query.value) ||
-                            chartData.syncStatus?.toString().includes(query.value)))
-                );
-            });
-        }
-
-        // 使用原始排序索引而不是重新计算
-        const chartsWithIndex = finalFilteredCharts.map((chart, index) => {
-            return {
-                ...chart,
-                score: {
-                    ...getChartBaseScore(chart),
-                    index: {
-                        all: chart.score.index!.all,
-                        difficult: chart.score.index!.difficult,
-                        queried: {
-                            index: filteredCharts.length - index,
-                            total: filteredCharts.length,
-                        },
-                    },
-                },
-            };
-        });
+        const chartsWithOriginalIndex = addChartPositionIndexes(
+            shared.chartsSort.charts,
+            filteredCharts
+        );
+        const finalFilteredCharts = searchCharts(chartsWithOriginalIndex, query.value);
+        const chartsWithIndex = addQueriedPositionIndexes(
+            finalFilteredCharts,
+            filteredCharts.length
+        );
 
         return { [selectedDifficulty.value]: chartsWithIndex };
     });
@@ -739,219 +533,16 @@
         Math.min(visibleItemsCount.value, itemsToRender.value.length)
     );
 
-    function countChartStats(charts: Chart[]) {
-        let sss = 0,
-            sssp = 0,
-            fc = 0,
-            ap = 0,
-            fsdx = 0;
-        charts.forEach(chart => {
-            const s = chart.score;
-            if (s?.achievements != null) {
-                if (s.achievements >= 100.5) sssp++;
-                else if (s.achievements >= 100.0) sss++;
-            }
-            if (s?.comboStatus) {
-                if (
-                    [ComboStatus.AllPerfect, ComboStatus.AllPerfectPlus].includes(
-                        s.comboStatus as ComboStatus
-                    )
-                )
-                    ap++;
-                if (
-                    [
-                        ComboStatus.FullCombo,
-                        ComboStatus.FullComboPlus,
-                        ComboStatus.AllPerfect,
-                        ComboStatus.AllPerfectPlus,
-                    ].includes(s.comboStatus as ComboStatus)
-                )
-                    fc++;
-            }
-            if (
-                s?.syncStatus &&
-                [SyncStatus.FullSyncDX, SyncStatus.FullSyncDXPlus].includes(
-                    s.syncStatus as SyncStatus
-                )
-            )
-                fsdx++;
-        });
-        return { sss, sssp, fc, ap, fsdx };
-    }
-
-    const rankOrder = [
-        RankRate.sssp,
-        RankRate.sss,
-        RankRate.ssp,
-        RankRate.ss,
-        RankRate.sp,
-        RankRate.s,
-        RankRate.aaa,
-        RankRate.aa,
-        RankRate.a,
-        RankRate.bbb,
-        RankRate.bb,
-        RankRate.b,
-        RankRate.c,
-        RankRate.d,
-    ];
-    const comboOrder = [
-        ComboStatus.AllPerfectPlus,
-        ComboStatus.AllPerfect,
-        ComboStatus.FullComboPlus,
-        ComboStatus.FullCombo,
-        ComboStatus.None,
-    ];
-    const syncOrder = [
-        SyncStatus.FullSyncDXPlus,
-        SyncStatus.FullSyncDX,
-        SyncStatus.FullSyncPlus,
-        SyncStatus.FullSync,
-        SyncStatus.Sync,
-        SyncStatus.None,
-    ];
-
-    const rankDisplayNames: Record<string, string> = {
-        [RankRate.sssp]: "SSS+",
-        [RankRate.sss]: "SSS",
-        [RankRate.ssp]: "SS+",
-        [RankRate.ss]: "SS",
-        [RankRate.sp]: "S+",
-        [RankRate.s]: "S",
-        [RankRate.aaa]: "AAA",
-        [RankRate.aa]: "AA",
-        [RankRate.a]: "A",
-        [RankRate.bbb]: "BBB",
-        [RankRate.bb]: "BB",
-        [RankRate.b]: "B",
-        [RankRate.c]: "C",
-        [RankRate.d]: "D",
-        "": "未游玩",
-    };
-    const comboDisplayNames: Record<string, string> = {
-        [ComboStatus.AllPerfectPlus]: "All Perfect+",
-        [ComboStatus.AllPerfect]: "All Perfect",
-        [ComboStatus.FullComboPlus]: "Full Combo+",
-        [ComboStatus.FullCombo]: "Full Combo",
-        [ComboStatus.None]: "无",
-    };
-    const syncDisplayNames: Record<string, string> = {
-        [SyncStatus.FullSyncDXPlus]: "Full Sync DX+",
-        [SyncStatus.FullSyncDX]: "Full Sync DX",
-        [SyncStatus.FullSyncPlus]: "Full Sync+",
-        [SyncStatus.FullSync]: "Full Sync",
-        [SyncStatus.Sync]: "Sync",
-        [SyncStatus.None]: "无",
-    };
-
-    const groupedItems = computed(() => {
-        const isRecent = category.value === Category.InGame && selectedDifficulty.value === "最近";
-        const isInGame =
-            category.value === Category.InGame &&
-            groupBy.value !== "none" &&
-            selectedDifficulty.value !== "ALL" &&
-            selectedDifficulty.value !== "最近";
-        const isVersion = category.value === Category.Version && versionGroupBy.value !== "none";
-        const isFavorite = category.value === Category.Favorite && versionGroupBy.value !== "none";
-
-        if (!isRecent && !isInGame && !isVersion && !isFavorite) return null;
-
-        const activeGroupBy = isRecent
-            ? "recent"
-            : isVersion || isFavorite
-              ? versionGroupBy.value
-              : groupBy.value;
-
-        const charts = itemsToRender.value;
-        if (!charts.length) return null;
-
-        const groups: Record<string, Chart[]> = {};
-        charts.forEach(chart => {
-            let key: string;
-            if (activeGroupBy === "recent") {
-                key = String(chart.score?.lastChangedAt ?? 0);
-            } else if (activeGroupBy === "level") {
-                key = chart.info.level;
-            } else if (activeGroupBy === "version") {
-                key = chart.music.info.from as unknown as string;
-            } else if (activeGroupBy === "constant") {
-                key = chart.info.constant.toFixed(1);
-            } else if (activeGroupBy === "difficulty") {
-                key = String(chart.info.grade);
-            } else if (activeGroupBy === "rank") {
-                key = (chart.score?.rankRate as string) || "";
-            } else if (activeGroupBy === "combo") {
-                key = (chart.score?.comboStatus as string) || "";
-            } else {
-                key = (chart.score?.syncStatus as string) || "";
-            }
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(chart);
-        });
-
-        const sortFn = (a: [string, Chart[]], b: [string, Chart[]]) => {
-            if (activeGroupBy === "recent") return Number(b[0]) - Number(a[0]);
-            if (activeGroupBy === "level") {
-                const ia = difficulties.indexOf(a[0]);
-                const ib = difficulties.indexOf(b[0]);
-                return ib - ia;
-            }
-            if (activeGroupBy === "constant") return Number(b[0]) - Number(a[0]);
-            if (activeGroupBy === "version") {
-                const orderA = maimaiVersionsCN.indexOf(a[0]);
-                const orderB = maimaiVersionsCN.indexOf(b[0]);
-                return (orderB === -1 ? 999 : orderB) - (orderA === -1 ? 999 : orderA);
-            }
-            if (activeGroupBy === "difficulty") return Number(a[0]) - Number(b[0]);
-            if (activeGroupBy === "rank") {
-                const ia = rankOrder.indexOf(a[0] as RankRate),
-                    ib = rankOrder.indexOf(b[0] as RankRate);
-                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-            }
-            if (activeGroupBy === "combo") {
-                const ia = comboOrder.indexOf(a[0] as ComboStatus),
-                    ib = comboOrder.indexOf(b[0] as ComboStatus);
-                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-            }
-            const ia = syncOrder.indexOf(a[0] as SyncStatus),
-                ib = syncOrder.indexOf(b[0] as SyncStatus);
-            return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-        };
-
-        const displayNames =
-            activeGroupBy === "rank"
-                ? rankDisplayNames
-                : activeGroupBy === "combo"
-                  ? comboDisplayNames
-                  : activeGroupBy === "sync"
-                    ? syncDisplayNames
-                    : null;
-
-        return Object.entries(groups)
-            .sort(sortFn)
-            .map(([key, items]) => {
-                let title: string;
-                if (activeGroupBy === "recent") {
-                    title = formatScoreChangedAt(Number(key));
-                } else if (displayNames) {
-                    title = displayNames[key] || key;
-                } else if (activeGroupBy === "difficulty") {
-                    title = getChartDifficultyFullLabel(Number(key));
-                } else {
-                    title = key;
-                }
-
-                const sortedItems =
-                    activeGroupBy === "recent" ? sortRecentGroupCharts(items) : items;
-
-                return {
-                    title,
-                    count: sortedItems.length,
-                    stats: countChartStats(sortedItems),
-                    items: sortedItems,
-                };
-            });
-    });
+    const groupedItems = computed(() =>
+        groupCharts({
+            charts: itemsToRender.value,
+            category: category.value,
+            selectedTab: selectedDifficulty.value,
+            groupBy: groupBy.value,
+            versionGroupBy: versionGroupBy.value,
+            versions: maimaiVersionsCN,
+        })
+    );
 
     const visibleGroupedItems = computed(() => {
         if (!groupedItems.value) return null;
