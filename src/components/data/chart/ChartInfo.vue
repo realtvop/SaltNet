@@ -697,7 +697,7 @@
     import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
     import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
     import { getChartDifficultyBadgeLabel } from "@core/chart/difficulty";
-    import { formatScoreChangedAt } from "./recent";
+    import { formatScoreChangedAt } from "@core/chart/recent";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
     import { findDetailedScoreForChart } from "./scoreLookup";

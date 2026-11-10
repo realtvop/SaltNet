@@ -65,7 +65,7 @@
 - [x] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
 - [x] P0-5 `refactor(core): move music search index and SaltMeta conversion to shared/core`（`test:music-search`；`search.test.ts` 要用 `saltmeta.ts` 造数据，所以两个模块一起搬，见第 11 条）
 - [x] P0-6 已并入 P0-5
-- [ ] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
+- [x] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
 - [ ] P0-8 `refactor(core): move course data to shared/core`（`test:course`）
 - [ ] P0-9 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
 - [ ] P0-10 `refactor(core): move version plate logic to shared/core`

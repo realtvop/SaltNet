@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Chart } from "@core/music/type";
-import { ChartType } from "@core/mai/types";
+import type { Chart } from "../music/type";
+import { ChartType } from "../mai/types";
 import {
     formatScoreChangedAt,
     getDifficultyTabs,

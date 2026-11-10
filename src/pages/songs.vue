@@ -42,7 +42,7 @@
         getRecentCharts,
         hasAnyScoreChangedTime,
         sortRecentGroupCharts,
-    } from "@/components/data/chart/recent";
+    } from "@core/chart/recent";
     import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
         formatPlayCount,

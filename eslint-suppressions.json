@@ -240,6 +240,11 @@
       "count": 1
     }
   },
+  "shared/core/chart/recent.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
   "shared/core/collection/type.ts": {
     "perfectionist/sort-named-imports": {
       "count": 1
@@ -480,7 +485,7 @@
       "count": 621
     },
     "perfectionist/sort-imports": {
-      "count": 11
+      "count": 10
     },
     "perfectionist/sort-named-imports": {
       "count": 6
@@ -753,37 +758,6 @@
     },
     "style/operator-linebreak": {
       "count": 2
-    }
-  },
-  "src/components/data/chart/recent.test.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 2
-    },
-    "style/comma-dangle": {
-      "count": 2
-    },
-    "style/indent": {
-      "count": 8
-    },
-    "antfu/consistent-list-newline": {
-      "count": 1
-    }
-  },
-  "src/components/data/chart/recent.ts": {
-    "antfu/if-newline": {
-      "count": 9
-    },
-    "style/comma-dangle": {
-      "count": 2
-    },
-    "style/member-delimiter-style": {
-      "count": 3
-    },
-    "style/brace-style": {
-      "count": 1
     }
   },
   "src/components/data/chart/scoreLookup.ts": {
