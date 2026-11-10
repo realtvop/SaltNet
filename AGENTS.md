@@ -17,20 +17,25 @@ SaltNet is a two-package pnpm workspace:
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
   imports are relative, and web code imports it through the `@core/*` alias. `pnpm check` type-checks
   it with `shared/core/tsconfig.json` (no DOM or Node types) and the `saltnet/shared-core-boundary`
-  block in `eslint.config.js` rejects framework imports. See `shared/core/README.md`.
-    - Current contents: `mai/` (rank, combo and sync enums), `music/` (types, SaltMeta conversion and
-      fetching, cached-data restoration, `MusicSort` order, and the precomputed simplified/traditional,
-      pinyin and romaji search index), `config.ts`/`http.ts` (`CoreConfig` and the injectable
-      `FetchLike`), `chart/` (difficulty, chart identity,
-      recent-change ordering), `course/` (dan-course definitions and ordered chart matching),
-      `kaleidxscope/` (CN gate conditions, life calendars, draw pools), `collection/` (collection
-      types, LXNS data mapping and validation, static characters and partners, version-plate
-      requirement/progress evaluation, the music-to-collection reverse index builder),
-      `user/inGame.ts` (in-game user types), `query/` (the songs-page query helpers in `songs.ts`:
-      ordering, category filtering, position indexes, search, grouping and statistics as pure
-      functions), `fixtures/` (a trimmed real SaltMeta document with a helper that converts it,
-      used as fixed test data by every package), and
-      `integrations/` (`diving-fish/type.ts`, `lxns/type.ts`, and the public `lxns/fetchCollection.ts`).
+  block in `eslint.config.js` rejects framework imports. See `shared/core/README.md`. Current
+  contents:
+    - `mai/`: rank, combo and sync enums.
+    - `music/`: types, SaltMeta conversion and fetching, cached-data restoration, `MusicSort` order,
+      and the precomputed simplified/traditional, pinyin and romaji search index.
+    - `config.ts` and `http.ts`: `CoreConfig` and the injectable `FetchLike`.
+    - `chart/`: difficulty, chart identity, recent-change ordering.
+    - `course/`: dan-course definitions and ordered chart matching.
+    - `kaleidxscope/`: CN gate conditions, life calendars, draw pools.
+    - `collection/`: collection types, LXNS data mapping and validation, static characters and
+      partners, version-plate requirement/progress evaluation, the music-to-collection reverse index
+      builder.
+    - `user/inGame.ts`: in-game user types.
+    - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
+      indexes, search, grouping and statistics as pure functions).
+    - `fixtures/`: a trimmed real SaltMeta document with a helper that converts it, used as fixed
+      test data by every package.
+    - `integrations/`: `diving-fish/type.ts`, `lxns/type.ts`, and the public
+      `lxns/fetchCollection.ts`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 
@@ -94,18 +99,26 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   token response compatibility, refresh-token handling, serialized durable user writes, and
   initial dialog-history reconciliation.
 
+There is no aggregate test script: before committing, run `pnpm check`, `pnpm lint`, every
+`pnpm test:*` script above, and the render-service `test` and `check` commands (plus `pnpm build`
+for web changes).
+
 ## Coding Style & Naming Conventions
 
 Use TypeScript and Vue single-file components. Prettier enforces four-space indentation, double quotes, semicolons, 100-character lines, and LF endings; use `pnpm pret:fix` for formatting. ESLint uses the Antfu Vue/TypeScript configuration. Keep Vue block order as `script`, `template`, `style`; use kebab-case component names in templates. Name components in PascalCase (`ChartInfo.vue`), composables with `use...`, and variables/functions in camelCase.
 
 ## Testing Guidelines
 
-Vitest tests live in `render-service/tests/` and alongside focused frontend data modules, using
-`*.test.ts` or `*.test.tsx`. The build metadata script has a Node test at
+Vitest tests live in `render-service/tests/`, alongside focused frontend data modules, and next to
+the modules in `shared/core/`, using `*.test.ts` or `*.test.tsx`. Core tests may read fixed data
+with Node built-ins but must not import anything from `src/`; the fixed data they share lives in
+`shared/core/fixtures/`. The build metadata script has a Node test at
 `script/generateBuildInfo.test.cjs`. Add focused regression cases alongside the affected service,
-frontend module, or script code. No coverage threshold is enforced.
+frontend module, core module, or script code. No coverage threshold is enforced.
 Frontend changes must at minimum pass `pnpm check`, `pnpm lint`, and `pnpm build`; manually
-exercise affected routes and browser back/forward behavior for UI or dialog changes.
+exercise affected routes and browser back/forward behavior for UI or dialog changes. Before moving
+page logic into `shared/core/`, snapshot its behavior on fixed data first (see
+`shared/core/query/songs.test.ts`) so that the move can be shown to change nothing.
 
 ## Commit & Pull Request Guidelines
 
