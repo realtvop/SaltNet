@@ -101,7 +101,7 @@
 - [x] P1-7a `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构（`loadMusic`、`loadCollections`），测试证明结果和 core 从同一份文档构建的逐项相等（见第 27 条）
 - [x] P1-7b `feat(cli): write static courses and collections with the CLI version`：库里收藏品的 `kind` 改用设计里的六个名字，旅行伙伴、搭档和段位随 CLI 版本写入，数据一变就重写（迁移 3；万花筒不进库，见第 27、28 条）
 - [x] P1-7c `feat(cli): refresh stale metadata before a command reads it`：过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建；命令用 `useMetadata`，读库用一致的视图 `store.read`；设计见第 24、26、27 条，实现见第 29 条）
-- [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
+- [x] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [ ] P1-9 `feat(cli): add search, song and chart commands`
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
 - [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
@@ -359,3 +359,14 @@
     - 并发：重建不拿 `metadata` 锁，而是在写入的事务里再查一次 `builder`，别的进程这时已经重建或下载过就不写（否则旧快照会盖掉更新的行，还把 `fetchedAt` 写旧）；下载拿 `metadata` 锁。新增 `Store.read(work)`：在 SQLite 的一个延迟事务里做几次查询，拿到一致的视图，不挡写入也不被写入挡。`loadMusic` 和 `loadCollections` 用它，所以另一个进程在中途提交刷新时，读到的不会是这次下载的曲目配上次下载的谱面，时间也和读到的行是一份。
     - 重构：`buildCatalog`（转换并拒绝没有曲目的文档）从 `refreshMusic` 里拆出来，下载和重建共用。
     - 测试：`tests/catalog/ensure.test.ts`（32 个：首次使用、只处理要的来源、静态数据只写一次、新鲜/刚到点/`maxAgeHours`/0/时钟拨回、过期后下载成功、失败、一个失败一个成功、没缓存的来源失败时另一个仍保留、`--offline` 的各种情形、别的进程在刷新、`builder` 不同时的重建和各种坏快照、别的进程抢先重建时不覆盖）；`tests/commands/metadata.test.ts`（8 个，用一个测试专用的命令走完整的 `runCli`，查 `meta.dataAsOf`、`warnings`、退出码 5）；`tests/store/store.test.ts` 加了 `store.read` 的 6 个（含一个反例：不用 `read` 的两次读取会不一致）。实现后我手工破坏了两处，去掉重建时的再检查、把过期判断改成 `>`，各有测试变红，之后恢复。
+
+30. **P1-8 的实现（引用解析）**：
+    - 代码在 `cli/src/catalog/songs.ts`（`buildSongCatalog`）、`cli/src/refs/difficulty.ts`、`song.ts`、`chart.ts`，另有 `util/fold.ts` 的 `foldName`（NFKC 加小写，只用来比较）和 `util/closest.ts` 新增的 `closestItems`（一个条目可以有几个名字，按最近的算；加了长度差剪枝，`closestMatches` 改为调用它，行为不变）。`chartKey(musicId, grade)` 成了命令行这边唯一写谱面 key 的地方，`catalog/store.ts` 也改用它。
+    - **「一首歌」是 SaltMeta 的一个条目**：网页端把它的 SD 面和 DX/宴会面存成两个 `Music`（id 差 10000），`buildSongCatalog` 把它们合回一首歌：`id` 是 SaltMeta id，`musicId` 是这首歌被引用时用的曲目 id（有 SD 面用 SD id，否则用 DX id），别名取两面的并集。候选里的 `ref` 就是 `musicId`；`type` 是 `SD`、`DX`，两面都有的歌是 `SD+DX`（规格只写了 SD 和 DX，两面都有时没有别的写法；谱面的 `type` 仍然只有 SD 或 DX）。
+    - 纯数字永远当曲目 id，找不到也不回退到标题（规格：标题是数字的歌要先 `search`）。找不到时给的候选是：id 加 10000 的 DX 歌（忘了加偏移的常见情形）、标题或别名正好是这个数的歌，`fix` 是 `saltnet search <数字>`。`数字-数字` 在曲目引用里取这张谱所在的歌，谱面必须存在。
+    - 文字引用的顺序：原样标题、忽略大小写和全半角的标题、原样别名、忽略大小写和全半角的别名（规格写「精确别名」，我让它也先原样后折叠）、搜索索引。每一步命中一首就是找到，命中多首是 `AMBIGUOUS_REF`，一首都没有才下一步。`TRUST` 唯一命中 695，`trust` 命中 695 和 11726，所以有歧义，和规格一致。
+    - **搜索索引这一步只认标题和别名，不认曲师**：库里存的索引还包含曲师，所以先用它筛出候选，再对这几首现算标题和别名的索引确认是歌名命中。否则 `song Youna` 会解析成「Link」，把曲师名当歌名用，是误判。规格只写了「搜索索引（简繁、拼音、罗马音）」，没有说含不含曲师；按曲师搜留给 P1-9 的 `search`。
+    - 错误里的内容：`AMBIGUOUS_REF` 最多列 10 首，更多时写明总数和「只列出前 10 首」，并给 `search` 的 `fix`；`NOT_FOUND` 列最多 5 个最接近的（标题和别名的编辑距离，阈值同 `closestMatches`）；候选都按曲目 id 升序。回显用户输入只用 `echo`（短而朴素的词），带空格的标题不回显，消息改说「这个引用」，`fix` 也不带原文。`ErrorCandidate` 加了 `difficulty` 和 `level`（给谱面候选）。
+    - 谱面引用：谱面 key 里已经有难度，再给难度参数必须一致，否则 `USAGE`；曲目引用不给难度是 `USAGE`；难度先于曲目检查，不认识的难度是 `USAGE` 并附最接近的写法；纯数字 id 只在这个 id 自己那一面找（`10146 rem` 找不到就是 `NOT_FOUND`，消息写「的 DX 部分」，候选是整首歌的谱面，里面能看到 SD 面的 `146-4`）；标题或别名两面都有这个难度是 `AMBIGUOUS_REF`，候选是两个谱面 key（带 `type`、`difficulty`、`level`），只有一面有就取那一面。**`--type` 对所有写法都是筛选**：id 或 key 的类型不符是 `NOT_FOUND`，并指出另一面的谱面 key（我没有把它当用法错误）。
+    - 难度的写法：`bas/adv/exp/mas/rem/utage`、`basic/advanced/expert/master/re:master/remaster`、`0`–`4` 和 `10`、`绿黄红紫白宴`（也收繁体的 `綠黃紅`），不分大小写和全半角；标签用 core 的 `getChartDifficultySearchLabel`（`BASIC` 到 `Re:MASTER`，宴谱 `UTAGE`），不认识的 grade 原样写数字而不是冒充 MASTER。`--diff` 之类选项要用的枚举，等 P1-9、P1-10 真要用时再从这张表导出。
+    - 测试：`tests/refs/difficulty.test.ts`（34 个）、`tests/catalog/songs.test.ts`（18 个）、`tests/refs/song.test.ts`（40 个：数字、谱面 key、各步的顺序、合并的宴谱、简繁和拼音和罗马音、曲师不算歌名、10 首上限、找不到时的候选和不回显）、`tests/refs/chart.test.ts`（27 个）、`tests/util/closest.test.ts` 加了 6 个。用固定的 SaltMeta 数据，规格里的两首「Link」和 `TRUST`/`Trust` 的例子都在其中；这份数据里没有的情形（标题压过别名、别名压过索引）用手造的小曲库。实现后我手工破坏了四处，把别名放到折叠标题前、索引不排除曲师、忽略 `--type`、数字找不到时回退到标题，各有测试变红，之后恢复。

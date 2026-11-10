@@ -27,20 +27,41 @@ export function editDistance(a: string, b: string): number {
 }
 
 /**
- * The names closest to what was typed, nearest first: those within a couple of edits, or that
- * start with it (`--grp` and `--group-by`). Ties keep the order of `candidates`.
+ * The items whose names are closest to what was typed, nearest first: those within a couple of
+ * edits, or that start with it (`--grp` and `--group-by`). An item may have several names (a
+ * title and its aliases) and counts by the nearest. Ties keep the order of `items`.
  */
-export function closestMatches(input: string, candidates: readonly string[], limit = 3): string[] {
+export function closestItems<T>(
+    input: string,
+    items: readonly T[],
+    namesOf: (item: T) => readonly string[],
+    limit = 3
+): T[] {
     const wanted = input.toLowerCase();
     const threshold = Math.max(2, Math.floor(wanted.length / 3));
-    return candidates
-        .map((candidate, index) => {
-            const name = candidate.toLowerCase();
-            const prefix = wanted.length >= 2 && name.startsWith(wanted);
-            return { candidate, index, distance: prefix ? 0 : editDistance(wanted, name) };
-        })
-        .filter(entry => entry.distance <= threshold)
+    const ranked: { item: T; index: number; distance: number }[] = [];
+    items.forEach((item, index) => {
+        let distance = Number.POSITIVE_INFINITY;
+        for (const raw of namesOf(item)) {
+            const name = raw.toLowerCase();
+            if (wanted.length >= 2 && name.startsWith(wanted)) {
+                distance = 0;
+                break;
+            }
+            // Turning one string into the other takes at least as many edits as they differ in
+            // length, so a long title is not worth the full comparison.
+            if (Math.abs(name.length - wanted.length) > threshold) continue;
+            distance = Math.min(distance, editDistance(wanted, name));
+        }
+        if (distance <= threshold) ranked.push({ item, index, distance });
+    });
+    return ranked
         .sort((a, b) => a.distance - b.distance || a.index - b.index)
         .slice(0, limit)
-        .map(entry => entry.candidate);
+        .map(entry => entry.item);
+}
+
+/** The names closest to what was typed, nearest first; see `closestItems`. */
+export function closestMatches(input: string, candidates: readonly string[], limit = 3): string[] {
+    return closestItems(input, candidates, candidate => [candidate], limit);
 }

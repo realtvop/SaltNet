@@ -46,7 +46,11 @@ export interface ErrorCandidate {
     ref: string;
     title?: string;
     artist?: string;
+    /** `SD`, `DX`, or `SD+DX` for a song that has both. */
     type?: string;
+    /** For a chart: its difficulty (`MASTER`) and level (`13+`). */
+    difficulty?: string;
+    level?: string;
 }
 
 export interface CliErrorOptions {

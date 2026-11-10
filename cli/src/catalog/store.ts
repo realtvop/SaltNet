@@ -8,6 +8,7 @@ import type { LXNSCollectionLists } from "@core/integrations/lxns/type";
 import type { SaltMetaBuildResult } from "@core/music/fetch";
 import type { Store } from "../store/store";
 import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
+import { chartKey } from "./songs";
 
 /**
  * Names how the stored rows were built from the upstream documents. A CLI that builds them
@@ -138,7 +139,7 @@ export function replaceMusic(
             music.charts.forEach((chart, position) => {
                 const { info: chartInfo } = chart;
                 insertChart.run(
-                    `${music.id}-${chartInfo.grade}`,
+                    chartKey(music.id, chartInfo.grade),
                     chart.id,
                     music.id,
                     position,
