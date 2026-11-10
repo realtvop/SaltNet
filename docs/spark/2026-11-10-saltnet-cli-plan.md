@@ -104,7 +104,7 @@
 - [x] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [x] P1-9a `refactor(core): tell which kind of variant a search text matched`：`createMusicSearchVariants` 把原文、拼音、罗马音分开给出，`createMusicSearchIndex` 的结果不变（见第 31 条）
 - [x] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
-- [ ] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
+- [x] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
 - [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
 - [ ] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
@@ -387,3 +387,14 @@
     - `search <文本…>`：几个词用空格连起来，不用加引号，所以 `search 1 46` 搜的是文本「1 46」，不是 id 146；空文本是 `USAGE`；没有命中不算错（退出码 0，`items` 为空，`page.total` 是 0）；`--limit` 默认 10，规格 4.5 写明 `search` 是 10、其他列表是 50。每项是 `musicId`、`title`、`artist`、`genre`、`type`（`SD`、`DX` 或 `SD+DX`）、`matchedBy`。曲库过期、联网失败时用旧数据照常搜，并带 `STALE_METADATA` 警告。
     - 测试：`tests/catalog/search.test.ts`（28 个）和 `tests/commands/search.test.ts`（12 个）由 Gemini 3.8 Flash 按我写的行为说明写出；手造曲库的构造函数挪到 `tests/madeCatalog.ts`（我加了 `charter` 选项），`song.test.ts`（42 个）复用它。我核对了每个断言的期望来自行为说明和固定数据，而不是实现的输出，然后手工破坏实现 43 处（排序的每一档、id 只认 SD 或只认 DX、预筛的每条规则、`matchedBy` 的顺序、各个输出字段、默认 `--limit`、词的连接、警告透传、候选顺序……）。第一轮有 7 处没被发现：曲师和谱师的先后（两处）、词的连接、警告透传、`artist` 字段、候选顺序、「取最强关系」。前六处我补了 4 个测试和 1 条断言，全部变红；最后一处等价（简体化后的标题拼写总会给出同样的最强关系），没有测试能区分，代码保留（它写明了意图）。
     - 委托的经过：第一次运行没有产出，因为无头模式遇到不在白名单里的命令（`pnpm test:cli`）会放弃整次运行并丢掉改动；把它和 `pnpm test` 加进白名单、在提示里写明能用的命令之后，第二次成功（416 秒），补丁对实现没有异议。
+
+33. **P1-9c 的实现（谱面行、`song`、`chart`）**：
+    - 谱面行（`catalog/chartRow.ts` 的 `chartRow`）是设计 4.4 的结构：`chartKey`、`musicId`、`title`、`type`、`difficulty`、`level`、`constant`、`fitConstant`、`version`、`score`、`b50`，以后所有列谱面的命令都用它；`score` 和 `b50` 现在恒为 `null`，P2 带上成绩时再填，键不变。`constant` 不是正数时（宴谱上游给的是 0）是 `null`，`fitConstant` 同理。`version` 是这一面曲目的 `from`（国服版本名），所以一首歌的 SD 面和 DX 面可以不同（`146-3` 是 `maimai PLUS`，`10146-3` 是 `舞萌DX`）；`musicId` 同样是这一面的 id。
+    - `chart` 另加 `charter`、`notes`、`stats`（设计 4.4：这三项占篇幅大，只在 `chart` 里给）。`charter` 没有或只有「-」时是 `null`。`notes` 是 `tap`、`hold`、`slide`、`touch`、`break`、`total`：SD 谱没有 `touch`（`null`，`total` 不含它）；宴谱的物量上游没有，转换成网页端结构时 `slide` 和 `touch` 被写成了 0，那不是物量，所以 tap、hold、break 都缺时整组都是 `null`；只缺一部分时缺的是 `null`，`total` 也是 `null`。`stats` 是 `samples`、`avgAchievements`、`avgDxScore`、`stdDevAchievements`、`rankDist`（`D` 到 `SSS+` 十四档）、`comboDist`（`none`、`FC`、`FC+`、`AP`、`AP+`），没有统计时是 `null`；键用游戏里的写法（4.5）。
+    - **取整**（规格没写，我定的）：上游的拟合定数和统计有十五位小数，输出按网页端显示的精度取整：`fitConstant`、`avgAchievements`、`stdDevAchievements` 四位，`avgDxScore` 两位。取整只在输出这一层，P2 的 `b50 --mode fit` 照样按原始值算 rating。
+    - `refs/status.ts` 只放现在要用的：`RANKS`、`COMBOS`、`rankLabel`、`comboLabel`（`null`、`FC`、`FC+`、`AP`、`AP+`）；sync 的标签和 `--achieved` 的条件解析到 P2 再加。
+    - `song <曲目>`：曲目用 `resolveSong` 的全部写法；返回 `musicId`、`title`、`artist`、`genre`、`bpm`（宴谱是 `null`，`Song` 因此多了 `bpm`）、`aliases`（两面的并集）、`type`、`charts`（谱面行，SD 在前，各自从易到难）。位置参数是单个值，含空格的标题要加引号。当前用户的成绩（设计 3.2 写了）随 P2 加，`--with related` 是 P1-14b。
+    - `chart <谱面> [难度] [--type sd|dx]`：写法见第 30 条，`--type` 是枚举，写错是 `USAGE`。标题重名的两首歌是曲目层的 `AMBIGUOUS_REF`（候选是两首歌，换成 id 加难度就行）；同一首歌两面都有这个难度时才是谱面层的 `AMBIGUOUS_REF`（候选是两个谱面 key）。成绩、吃分表和 `--with` 的 `stages`、`friends`、`history`、`position`、`all` 随 P2 加。
+    - 在真实的公开 SaltMeta 数据上（临时 `SALTNET_HOME`）跑过 `song 146`、`song 标39`、`chart 146-3`、`chart 110018-10`、各种出错的写法和 `--format text`：真实数据里宴谱有拟合数据和统计，固定数据里没有，所以固定数据测不到「宴谱有统计」，只能靠手造的谱面。
+    - 测试：`tests/refs/status.test.ts`（6 个）、`tests/catalog/chartRow.test.ts`（17 个）、`tests/commands/song.test.ts`（11 个）、`tests/commands/chart.test.ts`（11 个）由 Gemini 3.8 Flash 按我写的行为说明写出，`tests/commandRun.ts` 是它抽出的共用函数（`search` 的测试也改用了它，12 个仍然通过）。我逐条核对了期望值来自固定数据和行为说明（输出键的顺序、固定数据里每个谱面的定数、物量、统计），然后手工破坏实现 49 处（各个字段、取整位数、物量的 SD/DX 差异、宴谱的整组 `null`、`total` 的缺项规则、`charter` 的修剪、统计的分布顺序、`--type` 的处理、元数据和警告的透传……）。第一轮 4 处没被发现：`constant` 不是有限数时的 `null`、`fitConstant` 不是正数时的 `null`、`chart` 的 `meta.dataAsOf`，以及把 `!stat` 改成 `stat === undefined`。前三处我补了 1 个测试和 2 条断言，三处都变红；最后一处等价：库里读出的谱面没有统计时 `stat` 是 `undefined`，从不会是 `null`，统计对象也不会是假值，没有测试能区分，代码保留。
+    - 委托的经过：第一次运行（201 秒）没有产出，因为 Gemini 用了 `pnpm --filter saltnet-cli vitest run …`，不在白名单里，无头模式放弃整次运行；放宽白名单（`--filter`、`exec` 的写法）并在提示里列出能用的命令之后，第二次成功（659 秒）。

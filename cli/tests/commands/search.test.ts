@@ -1,32 +1,12 @@
 import type { RuntimePaths } from "../../src/runtime/paths";
+import type { PrintedOutput } from "../commandRun";
 import type { Route } from "../mockHttp";
-import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
-import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { describe, expect, it } from "vitest";
 import { searchSongs } from "../../src/catalog/search";
-import { createRegistry } from "../../src/commands";
 import { formatLocalTime } from "../../src/util/time";
+import { commandIn, META_URL, NOW } from "../commandRun";
 import { fixtureSongCatalog } from "../fixtureCatalog";
-import { createHarness, run } from "../harness";
-import { jsonResponse, mockFetch } from "../mockHttp";
 import { useTempHome } from "../tempHome";
-
-const META_URL = "https://meta.test/saltmeta.json";
-const LXNS_URL = "https://lxns.test";
-const NOW = new Date("2026-11-11T01:00:00Z");
-
-function routes(overrides: Record<string, Route> = {}): Record<string, Route> {
-    const lists = getFixtureLXNSCollections();
-    const list = (kind: string) => `${LXNS_URL}/api/v0/maimai/${kind}/list?required=true`;
-    return {
-        [META_URL]: jsonResponse(getFixtureSaltMetaCompacted()),
-        [list("trophy")]: jsonResponse({ trophies: lists.trophies }),
-        [list("icon")]: jsonResponse({ icons: lists.icons }),
-        [list("plate")]: jsonResponse({ plates: lists.plates }),
-        [list("frame")]: jsonResponse({ frames: lists.frames }),
-        ...overrides,
-    };
-}
 
 const makeHome = useTempHome();
 
@@ -40,43 +20,22 @@ interface SearchItem {
     [key: string]: unknown;
 }
 
-interface PrintedOutput {
-    v: number;
-    ok: boolean;
-    command: string;
+interface SearchOutput extends Omit<PrintedOutput, "data"> {
     data: { items: SearchItem[] };
-    meta: {
-        dataAsOf: { catalog: string };
-        page: { total: number; offset: number; limit: number; nextOffset: number | null };
-    };
-    warnings: { code: string; message: string; fix?: string }[];
-    error: { code: string; message: string; fix?: string; retryable: boolean };
 }
 
 async function searchIn(
     paths: RuntimePaths,
     args: string[],
-    options: { now?: Date; network?: Record<string, Route> } = {}
+    options?: { now?: Date; network?: Record<string, Route> }
 ) {
-    const fetch = mockFetch(options.network ?? routes());
-    const harness = createHarness({
-        env: {
-            SALTNET_HOME: paths.home,
-            SALTNET_SALTMETA_URL: META_URL,
-            SALTNET_LXNS_BASE_URL: LXNS_URL,
-        },
-        fetch,
-        now: options.now ?? NOW,
-    });
-    const code = await run(createRegistry(), harness, "search", ...args);
-    const stdout = harness.stdout();
-    let json: PrintedOutput | undefined;
-    try {
-        json = JSON.parse(stdout) as PrintedOutput;
-    } catch {
-        // Non-JSON output like --format tsv
-    }
-    return { code, json: json!, stdout, requests: fetch.requests };
+    const res = await commandIn(paths, "search", args, options);
+    return res as {
+        code: number;
+        json: SearchOutput;
+        stdout: string;
+        requests: { url: string }[];
+    };
 }
 
 describe("saltnet search command", () => {
