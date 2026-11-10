@@ -1,0 +1,205 @@
+# SaltNet CLI 实现计划
+
+- 日期：2026-11-10
+- 分支：`feat/saltnet-cli`
+- 依据：[设计文档](./2026-11-10-saltnet-cli-design.md)（验收标准，以它为准）和仓库根目录的 `AGENTS.md`
+- 范围：`shared/core/` 抽取、新包 `cli/`（命令名 `saltnet`）；P0 到 P4 全部做完，不 push，不开 PR
+
+## 怎么用这份计划
+
+- **一步一个 commit**。每个 commit 里同时勾掉本文件对应的复选框（`- [ ]` 改成 `- [x]`），代码和勾选在同一个 commit 里。
+- 被打断或上下文被压缩之后：先读本文件和 `git log --oneline`，**第一个没勾的步骤就是下一步**，不要凭记忆继续。
+- 计划可以调整（拆分、合并、补步骤），但每次调整都要在文末「实现中的决定」里写明原因。设计文档里已经确认的决定不推翻；设计确实有错或做不到，就在同一个 commit 里改设计文档，并在「实现中的决定」里说明。
+- 设计文档「待确认」里的事项：按设计给的默认值实现，相关取值做成可配置，实测留给用户（见 P3 和最终报告）。
+
+## 通用规则
+
+**每个 commit 都要满足**
+
+- Conventional Commits，范围收窄，例如 `refactor(core): move SaltMeta conversion to shared/core`、`feat(cli): add charts filters`、`test(cli): cover ref resolution`。
+- `pnpm check`、`pnpm lint` 通过；所有 `test:*` 通过；`render-service` 的 `test` 和 `check` 通过；`cli/` 建好之后它自己的测试和类型检查也要通过。
+- 改了网页端代码的 commit 还要通过 `pnpm build`。
+- 搬模块的 commit 同时更新 `AGENTS.md` 的模块索引、`test:*` 脚本里的路径和 `.prettierignore` 里的 JSON 路径。
+- 每一期结束时再整体检查一遍 `AGENTS.md`（新包、模块路径、命令、测试）。
+
+**`shared/core` 的硬约束**
+
+- 不依赖 Vue、MDUI、localForage、`import.meta.env`、DOM，不从 `src/` 引用任何东西。
+- 内部 import 全部用相对路径，不用 `@/` 别名（和已有的 `shared/rendering/` 一样）。
+- 机器检查：`shared/core/tsconfig.json` 不带 DOM 库，接进 `pnpm check`；ESLint 用 `no-restricted-imports` 禁止 `vue`、`mdui`、`localforage` 和 `@/`。
+- 网页端行为必须与改动前完全一致。搬页面里的查询逻辑之前，先用固定数据把它当前的输出存成快照；搬完之后快照必须原样通过。
+
+**开发与测试约束**
+
+- 开发和测试时一律把 `SALTNET_HOME` 指到临时目录，不读写 `~/.saltnet`。
+- 公开的只读元数据接口（SaltMeta、落雪收藏品列表）可以真实请求来验证；凡是要用账号凭据或二维码、会写入第三方、会改动舞萌账号的操作，一律只用模拟 HTTP 测试。
+- 不提交打包产物和任何 token，不碰 `.wrangler/`，不输出 `.env` 里的值；不做全局链接，不往 `~/.claude/skills` 里装东西。
+- 固定数据（SaltMeta 裁剪版、落雪收藏品、v1 备份、各接口返回样例）全部脱敏，不含真实 token 和真实用户标识。
+
+**网页端检查**（P0 和之后每个动了网页端的阶段）：用浏览器工具实际打开受影响的页面（曲目页、谱面弹窗、B50、收藏品页、用户页），包括浏览器前进/后退；做不到的列进最终报告让用户自己看。
+
+## 步骤
+
+### S0 准备
+
+- [x] S0-1 `docs(cli): add saltnet cli design spec`
+- [x] S0-2 `docs(cli): add saltnet cli implementation plan`
+- [ ] S0-3 `chore(deps): add eslint-plugin-format for the lint config`：基线上 `pnpm lint` 因缺少这个可选依赖而无法运行，补上之后 lint 才能作为每个 commit 的检查项
+- [ ] S0-4 `style: fix existing lint violations`：只在 S0-3 之后 lint 仍不干净时做，只改不影响行为的内容；没有违规就跳过并在「实现中的决定」里记一笔
+
+### P0 抽 core（P1 需要的部分）
+
+完成标准：网页端行为不变，各项检查全部通过，`AGENTS.md` 的模块索引已更新。后面几期各自开头再抽它们要用的模块（P2-0、P3-0）。
+
+**脚手架**
+
+- [ ] P0-1 `build(core): add shared/core scaffold with dom-free typecheck and import guard`
+    - `shared/core/tsconfig.json`：不带 DOM 库，也不带 node 类型，接进 `pnpm check`
+    - `eslint.config.js`：`shared/core/**` 下禁止 import `vue`、`mdui`、`localforage`、`@/`（以及 `vue-router`、`pinia`、`node:*`、指向 `src/` 的相对路径）
+    - 网页端引用 core 用的 `@core/*` 别名（vite、tsconfig）
+    - 在临时探针文件里确认 `window`、`import.meta.env`、`import "vue"` 都会被拦住（探针不提交）
+
+**直接搬纯逻辑**（`git mv`，改网页端 import，测试和 `test:*` 脚本路径跟着走）
+
+- [ ] P0-2 `refactor(core): move mai enums and in-game types to shared/core`
+- [ ] P0-3 `refactor(core): move music types, SaltMeta conversion and sort data to shared/core`
+- [ ] P0-4 `refactor(core): move music search index to shared/core`（`test:music-search`）
+- [ ] P0-5 `refactor(core): move chart difficulty, identity, rating and score lookup to shared/core`
+- [ ] P0-6 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
+- [ ] P0-7 `refactor(core): move course data to shared/core`（`test:course`）
+- [ ] P0-8 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
+- [ ] P0-9 `refactor(core): move collection types and version plate logic to shared/core`
+
+**拆混合模块**
+
+- [ ] P0-10 `refactor(core): split SaltMeta fetching from music cache and vue state`：拉取与校验进 core（地址由 `CoreConfig` 传入），IndexedDB 缓存、Vue 状态、提示条留在网页端
+- [ ] P0-11 `refactor(core): split collection mapping and lxns fetching from vue state`：落雪收藏品的拉取和数据映射进 core，缓存和 Vue 数组留在网页端（`test:collection-index`）
+- [ ] P0-12 `refactor(core): extract related collection index builder`：纯索引构建进 core，`shallowRef` 包装留在网页端
+
+**曲目页的查询逻辑 → `core/query`**
+
+- [ ] P0-13 `refactor(songs): extract page query helpers into a module without behavior changes`：只做原样搬动，不改一行逻辑，用网页端实测对照
+- [ ] P0-14 `test(query): snapshot songs query helpers with fixed data`：筛选、排序、分组、统计在固定数据上的现状快照（新增脚本 `test:query`）
+- [ ] P0-15 `refactor(core): move songs query helpers to shared/core/query`：快照不改动，原样通过
+
+**收尾**
+
+- [ ] P0-16 `docs: update agents guide for shared/core`：整理 `AGENTS.md` 的结构说明、命令和测试；网页端实测（曲目页、谱面弹窗、收藏品页，含前进/后退），结论记入「实现中的决定」
+
+### P1 骨架和曲库
+
+完成标准：首次刷新之后，即使离线也能回答曲库方面的问题。
+
+- [ ] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
+- [ ] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
+- [ ] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
+- [ ] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
+- [ ] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
+- [ ] P1-6 `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
+- [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入
+- [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
+- [ ] P1-9 `feat(cli): add search, song and chart commands`
+- [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
+- [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
+- [ ] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
+- [ ] P1-13 `feat(cli): add course and kaleidxscope commands`
+- [ ] P1-14 `feat(cli): add collection list and show commands`（不含进度）
+- [ ] P1-15 `feat(cli): add status and config commands`
+- [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
+- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成
+- [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI
+- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）
+
+### P2 本地成绩
+
+完成标准：导入网页端备份后，B50、rating 和牌子进度都和网页端一致。
+
+**P2-0 先抽这一期要用的模块**
+
+- [ ] P2-1 `refactor(core): move user types and rating history to shared/core`
+- [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）
+- [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`
+- [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`
+- [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`
+- [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`
+- [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算
+- [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`
+- [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`
+- [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`
+- [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断
+
+**P2 的 CLI 部分**
+
+- [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2
+- [ ] P2-13 `feat(cli): add user repository on top of the store`
+- [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6
+- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`
+- [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`
+- [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`
+- [ ] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`
+- [ ] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组
+- [ ] P2-20 `feat(cli): add b50 and rating commands`
+- [ ] P2-21 `feat(cli): add history command`
+- [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`
+- [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`
+- [ ] P2-24 `feat(cli): add collection progress to collection and charts`
+- [ ] P2-25 `feat(cli): add fav commands`
+- [ ] P2-26 `test(cli): extend offline end-to-end test with scores`
+- [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）
+
+### P3 同步和绑定
+
+完成标准：不打开网页端，也能完成「绑定 → 同步 → 查询」；落雪二次授权的问题有了结论（需要用户实测，所以只能做到「流程实现、取值可配置、列入手动测试清单」）。凡是涉及凭据和账号的地方都只用模拟 HTTP 测试。
+
+**P3-0 先抽这一期要用的模块**
+
+- [ ] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`
+- [ ] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）
+- [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`
+- [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发
+- [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core
+
+**P3 的 CLI 部分**
+
+- [ ] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换
+- [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`
+- [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务
+- [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`
+- [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`
+- [ ] P3-11 `feat(cli): add sync --all and --dry-run`
+- [ ] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`
+- [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`
+- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`
+- [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项
+- [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里
+- [ ] P3-17 `docs: update agents guide for cli phase 3`
+
+### P4 账号操作和收尾
+
+完成标准：网页端能做的事 CLI 都能做（nearcade 除外）。
+
+- [ ] P4-1 `feat(cli): add ingame check-login and clear-tickets`：`clear-tickets` 要确认；只用模拟 HTTP 测试
+- [ ] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`
+- [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`
+- [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`
+- [ ] P4-5 `test(cli): run every guide example in the end-to-end test`
+- [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明
+- [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端
+
+## 实现中的决定
+
+按发生顺序追加。每条写清「决定了什么、为什么」；改了设计文档的，要标出来。
+
+1. **lint 基线**：`pnpm lint` 在基线上无法运行——`@antfu/eslint-config` 的 `formatters` 选项需要 `eslint-plugin-format`，仓库没装；交互环境下只弹出安装提示，非交互环境下报 `ERR_MODULE_NOT_FOUND`。CI 只跑 `pnpm run check`，所以一直没发现。S0-3 补上这个开发依赖。S0-1、S0-2 两个纯文档 commit 在 lint 修好之前就已经提交，没能跑 lint。
+2. **core 的类型环境**：`shared/core/tsconfig.json` 用 `lib: ["ES2023", "WebWorker"]` 加 `types: []`。这样没有 `window`、`document`、`localStorage` 等 DOM 全局，也没有 node 类型，但 `fetch`、`URL`、`TextEncoder` 这些 Web 标准全局还在（core 要联网，必须有）。`import.meta.env` 因为没引 vite 的类型也会报错。
+3. **网页端引用 core 的别名**：新增 `@core/*` → `shared/core/*`（vite 和 tsconfig），只给 `src/` 用，避免十几层 `../`。core 内部仍然只用相对路径。
+4. **目录**：`maiTypes.ts` 和 `inGame.ts` 放 `shared/core/mai/`（设计文档的目录图没列，属于补充）。
+5. **分期抽取**：按设计文档 6.3 的「P0 可以拆开做」，P0 只抽 P1 要用的模块，外加曲目页里全部的纯查询逻辑（同一个文件，一次读完一次搬完，CLI 在 P1 用不带成绩的部分，P2 再用带成绩的部分）。用户、成绩历史、B50、阶段表、同步、各接口的客户端留到对应期的 P2-0、P3-0。
+6. **页面逻辑的快照**：页面里的函数不能直接 import，所以每处都分三个 commit：先原样搬出成模块（不改逻辑，用网页端实测对照），再对这个模块写快照，最后搬进 `core/query`，快照原样通过。
+7. **宴谱重复条目只在 CLI 里合并**：网页端行为不变，合并函数放在 core 里供 CLI 显式调用。
+8. **设计文档「待确认」的默认做法**：
+    - 落雪 client id：默认和网页端相同，`config.json` 可改（`lxns.clientId`）
+    - 落雪 refresh token 有效期按 30 天算，到期前 3 天提示，两个值可配置
+    - UA 默认 `saltnet-cli/<版本>`，可在 `config.json` 里改
+    - 重复宴谱：CLI 里合并，并在 `status` 里列出
+    - 二维码属于另一个账号：默认和网页端一致（改写游戏 id），做成配置项，可改成报错
