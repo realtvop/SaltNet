@@ -17,9 +17,10 @@ SaltNet is a two-package pnpm workspace:
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
   imports are relative, and web code imports it through the `@core/*` alias. `pnpm check` type-checks
   it with `shared/core/tsconfig.json` (no DOM or Node types) and the `saltnet/shared-core-boundary`
-  block in `eslint.config.js` rejects framework imports. See `shared/core/README.md`. So far it holds
-  `mai/` (rank, combo and sync enums), `music/type.ts`, `chart/difficulty.ts` and `chart/chartIdentity.ts`,
-  `collection/type.ts`, `user/inGame.ts` (in-game user types), and `integrations/diving-fish/type.ts`.
+  block in `eslint.config.js` rejects framework imports. See `shared/core/README.md`.
+    - Current contents: `mai/` (rank, combo and sync enums), `music/` (types, SaltMeta conversion,
+      search index), `chart/` (difficulty, chart identity), `collection/type.ts`, `user/inGame.ts`
+      (in-game user types), and `integrations/diving-fish/type.ts`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 

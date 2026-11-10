@@ -9,7 +9,7 @@ import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "@core/
 import type { MaimaidxRegion } from "@core/music/type";
 import { fetchSaltMetaMusicList } from "./musicApi";
 import MusicSort from "./sort.json";
-import { indexMusicSearchData, MUSIC_SEARCH_INDEX_VERSION } from "./search";
+import { indexMusicSearchData, MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
 
 // Cache key for localForage
 const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v4";

@@ -5,7 +5,7 @@ import {
     SALTMETA_NEXT_COMPACTED_URL,
     SALTMETA_NEXT_COMPACTED_VERSION,
     type SaltMetaMusicMetadataNextCompacted,
-} from "@/components/data/music/saltmeta";
+} from "@core/music/saltmeta";
 import type { SavedMusicList } from "@core/music/type";
 import type {
     DivingFishB50,

@@ -12,10 +12,7 @@
         maimaiVersionsCN,
         isMusicDataLoading,
     } from "@/components/data/music";
-    import {
-        createMusicSearchQuery,
-        matchesMusicSearchIndex,
-    } from "@/components/data/music/search";
+    import { createMusicSearchQuery, matchesMusicSearchIndex } from "@core/music/search";
     import { useShared } from "@/components/app/shared";
     import { prompt, confirm, snackbar } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";

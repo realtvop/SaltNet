@@ -1,6 +1,6 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { DetailedData } from "../type";
-import { getSaltNetMusicIdForChartType } from "../../music/saltmeta";
+import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
 import { ScoreHistoryChange, type ScoreHistoryCandidate, type ScoreHistoryStateV1 } from "./type";
 
 export function getScoreHistoryChartKey(record: DivingFishFullRecord): string {

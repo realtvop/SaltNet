@@ -11,7 +11,7 @@ import {
     SALTMETA_NEXT_COMPACTED_URL,
     SALTMETA_NEXT_COMPACTED_VERSION,
     type SaltMetaMusicMetadataNextCompacted,
-} from "./saltmeta";
+} from "@core/music/saltmeta";
 import { snackbar } from "mdui";
 import { checkForUpdate } from "@/components/app/checkForUpdate";
 

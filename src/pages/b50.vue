@@ -9,7 +9,7 @@
     import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
     import { ComboStatus } from "@core/mai/types";
     import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";
-    import { getSaltNetMusicIdForChartType } from "@/components/data/music/saltmeta";
+    import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
     import { useShared } from "@/components/app/shared";
     import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar, type Dialog } from "mdui";

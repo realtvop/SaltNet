@@ -63,8 +63,8 @@
 - [x] P0-2 `refactor(core): move mai enums, in-game types and collection types to shared/core`
 - [x] P0-3 `refactor(core): move music and diving-fish types to shared/core`
 - [x] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
-- [ ] P0-5 `refactor(core): move music search index to shared/core`（`test:music-search`）
-- [ ] P0-6 `refactor(core): move SaltMeta conversion to shared/core`
+- [x] P0-5 `refactor(core): move music search index and SaltMeta conversion to shared/core`（`test:music-search`；`search.test.ts` 要用 `saltmeta.ts` 造数据，所以两个模块一起搬，见第 11 条）
+- [x] P0-6 已并入 P0-5
 - [ ] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
 - [ ] P0-8 `refactor(core): move course data to shared/core`（`test:course`）
 - [ ] P0-9 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
@@ -209,3 +209,4 @@
     - 二维码属于另一个账号：默认和网页端一致（改写游戏 id），做成配置项，可改成报错
 9. **P0 的搬迁顺序按依赖排**：`inGame.ts` 依赖 `collection/type.ts`，`music/type.ts` 依赖水鱼的类型，`saltmeta.ts` 依赖 `search.ts` 和 `difficulty.ts`，所以先搬 `mai/`、`collection/type`、`inGame`，再搬音乐类型和水鱼类型，然后是 `difficulty`、`search`、`saltmeta`。`chart/scoreLookup.ts` 依赖 `user/type.ts`（P2 才搬），`chart/rating/` 也只有 P2 用得到，这两个挪到 P2-1。步骤因此重新编号。
 10. **import 搬动后的 lint 基线**：路径改写会让文件里 import 的位置变化，已经有存量 import 排序违规的文件，违规数可能多 1 到 2（`perfectionist/sort-imports`），Prettier 因路径变长而折行也会让 `style/indent` 的数目增加。这类只在原本就违规的文件里增加的计数，随搬迁 commit 一起更新 `eslint-suppressions.json`；原来没有违规的文件则必须改到零违规。绝不在存量文件上跑 `eslint --fix`（会把整份 Vue 文件按 ESLint 的缩进规则重排，和 Prettier 冲突）。
+11. **P0-5 和 P0-6 合并**：`music/search.test.ts` 依赖 `saltmeta.ts`，而 `saltmeta.ts` 又依赖 `search.ts`，拆开搬会让其中一个 commit 里的 core 模块反向依赖 `src/`，所以搜索索引和 SaltMeta 转换放在同一个 commit 里搬。
