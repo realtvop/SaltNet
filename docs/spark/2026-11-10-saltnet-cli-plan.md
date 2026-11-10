@@ -90,7 +90,7 @@
 
 完成标准：首次刷新之后，即使离线也能回答曲库方面的问题。
 
-- [ ] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
+- [x] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
 - [ ] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
 - [ ] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
 - [ ] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
@@ -256,3 +256,12 @@
     - 有用户状态下文档一直停在 `readyState === "interactive"`（有请求没结束），按 HTML 规范，文档没加载完时对 `location.hash` 赋值会变成替换而不是新增条目，所以脚本里「收藏品→用户→B50」那段回退链在这个状态下两边都退出了应用，两边完全一样，这一段只靠匿名状态的整条链作证据。
     - 没有覆盖：开发服务器模式（HTML5 history，只有生产构建用 hash 路由）、B50 出图（要调渲染服务）、需要真实账号的流程（落雪授权、舞萌更新、上传）、机厅页。放进最终报告里请用户自己看的清单。
     - 顺带发现：`docs/component-data-types.md` 提到的 8 个路径里有 6 个（`src/types/music.ts` 之类）在基线上就已经不存在，不是这次搬迁造成的，没有改。Antigravity 工作目录（会话临时目录里）还留着上一轮的旧 Chrome profile，删除被安全检查拦住，没有绕过，不在仓库里。
+19. **cli 脚手架（P1-1）**：
+    - 包名 `saltnet-cli`，`type: module`，`engines.node >=24`，`bin.saltnet` 指向 `./dist/saltnet.mjs`。开发依赖里 `@types/node` 取 `^24`（根包是 22；CLI 跑在 Node 24 上，P1-5 要用 `node:sqlite` 的类型），另有 `esbuild`、`typescript`、`vitest`。`cli/tsconfig.json` 的 `types` 只有 `node`，没有 DOM；`@core/*` 指到 `../shared/core/*`，和网页端是同一个别名。`pnpm check` 现在包含 `tsc -p cli/tsconfig.json`。
+    - 打包：`cli/build.mjs` 用 esbuild 把 `src/main.ts` 和它用到的 `shared/core` 打成一个 ESM 文件（`target: node24`、shebang、可执行位、不压缩）。每次调用都是新进程，一个文件省掉运行时的模块解析；仓库里用了 `enum` 和 `@core/*` 别名，Node 自带的类型剥离跑不了，所以打包产物是唯一支持的运行方式。
+    - 构建时默认值：按 Vite 生产构建的顺序（`.env`、`.env.local`、`.env.production`、`.env.production.local`，后者覆盖前者）用 `util.parseEnv` 读根目录的文件，通过 esbuild 的 `define` 以 `__SALTNET_BUILD_DEFAULTS__` 编进包里（后端主备地址、渲染服务地址、落雪 client id 和回调地址）；构建脚本只输出产物路径，不输出任何取值。版本号来自 `cli/package.json`（`__SALTNET_VERSION__`），没打包时（vitest）回退为 `0.0.0-dev`。
+    - 计划里写的「`.gitignore` 和 `.prettierignore` 加上 `cli/dist`」只需要后者：`.gitignore` 里已有 `dist`，任意层级都生效。
+    - ESLint：新增 `saltnet/cli` 配置段（`cli/**/*.{ts,mjs}` 关掉由 Prettier 负责的格式规则）；`cli/**/*.json` 并入 `saltnet/prettier-owned-json`。`cli/` 里的新文件必须零违规：`process` 要显式 `import process from "node:process"`（`node/prefer-global/process`），构建脚本不用 `console.log`（用 `process.stdout.write`），import 按 `perfectionist/sort-imports` 排序（`@core/…` 在 `vitest` 之前）。
+    - 基线：根 `package.json` 多了两行脚本（`jsonc/indent` 55 变 57），`pnpm-workspace.yaml` 多了一行 `- "cli"`（`yaml/indent` 7 变 8、`yaml/plain-scalar` 2 变 3、`yaml/quotes` 3 变 4），都是第 10 条说的存量冲突，按新增的行数手工调高了计数。没有用 `eslint --suppress-rule`：它会把整份基线重新排序，一次改动 800 多行，淹没真正的变化。
+    - 锁文件：`pnpm install` 给 `cli` 加了 importer，也给 `vitest` 加了一个带 `@types/node@24` 的变体，同时清掉了一个陈旧的 `database` importer（工作区里早就没有这个包）和只有它用到的包条目，一共约 1170 行删除。这是 pnpm 对锁文件的整理，和 CLI 无关，但留着不提交会让下一次 `pnpm install` 再改一遍，所以一起提交，在最终报告里说明。
+    - 之后要处理的打包问题，先记在这里：(a) `pinyin-pro`、`wanakana`、`opencc-js` 体积大，只有搜索索引用得到，P1-9 用 esbuild 插件做成懒加载，不涉及搜索的命令不付这笔启动成本；(b) `node:sqlite` 在 Node 24 下会输出 ExperimentalWarning，P1-5 要在动态 import 它之前压掉，不能污染 stderr。

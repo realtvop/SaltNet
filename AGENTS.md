@@ -6,7 +6,7 @@ Treat `AGENTS.md` as living project documentation. Whenever a change adds, remov
 
 ## Project Structure & Module Organization
 
-SaltNet is a two-package pnpm workspace:
+SaltNet is a three-package pnpm workspace:
 
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
@@ -38,6 +38,7 @@ SaltNet is a two-package pnpm workspace:
       `lxns/fetchCollection.ts`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
+- `cli/` is the `saltnet` command-line tool for agents (package `saltnet-cli`, Node 24). `src/main.ts` is the entry point, `build.mjs` bundles it and the parts of `shared/core` it uses into `cli/dist/saltnet.mjs` with esbuild (git-ignored; the `bin` entry points at it), and `tests/` holds its Vitest suite. It imports core through the same `@core/*` alias as the web app. Defaults for the backend, render service and LXNS client are read from the web app's `.env` files at build time. The design is in `docs/spark/2026-11-10-saltnet-cli-design.md`.
 
 Static assets belong in `public/`; structured source assets belong in `src/assets/`. Utility and generated-data scripts live in `script/`. Do not edit generated `dist/` files or local `.wrangler/` state.
 
@@ -70,13 +71,16 @@ well as the legacy API envelope. Startup callback dialogs wait for
 Install all workspace dependencies with `pnpm install`. From the repository root:
 
 - `pnpm dev` starts the frontend Vite server.
-- `pnpm check` runs Vue/TypeScript checks, the DOM-free `shared/core` type check, and verifies Prettier formatting.
+- `pnpm check` runs Vue/TypeScript checks, the DOM-free `shared/core` type check, the `cli/` type check, and verifies Prettier formatting.
 - `pnpm lint` runs ESLint across the repository. Violations that predate the CLI work are frozen in
   `eslint-suppressions.json` (ESLint bulk suppressions), so only new violations fail. After fixing
   old ones, run `pnpm exec eslint . --prune-suppressions` to shrink that file; when moving a file
   that has suppressed violations, move its entry along with it.
 - `pnpm build` type-checks, builds the frontend, and generates build metadata.
 - `pnpm preview` serves the production frontend build locally.
+- `pnpm build:cli` bundles the CLI into `cli/dist/saltnet.mjs`; `pnpm test:cli` runs its Vitest suite.
+  When developing or testing the CLI, point `SALTNET_HOME` at a temporary directory so the real
+  `~/.saltnet` is never read or written.
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.

@@ -5,8 +5,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "check": "vue-tsc -b && tsc -p shared/core/tsconfig.json && prettier --check .",
+        "check": "vue-tsc -b && tsc -p shared/core/tsconfig.json && tsc -p cli/tsconfig.json && prettier --check .",
         "build": "vue-tsc -b && vite build && node ./script/generateBuildInfo.cjs",
+        "build:cli": "pnpm --filter saltnet-cli build",
         "preview": "vite preview",
         "pret": "prettier --check .",
         "pret:fix": "prettier --write .",
@@ -18,6 +19,7 @@
         "test:score-history": "vitest run src/components/data/user/update/migrateData.test.ts src/components/data/user/scoreHistory/index.test.ts src/components/data/user/scoreHistory/queue.test.ts",
         "test:recent": "vitest run shared/core/chart/recent.test.ts",
         "test:build-info": "node --test script/generateBuildInfo.test.cjs",
+        "test:cli": "pnpm --filter saltnet-cli test",
         "test:music-search": "vitest run shared/core/music/search.test.ts",
         "test:music-data": "vitest run shared/core/music/fetch.test.ts shared/core/music/cache.test.ts shared/core/fixtures/saltmeta.test.ts",
         "test:query": "vitest run shared/core/query/songs.test.ts",

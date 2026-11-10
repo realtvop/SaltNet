@@ -58,7 +58,7 @@
   },
   "package.json": {
     "jsonc/indent": {
-      "count": 55
+      "count": 57
     },
     "jsonc/sort-keys": {
       "count": 2
@@ -69,13 +69,13 @@
       "count": 2
     },
     "yaml/indent": {
-      "count": 7
+      "count": 8
     },
     "yaml/plain-scalar": {
-      "count": 2
+      "count": 3
     },
     "yaml/quotes": {
-      "count": 3
+      "count": 4
     },
     "yaml/sort-keys": {
       "count": 1

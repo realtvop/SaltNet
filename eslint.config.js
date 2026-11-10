@@ -124,6 +124,12 @@ export default antfu(
         },
     },
     {
+        // CLI 包由 Prettier 格式化；它跑在 Node 里，可以用 node: 内置模块
+        name: "saltnet/cli",
+        files: ["cli/**/*.{ts,mjs}"],
+        rules: prettierOwnedFormattingRules,
+    },
+    {
         // 配置文件本身由 Prettier 格式化
         name: "saltnet/prettier-owned-config",
         files: ["eslint.config.js"],

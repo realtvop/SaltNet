@@ -2,6 +2,7 @@
 node_modules
 node_modules.nosync
 /dist
+/cli/dist
 /public
 /patches
 .env
