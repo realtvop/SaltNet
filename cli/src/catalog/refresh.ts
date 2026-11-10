@@ -14,7 +14,7 @@ import type { ConfigValues } from "../runtime/config";
 import type { RuntimePaths } from "../runtime/paths";
 import type { LockHolder } from "../store/locks";
 import type { Store } from "../store/store";
-import type { CollectionCounts, MetaSource } from "./store";
+import type { CollectionCounts, DownloadedSource } from "./store";
 import { isLXNSCollectionLists } from "@core/collection/map";
 import { fetchLXNSCollections, LXNSCollectionError } from "@core/integrations/lxns/fetchCollection";
 import { buildSaltMetaMusicList, fetchSaltMetaCompacted } from "@core/music/fetch";
@@ -32,13 +32,13 @@ export const METADATA_LOCK = "metadata";
 /** Longer than a refresh takes; a process that dies mid-way frees the lock by itself after this. */
 export const METADATA_LOCK_TTL_MS = 120_000;
 
-export const SOURCE_LABELS: Readonly<Record<MetaSource, string>> = {
+export const SOURCE_LABELS: Readonly<Record<DownloadedSource, string>> = {
     saltmeta: "曲库（SaltMeta）",
     "lxns-collections": "收藏品（落雪）",
 };
 
 export interface FailedOutcome {
-    readonly source: MetaSource;
+    readonly source: DownloadedSource;
     readonly ok: false;
     readonly error: CliError;
     /** When the rows that are still stored were fetched; undefined when there are none. */
@@ -173,7 +173,7 @@ async function refreshCollections(deps: RefreshDeps): Promise<SourceOutcome> {
 
 /** Runs one source and turns whatever goes wrong into its outcome, so the other still runs. */
 async function attempt(
-    source: MetaSource,
+    source: DownloadedSource,
     deps: RefreshDeps,
     work: () => Promise<SourceOutcome>
 ): Promise<SourceOutcome> {

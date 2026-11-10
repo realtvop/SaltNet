@@ -165,7 +165,7 @@ describe("refresh", () => {
         expect(collections).toMatchObject({
             source: "lxns-collections",
             ok: true,
-            counts: { trophy: 9, icon: 3, plate: 12, frame: 3 },
+            counts: { title: 9, icon: 3, plate: 12, frame: 3 },
         });
         expect(new Date(collections.fetchedAt).getTime()).toBe(NOW.getTime());
 

@@ -1,9 +1,10 @@
 /**
  * The catalog tables (design 2.2): the songs, charts and versions built from SaltMeta, and the
  * collections LXNS serves. Each source is replaced as a whole in one transaction, so a reader sees
- * either the old data or the new, never a mix.
+ * either the old data or the new, never a mix. The data that ships with the CLI (`static.ts`) lives
+ * in the same database, in rows that a refresh leaves alone.
  */
-import type { LXNSCollectionLists, LXNSCollectionType } from "@core/integrations/lxns/type";
+import type { LXNSCollectionLists } from "@core/integrations/lxns/type";
 import type { SaltMetaBuildResult } from "@core/music/fetch";
 import type { Store } from "../store/store";
 import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
@@ -12,11 +13,15 @@ import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
  * Names how the stored rows were built from the upstream documents. A CLI that builds them
  * differently (a new search index, a fix in the conversion) sees a different name and rebuilds them
  * from the snapshots. Raise the number in front when the rows change; the search index version
- * follows core.
+ * follows core. (2: the collection kinds got the names the commands use.)
  */
-export const CATALOG_BUILDER = `catalog-1/search-${MUSIC_SEARCH_INDEX_VERSION}`;
+export const CATALOG_BUILDER = `catalog-2/search-${MUSIC_SEARCH_INDEX_VERSION}`;
 
-export type MetaSource = "saltmeta" | "lxns-collections";
+/** The sources that are downloaded, and kept as a raw snapshot in `cache/`. */
+export type DownloadedSource = "saltmeta" | "lxns-collections";
+
+/** Everything `meta_state` has a row for: the downloads, and the data that ships with the CLI. */
+export type MetaSource = DownloadedSource | "static";
 
 export interface MetaState {
     source: MetaSource;
@@ -41,7 +46,7 @@ function json(value: unknown): string | null {
     return value === undefined || value === null ? null : JSON.stringify(value);
 }
 
-function writeMetaState(store: Store, state: MetaState): void {
+export function writeMetaState(store: Store, state: MetaState): void {
     store.db
         .prepare(
             `INSERT OR REPLACE INTO meta_state (source, fetched_at, upstream_version, builder, detail)
@@ -165,17 +170,23 @@ export function replaceMusic(
     });
 }
 
-export type CollectionCounts = Record<LXNSCollectionType, number>;
+/** The kinds of collection, named as the commands name them (design 3.1). */
+export type CollectionKindName = "plate" | "title" | "icon" | "frame" | "character" | "partner";
 
-/** The list of `LXNSCollectionLists` that each kind of collection is kept in. */
+/** The kinds LXNS serves; the other two ship with the CLI. */
+export type LxnsCollectionKind = "title" | "icon" | "plate" | "frame";
+
+export type CollectionCounts = Record<LxnsCollectionKind, number>;
+
+/** The list of `LXNSCollectionLists` that each kind of LXNS collection is kept in. */
 export const LIST_OF_KIND = {
-    trophy: "trophies",
+    title: "trophies",
     icon: "icons",
     plate: "plates",
     frame: "frames",
-} as const satisfies Record<LXNSCollectionType, keyof LXNSCollectionLists>;
+} as const satisfies Record<LxnsCollectionKind, keyof LXNSCollectionLists>;
 
-export const COLLECTION_KINDS = Object.keys(LIST_OF_KIND) as readonly LXNSCollectionType[];
+export const LXNS_COLLECTION_KINDS = Object.keys(LIST_OF_KIND) as readonly LxnsCollectionKind[];
 
 export interface CollectionsWrite {
     /** Epoch milliseconds. */
@@ -190,15 +201,18 @@ export function replaceCollections(
 ): CollectionCounts {
     const { db } = store;
     return store.transaction(() => {
-        db.exec("DELETE FROM collections");
+        // Only LXNS's own kinds: the characters and partners that ship with the CLI stay.
+        db.prepare(
+            `DELETE FROM collections WHERE kind IN (${LXNS_COLLECTION_KINDS.map(() => "?").join(", ")})`
+        ).run(...LXNS_COLLECTION_KINDS);
         // A repeated id keeps the later item: one odd entry must not stop the whole refresh.
         const insert = db.prepare(
             `INSERT OR REPLACE INTO collections (kind, id, position, name, genre, description, color, required, raw)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         );
 
-        const counts: CollectionCounts = { trophy: 0, icon: 0, plate: 0, frame: 0 };
-        for (const kind of COLLECTION_KINDS) {
+        const counts: CollectionCounts = { title: 0, icon: 0, plate: 0, frame: 0 };
+        for (const kind of LXNS_COLLECTION_KINDS) {
             const items = lists[LIST_OF_KIND[kind]];
             items.forEach((item, position) => {
                 insert.run(

@@ -43,6 +43,40 @@ describe("the shipped migrations", () => {
             "expires_at",
         ]);
     });
+
+    it("create the catalog and the static data tables", () => {
+        const db = memory();
+        migrate(db);
+
+        expect(tables(db)).toEqual([
+            "charts",
+            "collections",
+            "course_tracks",
+            "courses",
+            "locks",
+            "meta_state",
+            "songs",
+            "versions",
+        ]);
+    });
+
+    it("keep the catalog rows when a database from before the course tables is updated", () => {
+        const db = memory();
+        migrate(db, MIGRATIONS.slice(0, 2));
+        db.exec("INSERT INTO versions (position, name, word) VALUES (0, 'maimai', '真')");
+        db.exec(
+            "INSERT INTO meta_state (source, fetched_at, builder) VALUES ('saltmeta', 1000, 'catalog-2/search-1')"
+        );
+        const backup = vi.fn(() => "/cache/saltnet-v2.db");
+
+        const result = migrate(db, MIGRATIONS, backup);
+
+        expect(result).toEqual({ from: 2, to: MIGRATIONS.length, backup: "/cache/saltnet-v2.db" });
+        expect(backup).toHaveBeenCalledWith(2);
+        expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
+        expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
+        expect(db.prepare("SELECT count(*) AS n FROM courses").get()).toEqual({ n: 0 });
+    });
 });
 
 describe("migrate", () => {

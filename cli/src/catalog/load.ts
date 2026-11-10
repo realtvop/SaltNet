@@ -19,7 +19,7 @@ import type { Store } from "../store/store";
 import { mapLXNSCollections } from "@core/collection/map";
 import { restoreCachedMusicData } from "@core/music/cache";
 import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
-import { COLLECTION_KINDS, LIST_OF_KIND, readMetaState } from "./store";
+import { LIST_OF_KIND, LXNS_COLLECTION_KINDS, readMetaState } from "./store";
 
 interface SongRow {
     id: number;
@@ -141,10 +141,13 @@ export function loadCollectionLists(store: Store): LXNSCollectionLists {
     const rows = store.db
         .prepare(
             `SELECT kind, raw FROM collections
-             WHERE kind IN (${COLLECTION_KINDS.map(() => "?").join(", ")})
+             WHERE kind IN (${LXNS_COLLECTION_KINDS.map(() => "?").join(", ")})
              ORDER BY kind, position`
         )
-        .all(...COLLECTION_KINDS) as unknown as { kind: keyof typeof LIST_OF_KIND; raw: string }[];
+        .all(...LXNS_COLLECTION_KINDS) as unknown as {
+        kind: keyof typeof LIST_OF_KIND;
+        raw: string;
+    }[];
     for (const row of rows)
         lists[LIST_OF_KIND[row.kind]].push(parseJson<LXNSCollectionItem>(row.raw));
     return lists;

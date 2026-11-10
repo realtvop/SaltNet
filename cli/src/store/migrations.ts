@@ -99,8 +99,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 ) STRICT;
                 CREATE INDEX charts_song_id ON charts (song_id);
 
-                -- The four lists LXNS serves. required is the requirements as LXNS sent them, and
-                -- raw is the whole item, so the lists can be rebuilt exactly.
+                -- The four lists LXNS serves (title, icon, plate, frame), and the characters and
+                -- partners that ship with the CLI (catalog/static.ts). required is the requirements
+                -- as LXNS sent them, and raw is the whole item, so the lists can be rebuilt exactly.
                 CREATE TABLE collections (
                     kind TEXT NOT NULL,
                     id INTEGER NOT NULL,
@@ -112,6 +113,45 @@ export const MIGRATIONS: readonly Migration[] = [
                     required TEXT,
                     raw TEXT NOT NULL,
                     PRIMARY KEY (kind, id)
+                ) STRICT;
+            `);
+        },
+    },
+    {
+        version: 3,
+        name: "courses",
+        up: db => {
+            // Data that ships with the CLI (design 2.2), written by catalog/static.ts. It is here
+            // so that SQL can join it with the charts; the commands read the same data from core.
+            db.exec(`
+                CREATE TABLE courses (
+                    id INTEGER PRIMARY KEY,
+                    position INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    mode_id INTEGER NOT NULL,
+                    mode_name TEXT NOT NULL,
+                    base_dani_id INTEGER NOT NULL,
+                    is_locked INTEGER NOT NULL,
+                    unlock_course_id INTEGER NOT NULL,
+                    life_initial INTEGER NOT NULL,
+                    life_recovery INTEGER NOT NULL,
+                    damage_perfect INTEGER NOT NULL,
+                    damage_great INTEGER NOT NULL,
+                    damage_good INTEGER NOT NULL,
+                    damage_miss INTEGER NOT NULL
+                ) STRICT;
+
+                -- chart_key is "<song id>-<difficulty>", the same key charts.chart_key has, so a
+                -- track joins its chart directly. A track whose chart does not exist in the CN
+                -- catalog simply has no match.
+                CREATE TABLE course_tracks (
+                    course_id INTEGER NOT NULL REFERENCES courses (id),
+                    position INTEGER NOT NULL,
+                    chart_key TEXT NOT NULL,
+                    music_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    difficulty INTEGER NOT NULL,
+                    PRIMARY KEY (course_id, position)
                 ) STRICT;
             `);
         },

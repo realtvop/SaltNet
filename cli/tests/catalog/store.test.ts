@@ -262,7 +262,7 @@ describe("writing the collections", () => {
         const lists = getFixtureLXNSCollections();
         const counts = replaceCollections(store, lists, { fetchedAt: 1000 });
 
-        expect(counts).toEqual({ trophy: 9, icon: 3, plate: 12, frame: 3 });
+        expect(counts).toEqual({ title: 9, icon: 3, plate: 12, frame: 3 });
         expect(count(store, "collections")).toBe(27);
 
         const plates = rows<{ id: number; position: number; name: string }>(
@@ -279,7 +279,7 @@ describe("writing the collections", () => {
         replaceCollections(store, lists, { fetchedAt: 1000 });
 
         const kinds: [string, LXNSCollectionLists[keyof LXNSCollectionLists]][] = [
-            ["trophy", lists.trophies],
+            ["title", lists.trophies],
             ["icon", lists.icons],
             ["plate", lists.plates],
             ["frame", lists.frames],
@@ -321,7 +321,7 @@ describe("writing the collections", () => {
             fetchedAt: 4321,
             upstreamVersion: null,
             builder: CATALOG_BUILDER,
-            detail: { trophy: 9, icon: 3, plate: 12, frame: 3 },
+            detail: { title: 9, icon: 3, plate: 12, frame: 3 },
         });
     });
 
@@ -343,7 +343,7 @@ describe("writing the collections", () => {
         );
 
         expect(rows(store, "SELECT kind, id, name FROM collections")).toEqual([
-            { kind: "trophy", id: 1, name: "后" },
+            { kind: "title", id: 1, name: "后" },
         ]);
         expect(readMetaState(store, "lxns-collections")?.fetchedAt).toBe(2000);
     });
