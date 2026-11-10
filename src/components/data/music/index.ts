@@ -7,9 +7,10 @@ import localForage from "localforage";
 import { reactive, ref } from "vue";
 import type { SavedMusicList, CachedMusicData, MusicMetadataState } from "@core/music/type";
 import type { MaimaidxRegion } from "@core/music/type";
+import { restoreCachedMusicData } from "@core/music/cache";
+import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
+import MusicSort from "@core/music/sort.json";
 import { fetchSaltMetaMusicList } from "./musicApi";
-import MusicSort from "./sort.json";
-import { indexMusicSearchData, MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
 
 // Cache key for localForage
 const MUSIC_CACHE_KEY = "saltnet_music_cache_saltmeta_next_cn_v4";
@@ -58,32 +59,6 @@ async function saveToCache(
     } catch (error) {
         console.error("Failed to save music cache:", error);
     }
-}
-
-/**
- * Restore chart-to-music references after loading cached data.
- */
-function restoreCachedMusicData(cached: CachedMusicData): SavedMusicList {
-    const chartList: SavedMusicList["chartList"] = {};
-
-    for (const musicId in cached.musicList) {
-        const music = cached.musicList[musicId];
-        for (const chart of music.charts) {
-            chart.music = music;
-            chartList[chart.id] = chart;
-        }
-    }
-
-    const data = {
-        musicList: cached.musicList,
-        chartList,
-    };
-
-    if (cached.searchIndexVersion !== MUSIC_SEARCH_INDEX_VERSION) {
-        indexMusicSearchData(data);
-    }
-
-    return data;
 }
 
 function applyMusicMetadata(metadata: MusicMetadataState | null): void {

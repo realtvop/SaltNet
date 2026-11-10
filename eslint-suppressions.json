@@ -58,7 +58,7 @@
   },
   "package.json": {
     "jsonc/indent": {
-      "count": 53
+      "count": 54
     },
     "jsonc/sort-keys": {
       "count": 2
@@ -1018,7 +1018,7 @@
   },
   "src/components/data/music/index.ts": {
     "perfectionist/sort-imports": {
-      "count": 2
+      "count": 1
     },
     "perfectionist/sort-named-imports": {
       "count": 1
@@ -1040,28 +1040,8 @@
     }
   },
   "src/components/data/music/musicApi.ts": {
-    "import/consistent-type-specifier-style": {
-      "count": 1
-    },
-    "ts/consistent-type-definitions": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 2
-    },
     "style/comma-dangle": {
       "count": 1
-    },
-    "style/brace-style": {
-      "count": 1
-    }
-  },
-  "src/components/data/music/sort.json": {
-    "antfu/consistent-list-newline": {
-      "count": 1099
-    },
-    "jsonc/indent": {
-      "count": 77
     }
   },
   "src/components/data/user/BindUserDialog.vue": {

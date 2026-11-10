@@ -3,39 +3,27 @@
  * Fetches music data from SaltMeta next metadata.
  */
 
-import type { MusicMetadataState, SavedMusicList } from "@core/music/type";
-import {
-    convertSaltMetaNextCompactedToNormal,
-    convertSaltMetaNextToSavedMusicList,
-    getSaltMetaCnVersions,
-    SALTMETA_NEXT_COMPACTED_URL,
-    SALTMETA_NEXT_COMPACTED_VERSION,
-    type SaltMetaMusicMetadataNextCompacted,
-} from "@core/music/saltmeta";
+import type { SaltMetaMusicListResult } from "@core/music/fetch";
+import { fetchSaltMetaMusicList as fetchSaltMetaMusicListCore } from "@core/music/fetch";
 import { snackbar } from "mdui";
 import { checkForUpdate } from "@/components/app/checkForUpdate";
 
-export type SaltMetaMusicListResult = {
-    music: SavedMusicList;
-    metadata: MusicMetadataState;
-};
+export type { SaltMetaMusicListResult };
 
 export async function fetchSaltMetaMusicList(): Promise<SaltMetaMusicListResult | null> {
-    try {
-        const resp = await fetch(SALTMETA_NEXT_COMPACTED_URL, {
-            cache: "no-store",
-        });
+    const outcome = await fetchSaltMetaMusicListCore({ requestInit: { cache: "no-store" } });
+    if (outcome.ok) {
+        return outcome.value;
+    }
 
-        if (!resp.ok) {
-            console.error("Failed to fetch SaltMeta music list:", resp.status);
-            return null;
-        }
-
-        const compacted = (await resp.json()) as SaltMetaMusicMetadataNextCompacted;
-
-        if (compacted.version !== SALTMETA_NEXT_COMPACTED_VERSION) {
+    const { failure } = outcome;
+    switch (failure.kind) {
+        case "http":
+            console.error("Failed to fetch SaltMeta music list:", failure.status);
+            break;
+        case "version":
             console.error(
-                `SaltMeta next compacted version mismatch. Expected: ${SALTMETA_NEXT_COMPACTED_VERSION}, Got: ${compacted.version}`
+                `SaltMeta next compacted version mismatch. Expected: ${failure.expected}, Got: ${failure.actual}`
             );
             snackbar({
                 message: "曲目数据版本不一致，请尝试升级应用",
@@ -46,19 +34,10 @@ export async function fetchSaltMetaMusicList(): Promise<SaltMetaMusicListResult 
                     checkForUpdate();
                 },
             });
-            return null;
-        }
-
-        const metadata = convertSaltMetaNextCompactedToNormal(compacted);
-        const music = convertSaltMetaNextToSavedMusicList(metadata);
-        return {
-            music,
-            metadata: {
-                cnVersions: getSaltMetaCnVersions(metadata, music),
-            },
-        };
-    } catch (error) {
-        console.error("Error fetching SaltMeta music list:", error);
-        return null;
+            break;
+        case "error":
+            console.error("Error fetching SaltMeta music list:", failure.error);
+            break;
     }
+    return null;
 }

@@ -131,6 +131,7 @@ export default antfu(
         name: "saltnet/prettier-owned-json",
         files: ["shared/core/**/*.json", "cli/**/*.json"],
         rules: {
+            "antfu/consistent-list-newline": "off",
             "jsonc/indent": "off",
             "jsonc/key-spacing": "off",
             "jsonc/object-curly-spacing": "off",
