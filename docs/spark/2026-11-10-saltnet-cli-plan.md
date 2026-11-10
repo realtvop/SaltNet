@@ -97,8 +97,8 @@
 - [x] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
 - [x] P1-6a `refactor(core): split saltmeta download from conversion and merge duplicate banquet songs`：core 里的准备工作：`fetchSaltMetaCompacted`/`buildSaltMetaMusicList`、`mergeDuplicateMusics`、`LXNSCollectionError`、落雪收藏品固定数据（见「实现中的决定」第 24 条，它也记着 P1-6c 的设计备忘）
 - [x] P1-6b `feat(cli): add injectable fetch with deadline and error mapping`：`Io.fetch`、`ctx.http()`、统一的超时和 `NETWORK`/`UPSTREAM_ERROR` 错误映射、测试用的模拟网络（见「实现中的决定」第 25 条）
-- [ ] P1-6c `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
-- [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入
+- [x] P1-6c `feat(cli): refresh catalog and collections into the store`：库表（迁移 2）、拉取 SaltMeta 和落雪收藏品并整体替换写入、原始快照存 `cache/`、`metadata` 锁、`refresh` 命令（`--offline` 报 `USAGE`）；合并上游重复的宴谱（见「实现中的决定」第 26 条；过期检查挪到了 P1-7）
+- [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入；加上过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建，设计见第 24、26 条）
 - [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [ ] P1-9 `feat(cli): add search, song and chart commands`
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
@@ -325,3 +325,15 @@
     - 每个请求加 `User-Agent`（`network.userAgent`，默认 `saltnet-cli/<版本>`，调用方自己写的头优先）和一个 `AbortSignal.timeout`。这个期限管整个往返，包括读响应体，因为慢服务器常常卡在读响应体这一步。
     - 失败映射：连接失败、DNS 失败、超时（包括 undici 自己的 `UND_ERR_*_TIMEOUT`）、读响应体时中断都是 `NETWORK`（可重试）；`json()` 读到的不是合法 JSON 是 `UPSTREAM_ERROR`；HTTP 状态不是成功的由调用方判断，`upstreamStatusError(url, status)` 做出 `UPSTREAM_ERROR`（5xx 和 429 可重试）。消息里只写主机名，不写路径和查询串（URL 里可能带 token）；原因取错误链里第一个字符串 `code`（`ECONNREFUSED`、`ENOTFOUND` 等），没有就用消息。
     - 测试：`createHarness` 的 `fetch` 默认是一个没有任何路由的模拟网络，请求任何地址都会失败并写明地址，所以测试不会误连真实网络；要用网络的测试传 `mockFetch({ [url]: jsonResponse(...) })`（`tests/mockHttp.ts`，按完整 URL 匹配并记录请求）。`createProcessIo` 的第二个参数可以换掉 `fetch`；`io.test.ts` 同时验证了不传时用的是全局 `fetch`。
+26. **曲库和收藏品的刷新（P1-6c）**：
+    - 库表是迁移 2（全部 `STRICT`）：`meta_state`、`versions`、`songs`、`charts`、`collections`。和第 24 条的备忘相比有几处不同：`charts` 的难度列叫 `grade`（和 core 的 `chartInfo.grade` 一致，也是 chart key 的后半），没有单独的 `fit_constant` 列（拟合数据本来就在 `stat` 的 JSON 里，P1-7 原样读回），`charter` 可以是 `NULL`（宴谱没有谱师）；`collections` 没有 `release_date` 列，而是多存一列 `raw`（整个条目的 JSON），`required` 是上游原样的 JSON，所以四个列表可以原样重建。
+    - `songs.id` 是 SaltNet 的曲目 id，`meta_id` 由 `type` 反推（SD 是 id，其余是 id − 10000）；`charts.chart_key` 是 `<曲目 id>-<grade>`（宴谱的 grade 是 10），`charts.id` 是网页端的谱面 id。上游缺的值（宴谱的 `bpm`、物量、谱师）保留 `NULL` 或 `null`，不编造。
+    - `CATALOG_BUILDER`（`catalog-1/search-<MUSIC_SEARCH_INDEX_VERSION>`）写进每个来源的 `meta_state.builder`。以后改了行的构造方式就把前面的数字加一，P1-7 的 `ensureMetadata` 靠它发现该从快照重建。
+    - 刷新（`catalog/refresh.ts`）：先拿 `metadata` 锁（TTL 120 秒），两个来源并行，各自独立地「下载 → 校验 → 写 `cache/<名字>.json` 快照（临时文件加改名，0600）→ 用一个事务整体替换并写 `meta_state`」。事务里任何一步失败都整体回滚，旧行和旧的 `meta_state` 不变。因为快照先写，事务失败时快照会比库新；P1-7 从快照重建时要记住这一点。
+    - 空数据不能清掉好数据：SaltMeta 里没有国服曲目、落雪四个列表加起来是空的、列表形状不对，都是 `UPSTREAM_ERROR`，已有数据保留。落雪的四个列表只要有一个失败，整个收藏品就算失败：半新半旧的收藏品会让版本牌子的进度算错。
+    - 结果：每个来源给一个 `{source, ok, ...}`，成功的带 `fetchedAt` 和数量（曲库还带合并掉的重复宴谱），失败的带 `error` 和 `keptFetchedAt`（还保留着的旧数据是什么时候拉的，没有就是 `null`）。任何一个来源失败，命令以失败退出：错误码和 `retryable` 取第一个失败的来源（曲库在前），消息把所有失败都列出来，两个来源各自的结果在 `error.sources`。
+    - `refresh --offline` 是 `USAGE`，在碰网络和磁盘之前就拒绝；`refresh` 遇到别的进程持有 `metadata` 锁是 `SYNC_IN_PROGRESS`（`error.holder` 有 `pid` 和 `since`），什么都不下载；持有者崩溃、锁过期之后会被接管；命令结束时无论成败都释放锁。`refreshCatalog` 把「锁被占」作为返回值交给调用方，所以 P1-7 的 `ensureMetadata` 可以选择继续用旧缓存。
+    - **偏离原计划**：P1-6c 原本还包括过期检查，现在挪到 P1-7。过期检查（`ensureMetadata`）要和「从库里读出曲库」一起才用得上，放在读库的这一步里才能一起测；本步只有显式的 `refresh`。第 24 条里 `ensureMetadata` 的设计备忘不变，改由 P1-7 实现。
+    - 时间：输出里的时间写成本机时区加偏移（`2026-11-11T09:12:03+08:00`，`util/time.ts` 的 `formatLocalTime`），库里存毫秒时间戳。
+    - `toCliError` 从 `cli.ts` 挪到 `src/toCliError.ts`：`catalog/refresh.ts` 要把每个来源的异常也转成 `CliError`，而 `cli.ts` 依赖命令层，不挪会成环。测试 harness 加了 `now` 选项（命令看到的时钟）；`help.test.ts` 里「还没有命令」的用例改用空注册表，因为真正的注册表现在有 `refresh`。
+    - 测试：`tests/catalog/store.test.ts`（真实的固定数据：50 首、183 张谱、20 个版本，SD/DX 的 `meta_id`，宴谱的空值，合并后的重复宴谱，替换和回滚）、`snapshots.test.ts`、`tests/commands/refresh.test.ts`（成功、`--offline`、一个来源失败而另一个照常更新、保留旧数据并说明它的时间、连接失败、超时、格式版本、非 JSON、空数据、形状错误、锁）、`util/time.test.ts`。全部用模拟网络，没有真实请求。

@@ -3,34 +3,26 @@
  * failure becomes a failure envelope on stdout and an exit code (design 4.2, 4.6).
  */
 import type { CommandDefinition, CommandSpec, RawCommandArgs, Registry } from "./commands/registry";
+import type { CliError } from "./errors";
 import type { ResolvedConfig } from "./runtime/config";
 import type { Io } from "./runtime/io";
 import type { Store } from "./store/store";
 import { renderHelp } from "./commands/help";
 import { parseArgv } from "./commands/parse";
-import { CliError, usageError } from "./errors";
+import { usageError } from "./errors";
 import { failureEnvelope, serializeEnvelope } from "./output/envelope";
 import { chooseFormat } from "./output/format";
 import { renderSuccess } from "./output/render";
 import { loadConfig } from "./runtime/config";
 import { createHttp } from "./runtime/http";
 import { resolveRuntimePaths } from "./runtime/paths";
-import { storeError } from "./store/errors";
 import { openStore } from "./store/store";
+import { toCliError } from "./toCliError";
 
 export interface CliRuntime {
     readonly io: Io;
     readonly registry: Registry;
     readonly version: string;
-}
-
-function toCliError(error: unknown): CliError {
-    if (error instanceof CliError) return error;
-    // A busy or damaged database is something to tell the caller about, not an internal bug.
-    const stored = storeError(error);
-    if (stored) return stored;
-    const detail = error instanceof Error ? error.message : String(error);
-    return new CliError("INTERNAL", `内部错误：${detail}`, { cause: error });
 }
 
 /** Failures are always JSON, whatever `--format` says, so a caller has one thing to parse. */

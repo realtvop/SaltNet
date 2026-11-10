@@ -72,9 +72,8 @@ describe("root help", () => {
     });
 
     it("says so while there are no commands", () => {
-        expect(renderHelp(createRegistry(), { kind: "root" }, "0.1.0")).toContain(
-            "（还没有可用的命令）"
-        );
+        const empty = buildRegistry({ commands: [] });
+        expect(renderHelp(empty, { kind: "root" }, "0.1.0")).toContain("（还没有可用的命令）");
     });
 });
 

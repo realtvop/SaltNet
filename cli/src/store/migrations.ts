@@ -40,6 +40,82 @@ export const MIGRATIONS: readonly Migration[] = [
             `);
         },
     },
+    {
+        version: 2,
+        name: "catalog",
+        up: db => {
+            // Everything here can be fetched again, so these tables are replaced as a whole by a
+            // refresh and a later layout change never has to carry their rows over. JSON columns
+            // hold what has no column of its own.
+            db.exec(`
+                -- Where each source stands: when it was fetched, which upstream format it had, and
+                -- how the rows were built from it (CATALOG_BUILDER).
+                CREATE TABLE meta_state (
+                    source TEXT PRIMARY KEY,
+                    fetched_at INTEGER NOT NULL,
+                    upstream_version TEXT,
+                    builder TEXT NOT NULL,
+                    detail TEXT
+                ) STRICT;
+
+                CREATE TABLE versions (
+                    position INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    word TEXT NOT NULL
+                ) STRICT;
+
+                -- One row per SaltNet song: SD and DX of one SaltMeta entry are two rows that share
+                -- meta_id.
+                CREATE TABLE songs (
+                    id INTEGER PRIMARY KEY,
+                    meta_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    artist TEXT NOT NULL,
+                    genre TEXT NOT NULL,
+                    bpm REAL,
+                    version TEXT NOT NULL,
+                    is_new INTEGER NOT NULL,
+                    type TEXT NOT NULL,
+                    aliases TEXT,
+                    search_index TEXT
+                ) STRICT;
+                CREATE INDEX songs_meta_id ON songs (meta_id);
+
+                -- chart_key is "<song id>-<grade>", the key every output uses; id is the number
+                -- the web app calls the chart.
+                CREATE TABLE charts (
+                    chart_key TEXT PRIMARY KEY,
+                    id INTEGER NOT NULL UNIQUE,
+                    song_id INTEGER NOT NULL REFERENCES songs (id),
+                    position INTEGER NOT NULL,
+                    grade INTEGER NOT NULL,
+                    level TEXT NOT NULL,
+                    constant REAL,
+                    charter TEXT,
+                    notes TEXT NOT NULL,
+                    deluxe_score_max INTEGER NOT NULL,
+                    stat TEXT,
+                    search_index TEXT
+                ) STRICT;
+                CREATE INDEX charts_song_id ON charts (song_id);
+
+                -- The four lists LXNS serves. required is the requirements as LXNS sent them, and
+                -- raw is the whole item, so the lists can be rebuilt exactly.
+                CREATE TABLE collections (
+                    kind TEXT NOT NULL,
+                    id INTEGER NOT NULL,
+                    position INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    genre TEXT,
+                    description TEXT,
+                    color TEXT,
+                    required TEXT,
+                    raw TEXT NOT NULL,
+                    PRIMARY KEY (kind, id)
+                ) STRICT;
+            `);
+        },
+    },
 ];
 
 export interface MigrationResult {

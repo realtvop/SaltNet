@@ -13,6 +13,8 @@ export interface HarnessOptions {
     env?: Record<string, string | undefined>;
     /** The network the command sees. By default there is none: every request fails. */
     fetch?: HttpFetch;
+    /** What the command's clock reads; a fixed instant by default. */
+    now?: Date;
 }
 
 /** An in-process terminal: everything the CLI writes is collected instead of printed. */
@@ -39,7 +41,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
         env: { SALTNET_HOME: process.env.SALTNET_HOME, ...options.env },
         cwd: "/work",
         readStdin,
-        now: () => new Date("2026-11-11T00:00:00Z"),
+        now: () => options.now ?? new Date("2026-11-11T00:00:00Z"),
         fetch,
     };
     return { io, stdout: () => out.join(""), stderr: () => err.join(""), readStdin, fetch };
