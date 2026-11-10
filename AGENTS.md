@@ -11,7 +11,7 @@ SaltNet is a two-package pnpm workspace:
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
-- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
+- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and the reactive wrapper (`relatedCollections.ts`) around the shared reverse-association index used by ChartInfo.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
 - `shared/core/` holds platform-neutral domain logic shared by the web app and the CLI. It must not
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
@@ -25,7 +25,8 @@ SaltNet is a two-package pnpm workspace:
       recent-change ordering), `course/` (dan-course definitions and ordered chart matching),
       `kaleidxscope/` (CN gate conditions, life calendars, draw pools), `collection/` (collection
       types, LXNS data mapping and validation, static characters and partners, version-plate
-      requirement/progress evaluation), `user/inGame.ts` (in-game user types), and
+      requirement/progress evaluation, the music-to-collection reverse index builder),
+      `user/inGame.ts` (in-game user types), and
       `integrations/` (`diving-fish/type.ts`, `lxns/type.ts`, and the public `lxns/fetchCollection.ts`).
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
@@ -74,8 +75,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:course` validates the static dan-course snapshot and ordered chart matching.
 - `pnpm test:kaleidxscope` validates the gate, noise-stage, and final-sequence snapshot, life-phase boundaries, and chart matching. Unconfirmed life calendars remain empty unless explicitly requested as estimates; the noise calendar uses a labeled three-day estimate from October 1 at 07:00 UTC+8.
 - `pnpm test:collection-index` runs focused tests for collection caching, initialization, the
-  LXNS collection fetch and mapping, static character/partner data, ChartInfo reverse
-  associations, and version-plate tab merging.
+  LXNS collection fetch and mapping, static character/partner data, the ChartInfo reverse
+  association index (core builder and web wrapper), and version-plate tab merging.
 - `pnpm test:score-history` validates score-change detection, IndexedDB history, generations, and
   user-backup compatibility.
 - `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.

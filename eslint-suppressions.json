@@ -949,14 +949,6 @@
       "count": 1
     }
   },
-  "src/components/data/collection/relatedCollections.ts": {
-    "perfectionist/sort-imports": {
-      "count": 2
-    },
-    "antfu/if-newline": {
-      "count": 2
-    }
-  },
   "src/components/data/kaleidxscope/KaleidxscopeOverview.vue": {
     "style/indent": {
       "count": 98

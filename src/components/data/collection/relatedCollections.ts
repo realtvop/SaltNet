@@ -1,53 +1,15 @@
-import { shallowRef } from "vue";
+import type { RelatedCollectionsIndex } from "@core/collection/related";
+import type { Collection } from "@core/collection/type";
 import type { Chart } from "@core/music/type";
-import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
-import type { Collection, CollectionRequired } from "@core/collection/type";
-import { requirementMatchesChart } from "@core/collection/versionPlate";
-
-type RelatedCollectionsIndex = ReadonlyMap<
-    number,
-    ReadonlyMap<Collection, ReadonlySet<CollectionRequired>>
->;
+import { buildRelatedCollectionsIndex, getRelatedCollections } from "@core/collection/related";
+import { shallowRef } from "vue";
 
 const relatedCollectionsIndex = shallowRef<RelatedCollectionsIndex>(new Map());
 
 export function updateRelatedCollectionsIndex(collections: Collection[]): void {
-    const nextIndex = new Map<number, Map<Collection, Set<CollectionRequired>>>();
-
-    for (const collection of collections) {
-        for (const requirement of collection.required ?? []) {
-            for (const song of requirement.songs ?? []) {
-                const musicId = getSaltNetMusicIdForChartType(song.id, song.type);
-                let collectionsForMusic = nextIndex.get(musicId);
-                if (!collectionsForMusic) {
-                    collectionsForMusic = new Map();
-                    nextIndex.set(musicId, collectionsForMusic);
-                }
-
-                let requirements = collectionsForMusic.get(collection);
-                if (!requirements) {
-                    requirements = new Set();
-                    collectionsForMusic.set(collection, requirements);
-                }
-                requirements.add(requirement);
-            }
-        }
-    }
-
-    relatedCollectionsIndex.value = nextIndex;
+    relatedCollectionsIndex.value = buildRelatedCollectionsIndex(collections);
 }
 
 export function getRelatedCollectionsForChart(chart: Chart): Collection[] {
-    const collectionsForMusic = relatedCollectionsIndex.value.get(chart.music.id);
-    if (!collectionsForMusic) return [];
-
-    const result: Collection[] = [];
-    for (const [collection, requirements] of collectionsForMusic) {
-        for (const requirement of requirements) {
-            if (!requirementMatchesChart(requirement, chart)) continue;
-            result.push(collection);
-            break;
-        }
-    }
-    return result;
+    return getRelatedCollections(relatedCollectionsIndex.value, chart);
 }
