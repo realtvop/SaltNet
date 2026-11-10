@@ -12,7 +12,7 @@
         getCollectionProgress,
         isCollectionScoreEvaluable,
         sortCollectionChartsByCompletion,
-    } from "./versionPlate";
+    } from "@core/collection/versionPlate";
 
     const props = defineProps<{
         collection: Collection;

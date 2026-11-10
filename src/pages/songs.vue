@@ -21,14 +21,14 @@
         versionPlateCategories,
         versionPlates,
     } from "@/components/data/collection";
+    import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
     import {
         checkCollectionChartFinish,
         getCollectionCharts,
         getPlateCompactPresentation,
         getVersionPlateConditionText,
         getVersionPlateTabs,
-    } from "@/components/data/collection/versionPlate";
-    import type { VersionPlate, VersionPlateCategory } from "@core/collection/type";
+    } from "@core/collection/versionPlate";
     import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
     import {
         getDifficultyFilterOptions,

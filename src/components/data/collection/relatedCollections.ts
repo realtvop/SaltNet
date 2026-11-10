@@ -2,7 +2,7 @@ import { shallowRef } from "vue";
 import type { Chart } from "@core/music/type";
 import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
 import type { Collection, CollectionRequired } from "@core/collection/type";
-import { requirementMatchesChart } from "./versionPlate";
+import { requirementMatchesChart } from "@core/collection/versionPlate";
 
 type RelatedCollectionsIndex = ReadonlyMap<
     number,

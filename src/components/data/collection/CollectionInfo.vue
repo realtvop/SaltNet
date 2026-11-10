@@ -14,7 +14,7 @@
         CollectionKind,
         type Title,
     } from "@core/collection/type";
-    import { isCollectionScoreEvaluable } from "./versionPlate";
+    import { isCollectionScoreEvaluable } from "@core/collection/versionPlate";
 
     const props = defineProps<{
         open: boolean;

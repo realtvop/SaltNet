@@ -68,7 +68,7 @@
 - [x] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）
 - [x] P0-8 `refactor(core): move course data to shared/core`（`test:course`）
 - [x] P0-9 `refactor(core): move kaleidxscope data to shared/core`（`test:kaleidxscope`）
-- [ ] P0-10 `refactor(core): move version plate logic to shared/core`
+- [x] P0-10 `refactor(core): move version plate logic to shared/core`
 
 **拆混合模块**
 

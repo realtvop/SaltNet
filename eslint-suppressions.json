@@ -250,6 +250,14 @@
       "count": 1
     }
   },
+  "shared/core/collection/versionPlate.ts": {
+    "perfectionist/sort-imports": {
+      "count": 2
+    },
+    "ts/consistent-type-definitions": {
+      "count": 1
+    }
+  },
   "shared/core/course/courses.json": {
     "no-irregular-whitespace": {
       "count": 1
@@ -922,16 +930,10 @@
   },
   "src/components/data/collection/index.test.ts": {
     "perfectionist/sort-imports": {
-      "count": 2
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 2
+      "count": 1
     },
     "style/arrow-parens": {
-      "count": 2
-    },
-    "style/comma-dangle": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/data/collection/index.ts": {
@@ -983,29 +985,6 @@
     },
     "antfu/if-newline": {
       "count": 2
-    }
-  },
-  "src/components/data/collection/versionPlate.ts": {
-    "perfectionist/sort-imports": {
-      "count": 2
-    },
-    "style/member-delimiter-style": {
-      "count": 6
-    },
-    "style/brace-style": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 3
-    },
-    "antfu/if-newline": {
-      "count": 9
-    },
-    "ts/consistent-type-definitions": {
-      "count": 1
-    },
-    "style/operator-linebreak": {
-      "count": 1
     }
   },
   "src/components/data/kaleidxscope/KaleidxscopeOverview.vue": {
