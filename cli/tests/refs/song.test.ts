@@ -1,40 +1,14 @@
-import type { Music } from "@core/music/type";
-import { ChartType } from "@core/mai/types";
-import { indexMusicSearchData } from "@core/music/search";
 import { describe, expect, it } from "vitest";
-import { buildSongCatalog } from "../../src/catalog/songs";
 import { MAX_AMBIGUOUS_CANDIDATES, resolveSong } from "../../src/refs/song";
 import { caught } from "../caught";
 import { fixtureSongCatalog } from "../fixtureCatalog";
+import { catalogOf } from "../madeCatalog";
 
 const catalog = fixtureSongCatalog();
 
 const idOf = (ref: string): number => resolveSong(catalog, ref).id;
 function refsOf(error: { candidates?: readonly { ref: string }[] }): string[] {
     return (error.candidates ?? []).map(candidate => candidate.ref);
-}
-
-/** A catalog of made-up songs, for the cases the fixed fixture has no example of. */
-function catalogOf(entries: { id: number; title: string; aliases?: string[] }[]) {
-    const musicList: Record<number, Music> = {};
-    for (const entry of entries) {
-        musicList[entry.id] = {
-            id: entry.id,
-            info: {
-                id: entry.id,
-                title: entry.title,
-                aliases: entry.aliases,
-                artist: "someone",
-                genre: "舞萌" as never,
-                bpm: 120,
-                from: "舞萌DX" as never,
-                isNew: false,
-                type: ChartType.Standard,
-            },
-            charts: [],
-        };
-    }
-    return buildSongCatalog(indexMusicSearchData({ musicList, chartList: {} }));
 }
 
 describe("a number", () => {
@@ -294,6 +268,10 @@ describe("the search index", () => {
         }
     });
 
+    it("does not take a charter's name for the name of a song", () => {
+        expect(caught(() => resolveSong(catalog, "Luxizhel")).code).toBe("NOT_FOUND");
+    });
+
     it("is AMBIGUOUS_REF when several songs match, listing at most ten", () => {
         const error = caught(() => resolveSong(catalog, "o"));
 
@@ -304,6 +282,18 @@ describe("the search index", () => {
         // In order of id.
         const ids = refsOf(error).map(Number);
         expect(ids).toEqual([...ids].sort((a, b) => a - b));
+    });
+
+    it("lists the candidates by music id, however well each one matches", () => {
+        // 9 is the better match (its title starts with the text) but comes after 5.
+        const made = catalogOf([
+            { id: 5, title: "xabcx" },
+            { id: 9, title: "abcx" },
+        ]);
+        const error = caught(() => resolveSong(made, "abc"));
+
+        expect(error.code).toBe("AMBIGUOUS_REF");
+        expect(refsOf(error)).toEqual(["5", "9"]);
     });
 
     it("counts a song once although both of its sides match", () => {

@@ -15,6 +15,7 @@ export interface Song {
     readonly musicId: number;
     readonly title: string;
     readonly artist: string;
+    readonly genre: string;
     /** Every alias of either side, without repeats. */
     readonly aliases: readonly string[];
     /** The SD side, when the song has SD charts. */
@@ -108,6 +109,7 @@ export function buildSongCatalog(music: SavedMusicList): SongCatalog {
             musicId: main.id,
             title: main.info.title,
             artist: main.info.artist,
+            genre: main.info.genre,
             aliases: aliasesOf([side.sd, side.dx]),
             sd: side.sd,
             dx: side.dx,

@@ -1,18 +1,15 @@
 /**
  * Turning what was typed into a song (design 3.1). A pure number is a music id, `n-n` is a chart
  * key, and anything else is a name, tried as an exact title, then an exact alias, then through
- * the search index. A step settles the matter as soon as it finds anything, and what it finds
- * must be exactly one song: several are `AMBIGUOUS_REF`, none at all moves on to the next step.
+ * the search (`catalog/search.ts`, names only). A step settles the matter as soon as it finds
+ * anything, and what it finds must be exactly one song: several are `AMBIGUOUS_REF`, none at all
+ * moves on to the next step.
  */
 import type { Chart } from "@core/music/type";
 import type { ChartEntry, Song, SongCatalog } from "../catalog/songs";
 import type { ErrorCandidate } from "../errors";
 import { SALTMETA_DX_ID_OFFSET } from "@core/music/saltmeta";
-import {
-    createMusicSearchIndex,
-    createMusicSearchQuery,
-    matchesMusicSearchIndex,
-} from "@core/music/search";
+import { NAME_MATCH_KINDS, searchSongs } from "../catalog/search";
 import { chartKey, chartKeyOf, musicType, songCharts, songType } from "../catalog/songs";
 import { CliError, usageError } from "../errors";
 import { closestItems } from "../util/closest";
@@ -136,20 +133,15 @@ function songNotFound(catalog: SongCatalog, text: string): CliError {
 }
 
 /**
- * The songs whose title or alias contains the text, in any of the spellings the search index
- * knows (simplified and traditional, pinyin, romaji). The index the catalog keeps also holds the
- * artist; a reference names a song, so a song only counts when its own names match.
+ * The songs whose title or alias contains the text, in any of the spellings the search knows
+ * (simplified and traditional, pinyin, romaji), by ascending id. The search also finds artists,
+ * charters and ids; a reference names a song, so a song only counts when its own names match.
  */
 function searchByNames(catalog: SongCatalog, text: string): Song[] {
-    const query = createMusicSearchQuery(text);
-    if (query.length === 0) return [];
-    return catalog.songs.filter(song => {
-        const stored = (song.sd ?? song.dx)?.info.searchIndex;
-        return (
-            matchesMusicSearchIndex(stored, query) &&
-            matchesMusicSearchIndex(createMusicSearchIndex([song.title, ...song.aliases]), query)
-        );
-    });
+    return searchSongs(catalog, text)
+        .filter(match => match.matchedBy.some(kind => NAME_MATCH_KINDS.includes(kind)))
+        .map(match => match.song)
+        .sort((a, b) => a.id - b.id);
 }
 
 function exactlyOne(text: string, hits: readonly Song[]): Song {

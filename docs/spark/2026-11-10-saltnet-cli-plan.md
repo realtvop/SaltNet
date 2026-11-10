@@ -103,7 +103,7 @@
 - [x] P1-7c `feat(cli): refresh stale metadata before a command reads it`：过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建；命令用 `useMetadata`，读库用一致的视图 `store.read`；设计见第 24、26、27 条，实现见第 29 条）
 - [x] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [x] P1-9a `refactor(core): tell which kind of variant a search text matched`：`createMusicSearchVariants` 把原文、拼音、罗马音分开给出，`createMusicSearchIndex` 的结果不变（见第 31 条）
-- [ ] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
+- [x] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
 - [ ] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
 - [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
@@ -378,3 +378,12 @@
     - 拆分原因：搜索要同时改 core（网页端共用，必须带 `pnpm build` 验证）和 CLI（排序、命令、引用解析），`song`/`chart` 又要写谱面行、评级和 combo 的标签、物量和统计的输出，一个提交太大。P1-9a 只动 core：`createMusicSearchVariants(text)` 返回 `{kind, text}[]`（`kind` 是 `text`、`pinyin`、`romaji`），顺序和去重与原来完全一致，`createMusicSearchIndex` 改为由它拼出，所以库里和网页端缓存里已有的索引不用重建（`MUSIC_SEARCH_INDEX_VERSION` 仍是 1）；测试里留一份原算法的拷贝，对固定数据逐项比对。P1-9b 是 `search` 命令和曲目搜索，P1-9c 是 `song` 和 `chart`。
     - **补一步 P1-14b**：设计 3.2 写了 `song --with related` 和 `chart --with related`，原计划没有安排。它要用收藏品、段位、万花筒三方的数据，放在 P1-14（收藏品）之后做。`chart --with` 的 `stages`、`friends`、`history`、`position`、`all` 依赖成绩，随 P2 加；P1 的 `--with` 只有 `related`。
     - 设计 3.2 说 `chart` 默认带成绩和简洁版吃分表。P1 没有成绩，吃分表要 P2-7 到 P2-9 把计算搬进 core 之后才有，所以 P1 的 `chart` 只有基本信息、谱师、物量和统计，`score` 和 `b50` 恒为 `null`；P2-18 起带成绩，P2-22 起带吃分表。
+
+32. **P1-9b 的实现（`search` 和曲目搜索）**：
+    - 引擎是 `catalog/search.ts` 的 `searchSongs(catalog, text)`，返回按相关度排好序的 `{song, score, matchedBy}`。`matchedBy` 的取值（`MATCH_KINDS`）是 `id`、`title`、`alias`、`pinyin`、`romaji`、`artist`、`charter`。规格 3.2 只写了标题、别名、拼音、罗马音，但网页端的搜索框也认曲师和谱师，数字则是 `song` 等命令接受的曲目 id，所以 `search` 都找，并在 `matchedBy` 里说明是怎么找到的；`resolveSong` 只认其中的 `title`、`alias`、`pinyin`、`romaji`（`NAME_MATCH_KINDS`），曲师和谱师的名字不能当歌名用（第 30 条）。
+    - 匹配规则和网页端一样：规范化后的文本（全半角、大小写、标点和空格都不算，简体繁体一样）包含在某个拼写里。库里存的 `searchIndex`（曲目的标题、曲师、别名，谱面的谱师）只用来预筛：不含这段文本的歌直接跳过，不用现算它每个字段的拼写；没有索引的曲目（不是用共用的索引函数建的）筛不掉，所以预筛不会漏掉完整检查能找到的歌。真实数据（1440 首）上最坏的情形（`a`，命中 1376 首）0.43 秒。
+    - 排序，一首歌取它最好的一次命中：标题原样相同 100、标题忽略大小写和全半角后相同 90、曲目 id 85、别名原样相同 80、别名折叠后相同 70、标题规范化后相同 60、别名规范化后相同 55、标题以文本开头 50、标题包含 40、别名包含 30、拼音或罗马音包含 25、曲师 20、谱师 10；分数相同按曲目 id 升序，所以同一份曲库和同一段文本永远给出同一个顺序。这样 `search` 的第一首就是 `song` 会解析成的那首（`TRUST` 的 695 在前，`Trust` 的 11726 在前），数字文本里 id 命中的歌排在只是标题包含这个数字的歌前面。数字文本既是曲目 id（SD 的 id 和 DX 的 id 都算，`11726` 找得到 DX 歌，`1726` 找不到）也是普通文本。
+    - `resolveSong` 的最后一步改用 `searchSongs`：只留命中名字的歌，候选仍按曲目 id 升序，行为不变。`Song` 多了 `genre`（`search` 要显示）；`bpm` 留到 P1-9c，只有 `song` 用它。
+    - `search <文本…>`：几个词用空格连起来，不用加引号，所以 `search 1 46` 搜的是文本「1 46」，不是 id 146；空文本是 `USAGE`；没有命中不算错（退出码 0，`items` 为空，`page.total` 是 0）；`--limit` 默认 10，规格 4.5 写明 `search` 是 10、其他列表是 50。每项是 `musicId`、`title`、`artist`、`genre`、`type`（`SD`、`DX` 或 `SD+DX`）、`matchedBy`。曲库过期、联网失败时用旧数据照常搜，并带 `STALE_METADATA` 警告。
+    - 测试：`tests/catalog/search.test.ts`（28 个）和 `tests/commands/search.test.ts`（12 个）由 Gemini 3.8 Flash 按我写的行为说明写出；手造曲库的构造函数挪到 `tests/madeCatalog.ts`（我加了 `charter` 选项），`song.test.ts`（42 个）复用它。我核对了每个断言的期望来自行为说明和固定数据，而不是实现的输出，然后手工破坏实现 43 处（排序的每一档、id 只认 SD 或只认 DX、预筛的每条规则、`matchedBy` 的顺序、各个输出字段、默认 `--limit`、词的连接、警告透传、候选顺序……）。第一轮有 7 处没被发现：曲师和谱师的先后（两处）、词的连接、警告透传、`artist` 字段、候选顺序、「取最强关系」。前六处我补了 4 个测试和 1 条断言，全部变红；最后一处等价（简体化后的标题拼写总会给出同样的最强关系），没有测试能区分，代码保留（它写明了意图）。
+    - 委托的经过：第一次运行没有产出，因为无头模式遇到不在白名单里的命令（`pnpm test:cli`）会放弃整次运行并丢掉改动；把它和 `pnpm test` 加进白名单、在提示里写明能用的命令之后，第二次成功（416 秒），补丁对实现没有异议。
