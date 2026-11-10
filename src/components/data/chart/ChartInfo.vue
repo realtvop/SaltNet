@@ -696,7 +696,7 @@
     import { getCollectionImageURL, getCoverURL } from "@/components/integrations/assets";
     import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
     import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
-    import { getChartDifficultyBadgeLabel } from "./difficulty";
+    import { getChartDifficultyBadgeLabel } from "@core/chart/difficulty";
     import { formatScoreChangedAt } from "./recent";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";

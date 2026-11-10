@@ -15,7 +15,7 @@
     import { dialog, snackbar, type Dialog } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
-    import { isUtageGrade } from "@/components/data/chart/difficulty";
+    import { isUtageGrade } from "@core/chart/difficulty";
     import {
         type B50RenderChart as B50RenderChartPayload,
         type B50RenderPayload,

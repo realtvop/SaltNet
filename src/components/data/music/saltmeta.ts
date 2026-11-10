@@ -1,7 +1,7 @@
 import type { ChartStats } from "@core/integrations/diving-fish/type";
 import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "@core/music/type";
+import { UTAGE_GRADE } from "@core/chart/difficulty";
 import { ChartType, MusicGenre, MusicOrigin } from "@core/mai/types";
-import { UTAGE_GRADE } from "@/components/data/chart/difficulty";
 import { indexMusicSearchData } from "./search";
 
 export const SALTMETA_NEXT_COMPACTED_URL =

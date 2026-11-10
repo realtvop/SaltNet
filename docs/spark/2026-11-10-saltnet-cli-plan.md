@@ -62,7 +62,7 @@
 
 - [x] P0-2 `refactor(core): move mai enums, in-game types and collection types to shared/core`
 - [x] P0-3 `refactor(core): move music and diving-fish types to shared/core`
-- [ ] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
+- [x] P0-4 `refactor(core): move chart difficulty and identity to shared/core`
 - [ ] P0-5 `refactor(core): move music search index to shared/core`（`test:music-search`）
 - [ ] P0-6 `refactor(core): move SaltMeta conversion to shared/core`
 - [ ] P0-7 `refactor(core): move recent chart ordering to shared/core`（`test:recent`）

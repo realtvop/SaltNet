@@ -37,7 +37,7 @@
         getDifficultyFilterOptions,
         getChartDifficultyFullLabel,
         UTAGE_GRADE,
-    } from "@/components/data/chart/difficulty";
+    } from "@core/chart/difficulty";
     import {
         DIFFICULTY_TABS,
         formatScoreChangedAt,
