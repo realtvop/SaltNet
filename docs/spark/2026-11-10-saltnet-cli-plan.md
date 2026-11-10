@@ -102,12 +102,15 @@
 - [x] P1-7b `feat(cli): write static courses and collections with the CLI version`：库里收藏品的 `kind` 改用设计里的六个名字，旅行伙伴、搭档和段位随 CLI 版本写入，数据一变就重写（迁移 3；万花筒不进库，见第 27、28 条）
 - [x] P1-7c `feat(cli): refresh stale metadata before a command reads it`：过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建；命令用 `useMetadata`，读库用一致的视图 `store.read`；设计见第 24、26、27 条，实现见第 29 条）
 - [x] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
-- [ ] P1-9 `feat(cli): add search, song and chart commands`
+- [x] P1-9a `refactor(core): tell which kind of variant a search text matched`：`createMusicSearchVariants` 把原文、拼音、罗马音分开给出，`createMusicSearchIndex` 的结果不变（见第 31 条）
+- [ ] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
+- [ ] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
 - [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
 - [ ] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
 - [ ] P1-13 `feat(cli): add course and kaleidxscope commands`
 - [ ] P1-14 `feat(cli): add collection list and show commands`（不含进度）
+- [ ] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
 - [ ] P1-15 `feat(cli): add status and config commands`
 - [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成
@@ -370,3 +373,8 @@
     - 谱面引用：谱面 key 里已经有难度，再给难度参数必须一致，否则 `USAGE`；曲目引用不给难度是 `USAGE`；难度先于曲目检查，不认识的难度是 `USAGE` 并附最接近的写法；纯数字 id 只在这个 id 自己那一面找（`10146 rem` 找不到就是 `NOT_FOUND`，消息写「的 DX 部分」，候选是整首歌的谱面，里面能看到 SD 面的 `146-4`）；标题或别名两面都有这个难度是 `AMBIGUOUS_REF`，候选是两个谱面 key（带 `type`、`difficulty`、`level`），只有一面有就取那一面。**`--type` 对所有写法都是筛选**：id 或 key 的类型不符是 `NOT_FOUND`，并指出另一面的谱面 key（我没有把它当用法错误）。
     - 难度的写法：`bas/adv/exp/mas/rem/utage`、`basic/advanced/expert/master/re:master/remaster`、`0`–`4` 和 `10`、`绿黄红紫白宴`（也收繁体的 `綠黃紅`），不分大小写和全半角；标签用 core 的 `getChartDifficultySearchLabel`（`BASIC` 到 `Re:MASTER`，宴谱 `UTAGE`），不认识的 grade 原样写数字而不是冒充 MASTER。`--diff` 之类选项要用的枚举，等 P1-9、P1-10 真要用时再从这张表导出。
     - 测试：`tests/refs/difficulty.test.ts`（34 个）、`tests/catalog/songs.test.ts`（18 个）、`tests/refs/song.test.ts`（40 个：数字、谱面 key、各步的顺序、合并的宴谱、简繁和拼音和罗马音、曲师不算歌名、10 首上限、找不到时的候选和不回显）、`tests/refs/chart.test.ts`（27 个）、`tests/util/closest.test.ts` 加了 6 个。用固定的 SaltMeta 数据，规格里的两首「Link」和 `TRUST`/`Trust` 的例子都在其中；这份数据里没有的情形（标题压过别名、别名压过索引）用手造的小曲库。实现后我手工破坏了四处，把别名放到折叠标题前、索引不排除曲师、忽略 `--type`、数字找不到时回退到标题，各有测试变红，之后恢复。
+
+31. **P1-9 拆成三步，并补上 `--with related`**：
+    - 拆分原因：搜索要同时改 core（网页端共用，必须带 `pnpm build` 验证）和 CLI（排序、命令、引用解析），`song`/`chart` 又要写谱面行、评级和 combo 的标签、物量和统计的输出，一个提交太大。P1-9a 只动 core：`createMusicSearchVariants(text)` 返回 `{kind, text}[]`（`kind` 是 `text`、`pinyin`、`romaji`），顺序和去重与原来完全一致，`createMusicSearchIndex` 改为由它拼出，所以库里和网页端缓存里已有的索引不用重建（`MUSIC_SEARCH_INDEX_VERSION` 仍是 1）；测试里留一份原算法的拷贝，对固定数据逐项比对。P1-9b 是 `search` 命令和曲目搜索，P1-9c 是 `song` 和 `chart`。
+    - **补一步 P1-14b**：设计 3.2 写了 `song --with related` 和 `chart --with related`，原计划没有安排。它要用收藏品、段位、万花筒三方的数据，放在 P1-14（收藏品）之后做。`chart --with` 的 `stages`、`friends`、`history`、`position`、`all` 依赖成绩，随 P2 加；P1 的 `--with` 只有 `related`。
+    - 设计 3.2 说 `chart` 默认带成绩和简洁版吃分表。P1 没有成绩，吃分表要 P2-7 到 P2-9 把计算搬进 core 之后才有，所以 P1 的 `chart` 只有基本信息、谱师、物量和统计，`score` 和 `b50` 恒为 `null`；P2-18 起带成绩，P2-22 起带吃分表。

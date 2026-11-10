@@ -23,7 +23,7 @@ SaltNet is a three-package pnpm workspace:
   contents:
     - `mai/`: rank, combo and sync enums.
     - `music/`: types, SaltMeta conversion and fetching, cached-data restoration, `MusicSort` order,
-      and the precomputed simplified/traditional, pinyin and romaji search index. `music/duplicates.ts` folds the banquet songs that upstream lists twice into one entry (only the CLI asks for it; the web app keeps both) and `music/fetch.ts` offers the SaltMeta download and the conversion separately as well as together.
+      and the precomputed simplified/traditional, pinyin and romaji search index (`music/search.ts`; `createMusicSearchVariants` also reports which of the three a normalized text was reached by, and `createMusicSearchIndex` is built from it). `music/duplicates.ts` folds the banquet songs that upstream lists twice into one entry (only the CLI asks for it; the web app keeps both) and `music/fetch.ts` offers the SaltMeta download and the conversion separately as well as together.
     - `config.ts` and `http.ts`: `CoreConfig` and the injectable `FetchLike`.
     - `chart/`: difficulty, chart identity, recent-change ordering.
     - `course/`: dan-course definitions and ordered chart matching.

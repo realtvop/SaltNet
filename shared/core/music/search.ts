@@ -19,37 +19,59 @@ export function normalizeMusicSearchText(text: string): string {
         .replace(/[\s\p{P}\p{S}]+/gu, "");
 }
 
-function addTextVariants(index: Set<string>, text: string): void {
-    if (!text) return;
+/** How a normalized search text was reached from the original text. */
+export type MusicSearchVariantKind = "text" | "pinyin" | "romaji";
+
+export interface MusicSearchVariant {
+    /**
+     * `text` is the text itself or its simplified-Chinese form, `pinyin` its full pinyin or the
+     * pinyin initials, `romaji` its romaji or the romaji with the long vowels shortened. A text
+     * that more than one route leads to (the romaji of a Latin title is the title) keeps the
+     * kind of the first route.
+     */
+    kind: MusicSearchVariantKind;
+    /** The normalized text a query is matched against. */
+    text: string;
+}
+
+/**
+ * Every normalized text `text` can be found by, with the way it was reached, in the order
+ * `createMusicSearchIndex` lists them and without repeats.
+ */
+export function createMusicSearchVariants(text: string): MusicSearchVariant[] {
+    if (!text) return [];
+
+    const found = new Map<string, MusicSearchVariantKind>();
+    const add = (kind: MusicSearchVariantKind, value: string) => {
+        if (value && !found.has(value)) found.set(value, kind);
+    };
 
     const variants = new Set([text, toSimplified(text)]);
     for (const variant of variants) {
-        const normalized = normalizeMusicSearchText(variant);
-        if (normalized) index.add(normalized);
+        add("text", normalizeMusicSearchText(variant));
 
         if (containsHan.test(variant)) {
-            const fullPinyin = pinyin(variant, { toneType: "none" });
-            const pinyinInitials = pinyin(variant, { pattern: "first", toneType: "none" });
-            const normalizedPinyin = normalizeMusicSearchText(fullPinyin);
-            const normalizedInitials = normalizeMusicSearchText(pinyinInitials);
-            if (normalizedPinyin) index.add(normalizedPinyin);
-            if (normalizedInitials) index.add(normalizedInitials);
+            add("pinyin", normalizeMusicSearchText(pinyin(variant, { toneType: "none" })));
+            add(
+                "pinyin",
+                normalizeMusicSearchText(pinyin(variant, { pattern: "first", toneType: "none" }))
+            );
         }
 
         const romaji = normalizeMusicSearchText(toRomaji(variant));
-        if (romaji) {
-            index.add(romaji);
-            // Accept Hepburn macrons and common long-vowel spellings, e.g. "tokyo" for "toukyou".
-            const shortenedLongVowels = romaji.replace(/ou/gu, "o").replace(/([aeiou])\1/gu, "$1");
-            if (shortenedLongVowels !== romaji) index.add(shortenedLongVowels);
-        }
+        add("romaji", romaji);
+        // Accept Hepburn macrons and common long-vowel spellings, e.g. "tokyo" for "toukyou".
+        add("romaji", romaji.replace(/ou/gu, "o").replace(/([aeiou])\1/gu, "$1"));
     }
+
+    return [...found].map(([normalized, kind]) => ({ kind, text: normalized }));
 }
 
 export function createMusicSearchIndex(texts: readonly (string | undefined)[]): string[] {
     const index = new Set<string>();
     for (const text of texts) {
-        if (text) addTextVariants(index, text);
+        if (!text) continue;
+        for (const variant of createMusicSearchVariants(text)) index.add(variant.text);
     }
     return [...index];
 }
