@@ -15,6 +15,7 @@ yarn.lock
 .yarn
 src/assets/plates.json
 shared/core/collection/additionalCollections.json
+shared/core/fixtures/*.json
 
 .pnpm-store
 eslint-suppressions.json

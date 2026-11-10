@@ -99,6 +99,7 @@ export default antfu(
             "eslint-suppressions.json",
             // 脚本生成的紧凑数据，格式不由 ESLint 管
             "shared/core/collection/additionalCollections.json",
+            "shared/core/fixtures/*.json",
         ],
     },
     {

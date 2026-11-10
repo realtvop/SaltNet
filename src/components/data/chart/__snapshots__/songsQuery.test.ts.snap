@@ -1,0 +1,1354 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`default order > moves played charts to the front, best achievement first 1`] = `
+"  24203 14603 1702 900 23603 56403 56402 28302 11301 54001 1018501 55201
+  1172601 1202501 18800 11002210 11019910 1004403 1172603 1202503 1172602 5801 35900 55200
+  1003000 13104 19102 1003003 802 22802 18501 22800 22502 22500 69503 803
+  25603 1025602 22801 1025601 7002 7001 11300 1024203 1055203 1018502 1022501 1019100
+  4400 18500 35903 7701 54003 28303 3002 901 19101 11022710 11020610 3001
+  1024201 56401 7000 1024200 54000 1007003 25602 1018800 1172600 5802 1018802 65001
+  4401 1014601 11502 24200 14604 1024202 1003001 43100 1025600 1007002 1019102 18502
+  18801 23600 11001810 11085110 11099810 12151310 7004 5804 11504 25604 1704 13103
+  43103 7003 5803 3003 903 22803 7703 11503 11303 65003 22503 38303
+  18803 1018803 19103 1019103 4403 1025603 18503 1018503 1014603 55203 1703 1022503
+  69502 13102 43102 902 24202 23602 7702 11302 65002 54002 35902 38302
+  18802 4402 1004402 14602 1014602 55202 1055202 1003002 1022502 1202502 69501 13101
+  43101 1007001 801 24201 23601 11501 22501 35901 38301 1018801 28301 1019101
+  1004401 25601 14601 1055201 1701 69500 13100 1007000 5800 3000 800 56400
+  7700 11500 65000 38300 28300 19100 1004400 25600 1018500 14600 1014600 1055200
+  1700 1022500 1202500"
+`;
+
+exports[`default order > orders charts the way the game lists them 1`] = `
+"  11022710 11001810 11002210 11019910 11020610 11085110 11099810 12151310 13104 7004 5804 11504
+  25604 14604 1704 69503 13103 43103 7003 1007003 5803 3003 803 903
+  24203 1024203 23603 56403 22803 7703 11503 11303 65003 22503 54003 35903
+  38303 18803 1018803 28303 19103 1019103 4403 1004403 25603 1025603 18503 1018503
+  14603 1014603 55203 1055203 1703 1003003 1022503 1172603 1202503 69502 13102 43102
+  7002 1007002 5802 3002 802 902 24202 1024202 23602 56402 22802 7702
+  11502 11302 65002 22502 54002 35902 38302 18802 1018802 28302 19102 1019102
+  4402 1004402 25602 1025602 18502 1018502 14602 1014602 55202 1055202 1702 1003002
+  1022502 1172602 1202502 69501 13101 43101 7001 1007001 5801 3001 801 901
+  24201 1024201 23601 56401 22801 7701 11501 11301 65001 22501 54001 35901
+  38301 18801 1018801 28301 19101 1019101 4401 1004401 25601 1025601 18501 1018501
+  14601 1014601 55201 1055201 1701 1003001 1022501 1172601 1202501 69500 13100 43100
+  7000 1007000 5800 3000 800 900 24200 1024200 23600 56400 22800 7700
+  11500 11300 65000 22500 54000 35900 38300 18800 1018800 28300 19100 1019100
+  4400 1004400 25600 1025600 18500 1018500 14600 1014600 55200 1055200 1700 1003000
+  1022500 1172600 1202500"
+`;
+
+exports[`fixed data > is shaped as the snapshots expect 1`] = `
+{
+  "byGrade": {
+    "0": 42,
+    "1": 42,
+    "10": 8,
+    "2": 42,
+    "3": 42,
+    "4": 7,
+  },
+  "changed": 64,
+  "charts": 183,
+  "played": 83,
+  "versions": 19,
+  "withRecord": 89,
+  "withoutAchievement": 3,
+}
+`;
+
+exports[`in-game difficulty tabs > all tab ignores the group setting 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "", group rank, version group none
+shown 42 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  24203[42/42/42] 14603[41/41/41] 23603[40/40/40] 56403[39/39/39] 1004403[38/38/38] 1172603[37/37/37] 1202503[36/36/36] 1003003[35/35/35]
+  69503[34/34/34] 803[33/33/33] 25603[32/32/32] 1024203[31/31/31] 1055203[30/30/30] 35903[29/29/29] 54003[28/28/28] 28303[27/27/27]
+  1007003[26/26/26] 13103[25/25/25] 43103[24/24/24] 7003[23/23/23] 5803[22/22/22] 3003[21/21/21] 903[20/20/20] 22803[19/19/19]
+  7703[18/18/18] 11503[17/17/17] 11303[16/16/16] 65003[15/15/15] 22503[14/14/14] 38303[13/13/13] 18803[12/12/12] 1018803[11/11/11]
+  19103[10/10/10] 1019103[9/9/9] 4403[8/8/8] 1025603[7/7/7] 18503[6/6/6] 1018503[5/5/5] 1014603[4/4/4] 55203[3/3/3]
+  1703[2/2/2] 1022503[1/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > all tab shows the selected grade: basic 1`] = `
+"难度 / ALL: filter 0, plate sort condition, search "", group none, version group none
+shown 42 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  900[42/42/42] 18800[41/41/41] 35900[40/40/40] 55200[39/39/39] 1003000[38/38/38] 22800[37/37/37] 22500[36/36/36] 11300[35/35/35]
+  1019100[34/34/34] 4400[33/33/33] 18500[32/32/32] 7000[31/31/31] 1024200[30/30/30] 54000[29/29/29] 1018800[28/28/28] 1172600[27/27/27]
+  24200[26/26/26] 43100[25/25/25] 1025600[24/24/24] 23600[23/23/23] 69500[22/22/22] 13100[21/21/21] 1007000[20/20/20] 5800[19/19/19]
+  3000[18/18/18] 800[17/17/17] 56400[16/16/16] 7700[15/15/15] 11500[14/14/14] 65000[13/13/13] 38300[12/12/12] 28300[11/11/11]
+  19100[10/10/10] 1004400[9/9/9] 25600[8/8/8] 1018500[7/7/7] 14600[6/6/6] 1014600[5/5/5] 1055200[4/4/4] 1700[3/3/3]
+  1022500[2/2/2] 1202500[1/1/1]
+first rows:
+  900 Color My World 4 101 sssp fc - 178 10 42 1700000000000
+  18800 天ノ弱 4 100.5 sssp app sync 777 142 44 1690000000000
+  35900 YU-MU 4 100 sss - - 1290 159 20 1700000000000
+groups: none
+overall: {"sss":3,"sssp":2,"fc":10,"ap":5,"fsdx":8}"
+`;
+
+exports[`in-game difficulty tabs > all tab shows the selected grade: master 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "", group none, version group none
+shown 42 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  24203[42/42/42] 14603[41/41/41] 23603[40/40/40] 56403[39/39/39] 1004403[38/38/38] 1172603[37/37/37] 1202503[36/36/36] 1003003[35/35/35]
+  69503[34/34/34] 803[33/33/33] 25603[32/32/32] 1024203[31/31/31] 1055203[30/30/30] 35903[29/29/29] 54003[28/28/28] 28303[27/27/27]
+  1007003[26/26/26] 13103[25/25/25] 43103[24/24/24] 7003[23/23/23] 5803[22/22/22] 3003[21/21/21] 903[20/20/20] 22803[19/19/19]
+  7703[18/18/18] 11503[17/17/17] 11303[16/16/16] 65003[15/15/15] 22503[14/14/14] 38303[13/13/13] 18803[12/12/12] 1018803[11/11/11]
+  19103[10/10/10] 1019103[9/9/9] 4403[8/8/8] 1025603[7/7/7] 18503[6/6/6] 1018503[5/5/5] 1014603[4/4/4] 55203[3/3/3]
+  1703[2/2/2] 1022503[1/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: {"sss":3,"sssp":4,"fc":13,"ap":5,"fsdx":7}"
+`;
+
+exports[`in-game difficulty tabs > all tab shows the selected grade: re:master 1`] = `
+"难度 / ALL: filter 4, plate sort condition, search "", group none, version group none
+shown 7 of 7
+totals all=7 difficult=7 queried=7
+placement:
+  13104[7/7/7] 14604[6/6/6] 7004[5/5/5] 5804[4/4/4] 11504[3/3/3] 25604[2/2/2] 1704[1/1/1]
+first rows:
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+  14604 39 13 12.5 d - sync 622 81 47 1700000000000
+  7004 ジングルベル 14 - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":0,"fc":0,"ap":0,"fsdx":0}"
+`;
+
+exports[`in-game difficulty tabs > all tab shows the selected grade: utage 1`] = `
+"难度 / ALL: filter 10, plate sort condition, search "", group none, version group none
+shown 8 of 8
+totals all=8 difficult=8 queried=8
+placement:
+  11002210[8/8/8] 11019910[7/7/7] 11022710[6/6/6] 11020610[5/5/5] 11001810[4/4/4] 11085110[3/3/3] 11099810[2/2/2] 12151310[1/1/1]
+first rows:
+  11002210 [蔵]In Chaos 14+? 100 sss - sync 521 293 58 1700000000000
+  11019910 [蛸]チルノのパーフェクトさんすう教室 12+? 100 sss ap fsdp 859 62 12 0
+  11022710 [は]Garakuta Doll Play 14? 90 aa app fsdp 474 114 22 1690000000000
+groups: none
+overall: {"sss":2,"sssp":0,"fc":2,"ap":2,"fsdx":2}"
+`;
+
+exports[`in-game difficulty tabs > level tab grouped by combo 1`] = `
+"难度 / 12+: filter 3, plate sort condition, search "", group combo, version group none
+shown 15 of 15
+totals all=42,7 difficult=15 queried=15
+placement:
+  56403[39/15/15] 1004403[38/14/14] 19102[38/13/13] 25604[2/12/12] 1704[1/11/11] 3003[21/10/10] 22803[19/9/9] 7703[18/8/8]
+  65003[15/7/7] 1018803[11/6/6] 1019103[9/5/5] 18503[6/4/4] 1018503[5/3/3] 1014603[4/2/2] 13102[21/1/1]
+first rows:
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+  19102 脳漿炸裂ガール 12+ 99.9876 ssp fc fsp 1095 82 53 0
+groups: 3
+  "All Perfect" x1: sss 1, sss+ 0, fc 1, ap 1, fsdx 0
+    1004403
+  "Full Combo" x2: sss 0, sss+ 1, fc 2, ap 0, fsdx 0
+    56403 19102
+  "无" x12: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    25604 1704 3003 22803 7703 65003 1018803 1019103 18503 1018503 1014603 13102
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab grouped by constant 1`] = `
+"难度 / 12+: filter 3, plate sort condition, search "", group constant, version group none
+shown 15 of 15
+totals all=42,7 difficult=15 queried=15
+placement:
+  56403[39/15/15] 1004403[38/14/14] 19102[38/13/13] 25604[2/12/12] 1704[1/11/11] 3003[21/10/10] 22803[19/9/9] 7703[18/8/8]
+  65003[15/7/7] 1018803[11/6/6] 1019103[9/5/5] 18503[6/4/4] 1018503[5/3/3] 1014603[4/2/2] 13102[21/1/1]
+first rows:
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+  19102 脳漿炸裂ガール 12+ 99.9876 ssp fc fsp 1095 82 53 0
+groups: 4
+  "12.9" x3: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    56403 22803 1019103
+  "12.8" x6: sss 1, sss+ 0, fc 1, ap 1, fsdx 0
+    1004403 65003 1018803 18503 1018503 1014603
+  "12.7" x4: sss 0, sss+ 0, fc 1, ap 0, fsdx 0
+    19102 25604 1704 7703
+  "12.6" x2: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    3003 13102
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab grouped by rank 1`] = `
+"难度 / 12+: filter 3, plate sort condition, search "", group rank, version group none
+shown 15 of 15
+totals all=42,7 difficult=15 queried=15
+placement:
+  56403[39/15/15] 1004403[38/14/14] 19102[38/13/13] 25604[2/12/12] 1704[1/11/11] 3003[21/10/10] 22803[19/9/9] 7703[18/8/8]
+  65003[15/7/7] 1018803[11/6/6] 1019103[9/5/5] 18503[6/4/4] 1018503[5/3/3] 1014603[4/2/2] 13102[21/1/1]
+first rows:
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+  19102 脳漿炸裂ガール 12+ 99.9876 ssp fc fsp 1095 82 53 0
+groups: 4
+  "SSS+" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    56403
+  "SSS" x1: sss 1, sss+ 0, fc 1, ap 1, fsdx 0
+    1004403
+  "SS+" x1: sss 0, sss+ 0, fc 1, ap 0, fsdx 0
+    19102
+  "未游玩" x12: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    25604 1704 3003 22803 7703 65003 1018803 1019103 18503 1018503 1014603 13102
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab grouped by sync 1`] = `
+"难度 / 12+: filter 3, plate sort condition, search "", group sync, version group none
+shown 15 of 15
+totals all=42,7 difficult=15 queried=15
+placement:
+  56403[39/15/15] 1004403[38/14/14] 19102[38/13/13] 25604[2/12/12] 1704[1/11/11] 3003[21/10/10] 22803[19/9/9] 7703[18/8/8]
+  65003[15/7/7] 1018803[11/6/6] 1019103[9/5/5] 18503[6/4/4] 1018503[5/3/3] 1014603[4/2/2] 13102[21/1/1]
+first rows:
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+  19102 脳漿炸裂ガール 12+ 99.9876 ssp fc fsp 1095 82 53 0
+groups: 3
+  "Full Sync+" x2: sss 1, sss+ 0, fc 2, ap 1, fsdx 0
+    1004403 19102
+  "Full Sync" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    56403
+  "无" x12: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    25604 1704 3003 22803 7703 65003 1018803 1019103 18503 1018503 1014603 13102
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab grouped by version 1`] = `
+"难度 / 13: filter 3, plate sort condition, search "", group version, version group none
+shown 17 of 17
+totals all=42,7 difficult=17 queried=17
+placement:
+  14603[41/17/17] 23603[40/16/16] 13104[7/15/15] 69503[34/14/14] 1024203[31/13/13] 1055203[30/12/12] 35903[29/11/11] 14604[6/10/10]
+  5804[4/9/9] 5803[22/8/8] 11303[16/7/7] 22503[14/6/6] 18803[12/5/5] 55203[3/4/4] 1022503[1/3/3] 43102[20/2/2]
+  11302[15/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+groups: 11
+  "舞萌DX 2022" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 1
+    1055203
+  "舞萌DX 2024" x1: sss 0, sss+ 0, fc 1, ap 1, fsdx 0
+    1024203
+  "舞萌DX 2025" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    1022503
+  "maimai MiLK" x1: sss 0, sss+ 0, fc 1, ap 0, fsdx 0
+    69503
+  "maimai PiNK PLUS" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    43102
+  "maimai PiNK" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    35903
+  "maimai MURASAKi" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    55203
+  "maimai MURASAKi PLUS" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    23603
+  "maimai GreeN PLUS" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    22503
+  "maimai GreeN" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    18803
+  "maimai PLUS" x7: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    14603 13104 14604 5804 5803 11303 11302
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab without charts 1`] = `
+"难度 / 99: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`in-game difficulty tabs > level tab: 13 1`] = `
+"难度 / 13: filter 3, plate sort condition, search "", group none, version group none
+shown 17 of 17
+totals all=42,7 difficult=17 queried=17
+placement:
+  14603[41/17/17] 23603[40/16/16] 13104[7/15/15] 69503[34/14/14] 1024203[31/13/13] 1055203[30/12/12] 35903[29/11/11] 14604[6/10/10]
+  5804[4/9/9] 5803[22/8/8] 11303[16/7/7] 22503[14/6/6] 18803[12/5/5] 55203[3/4/4] 1022503[1/3/3] 43102[20/2/2]
+  11302[15/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+groups: none
+overall: {"sss":0,"sssp":2,"fc":4,"ap":1,"fsdx":1}"
+`;
+
+exports[`in-game difficulty tabs > level tab: 13+ 1`] = `
+"难度 / 13+: filter 3, plate sort condition, search "", group none, version group none
+shown 5 of 5
+totals all=42,7 difficult=5 queried=5
+placement:
+  1172603[37/5/5] 1003003[35/4/4] 28303[27/3/3] 11504[3/2/2] 11503[17/1/1]
+first rows:
+  1172603 Trust 13+ 100 sss - sync 1282 87 46 0
+  1003003 ネコ日和。 13+ 99.5 ssp app - 1817 163 75 1700000000000
+  28303 ネトゲ廃人シュプレヒコール 13+ - - - - 0 0 - -
+groups: none
+overall: {"sss":1,"sssp":0,"fc":1,"ap":1,"fsdx":0}"
+`;
+
+exports[`in-game difficulty tabs > recent tab groups by change time 1`] = `
+"难度 / 最近: filter 3, plate sort condition, search "", group none, version group none
+shown 50 of 50
+totals all=42,8 difficult=50 queried=50
+placement:
+  24203[42/50/50] 28302[40/49/49] 56402[41/48/48] 1202501[37/47/47] 18501[35/46/46] 22502[35/45/45] 69503[34/44/44] 1018502[32/43/43]
+  1024200[30/42/42] 1172600[27/41/41] 5802[29/40/40] 23603[40/39/39] 56403[39/38/38] 1003000[38/37/37] 1025601[33/36/36] 803[33/35/35]
+  22801[34/34/34] 7002[33/33/33] 1024203[31/32/32] 7701[30/31/31] 3002[31/30/30] 11020610[5/29/29] 43100[25/28/28] 23600[23/27/27]
+  1702[42/26/26] 900[42/25/25] 1172601[38/24/24] 55201[39/23/23] 1018501[40/22/22] 11002210[8/21/21] 55200[39/20/20] 35900[40/19/19]
+  5801[36/18/18] 1202503[36/17/17] 22802[36/16/16] 1003003[35/15/15] 802[37/14/14] 7001[32/13/13] 901[29/12/12] 19101[28/11/11]
+  1024201[26/10/10] 56401[25/9/9] 7000[31/8/8] 54000[29/7/7] 1007003[26/6/6] 65001[24/5/5] 1014601[22/4/4] 24200[26/3/3]
+  1024202[26/2/2] 1025600[24/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  28302 ネトゲ廃人シュプレヒコール 10+ 100.5 sssp ap fsp 487 249 69 1700172800000
+  56402 ENJOY POLIS 10+ 100.5 sssp - - 1823 233 17 1700172800000
+groups: 3
+  changed at 1700172800000 x11: sss 0, sss+ 4, fc 7, ap 4, fsdx 5
+    24203 28302 56402 1202501 18501 22502 69503 1018502 1024200 1172600 5802
+  changed at 1700086400000 x13: sss 1, sss+ 2, fc 10, ap 5, fsdx 4
+    23603 56403 1003000 1025601 803 22801 7002 1024203 7701 3002 11020610 43100
+    23600
+  changed at 1700000000000 x26: sss 5, sss+ 5, fc 16, ap 8, fsdx 11
+    1702 900 1172601 55201 1018501 11002210 55200 35900 5801 1202503 22802 1003003
+    802 7001 901 19101 1024201 56401 7000 54000 1007003 65001 1014601 24200
+    1024202 1025600
+overall: {"sss":6,"sssp":11,"fc":33,"ap":17,"fsdx":20}"
+`;
+
+exports[`in-game difficulty tabs > recent tab ignores the group setting 1`] = `
+"难度 / 最近: filter 3, plate sort condition, search "", group rank, version group none
+shown 50 of 50
+totals all=42,8 difficult=50 queried=50
+placement:
+  24203[42/50/50] 28302[40/49/49] 56402[41/48/48] 1202501[37/47/47] 18501[35/46/46] 22502[35/45/45] 69503[34/44/44] 1018502[32/43/43]
+  1024200[30/42/42] 1172600[27/41/41] 5802[29/40/40] 23603[40/39/39] 56403[39/38/38] 1003000[38/37/37] 1025601[33/36/36] 803[33/35/35]
+  22801[34/34/34] 7002[33/33/33] 1024203[31/32/32] 7701[30/31/31] 3002[31/30/30] 11020610[5/29/29] 43100[25/28/28] 23600[23/27/27]
+  1702[42/26/26] 900[42/25/25] 1172601[38/24/24] 55201[39/23/23] 1018501[40/22/22] 11002210[8/21/21] 55200[39/20/20] 35900[40/19/19]
+  5801[36/18/18] 1202503[36/17/17] 22802[36/16/16] 1003003[35/15/15] 802[37/14/14] 7001[32/13/13] 901[29/12/12] 19101[28/11/11]
+  1024201[26/10/10] 56401[25/9/9] 7000[31/8/8] 54000[29/7/7] 1007003[26/6/6] 65001[24/5/5] 1014601[22/4/4] 24200[26/3/3]
+  1024202[26/2/2] 1025600[24/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  28302 ネトゲ廃人シュプレヒコール 10+ 100.5 sssp ap fsp 487 249 69 1700172800000
+  56402 ENJOY POLIS 10+ 100.5 sssp - - 1823 233 17 1700172800000
+groups: 3
+  changed at 1700172800000 x11: sss 0, sss+ 4, fc 7, ap 4, fsdx 5
+    24203 28302 56402 1202501 18501 22502 69503 1018502 1024200 1172600 5802
+  changed at 1700086400000 x13: sss 1, sss+ 2, fc 10, ap 5, fsdx 4
+    23603 56403 1003000 1025601 803 22801 7002 1024203 7701 3002 11020610 43100
+    23600
+  changed at 1700000000000 x26: sss 5, sss+ 5, fc 16, ap 8, fsdx 11
+    1702 900 1172601 55201 1018501 11002210 55200 35900 5801 1202503 22802 1003003
+    802 7001 901 19101 1024201 56401 7000 54000 1007003 65001 1014601 24200
+    1024202 1025600
+overall: none"
+`;
+
+exports[`other categories > banquet: a level 1`] = `
+"宴会场 / 14+?: filter 3, plate sort condition, search "", group none, version group none
+shown 2 of 2
+totals all=8 difficult=2 queried=2
+placement:
+  11002210[8/2/2] 11099810[2/1/1]
+first rows:
+  11002210 [蔵]In Chaos 14+? 100 sss - sync 521 293 58 1700000000000
+  11099810 Oshama Scramble! (Cranky Remix) 14+? - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`other categories > banquet: all tab 1`] = `
+"宴会场 / ALL: filter 3, plate sort condition, search "", group none, version group none
+shown 8 of 8
+totals all=8 difficult=8 queried=8
+placement:
+  11002210[8/8/8] 11019910[7/7/7] 11022710[6/6/6] 11020610[5/5/5] 11001810[4/4/4] 11085110[3/3/3] 11099810[2/2/2] 12151310[1/1/1]
+first rows:
+  11002210 [蔵]In Chaos 14+? 100 sss - sync 521 293 58 1700000000000
+  11019910 [蛸]チルノのパーフェクトさんすう教室 12+? 100 sss ap fsdp 859 62 12 0
+  11022710 [は]Garakuta Doll Play 14? 90 aa app fsdp 474 114 22 1690000000000
+groups: none
+overall: none"
+`;
+
+exports[`other categories > banquet: ignores grouping 1`] = `
+"宴会场 / ALL: filter 3, plate sort condition, search "", group rank, version group rank
+shown 8 of 8
+totals all=8 difficult=8 queried=8
+placement:
+  11002210[8/8/8] 11019910[7/7/7] 11022710[6/6/6] 11020610[5/5/5] 11001810[4/4/4] 11085110[3/3/3] 11099810[2/2/2] 12151310[1/1/1]
+first rows:
+  11002210 [蔵]In Chaos 14+? 100 sss - sync 521 293 58 1700000000000
+  11019910 [蛸]チルノのパーフェクトさんすう教室 12+? 100 sss ap fsdp 859 62 12 0
+  11022710 [は]Garakuta Doll Play 14? 90 aa app fsdp 474 114 22 1690000000000
+groups: none
+overall: none"
+`;
+
+exports[`other categories > course: charts in play order 1`] = `
+"段位 / 课程A: filter 3, plate sort condition, search "", group none, version group none
+shown 4 of 4
+totals all=42 difficult=4 queried=4
+placement:
+  803[33/4/4] 11501[12/3/3] 23603[40/2/2] 69501[19/1/1]
+first rows:
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  11501 DADDY MULK -Groove remix- 7 - - - - 0 0 - -
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`other categories > course: skips tracks without a chart 1`] = `
+"段位 / 课程B: filter 3, plate sort condition, search "", group none, version group none
+shown 2 of 2
+totals all=42 difficult=2 queried=2
+placement:
+  1701[1/2/2] 18802[10/1/1]
+first rows:
+  1701 Future 7+ - - - - 0 0 - -
+  18802 天ノ弱 11 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`other categories > course: unknown course 1`] = `
+"段位 / missing-course: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > course: with a search 1`] = `
+"段位 / 课程A: filter 3, plate sort condition, search "true", group none, version group none
+shown 1 of 4
+totals all=42 difficult=4 queried=4
+placement:
+  803[33/4/4]
+first rows:
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`other categories > course: without tracks 1`] = `
+"段位 / 课程空: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > favorites: a list 1`] = `
+"收藏夹 / fav-a: filter 3, plate sort condition, search "", group none, version group none
+shown 18 of 18
+totals all=42 difficult=18 queried=18
+placement:
+  14603[41/18/18] 23603[40/17/17] 803[33/16/16] 13103[25/15/15] 7003[23/14/14] 5803[22/13/13] 3003[21/12/12] 903[20/11/11]
+  22803[19/10/10] 7703[18/9/9] 11503[17/8/8] 11303[16/7/7] 22503[14/6/6] 18803[12/5/5] 19103[10/4/4] 4403[8/3/3]
+  18503[6/2/2] 1703[2/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`other categories > favorites: another grade 1`] = `
+"收藏夹 / fav-a: filter 4, plate sort condition, search "", group none, version group none
+shown 6 of 6
+totals all=7 difficult=6 queried=6
+placement:
+  13104[7/6/6] 14604[6/5/5] 7004[5/4/4] 5804[4/3/3] 11504[3/2/2] 1704[1/1/1]
+first rows:
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+  14604 39 13 12.5 d - sync 622 81 47 1700000000000
+  7004 ジングルベル 14 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`other categories > favorites: empty list 1`] = `
+"收藏夹 / fav-empty: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > favorites: grouped by level 1`] = `
+"收藏夹 / fav-a: filter 3, plate sort condition, search "", group none, version group level
+shown 18 of 18
+totals all=42 difficult=18 queried=18
+placement:
+  14603[41/18/18] 23603[40/17/17] 803[33/16/16] 13103[25/15/15] 7003[23/14/14] 5803[22/13/13] 3003[21/12/12] 903[20/11/11]
+  22803[19/10/10] 7703[18/9/9] 11503[17/8/8] 11303[16/7/7] 22503[14/6/6] 18803[12/5/5] 19103[10/4/4] 4403[8/3/3]
+  18503[6/2/2] 1703[2/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+groups: 6
+  "14" x2: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    7003 19103
+  "13+" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    11503
+  "13" x6: sss 0, sss+ 2, fc 2, ap 0, fsdx 0
+    14603 23603 5803 11303 22503 18803
+  "12+" x4: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    3003 22803 7703 18503
+  "12" x4: sss 0, sss+ 0, fc 1, ap 0, fsdx 1
+    803 13103 903 4403
+  "10+" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    1703
+overall: none"
+`;
+
+exports[`other categories > favorites: grouped by rank with a search 1`] = `
+"收藏夹 / fav-a: filter 3, plate sort condition, search "fc", group none, version group rank
+shown 3 of 18
+totals all=42 difficult=18 queried=18
+placement:
+  14603[41/18/18] 23603[40/17/17] 803[33/16/16]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+groups: 2
+  "SSS+" x2: sss 0, sss+ 2, fc 2, ap 0, fsdx 0
+    14603 23603
+  "S+" x1: sss 0, sss+ 0, fc 1, ap 0, fsdx 1
+    803
+overall: none"
+`;
+
+exports[`other categories > favorites: repeated and unknown songs 1`] = `
+"收藏夹 / fav-b: filter 3, plate sort condition, search "", group none, version group none
+shown 1 of 1
+totals all=42 difficult=1 queried=1
+placement:
+  903[20/1/1]
+first rows:
+  903 Color My World 12 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`other categories > favorites: unknown list 1`] = `
+"收藏夹 / fav-missing: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > kaleidxscope has no chart list 1`] = `
+"万花筒 / 1: filter 3, plate sort condition, search "a", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > unknown category 1`] = `
+"unknown / whatever: filter 3, plate sort condition, search "a", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > version: grouped by combo 1`] = `
+"版本 / maimai PLUS: filter 3, plate sort condition, search "", group none, version group combo
+shown 4 of 4
+totals all=42 difficult=4 queried=4
+placement:
+  14603[41/4/4] 13103[25/3/3] 5803[22/2/2] 11303[16/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  13103 Link 12 - - - - 0 0 - -
+  5803 Endless World 13 - - - - 0 0 - -
+groups: 2
+  "Full Combo" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    14603
+  "无" x3: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    13103 5803 11303
+overall: none"
+`;
+
+exports[`other categories > version: grouped by difficulty 1`] = `
+"版本 / maimai: filter 4, plate sort condition, search "", group none, version group difficulty
+shown 2 of 2
+totals all=7 difficult=2 queried=2
+placement:
+  7004[5/2/2] 1704[1/1/1]
+first rows:
+  7004 ジングルベル 14 - - - - 0 0 - -
+  1704 Future 12+ - - - - 0 0 - -
+groups: 1
+  "Re:MASTER" x2: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    7004 1704
+overall: none"
+`;
+
+exports[`other categories > version: grouped by level 1`] = `
+"版本 / maimai: filter 3, plate sort condition, search "", group none, version group level
+shown 7 of 7
+totals all=42 difficult=7 queried=7
+placement:
+  803[33/7/7] 7003[23/6/6] 3003[21/5/5] 903[20/4/4] 7703[18/3/3] 4403[8/2/2] 1703[2/1/1]
+first rows:
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  7003 ジングルベル 14 - - - - 0 0 - -
+  3003 ネコ日和。 12+ - - - - 0 0 - -
+groups: 4
+  "14" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    7003
+  "12+" x2: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    3003 7703
+  "12" x3: sss 0, sss+ 0, fc 1, ap 0, fsdx 1
+    803 903 4403
+  "10+" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    1703
+overall: none"
+`;
+
+exports[`other categories > version: grouped by rank 1`] = `
+"版本 / maimai PLUS: filter 3, plate sort condition, search "", group none, version group rank
+shown 4 of 4
+totals all=42 difficult=4 queried=4
+placement:
+  14603[41/4/4] 13103[25/3/3] 5803[22/2/2] 11303[16/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  13103 Link 12 - - - - 0 0 - -
+  5803 Endless World 13 - - - - 0 0 - -
+groups: 2
+  "SSS+" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    14603
+  "未游玩" x3: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    13103 5803 11303
+overall: none"
+`;
+
+exports[`other categories > version: grouped by sync 1`] = `
+"版本 / 舞萌DX 2025: filter 3, plate sort condition, search "", group none, version group sync
+shown 3 of 3
+totals all=42 difficult=3 queried=3
+placement:
+  1004403[38/3/3] 1172603[37/2/2] 1022503[1/1/1]
+first rows:
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+  1172603 Trust 13+ 100 sss - sync 1282 87 46 0
+  1022503 sweet little sister 13 - - - - 0 0 - -
+groups: 3
+  "Full Sync+" x1: sss 1, sss+ 0, fc 1, ap 1, fsdx 0
+    1004403
+  "Sync" x1: sss 1, sss+ 0, fc 0, ap 0, fsdx 0
+    1172603
+  "无" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    1022503
+overall: none"
+`;
+
+exports[`other categories > version: plain 1`] = `
+"版本 / maimai: filter 3, plate sort condition, search "", group none, version group none
+shown 7 of 7
+totals all=42 difficult=7 queried=7
+placement:
+  803[33/7/7] 7003[23/6/6] 3003[21/5/5] 903[20/4/4] 7703[18/3/3] 4403[8/2/2] 1703[2/1/1]
+first rows:
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  7003 ジングルベル 14 - - - - 0 0 - -
+  3003 ネコ日和。 12+ - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`other categories > version: unknown version 1`] = `
+"版本 / not a version: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`other categories > version: utage grade 1`] = `
+"版本 / 舞萌DX 2024: filter 10, plate sort condition, search "", group none, version group level
+shown 7 of 7
+totals all=8 difficult=7 queried=7
+placement:
+  11002210[8/7/7] 11019910[7/6/6] 11022710[6/5/5] 11020610[5/4/4] 11001810[4/3/3] 11099810[2/2/2] 12151310[1/1/1]
+first rows:
+  11002210 [蔵]In Chaos 14+? 100 sss - sync 521 293 58 1700000000000
+  11019910 [蛸]チルノのパーフェクトさんすう教室 12+? 100 sss ap fsdp 859 62 12 0
+  11022710 [は]Garakuta Doll Play 14? 90 aa app fsdp 474 114 22 1690000000000
+groups: 6
+  "14+?" x2: sss 1, sss+ 0, fc 0, ap 0, fsdx 0
+    11002210 11099810
+  "12+?" x1: sss 1, sss+ 0, fc 1, ap 1, fsdx 1
+    11019910
+  "14?" x1: sss 0, sss+ 0, fc 1, ap 1, fsdx 1
+    11022710
+  "13?" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    11020610
+  "12?" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    11001810
+  "11?" x1: sss 0, sss+ 0, fc 0, ap 0, fsdx 0
+    12151310
+overall: none"
+`;
+
+exports[`search > achievement text 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "100", group none, version group none
+shown 9 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  14603[41/41/42] 23603[40/40/41] 56403[39/39/40] 1004403[38/38/39] 1172603[37/37/38] 1202503[36/36/37] 7703[18/18/36] 11303[16/16/35]
+  1703[2/2/34]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+groups: none
+overall: {"sss":3,"sssp":3,"fc":5,"ap":1,"fsdx":1}"
+`;
+
+exports[`search > combo status text 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "fc", group none, version group none
+shown 10 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  24203[42/42/42] 14603[41/41/41] 23603[40/40/40] 56403[39/39/39] 1202503[36/36/38] 69503[34/34/37] 803[33/33/36] 25603[32/32/35]
+  1024203[31/31/34] 54003[28/28/33]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: {"sss":1,"sssp":4,"fc":10,"ap":2,"fsdx":5}"
+`;
+
+exports[`search > kana title through its kanji 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "猫", group none, version group none
+shown 2 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  1003003[35/35/42] 3003[21/21/41]
+first rows:
+  1003003 ネコ日和。 13+ 99.5 ssp app - 1817 163 75 1700000000000
+  3003 ネコ日和。 12+ - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":0,"fc":1,"ap":1,"fsdx":0}"
+`;
+
+exports[`search > music id matches exactly 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "8", group none, version group none
+shown 4 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  69503[34/34/42] 803[33/33/41] 25603[32/32/40] 1007003[26/26/39]
+first rows:
+  69503 TRUST 13 98.2 sp fcp fsp 965 0 38 1700172800000
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  25603 いーあるふぁんくらぶ 12 98.2 sp fcp fsd 1004 78 6 1690000000000
+groups: none
+overall: {"sss":0,"sssp":0,"fc":4,"ap":1,"fsdx":3}"
+`;
+
+exports[`search > no match 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "zzz", group none, version group none
+shown 0 of 42
+groups: none
+overall: none"
+`;
+
+exports[`search > numeric title 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "39", group none, version group none
+shown 2 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  14603[41/41/42] 1014603[4/4/41]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  1014603 39 12+ - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":1,"fc":1,"ap":0,"fsdx":0}"
+`;
+
+exports[`search > romaji of a kana title 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "neko", group none, version group none
+shown 3 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  1003003[35/35/42] 28303[27/27/41] 3003[21/21/40]
+first rows:
+  1003003 ネコ日和。 13+ 99.5 ssp app - 1817 163 75 1700000000000
+  28303 ネトゲ廃人シュプレヒコール 13+ - - - - 0 0 - -
+  3003 ネコ日和。 12+ - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":0,"fc":1,"ap":1,"fsdx":0}"
+`;
+
+exports[`search > search combined with grouping 1`] = `
+"难度 / 12+: filter 3, plate sort condition, search "fc", group rank, version group none
+shown 2 of 15
+totals all=42 difficult=15 queried=15
+placement:
+  56403[39/15/15] 19102[38/13/14]
+first rows:
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  19102 脳漿炸裂ガール 12+ 99.9876 ssp fc fsp 1095 82 53 0
+groups: 2
+  "SSS+" x1: sss 0, sss+ 1, fc 1, ap 0, fsdx 0
+    56403
+  "SS+" x1: sss 0, sss+ 0, fc 1, ap 0, fsdx 0
+    19102
+overall: none"
+`;
+
+exports[`search > search inside a level tab keeps the unsearched total 1`] = `
+"难度 / 13: filter 3, plate sort condition, search "fc", group none, version group none
+shown 4 of 17
+totals all=42 difficult=17 queried=17
+placement:
+  14603[41/17/17] 23603[40/16/16] 69503[34/14/15] 1024203[31/13/14]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+  69503 TRUST 13 98.2 sp fcp fsp 965 0 38 1700172800000
+groups: none
+overall: {"sss":0,"sssp":2,"fc":4,"ap":1,"fsdx":0}"
+`;
+
+exports[`search > search inside the recent tab 1`] = `
+"难度 / 最近: filter 3, plate sort condition, search "ya", group none, version group none
+shown 12 of 50
+totals all=42,8 difficult=50 queried=50
+placement:
+  24203[42/50/50] 69503[34/44/49] 1024200[30/42/48] 803[33/35/47] 22801[34/34/46] 1024203[31/32/45] 11020610[5/29/44] 11002210[8/21/43]
+  22802[36/16/42] 1024201[26/10/41] 24200[26/3/40] 1024202[26/2/39]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  69503 TRUST 13 98.2 sp fcp fsp 965 0 38 1700172800000
+  1024200 ナミダと流星 4 90 aa - fsdp 932 203 5 1700172800000
+groups: 3
+  changed at 1700172800000 x3: sss 0, sss+ 1, fc 2, ap 1, fsdx 2
+    24203 69503 1024200
+  changed at 1700086400000 x4: sss 0, sss+ 0, fc 3, ap 2, fsdx 2
+    803 22801 1024203 11020610
+  changed at 1700000000000 x5: sss 1, sss+ 0, fc 3, ap 2, fsdx 3
+    11002210 22802 1024201 24200 1024202
+overall: {"sss":1,"sssp":1,"fc":8,"ap":5,"fsdx":7}"
+`;
+
+exports[`search > short fragment matches many songs 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "ya", group none, version group none
+shown 13 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  24203[42/42/42] 69503[34/34/41] 803[33/33/40] 25603[32/32/39] 1024203[31/31/38] 54003[28/28/37] 5803[22/22/36] 3003[21/21/35]
+  903[20/20/34] 22803[19/19/33] 11303[16/16/32] 38303[13/13/31] 4403[8/8/30]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  69503 TRUST 13 98.2 sp fcp fsp 965 0 38 1700172800000
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+groups: none
+overall: {"sss":0,"sssp":1,"fc":6,"ap":2,"fsdx":4}"
+`;
+
+exports[`search > simplified chinese finds the japanese form 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "脑浆", group none, version group none
+shown 2 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  19103[10/10/42] 1019103[9/9/41]
+first rows:
+  19103 脳漿炸裂ガール 14 - - - - 0 0 - -
+  1019103 脳漿炸裂ガール 12+ - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":0,"fc":0,"ap":0,"fsdx":0}"
+`;
+
+exports[`search > sync status text 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "fs", group none, version group none
+shown 11 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  24203[42/42/42] 56403[39/39/41] 1004403[38/38/40] 1202503[36/36/39] 69503[34/34/38] 803[33/33/37] 25603[32/32/36] 1024203[31/31/35]
+  1055203[30/30/34] 54003[28/28/33] 1007003[26/26/32]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  56403 ENJOY POLIS 12+ 100.5 sssp fc fs 647 190 84 1700086400000
+  1004403 ハッピーシンセサイザ 12+ 100 sss ap fsp 1416 87 79 0
+groups: none
+overall: {"sss":2,"sssp":2,"fc":10,"ap":4,"fsdx":7}"
+`;
+
+exports[`search > title fragment matches several songs 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "link", group none, version group none
+shown 2 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  13103[25/25/42] 38303[13/13/41]
+first rows:
+  13103 Link 12 - - - - 0 0 - -
+  38303 Link 12 - - - - 0 0 - -
+groups: none
+overall: {"sss":0,"sssp":0,"fc":0,"ap":0,"fsdx":0}"
+`;
+
+exports[`search > title match ignores case 1`] = `
+"难度 / ALL: filter 3, plate sort condition, search "TRUST", group none, version group none
+shown 2 of 42
+totals all=42 difficult=42 queried=42
+placement:
+  1172603[37/37/42] 69503[34/34/41]
+first rows:
+  1172603 Trust 13+ 100 sss - sync 1282 87 46 0
+  69503 TRUST 13 98.2 sp fcp fsp 965 0 38 1700172800000
+groups: none
+overall: {"sss":1,"sssp":0,"fc":1,"ap":0,"fsdx":0}"
+`;
+
+exports[`version plates > a second plate of the same category 1`] = `
+"将 / 将B: filter 3, plate sort constant-asc, search "", group none, version group none
+shown 22 of 22
+totals all=42 difficult=22 queried=22
+placement:
+  25603[32/22/22] 24203[42/21/21] 54003[28/20/20] 13103[25/19/19] 38303[13/18/18] 65003[15/17/17] 18503[6/16/16] 56403[39/15/15]
+  22803[19/14/14] 14603[41/13/13] 69503[34/12/12] 35903[29/11/11] 55203[3/10/10] 23603[40/9/9] 18803[12/8/8] 11303[16/7/7]
+  22503[14/6/6] 1003003[35/5/5] 28303[27/4/4] 11503[17/3/3] 19103[10/2/2] 43103[24/1/1]
+first rows:
+  25603 いーあるふぁんくらぶ 12 98.2 sp fcp fsd 1004 78 6 1690000000000
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  54003 泡沫、哀のまほろば 12 93.25 aa fc fsdp 1482 239 0 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > an unknown sort falls back to the condition order 1`] = `
+"舞舞 / 舞B: filter 3, plate sort something else, search "", group none, version group none
+shown 40 of 40
+totals all=42 difficult=40 queried=40
+placement:
+  24203[42/40/40] 1702[42/39/39] 28302[40/38/38] 19102[38/37/37] 22802[36/36/36] 22502[35/35/35] 25603[32/34/34] 3002[31/33/33]
+  5802[29/32/32] 11502[27/31/31] 14603[41/30/30] 23603[40/29/29] 7002[33/28/28] 35903[29/27/27] 28303[27/26/26] 25602[30/25/25]
+  18502[23/24/24] 13103[25/23/23] 7003[23/22/22] 5803[22/21/21] 3003[21/20/20] 22803[19/19/19] 7703[18/18/18] 11503[17/17/17]
+  11303[16/16/16] 22503[14/15/15] 18803[12/14/14] 19103[10/13/13] 4403[8/12/12] 18503[6/11/11] 1703[2/10/10] 13102[21/9/9]
+  24202[18/8/8] 23602[17/7/7] 7702[16/6/6] 11302[15/5/5] 35902[12/4/4] 18802[10/3/3] 4402[9/2/2] 14602[7/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  1702 Future 9 101 sssp ap fsp 1771 291 59 1700000000000
+  28302 ネトゲ廃人シュプレヒコール 10+ 100.5 sssp ap fsp 487 249 69 1700172800000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate whose requirement names no difficulty 1`] = `
+"将 / 将C: filter 3, plate sort condition, search "", group none, version group none
+shown 54 of 54
+totals all=42,7 difficult=54 queried=54
+placement:
+  14603[41/54/54] 1702[42/53/53] 900[42/52/52] 5801[36/51/51] 13104[7/50/50] 802[37/49/49] 803[33/48/48] 7002[33/47/47]
+  7001[32/46/46] 11300[35/45/45] 4400[33/44/44] 7701[30/43/43] 3002[31/42/42] 901[29/41/41] 3001[27/40/40] 7000[31/39/39]
+  5802[29/38/38] 4401[23/37/37] 11502[27/36/36] 14604[6/35/35] 11301[42/34/34] 7004[5/33/33] 5804[4/32/32] 11504[3/31/31]
+  1704[1/30/30] 13103[25/29/29] 7003[23/28/28] 5803[22/27/27] 3003[21/26/26] 903[20/25/25] 7703[18/24/24] 11503[17/23/23]
+  11303[16/22/22] 4403[8/21/21] 1703[2/20/20] 13102[21/19/19] 902[19/18/18] 7702[16/17/17] 11302[15/16/16] 4402[9/15/15]
+  14602[7/14/14] 13101[18/13/13] 801[15/12/12] 11501[12/11/11] 14601[3/10/10] 1701[1/9/9] 13100[21/8/8] 5800[19/7/7]
+  3000[18/6/6] 800[17/5/5] 7700[15/4/4] 11500[14/3/3] 14600[6/2/2] 1700[3/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  1702 Future 9 101 sssp ap fsp 1771 291 59 1700000000000
+  900 Color My World 4 101 sssp fc - 178 10 42 1700000000000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate with a search 1`] = `
+"神 / 神B: filter 3, plate sort condition, search "fc", group none, version group none
+shown 2 of 20
+totals all=42 difficult=20 queried=20
+placement:
+  14603[41/20/20] 23603[40/19/19]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate with an empty requirement list 1`] = `
+"極 / 極E: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate with several requirements 1`] = `
+"極 / 極C: filter 3, plate sort condition, search "", group none, version group none
+shown 17 of 17
+totals all=42,7 difficult=17 queried=17
+placement:
+  24203[42/17/17] 14603[41/16/16] 23603[40/15/15] 25603[32/14/14] 13104[7/13/13] 14604[6/12/12] 13103[25/11/11] 7003[23/10/10]
+  5803[22/9/9] 22803[19/8/8] 7703[18/7/7] 11503[17/6/6] 11303[16/5/5] 22503[14/4/4] 18803[12/3/3] 19103[10/2/2]
+  18503[6/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  23603 ユビキリ 13 100.5 sssp fc sync 948 277 23 1700086400000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate without difficulty restriction 1`] = `
+"極 / 極D: filter 3, plate sort constant-desc, search "", group none, version group none
+shown 127 of 127
+totals all=42,7 difficult=127 queried=127
+placement:
+  43103[24/127/127] 7003[23/126/126] 7004[5/125/125] 19103[10/124/124] 11504[3/123/123] 11503[17/122/122] 1003003[35/121/121] 28303[27/120/120]
+  13104[7/119/119] 14604[6/118/118] 5804[4/117/117] 11303[16/116/116] 22503[14/115/115] 23603[40/114/114] 18803[12/113/113] 35903[29/112/112]
+  55203[3/111/111] 69503[34/110/110] 14603[41/109/109] 5803[22/108/108] 43102[20/107/107] 11302[15/106/106] 56403[39/105/105] 22803[19/104/104]
+  65003[15/103/103] 18503[6/102/102] 19102[38/101/101] 25604[2/100/100] 1704[1/99/99] 7703[18/98/98] 3003[21/97/97] 13102[21/96/96]
+  24203[42/95/95] 54003[28/94/94] 13103[25/93/93] 38303[13/92/92] 4403[8/91/91] 803[33/90/90] 903[20/89/89] 25603[32/88/88]
+  11502[27/87/87] 23602[17/86/86] 69502[22/85/85] 5802[29/84/84] 14602[7/83/83] 22802[36/82/82] 18802[10/81/81] 7002[33/80/80]
+  65002[14/79/79] 55202[5/78/78] 24202[18/77/77] 35902[12/76/76] 56402[41/75/75] 28302[40/74/74] 22502[35/73/73] 1703[2/72/72]
+  38302[11/71/71] 7702[16/70/70] 802[37/69/69] 54002[13/68/68] 902[19/67/67] 18502[23/66/66] 4402[9/65/65] 1702[42/64/64]
+  1003002[3/63/63] 43101[17/62/62] 3002[31/61/61] 11301[42/60/60] 25602[30/59/59] 14601[3/58/58] 55201[39/57/57] 18801[20/56/56]
+  56401[25/55/55] 38301[9/54/54] 23601[13/53/53] 7001[32/52/52] 3001[27/51/51] 22801[34/50/50] 7701[30/49/49] 65001[24/48/48]
+  69501[19/47/47] 13101[18/46/46] 24201[14/45/45] 28301[7/44/44] 1701[1/43/43] 4401[23/42/42] 54001[41/41/41] 11501[12/40/40]
+  35901[10/39/39] 25601[4/38/38] 801[15/37/37] 901[29/36/36] 19101[28/35/35] 22501[11/34/34] 5801[36/33/33] 1700[3/32/32]
+  18501[35/31/31] 1003001[21/30/30] 7000[31/29/29] 43100[25/28/28] 69500[22/27/27] 13100[21/26/26] 3000[18/25/25] 38300[12/24/24]
+  55200[39/23/23] 4400[33/22/22] 24200[26/21/21] 5800[19/20/20] 800[17/19/19] 56400[16/18/18] 7700[15/17/17] 11500[14/16/16]
+  28300[11/15/15] 19100[10/14/14] 14600[6/13/13] 900[42/12/12] 18800[41/11/11] 35900[40/10/10] 22800[37/9/9] 22500[36/8/8]
+  11300[35/7/7] 54000[29/6/6] 23600[23/5/5] 65000[13/4/4] 25600[8/3/3] 18500[32/2/2] 1003000[38/1/1]
+first rows:
+  43103 Contrapasso -paradiso- 14 - - - - 0 0 - -
+  7003 ジングルベル 14 - - - - 0 0 - -
+  7004 ジングルベル 14 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plate without requirements 1`] = `
+"極 / 極F: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > plates ignore grouping 1`] = `
+"極 / 極A: filter 3, plate sort condition, search "", group rank, version group rank
+shown 20 of 20
+totals all=42,7 difficult=20 queried=20
+placement:
+  14603[41/20/20] 803[33/19/19] 13104[7/18/18] 14604[6/17/17] 7004[5/16/16] 5804[4/15/15] 11504[3/14/14] 1704[1/13/13]
+  13103[25/12/12] 7003[23/11/11] 5803[22/10/10] 3003[21/9/9] 903[20/8/8] 7703[18/7/7] 11503[17/6/6] 11303[16/5/5]
+  18803[12/4/4] 4403[8/3/3] 18503[6/2/2] 1703[2/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > unknown plate 1`] = `
+"極 / no such plate: filter 3, plate sort condition, search "", group none, version group none
+shown 0 of 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 将A sorted by condition 1`] = `
+"将 / 将A: filter 3, plate sort condition, search "", group none, version group none
+shown 80 of 80
+totals all=42 difficult=80 queried=80
+placement:
+  24203[42/80/80] 14603[41/79/79] 1702[42/78/78] 900[42/77/77] 23603[40/76/76] 18800[41/75/75] 5801[36/74/74] 11301[42/73/73]
+  19102[38/72/72] 802[37/71/71] 22802[36/70/70] 18501[35/69/69] 22800[37/68/68] 22502[35/67/67] 22500[36/66/66] 803[33/65/65]
+  25603[32/64/64] 22801[34/63/63] 7002[33/62/62] 7001[32/61/61] 11300[35/60/60] 4400[33/59/59] 18500[32/58/58] 7701[30/57/57]
+  3002[31/56/56] 901[29/55/55] 19101[28/54/54] 3001[27/53/53] 7000[31/52/52] 25602[30/51/51] 5802[29/50/50] 4401[23/49/49]
+  11502[27/48/48] 24200[26/47/47] 18502[23/46/46] 18801[20/45/45] 23600[23/44/44] 13103[25/43/43] 7003[23/42/42] 5803[22/41/41]
+  3003[21/40/40] 903[20/39/39] 22803[19/38/38] 7703[18/37/37] 11503[17/36/36] 11303[16/35/35] 22503[14/34/34] 18803[12/33/33]
+  19103[10/32/32] 4403[8/31/31] 18503[6/30/30] 1703[2/29/29] 13102[21/28/28] 902[19/27/27] 24202[18/26/26] 23602[17/25/25]
+  7702[16/24/24] 11302[15/23/23] 18802[10/22/22] 4402[9/21/21] 14602[7/20/20] 13101[18/19/19] 801[15/18/18] 24201[14/17/17]
+  23601[13/16/16] 11501[12/15/15] 22501[11/14/14] 25601[4/13/13] 14601[3/12/12] 1701[1/11/11] 13100[21/10/10] 5800[19/9/9]
+  3000[18/8/8] 800[17/7/7] 7700[15/6/6] 11500[14/5/5] 19100[10/4/4] 25600[8/3/3] 14600[6/2/2] 1700[3/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  1702 Future 9 101 sssp ap fsp 1771 291 59 1700000000000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 将A sorted by constant-asc 1`] = `
+"将 / 将A: filter 3, plate sort constant-asc, search "", group none, version group none
+shown 80 of 80
+totals all=42 difficult=80 queried=80
+placement:
+  18500[32/80/80] 900[42/79/79] 18800[41/78/78] 22800[37/77/77] 22500[36/76/76] 11300[35/75/75] 23600[23/74/74] 25600[8/73/73]
+  4400[33/72/72] 24200[26/71/71] 5800[19/70/70] 800[17/69/69] 7700[15/68/68] 11500[14/67/67] 19100[10/66/66] 14600[6/65/65]
+  7000[31/64/64] 13100[21/63/63] 3000[18/62/62] 18501[35/61/61] 5801[36/60/60] 1700[3/59/59] 901[29/58/58] 19101[28/57/57]
+  22501[11/56/56] 801[15/55/55] 11501[12/54/54] 25601[4/53/53] 4401[23/52/52] 22801[34/51/51] 7701[30/50/50] 13101[18/49/49]
+  24201[14/48/48] 1701[1/47/47] 7001[32/46/46] 3001[27/45/45] 23601[13/44/44] 18801[20/43/43] 25602[30/42/42] 14601[3/41/41]
+  11301[42/40/40] 3002[31/39/39] 1702[42/38/38] 18502[23/37/37] 4402[9/36/36] 902[19/35/35] 802[37/34/34] 7702[16/33/33]
+  22502[35/32/32] 1703[2/31/31] 24202[18/30/30] 7002[33/29/29] 18802[10/28/28] 22802[36/27/27] 5802[29/26/26] 14602[7/25/25]
+  23602[17/24/24] 11502[27/23/23] 25603[32/22/22] 803[33/21/21] 903[20/20/20] 24203[42/19/19] 13103[25/18/18] 4403[8/17/17]
+  3003[21/16/16] 13102[21/15/15] 19102[38/14/14] 7703[18/13/13] 18503[6/12/12] 22803[19/11/11] 14603[41/10/10] 5803[22/9/9]
+  11302[15/8/8] 23603[40/7/7] 18803[12/6/6] 11303[16/5/5] 22503[14/4/4] 11503[17/3/3] 19103[10/2/2] 7003[23/1/1]
+first rows:
+  18500 ＊ハロー、プラネット。 3 96.1 aaa - fsp 668 80 44 0
+  900 Color My World 4 101 sssp fc - 178 10 42 1700000000000
+  18800 天ノ弱 4 100.5 sssp app sync 777 142 44 1690000000000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 将A sorted by constant-desc 1`] = `
+"将 / 将A: filter 3, plate sort constant-desc, search "", group none, version group none
+shown 80 of 80
+totals all=42 difficult=80 queried=80
+placement:
+  7003[23/80/80] 19103[10/79/79] 11503[17/78/78] 11303[16/77/77] 22503[14/76/76] 23603[40/75/75] 18803[12/74/74] 14603[41/73/73]
+  5803[22/72/72] 11302[15/71/71] 22803[19/70/70] 18503[6/69/69] 19102[38/68/68] 7703[18/67/67] 3003[21/66/66] 13102[21/65/65]
+  24203[42/64/64] 13103[25/63/63] 4403[8/62/62] 803[33/61/61] 903[20/60/60] 25603[32/59/59] 11502[27/58/58] 23602[17/57/57]
+  5802[29/56/56] 14602[7/55/55] 22802[36/54/54] 18802[10/53/53] 7002[33/52/52] 24202[18/51/51] 22502[35/50/50] 1703[2/49/49]
+  7702[16/48/48] 802[37/47/47] 902[19/46/46] 18502[23/45/45] 4402[9/44/44] 1702[42/43/43] 3002[31/42/42] 11301[42/41/41]
+  25602[30/40/40] 14601[3/39/39] 18801[20/38/38] 23601[13/37/37] 7001[32/36/36] 3001[27/35/35] 22801[34/34/34] 7701[30/33/33]
+  13101[18/32/32] 24201[14/31/31] 1701[1/30/30] 4401[23/29/29] 11501[12/28/28] 25601[4/27/27] 801[15/26/26] 901[29/25/25]
+  19101[28/24/24] 22501[11/23/23] 5801[36/22/22] 1700[3/21/21] 18501[35/20/20] 7000[31/19/19] 13100[21/18/18] 3000[18/17/17]
+  4400[33/16/16] 24200[26/15/15] 5800[19/14/14] 800[17/13/13] 7700[15/12/12] 11500[14/11/11] 19100[10/10/10] 14600[6/9/9]
+  900[42/8/8] 18800[41/7/7] 22800[37/6/6] 22500[36/5/5] 11300[35/4/4] 23600[23/3/3] 25600[8/2/2] 18500[32/1/1]
+first rows:
+  7003 ジングルベル 14 - - - - 0 0 - -
+  19103 脳漿炸裂ガール 14 - - - - 0 0 - -
+  11503 DADDY MULK -Groove remix- 13+ - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 極A sorted by condition 1`] = `
+"極 / 極A: filter 3, plate sort condition, search "", group none, version group none
+shown 20 of 20
+totals all=42,7 difficult=20 queried=20
+placement:
+  14603[41/20/20] 803[33/19/19] 13104[7/18/18] 14604[6/17/17] 7004[5/16/16] 5804[4/15/15] 11504[3/14/14] 1704[1/13/13]
+  13103[25/12/12] 7003[23/11/11] 5803[22/10/10] 3003[21/9/9] 903[20/8/8] 7703[18/7/7] 11503[17/6/6] 11303[16/5/5]
+  18803[12/4/4] 4403[8/3/3] 18503[6/2/2] 1703[2/1/1]
+first rows:
+  14603 39 13 101 sssp fc - 1901 284 6 0
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  13104 Link 13 99.9876 ssp - fs 1884 233 9 0
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 極A sorted by constant-asc 1`] = `
+"極 / 極A: filter 3, plate sort constant-asc, search "", group none, version group none
+shown 20 of 20
+totals all=42,7 difficult=20 queried=20
+placement:
+  1703[2/20/20] 803[33/19/19] 903[20/18/18] 13103[25/17/17] 4403[8/16/16] 3003[21/15/15] 1704[1/14/14] 7703[18/13/13]
+  18503[6/12/12] 14603[41/11/11] 5803[22/10/10] 18803[12/9/9] 14604[6/8/8] 5804[4/7/7] 11303[16/6/6] 13104[7/5/5]
+  11504[3/4/4] 11503[17/3/3] 7004[5/2/2] 7003[23/1/1]
+first rows:
+  1703 Future 10+ - - - - 0 0 - -
+  803 True Love Song 12 98.2 sp fcp fsd 443 129 17 1700086400000
+  903 Color My World 12 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 極A sorted by constant-desc 1`] = `
+"極 / 極A: filter 3, plate sort constant-desc, search "", group none, version group none
+shown 20 of 20
+totals all=42,7 difficult=20 queried=20
+placement:
+  7003[23/20/20] 7004[5/19/19] 11504[3/18/18] 11503[17/17/17] 13104[7/16/16] 14604[6/15/15] 5804[4/14/14] 11303[16/13/13]
+  18803[12/12/12] 14603[41/11/11] 5803[22/10/10] 18503[6/9/9] 1704[1/8/8] 7703[18/7/7] 3003[21/6/6] 13103[25/5/5]
+  4403[8/4/4] 803[33/3/3] 903[20/2/2] 1703[2/1/1]
+first rows:
+  7003 ジングルベル 14 - - - - 0 0 - -
+  7004 ジングルベル 14 - - - - 0 0 - -
+  11504 DADDY MULK -Groove remix- 13+ - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 神A sorted by condition 1`] = `
+"神 / 神A: filter 3, plate sort condition, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  24203[42/107/107] 1702[42/106/106] 28302[40/105/105] 54001[41/104/104] 18800[41/103/103] 22802[36/102/102] 22801[34/101/101] 11300[35/100/100]
+  3002[31/99/99] 901[29/98/98] 3001[27/97/97] 7000[31/96/96] 5802[29/95/95] 11502[27/94/94] 43100[25/93/93] 18801[20/92/92]
+  23600[23/91/91] 14603[41/90/90] 900[42/89/89] 23603[40/88/88] 11301[42/87/87] 5801[36/86/86] 35900[40/85/85] 13104[7/84/84]
+  19102[38/83/83] 802[37/82/82] 18501[35/81/81] 22800[37/80/80] 22502[35/79/79] 22500[36/78/78] 803[33/77/77] 25603[32/76/76]
+  7002[33/75/75] 7001[32/74/74] 4400[33/73/73] 18500[32/72/72] 35903[29/71/71] 7701[30/70/70] 54003[28/69/69] 28303[27/68/68]
+  19101[28/67/67] 54000[29/66/66] 25602[30/65/65] 4401[23/64/64] 24200[26/63/63] 14604[6/62/62] 18502[23/61/61] 7004[5/60/60]
+  5804[4/59/59] 11504[3/58/58] 25604[2/57/57] 1704[1/56/56] 13103[25/55/55] 43103[24/54/54] 7003[23/53/53] 5803[22/52/52]
+  3003[21/51/51] 903[20/50/50] 22803[19/49/49] 7703[18/48/48] 11503[17/47/47] 11303[16/46/46] 22503[14/45/45] 38303[13/44/44]
+  18803[12/43/43] 19103[10/42/42] 4403[8/41/41] 18503[6/40/40] 1703[2/39/39] 13102[21/38/38] 43102[20/37/37] 902[19/36/36]
+  24202[18/35/35] 23602[17/34/34] 7702[16/33/33] 11302[15/32/32] 54002[13/31/31] 35902[12/30/30] 38302[11/29/29] 18802[10/28/28]
+  4402[9/27/27] 14602[7/26/26] 13101[18/25/25] 43101[17/24/24] 801[15/23/23] 24201[14/22/22] 23601[13/21/21] 11501[12/20/20]
+  22501[11/19/19] 35901[10/18/18] 38301[9/17/17] 28301[7/16/16] 25601[4/15/15] 14601[3/14/14] 1701[1/13/13] 13100[21/12/12]
+  5800[19/11/11] 3000[18/10/10] 800[17/9/9] 7700[15/8/8] 11500[14/7/7] 38300[12/6/6] 28300[11/5/5] 19100[10/4/4]
+  25600[8/3/3] 14600[6/2/2] 1700[3/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  1702 Future 9 101 sssp ap fsp 1771 291 59 1700000000000
+  28302 ネトゲ廃人シュプレヒコール 10+ 100.5 sssp ap fsp 487 249 69 1700172800000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 神A sorted by constant-asc 1`] = `
+"神 / 神A: filter 3, plate sort constant-asc, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  18500[32/107/107] 900[42/106/106] 18800[41/105/105] 35900[40/104/104] 22800[37/103/103] 22500[36/102/102] 11300[35/101/101] 54000[29/100/100]
+  23600[23/99/99] 25600[8/98/98] 4400[33/97/97] 24200[26/96/96] 5800[19/95/95] 800[17/94/94] 7700[15/93/93] 11500[14/92/92]
+  28300[11/91/91] 19100[10/90/90] 14600[6/89/89] 7000[31/88/88] 43100[25/87/87] 13100[21/86/86] 3000[18/85/85] 38300[12/84/84]
+  18501[35/83/83] 5801[36/82/82] 1700[3/81/81] 901[29/80/80] 19101[28/79/79] 22501[11/78/78] 801[15/77/77] 54001[41/76/76]
+  11501[12/75/75] 35901[10/74/74] 25601[4/73/73] 4401[23/72/72] 22801[34/71/71] 7701[30/70/70] 13101[18/69/69] 24201[14/68/68]
+  28301[7/67/67] 1701[1/66/66] 7001[32/65/65] 3001[27/64/64] 23601[13/63/63] 38301[9/62/62] 18801[20/61/61] 25602[30/60/60]
+  14601[3/59/59] 11301[42/58/58] 3002[31/57/57] 1702[42/56/56] 43101[17/55/55] 18502[23/54/54] 4402[9/53/53] 902[19/52/52]
+  802[37/51/51] 54002[13/50/50] 7702[16/49/49] 28302[40/48/48] 22502[35/47/47] 1703[2/46/46] 38302[11/45/45] 24202[18/44/44]
+  35902[12/43/43] 7002[33/42/42] 18802[10/41/41] 22802[36/40/40] 5802[29/39/39] 14602[7/38/38] 23602[17/37/37] 11502[27/36/36]
+  25603[32/35/35] 803[33/34/34] 903[20/33/33] 24203[42/32/32] 54003[28/31/31] 13103[25/30/30] 38303[13/29/29] 4403[8/28/28]
+  3003[21/27/27] 13102[21/26/26] 19102[38/25/25] 25604[2/24/24] 1704[1/23/23] 7703[18/22/22] 18503[6/21/21] 22803[19/20/20]
+  14603[41/19/19] 5803[22/18/18] 43102[20/17/17] 11302[15/16/16] 35903[29/15/15] 23603[40/14/14] 18803[12/13/13] 14604[6/12/12]
+  5804[4/11/11] 11303[16/10/10] 22503[14/9/9] 13104[7/8/8] 28303[27/7/7] 11504[3/6/6] 11503[17/5/5] 19103[10/4/4]
+  7004[5/3/3] 43103[24/2/2] 7003[23/1/1]
+first rows:
+  18500 ＊ハロー、プラネット。 3 96.1 aaa - fsp 668 80 44 0
+  900 Color My World 4 101 sssp fc - 178 10 42 1700000000000
+  18800 天ノ弱 4 100.5 sssp app sync 777 142 44 1690000000000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 神A sorted by constant-desc 1`] = `
+"神 / 神A: filter 3, plate sort constant-desc, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  43103[24/107/107] 7003[23/106/106] 7004[5/105/105] 19103[10/104/104] 11504[3/103/103] 11503[17/102/102] 28303[27/101/101] 13104[7/100/100]
+  14604[6/99/99] 5804[4/98/98] 11303[16/97/97] 22503[14/96/96] 23603[40/95/95] 18803[12/94/94] 35903[29/93/93] 14603[41/92/92]
+  5803[22/91/91] 43102[20/90/90] 11302[15/89/89] 22803[19/88/88] 18503[6/87/87] 19102[38/86/86] 25604[2/85/85] 1704[1/84/84]
+  7703[18/83/83] 3003[21/82/82] 13102[21/81/81] 24203[42/80/80] 54003[28/79/79] 13103[25/78/78] 38303[13/77/77] 4403[8/76/76]
+  803[33/75/75] 903[20/74/74] 25603[32/73/73] 11502[27/72/72] 23602[17/71/71] 5802[29/70/70] 14602[7/69/69] 22802[36/68/68]
+  18802[10/67/67] 7002[33/66/66] 24202[18/65/65] 35902[12/64/64] 28302[40/63/63] 22502[35/62/62] 1703[2/61/61] 38302[11/60/60]
+  7702[16/59/59] 802[37/58/58] 54002[13/57/57] 902[19/56/56] 18502[23/55/55] 4402[9/54/54] 1702[42/53/53] 43101[17/52/52]
+  3002[31/51/51] 11301[42/50/50] 25602[30/49/49] 14601[3/48/48] 18801[20/47/47] 38301[9/46/46] 23601[13/45/45] 7001[32/44/44]
+  3001[27/43/43] 22801[34/42/42] 7701[30/41/41] 13101[18/40/40] 24201[14/39/39] 28301[7/38/38] 1701[1/37/37] 4401[23/36/36]
+  54001[41/35/35] 11501[12/34/34] 35901[10/33/33] 25601[4/32/32] 801[15/31/31] 901[29/30/30] 19101[28/29/29] 22501[11/28/28]
+  5801[36/27/27] 1700[3/26/26] 18501[35/25/25] 7000[31/24/24] 43100[25/23/23] 13100[21/22/22] 3000[18/21/21] 38300[12/20/20]
+  4400[33/19/19] 24200[26/18/18] 5800[19/17/17] 800[17/16/16] 7700[15/15/15] 11500[14/14/14] 28300[11/13/13] 19100[10/12/12]
+  14600[6/11/11] 900[42/10/10] 18800[41/9/9] 35900[40/8/8] 22800[37/7/7] 22500[36/6/6] 11300[35/5/5] 54000[29/4/4]
+  23600[23/3/3] 25600[8/2/2] 18500[32/1/1]
+first rows:
+  43103 Contrapasso -paradiso- 14 - - - - 0 0 - -
+  7003 ジングルベル 14 - - - - 0 0 - -
+  7004 ジングルベル 14 - - - - 0 0 - -
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 舞A sorted by condition 1`] = `
+"舞舞 / 舞A: filter 3, plate sort condition, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  24203[42/107/107] 22802[36/106/106] 18501[35/105/105] 22502[35/104/104] 803[33/103/103] 25603[32/102/102] 22801[34/101/101] 54003[28/100/100]
+  3002[31/99/99] 19101[28/98/98] 7000[31/97/97] 54000[29/96/96] 24200[26/95/95] 14603[41/94/94] 1702[42/93/93] 900[42/92/92]
+  23603[40/91/91] 28302[40/90/90] 11301[42/89/89] 54001[41/88/88] 18800[41/87/87] 5801[36/86/86] 35900[40/85/85] 13104[7/84/84]
+  19102[38/83/83] 802[37/82/82] 22800[37/81/81] 22500[36/80/80] 7002[33/79/79] 7001[32/78/78] 11300[35/77/77] 4400[33/76/76]
+  18500[32/75/75] 35903[29/74/74] 7701[30/73/73] 28303[27/72/72] 901[29/71/71] 3001[27/70/70] 25602[30/69/69] 5802[29/68/68]
+  4401[23/67/67] 11502[27/66/66] 14604[6/65/65] 43100[25/64/64] 18502[23/63/63] 18801[20/62/62] 23600[23/61/61] 7004[5/60/60]
+  5804[4/59/59] 11504[3/58/58] 25604[2/57/57] 1704[1/56/56] 13103[25/55/55] 43103[24/54/54] 7003[23/53/53] 5803[22/52/52]
+  3003[21/51/51] 903[20/50/50] 22803[19/49/49] 7703[18/48/48] 11503[17/47/47] 11303[16/46/46] 22503[14/45/45] 38303[13/44/44]
+  18803[12/43/43] 19103[10/42/42] 4403[8/41/41] 18503[6/40/40] 1703[2/39/39] 13102[21/38/38] 43102[20/37/37] 902[19/36/36]
+  24202[18/35/35] 23602[17/34/34] 7702[16/33/33] 11302[15/32/32] 54002[13/31/31] 35902[12/30/30] 38302[11/29/29] 18802[10/28/28]
+  4402[9/27/27] 14602[7/26/26] 13101[18/25/25] 43101[17/24/24] 801[15/23/23] 24201[14/22/22] 23601[13/21/21] 11501[12/20/20]
+  22501[11/19/19] 35901[10/18/18] 38301[9/17/17] 28301[7/16/16] 25601[4/15/15] 14601[3/14/14] 1701[1/13/13] 13100[21/12/12]
+  5800[19/11/11] 3000[18/10/10] 800[17/9/9] 7700[15/8/8] 11500[14/7/7] 38300[12/6/6] 28300[11/5/5] 19100[10/4/4]
+  25600[8/3/3] 14600[6/2/2] 1700[3/1/1]
+first rows:
+  24203 ナミダと流星 12 101 sssp ap fsd 1302 53 73 1700172800000
+  22802 Dreampainter 11 99.5 ssp ap fsd 387 226 22 1700000000000
+  18501 ＊ハロー、プラネット。 6 99.5 ssp - fsdp 829 86 1 1700172800000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 舞A sorted by constant-asc 1`] = `
+"舞舞 / 舞A: filter 3, plate sort constant-asc, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  18500[32/107/107] 900[42/106/106] 18800[41/105/105] 35900[40/104/104] 22800[37/103/103] 22500[36/102/102] 11300[35/101/101] 54000[29/100/100]
+  23600[23/99/99] 25600[8/98/98] 4400[33/97/97] 24200[26/96/96] 5800[19/95/95] 800[17/94/94] 7700[15/93/93] 11500[14/92/92]
+  28300[11/91/91] 19100[10/90/90] 14600[6/89/89] 7000[31/88/88] 43100[25/87/87] 13100[21/86/86] 3000[18/85/85] 38300[12/84/84]
+  18501[35/83/83] 5801[36/82/82] 1700[3/81/81] 901[29/80/80] 19101[28/79/79] 22501[11/78/78] 801[15/77/77] 54001[41/76/76]
+  11501[12/75/75] 35901[10/74/74] 25601[4/73/73] 4401[23/72/72] 22801[34/71/71] 7701[30/70/70] 13101[18/69/69] 24201[14/68/68]
+  28301[7/67/67] 1701[1/66/66] 7001[32/65/65] 3001[27/64/64] 23601[13/63/63] 38301[9/62/62] 18801[20/61/61] 25602[30/60/60]
+  14601[3/59/59] 11301[42/58/58] 3002[31/57/57] 1702[42/56/56] 43101[17/55/55] 18502[23/54/54] 4402[9/53/53] 902[19/52/52]
+  802[37/51/51] 54002[13/50/50] 7702[16/49/49] 28302[40/48/48] 22502[35/47/47] 1703[2/46/46] 38302[11/45/45] 24202[18/44/44]
+  35902[12/43/43] 7002[33/42/42] 18802[10/41/41] 22802[36/40/40] 5802[29/39/39] 14602[7/38/38] 23602[17/37/37] 11502[27/36/36]
+  25603[32/35/35] 803[33/34/34] 903[20/33/33] 24203[42/32/32] 54003[28/31/31] 13103[25/30/30] 38303[13/29/29] 4403[8/28/28]
+  3003[21/27/27] 13102[21/26/26] 19102[38/25/25] 25604[2/24/24] 1704[1/23/23] 7703[18/22/22] 18503[6/21/21] 22803[19/20/20]
+  14603[41/19/19] 5803[22/18/18] 43102[20/17/17] 11302[15/16/16] 35903[29/15/15] 23603[40/14/14] 18803[12/13/13] 14604[6/12/12]
+  5804[4/11/11] 11303[16/10/10] 22503[14/9/9] 13104[7/8/8] 28303[27/7/7] 11504[3/6/6] 11503[17/5/5] 19103[10/4/4]
+  7004[5/3/3] 43103[24/2/2] 7003[23/1/1]
+first rows:
+  18500 ＊ハロー、プラネット。 3 96.1 aaa - fsp 668 80 44 0
+  900 Color My World 4 101 sssp fc - 178 10 42 1700000000000
+  18800 天ノ弱 4 100.5 sssp app sync 777 142 44 1690000000000
+groups: none
+overall: none"
+`;
+
+exports[`version plates > 舞A sorted by constant-desc 1`] = `
+"舞舞 / 舞A: filter 3, plate sort constant-desc, search "", group none, version group none
+shown 107 of 107
+totals all=42,7 difficult=107 queried=107
+placement:
+  43103[24/107/107] 7003[23/106/106] 7004[5/105/105] 19103[10/104/104] 11504[3/103/103] 11503[17/102/102] 28303[27/101/101] 13104[7/100/100]
+  14604[6/99/99] 5804[4/98/98] 11303[16/97/97] 22503[14/96/96] 23603[40/95/95] 18803[12/94/94] 35903[29/93/93] 14603[41/92/92]
+  5803[22/91/91] 43102[20/90/90] 11302[15/89/89] 22803[19/88/88] 18503[6/87/87] 19102[38/86/86] 25604[2/85/85] 1704[1/84/84]
+  7703[18/83/83] 3003[21/82/82] 13102[21/81/81] 24203[42/80/80] 54003[28/79/79] 13103[25/78/78] 38303[13/77/77] 4403[8/76/76]
+  803[33/75/75] 903[20/74/74] 25603[32/73/73] 11502[27/72/72] 23602[17/71/71] 5802[29/70/70] 14602[7/69/69] 22802[36/68/68]
+  18802[10/67/67] 7002[33/66/66] 24202[18/65/65] 35902[12/64/64] 28302[40/63/63] 22502[35/62/62] 1703[2/61/61] 38302[11/60/60]
+  7702[16/59/59] 802[37/58/58] 54002[13/57/57] 902[19/56/56] 18502[23/55/55] 4402[9/54/54] 1702[42/53/53] 43101[17/52/52]
+  3002[31/51/51] 11301[42/50/50] 25602[30/49/49] 14601[3/48/48] 18801[20/47/47] 38301[9/46/46] 23601[13/45/45] 7001[32/44/44]
+  3001[27/43/43] 22801[34/42/42] 7701[30/41/41] 13101[18/40/40] 24201[14/39/39] 28301[7/38/38] 1701[1/37/37] 4401[23/36/36]
+  54001[41/35/35] 11501[12/34/34] 35901[10/33/33] 25601[4/32/32] 801[15/31/31] 901[29/30/30] 19101[28/29/29] 22501[11/28/28]
+  5801[36/27/27] 1700[3/26/26] 18501[35/25/25] 7000[31/24/24] 43100[25/23/23] 13100[21/22/22] 3000[18/21/21] 38300[12/20/20]
+  4400[33/19/19] 24200[26/18/18] 5800[19/17/17] 800[17/16/16] 7700[15/15/15] 11500[14/14/14] 28300[11/13/13] 19100[10/12/12]
+  14600[6/11/11] 900[42/10/10] 18800[41/9/9] 35900[40/8/8] 22800[37/7/7] 22500[36/6/6] 11300[35/5/5] 54000[29/4/4]
+  23600[23/3/3] 25600[8/2/2] 18500[32/1/1]
+first rows:
+  43103 Contrapasso -paradiso- 14 - - - - 0 0 - -
+  7003 ジングルベル 14 - - - - 0 0 - -
+  7004 ジングルベル 14 - - - - 0 0 - -
+groups: none
+overall: none"
+`;

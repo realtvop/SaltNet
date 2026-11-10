@@ -58,7 +58,7 @@
   },
   "package.json": {
     "jsonc/indent": {
-      "count": 54
+      "count": 55
     },
     "jsonc/sort-keys": {
       "count": 2
