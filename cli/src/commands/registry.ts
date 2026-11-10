@@ -4,8 +4,10 @@
  * documentation cannot disagree with the behavior (design 4.7).
  */
 import type { ErrorCode } from "../errors";
-import type { Warning } from "../output/envelope";
+import type { Warning } from "../output/warning";
+import type { ResolvedConfig } from "../runtime/config";
 import type { Io } from "../runtime/io";
+import type { RuntimePaths } from "../runtime/paths";
 
 /** How far a command reaches (design 5.4). */
 export type EffectLevel = "none" | "local" | "remote" | "account";
@@ -172,6 +174,12 @@ export interface CommandSpec {
     /** Error codes beyond those any command can produce. */
     readonly errors?: readonly ErrorCode[];
     readonly dataSchema?: JsonSchema;
+    /**
+     * The command still runs when the settings have errors. Everything else refuses, so a typo in
+     * `config.json` is reported once instead of breaking commands in strange ways; the commands
+     * that show or repair the settings, and the ones that describe the CLI, have to work anyway.
+     */
+    readonly allowBadConfig?: boolean;
 }
 
 /** Options every command accepts. `--help`/`-h` is handled by the parser itself. */
@@ -257,6 +265,17 @@ export interface CommandArgs<S extends CommandSpec> {
 export interface CommandContext {
     readonly io: Io;
     readonly registry: Registry;
+    readonly version: string;
+    /** Where the data directory and its files are; resolving them does not create anything. */
+    readonly paths: RuntimePaths;
+    /** The settings, already layered from the environment, `config.json` and the defaults. */
+    readonly config: ResolvedConfig;
+    /**
+     * Progress and diagnostics, one line each. They go to stderr when a person is watching
+     * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's
+     * context is not spent on them (design 4.2).
+     */
+    readonly log: (message: string) => void;
 }
 
 /** What a command returns; the runner wraps it into the output envelope (design 4.3). */

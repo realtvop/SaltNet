@@ -53,6 +53,19 @@ describe("cli errors", () => {
         expect(error.cause).toBe(cause);
     });
 
+    it("carries the meta and warnings of a failure that happened after some data was found", () => {
+        const error = new CliError("UPSTREAM_ERROR", "上游出错", {
+            meta: { dataAsOf: { catalog: "2026-11-10T09:12:03+08:00" } },
+            warnings: [{ code: "STALE_METADATA", message: "用的是缓存" }],
+        });
+        expect(error.meta).toEqual({ dataAsOf: { catalog: "2026-11-10T09:12:03+08:00" } });
+        expect(error.warnings).toEqual([{ code: "STALE_METADATA", message: "用的是缓存" }]);
+
+        const plain = new CliError("NOT_FOUND", "没找到");
+        expect(plain.meta).toBeUndefined();
+        expect(plain.warnings).toBeUndefined();
+    });
+
     it("is retryable only for network errors and busy resources, unless told otherwise", () => {
         for (const code of ERROR_CODES) {
             const expected =

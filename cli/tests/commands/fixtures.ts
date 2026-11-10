@@ -9,7 +9,7 @@ export const demo = defineCommand(
         description: "把收到的参数原样返回，用来测试解析器。\n第二段说明。",
         category: "catalog",
         effect: "none",
-        output: "list",
+        output: "object",
         positionals: [
             { name: "text", valueName: "文本", description: "要处理的文本" },
             { name: "difficulty", description: "难度", optional: true },

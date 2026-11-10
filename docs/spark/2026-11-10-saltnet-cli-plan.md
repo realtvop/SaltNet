@@ -93,7 +93,7 @@
 - [x] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
 - [x] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
 - [x] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
-- [ ] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
+- [x] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
 - [ ] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
 - [ ] P1-6 `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
 - [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入
@@ -283,3 +283,15 @@
     - 帮助是纯文本、不包外层结构（规格 4.1）：根帮助按分类列命令、命令组折成一行；命令帮助依次是用法、说明、参数、选项、示例、副作用、全局选项。列对齐按显示宽度算（中文和全角字符占两列），标签超过 30 列的描述换到下一行；根帮助的命令列表整体共用一列宽，其余每个表各自算宽度。长枚举在选项里写成 `<值>` 并把取值放进括号说明，短枚举直接写成 `<a|b|c>`。参数表里的标签和用法行用同一个写法（`<曲目...>`、`[难度]`）。
     - 测试里的小事：`JSON.stringify(error)` 不含不可枚举的 `message`，检查「凭据没有泄露到输出」时必须用 `failureEnvelope` 生成的文本，否则断言会空转。
     - ESLint：`saltnet/cli` 段再关掉两条会和 Prettier 打架的规则：`style/quotes`（Prettier 对含双引号的字符串改用单引号）和 `unicorn/number-literal-case`（Prettier 把十六进制写成小写，`cli/src/util/width.ts` 里的 Unicode 区间用十六进制才好读）。基线里没有 `cli/` 的条目，所以这个改动不影响存量违规的计数。
+22. **输出、格式和分页（P1-4）**：
+    - 渲染（`cli/src/output/render.ts`）：命令只返回 `{data, meta?, warnings?}`，格式由运行器按命令的 `output` 类型和 `--format` 渲染。`output: "text"` 的命令直接输出它返回的字符串（补一个结尾换行），不包外层结构；`output: "list"` 的命令必须返回带 `items` 或 `groups` 的 `data`，否则按 `INTERNAL` 处理，因为这是命令自己的 bug，不是用户的错。
+    - 格式选择（`format.ts`）：`--format` 明写的优先；否则只有 stdout 是终端时才用配置里的 `output.format`，不是终端一律 JSON，所以程序拿到的永远是 JSON，哪怕用户配置了 text。对不是列表的命令写 `--format tsv`，在命令运行**之前**就报 `USAGE`，免得有副作用的命令先执行完才说格式不对；这条错误不带 `fix`，因为拼不出用户完整的命令行。失败永远是 stdout 上的 JSON 失败信封，不管 `--format` 写的是什么：调用方只要认一种失败的形状。
+    - 列表（`paging.ts`、`listOptions.ts`）：所有列表命令展开 `listOptions()`（`--limit` 默认 50、上限 10000，`search` 用 `listOptions(10)`；`--offset`；`--fields`），用 `paginate` 切页并返回 `meta.page = {total, offset, limit, nextOffset}`，最后一页的 `nextOffset` 是 null。带 `--group-by` 时结果是 `data.groups[{key, count, stats?, items}]`，`--limit` 对每组分别生效。
+    - `--fields`（`fields.ts`）：点号表示嵌套（`score.rank`），由运行器统一应用在 `items` 上（分组时应用在每组的 `items` 上，名字对所有组一起校验），命令自己不读它。先查写法（空段和 `__proto__` 不行），再去掉重复和被更短前缀盖住的路径；名字必须在结果里真的存在，只看非 null 的节点，走进字符串或数组算不存在，不存在就报 `USAGE` 并给最接近的字段名当候选，所以拼错字段不会悄悄得到一列空值。某个父对象在所有行里都是 null 时不判错，因为那是「还没有成绩」之类的正常情况。输出保留嵌套结构，缺失的值是 null（`score` 为 null 时 `score.rank` 得到 `{"score":{"rank":null}}`）。
+    - tsv（`table.ts`、`tsv.ts`）：列是所有行叶子键的并集，嵌套对象写成 `score.rank`，按第一次出现的顺序；写了 `--fields` 就按它的顺序。null 是空单元格，数组和空对象是紧凑 JSON，制表符、换行、回车和反斜杠转义成 `\t`、`\n`、`\r`、`\\`。stdout 只有表：没有结果又没写 `--fields` 时什么都不输出，写了就只输出表头。`meta`、`warnings` 和 `data` 里其他的键（例如统计）写到 stderr，每项一行 `# meta {json}`、`# warning {json}`、`# <键> {json}`；分组时表的第一列是 `group`。tsv 因此是规格 4.5「stderr 默认静默」的唯一例外，不是终端也会写 stderr。
+    - text（`text.ts`）：给人看，不保证稳定。列表是按显示宽度对齐的表（单元格最宽 40 列，超出用 `…`，null 显示 `-`，简单值的数组用 `、` 连接）；对象是缩进的 `键: 值` 提纲，对象数组用 `- `；分组写成 `键（N 条）` 加一张表；页码行是 `第 a–b 条，共 N 条；下一页加 --offset k`；警告是 `警告 CODE：消息（建议运行 …）`。
+    - 警告码（`warning.ts`）：`STALE_METADATA`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`、`TRUNCATED`、`UPLOAD_FAILED`、`SOME_FAILED`、`LXNS_EXPIRING` 做成类型，命令写不出表外的警告码。
+    - 失败也能带 `meta` 和 `warnings`（`CliError` 的两个可选字段，信封里排在 `error` 之后），给「做到一半才失败」的命令用，例如同步中途上游出错时，已经取到的数据来源时间不会丢。
+    - stdout 和 stderr（`cli.ts`、`main.ts`）：stderr 默认静默，只有 stderr 是终端或写了 `--verbose` 才输出进度（命令调用 `ctx.log`）和 `INTERNAL` 的堆栈。`| head` 提前关掉管道（EPIPE）时安静退出，不打印堆栈。
+    - 配置有错（P1-2 的 `ConfigProblem`）：命令运行前就返回 `USAGE`，`fix` 是 `saltnet config list`（P1-15 提供），`extra.problems` 列出每一项；`config`、`schema`、`guide` 设 `allowBadConfig`，所以改坏配置后还能用 `config` 修。每条问题的消息已经说明是哪个环境变量或 `config.json` 里的哪一项，外层只负责拼接。
+    - 小事：`CommandContext` 现在带 `paths`、`config`、`version`、`log`；`echo` 从 `values.ts` 挪到 `util/echo.ts`，输出模块和解析器都要用；`tests/harness.ts` 在进程内跑一行命令并收集输出，默认把命令看到的环境指向沙盒 `SALTNET_HOME`；测试夹具里的 `demo` 命令改成 `output: "object"`，因为它返回的是收到的参数，不是列表，而渲染器现在会检查列表的形状。

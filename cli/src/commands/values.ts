@@ -5,6 +5,7 @@
 import type { ErrorCandidate } from "../errors";
 import type { EnumValue, ListItemSpec, OptionEntry, RangeItemKind, RangeValue } from "./registry";
 import { closestMatches } from "../util/closest";
+import { echo } from "../util/echo";
 import { enumMember } from "./registry";
 
 /** A value that does not fit its option. The message never contains a credential. */
@@ -16,14 +17,6 @@ export class ValueError extends Error {
         this.name = "ValueError";
         this.candidates = candidates;
     }
-}
-
-/** Short, plain words only: a longer or odder value could be a pasted secret, so it is not echoed. */
-const ECHOABLE = /^[\p{L}\p{N}_.:+-]{1,40}$/u;
-
-/** The value in 「」 for an error message, or nothing when it should not be repeated. */
-export function echo(raw: string): string {
-    return ECHOABLE.test(raw) ? `「${raw}」` : "";
 }
 
 const INTEGER = /^-?\d+$/;

@@ -15,8 +15,9 @@ import type {
 } from "./registry";
 import { usageError } from "../errors";
 import { closestMatches } from "../util/closest";
+import { echo } from "../util/echo";
 import { commandOptionEntries, GLOBAL_OPTION_ENTRIES } from "./registry";
-import { convertBoolean, convertOption, echo, ValueError } from "./values";
+import { convertBoolean, convertOption, ValueError } from "./values";
 
 export type HelpTarget =
     | { readonly kind: "root" }

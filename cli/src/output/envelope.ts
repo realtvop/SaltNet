@@ -1,16 +1,6 @@
-/**
- * The outer structure every result is wrapped in (design 4.3). Only the pieces that exist so far
- * are here; formats, field selection and paging come with the output module.
- */
+/** The outer structure every result is wrapped in (design 4.3). */
 import type { CliError } from "../errors";
-
-/** Something to be aware of in a result that is otherwise fine. */
-export interface Warning {
-    readonly code: string;
-    readonly message: string;
-    /** A command that would remove the cause. */
-    readonly fix?: string;
-}
+import type { Warning } from "./warning";
 
 /** Bumped only when a field is renamed, removed or changes meaning. */
 export const ENVELOPE_VERSION = 1;
@@ -66,6 +56,8 @@ export function failureEnvelope(command: string | null, error: CliError): Failur
             retryable: error.retryable,
             ...error.extra,
         },
+        ...(error.meta ? { meta: error.meta } : {}),
+        ...(error.warnings ? { warnings: error.warnings } : {}),
     };
 }
 

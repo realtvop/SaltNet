@@ -1,3 +1,5 @@
+import type { Warning } from "./output/warning";
+
 /**
  * Every error the CLI can report, with the exit code it maps to (design 4.6). The codes are
  * constants that agents match on, so they never change; only their messages are prose.
@@ -56,6 +58,9 @@ export interface CliErrorOptions {
     retryable?: boolean;
     /** More fields for the error object, such as the preview of a confirmation. */
     extra?: Readonly<Record<string, unknown>>;
+    /** What the envelope's `meta` holds when the failure happens after some data was found. */
+    meta?: Readonly<Record<string, unknown>>;
+    warnings?: readonly Warning[];
     cause?: unknown;
 }
 
@@ -66,6 +71,8 @@ export class CliError extends Error {
     readonly fix?: string;
     readonly retryable: boolean;
     readonly extra?: Readonly<Record<string, unknown>>;
+    readonly meta?: Readonly<Record<string, unknown>>;
+    readonly warnings?: readonly Warning[];
 
     constructor(code: ErrorCode, message: string, options: CliErrorOptions = {}) {
         super(message, options.cause === undefined ? undefined : { cause: options.cause });
@@ -75,6 +82,8 @@ export class CliError extends Error {
         this.fix = options.fix;
         this.retryable = options.retryable ?? RETRYABLE_BY_DEFAULT.has(code);
         this.extra = options.extra;
+        this.meta = options.meta;
+        this.warnings = options.warnings;
     }
 
     get exitCode(): number {
