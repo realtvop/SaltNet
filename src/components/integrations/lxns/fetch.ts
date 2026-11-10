@@ -1,5 +1,5 @@
 import type { User } from "@/components/data/user";
-import type { LXNSAuth, LXNSResponse } from "./type";
+import type { LXNSAuth, LXNSResponse } from "@core/integrations/lxns/type";
 import { refreshLXNSOAuthToken } from "./token";
 
 const EXPIRY_BUFFER_MS = 60_000;

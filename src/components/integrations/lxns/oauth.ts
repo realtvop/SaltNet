@@ -1,5 +1,5 @@
 import { useShared } from "@/components/app/shared";
-import type { LXNSAuth } from "./type";
+import type { LXNSAuth } from "@core/integrations/lxns/type";
 import { applyLXNSAuth, LXNSTokenError, requestLXNSToken } from "./token";
 import { confirm, snackbar } from "mdui";
 import { jwtDecode } from "jwt-decode";

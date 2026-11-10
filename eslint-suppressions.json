@@ -276,6 +276,11 @@
       "count": 1
     }
   },
+  "shared/core/integrations/lxns/fetchCollection.ts": {
+    "unicorn/prefer-type-error": {
+      "count": 1
+    }
+  },
   "shared/core/kaleidxscope/data.ts": {
     "style/quotes": {
       "count": 2
@@ -908,26 +913,6 @@
       "count": 64
     }
   },
-  "src/components/data/collection/additionalCollections.json": {
-    "jsonc/indent": {
-      "count": 922
-    },
-    "jsonc/key-spacing": {
-      "count": 3446
-    },
-    "jsonc/object-curly-spacing": {
-      "count": 1834
-    },
-    "no-irregular-whitespace": {
-      "count": 15
-    },
-    "style/comma-spacing": {
-      "count": 2896
-    },
-    "style/eol-last": {
-      "count": 1
-    }
-  },
   "src/components/data/collection/index.test.ts": {
     "perfectionist/sort-imports": {
       "count": 1
@@ -937,32 +922,17 @@
     }
   },
   "src/components/data/collection/index.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 9
-    },
-    "perfectionist/sort-named-imports": {
-      "count": 1
-    },
     "style/member-delimiter-style": {
-      "count": 5
+      "count": 4
     },
     "ts/consistent-type-definitions": {
       "count": 1
     },
     "antfu/if-newline": {
-      "count": 12
-    },
-    "style/operator-linebreak": {
-      "count": 29
-    },
-    "style/indent-binary-ops": {
-      "count": 5
+      "count": 4
     },
     "style/comma-dangle": {
-      "count": 3
+      "count": 2
     },
     "style/brace-style": {
       "count": 7
@@ -1562,25 +1532,17 @@
     }
   },
   "src/components/integrations/lxns/fetch.ts": {
-    "antfu/if-newline": {
+    "perfectionist/sort-imports": {
       "count": 1
     },
-    "perfectionist/sort-imports": {
+    "style/member-delimiter-style": {
+      "count": 1
+    },
+    "antfu/if-newline": {
       "count": 1
     },
     "style/comma-dangle": {
       "count": 2
-    },
-    "style/member-delimiter-style": {
-      "count": 1
-    }
-  },
-  "src/components/integrations/lxns/fetchCollection.ts": {
-    "style/comma-dangle": {
-      "count": 3
-    },
-    "unicorn/prefer-type-error": {
-      "count": 1
     }
   },
   "src/components/integrations/lxns/fetchScore.ts": {
@@ -1592,11 +1554,11 @@
     }
   },
   "src/components/integrations/lxns/index.ts": {
-    "perfectionist/sort-exports": {
-      "count": 2
-    },
     "perfectionist/sort-named-exports": {
       "count": 1
+    },
+    "perfectionist/sort-exports": {
+      "count": 2
     }
   },
   "src/components/integrations/lxns/oauth.test.ts": {
@@ -1617,26 +1579,26 @@
     }
   },
   "src/components/integrations/lxns/oauth.ts": {
-    "antfu/if-newline": {
-      "count": 12
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 2
-    },
     "perfectionist/sort-imports": {
       "count": 3
     },
     "perfectionist/sort-named-imports": {
       "count": 3
     },
-    "style/brace-style": {
-      "count": 1
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    },
+    "antfu/if-newline": {
+      "count": 12
+    },
+    "style/operator-linebreak": {
+      "count": 3
     },
     "style/comma-dangle": {
       "count": 1
     },
-    "style/operator-linebreak": {
-      "count": 3
+    "style/brace-style": {
+      "count": 1
     }
   },
   "src/components/integrations/lxns/oauthSession.test.ts": {
@@ -1657,8 +1619,8 @@
     }
   },
   "src/components/integrations/lxns/oauthSession.ts": {
-    "antfu/if-newline": {
-      "count": 5
+    "style/member-delimiter-style": {
+      "count": 13
     },
     "regexp/prefer-w": {
       "count": 1
@@ -1666,17 +1628,17 @@
     "regexp/use-ignore-case": {
       "count": 1
     },
-    "style/brace-style": {
-      "count": 5
+    "style/operator-linebreak": {
+      "count": 13
     },
     "style/comma-dangle": {
       "count": 2
     },
-    "style/member-delimiter-style": {
-      "count": 13
+    "style/brace-style": {
+      "count": 5
     },
-    "style/operator-linebreak": {
-      "count": 13
+    "antfu/if-newline": {
+      "count": 5
     }
   },
   "src/components/integrations/lxns/token.test.ts": {
@@ -1697,31 +1659,23 @@
     }
   },
   "src/components/integrations/lxns/token.ts": {
-    "antfu/if-newline": {
-      "count": 2
-    },
     "perfectionist/sort-imports": {
       "count": 1
-    },
-    "style/brace-style": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 3
     },
     "style/member-delimiter-style": {
       "count": 5
     },
+    "style/comma-dangle": {
+      "count": 3
+    },
     "style/operator-linebreak": {
       "count": 8
-    }
-  },
-  "src/components/integrations/lxns/type.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
     },
-    "style/member-delimiter-style": {
-      "count": 58
+    "antfu/if-newline": {
+      "count": 2
+    },
+    "style/brace-style": {
+      "count": 1
     }
   },
   "src/components/integrations/lxns/uploadScore.ts": {

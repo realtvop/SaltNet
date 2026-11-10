@@ -1,4 +1,4 @@
-import type { LXNSAuth } from "./type";
+import type { LXNSAuth } from "@core/integrations/lxns/type";
 
 export interface LXNSOAuthCallback {
     url: string;

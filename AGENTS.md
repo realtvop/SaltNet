@@ -11,7 +11,7 @@ SaltNet is a two-package pnpm workspace:
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
-- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for cached LXNS collections, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
+- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
 - `shared/core/` holds platform-neutral domain logic shared by the web app and the CLI. It must not
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
@@ -24,8 +24,9 @@ SaltNet is a two-package pnpm workspace:
       `FetchLike`), `chart/` (difficulty, chart identity,
       recent-change ordering), `course/` (dan-course definitions and ordered chart matching),
       `kaleidxscope/` (CN gate conditions, life calendars, draw pools), `collection/` (collection
-      types and version-plate requirement/progress evaluation), `user/inGame.ts` (in-game user
-      types), and `integrations/diving-fish/type.ts`.
+      types, LXNS data mapping and validation, static characters and partners, version-plate
+      requirement/progress evaluation), `user/inGame.ts` (in-game user types), and
+      `integrations/` (`diving-fish/type.ts`, `lxns/type.ts`, and the public `lxns/fetchCollection.ts`).
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 
@@ -33,7 +34,7 @@ Static assets belong in `public/`; structured source assets belong in `src/asset
 
 ## Architecture & Navigation Index
 
-Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates and search indexing, check `shared/core/music/saltmeta.ts`, `shared/core/music/fetch.ts`, `src/components/data/music/musicApi.ts` (the web wrapper that reports failures), `src/components/data/music/index.ts` (cache and Vue state), and `shared/core/music/search.ts`. For dan-course data or its songs-page category, inspect `shared/core/course/` and `src/pages/songs.vue`. For KALEIDXSCOPE gate data or its songs-page category, inspect `shared/core/kaleidxscope/`, `src/components/data/kaleidxscope/`, and `src/pages/songs.vue`; life timestamps are stored with the CN UTC+8 offset. For collection or version-plate data, trace `src/components/integrations/lxns/fetchCollection.ts`, `src/components/data/collection/`, then `src/pages/collections.vue` or `src/pages/songs.vue`. Version-plate tabs combine adjacent plates with identical score requirements into compact labels such as `熊華極` (sharing the category suffix once) through `getVersionPlateTabs` in `shared/core/collection/versionPlate.ts`, retaining the first plate as the selection value. Broader data-shape notes are documented in `docs/component-data-types.md`.
+Start feature tracing at the route in `src/components/app/router.ts`, then follow the page into its data module or integration adapter. Production uses hash history while development uses HTML5 history; dialog navigation is coordinated between `src/stores/dialog.ts` and `src/stores/router.ts`. For B50 image issues, inspect `src/components/rendering/takumiB50.tsx`, `shared/rendering/`, then `render-service/src/http.tsx`. For music-data updates and search indexing, check `shared/core/music/saltmeta.ts`, `shared/core/music/fetch.ts`, `src/components/data/music/musicApi.ts` (the web wrapper that reports failures), `src/components/data/music/index.ts` (cache and Vue state), and `shared/core/music/search.ts`. For dan-course data or its songs-page category, inspect `shared/core/course/` and `src/pages/songs.vue`. For KALEIDXSCOPE gate data or its songs-page category, inspect `shared/core/kaleidxscope/`, `src/components/data/kaleidxscope/`, and `src/pages/songs.vue`; life timestamps are stored with the CN UTC+8 offset. For collection or version-plate data, trace `shared/core/integrations/lxns/fetchCollection.ts` (via the web wrapper `src/components/integrations/lxns/fetchCollection.ts`), `shared/core/collection/map.ts`, `src/components/data/collection/index.ts` (cache and Vue state), then `src/pages/collections.vue` or `src/pages/songs.vue`. Version-plate tabs combine adjacent plates with identical score requirements into compact labels such as `熊華極` (sharing the category suffix once) through `getVersionPlateTabs` in `shared/core/collection/versionPlate.ts`, retaining the first plate as the selection value. Broader data-shape notes are documented in `docs/component-data-types.md`.
 
 Bottom navigation spacing is derived from `env(safe-area-inset-bottom, 0px)` in `src/style.css`.
 Keep overlays aligned with `--nav-bar-height` and `--nav-bar-padding-bottom` instead of adding
@@ -72,8 +73,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm --filter saltnet-render-service check` type-checks the service.
 - `pnpm test:course` validates the static dan-course snapshot and ordered chart matching.
 - `pnpm test:kaleidxscope` validates the gate, noise-stage, and final-sequence snapshot, life-phase boundaries, and chart matching. Unconfirmed life calendars remain empty unless explicitly requested as estimates; the noise calendar uses a labeled three-day estimate from October 1 at 07:00 UTC+8.
-- `pnpm test:collection-index` runs focused tests for collection caching, initialization,
-  ChartInfo reverse associations, and version-plate tab merging.
+- `pnpm test:collection-index` runs focused tests for collection caching, initialization, the
+  LXNS collection fetch and mapping, static character/partner data, ChartInfo reverse
+  associations, and version-plate tab merging.
 - `pnpm test:score-history` validates score-change detection, IndexedDB history, generations, and
   user-backup compatibility.
 - `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.

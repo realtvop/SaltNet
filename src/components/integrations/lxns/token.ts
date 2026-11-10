@@ -1,6 +1,6 @@
 import type { User } from "@/components/data/user";
 import { jwtDecode } from "jwt-decode";
-import type { LXNSAuth } from "./type";
+import type { LXNSAuth } from "@core/integrations/lxns/type";
 
 export interface LXNSTokenData {
     access_token: string;

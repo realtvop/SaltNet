@@ -1,5 +1,5 @@
-import type { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import type { CollectionRequired, CollectionSongType } from "@core/collection/type";
+import type { CollectionRequired, CollectionSongType } from "../../collection/type";
+import type { ComboStatus, RankRate, SyncStatus } from "../../mai/types";
 
 export interface LXNSAuth {
     accessToken: string | null;

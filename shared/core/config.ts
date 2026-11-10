@@ -8,15 +8,19 @@ import { SALTMETA_NEXT_COMPACTED_URL } from "./music/saltmeta";
 export interface CoreConfig {
     /** Compacted SaltMeta metadata document. */
     saltMetaUrl: string;
+    /** Origin of the LXNS (落雪) service, for example `https://maimai.lxns.net`. */
+    lxnsBaseUrl: string;
 }
 
 export const DEFAULT_CORE_CONFIG: Readonly<CoreConfig> = {
     saltMetaUrl: SALTMETA_NEXT_COMPACTED_URL,
+    lxnsBaseUrl: "https://maimai.lxns.net",
 };
 
 /** Fills every field the caller left out with its default. */
 export function resolveCoreConfig(overrides: Partial<CoreConfig> = {}): CoreConfig {
     return {
         saltMetaUrl: overrides.saltMetaUrl ?? DEFAULT_CORE_CONFIG.saltMetaUrl,
+        lxnsBaseUrl: overrides.lxnsBaseUrl ?? DEFAULT_CORE_CONFIG.lxnsBaseUrl,
     };
 }

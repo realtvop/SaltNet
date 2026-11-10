@@ -14,8 +14,7 @@ package-lock.json
 yarn.lock
 .yarn
 src/assets/plates.json
-src/components/data/music/*.json
-src/components/data/collection/*.json
+shared/core/collection/additionalCollections.json
 
 .pnpm-store
 eslint-suppressions.json
