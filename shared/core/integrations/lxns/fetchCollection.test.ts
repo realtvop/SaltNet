@@ -1,6 +1,6 @@
 import type { FetchLike } from "../../http";
 import { describe, expect, it, vi } from "vitest";
-import { fetchLXNSCollections } from "./fetchCollection";
+import { fetchLXNSCollections, LXNSCollectionError } from "./fetchCollection";
 
 const keysByType: Record<string, string> = {
     trophy: "trophies",
@@ -66,6 +66,21 @@ describe("fetching LXNS collections", () => {
         await expect(
             fetchLXNSCollections({ fetch: makeFetch({ icon: { ok: false, status: 502 } }) })
         ).rejects.toThrow("LXNS collection request failed for icon (HTTP 502)");
+    });
+
+    it("tells an HTTP failure from a malformed list by the error it rejects with", async () => {
+        const http = await fetchLXNSCollections({
+            fetch: makeFetch({ frame: { ok: false, status: 503 } }),
+        }).catch((error: unknown) => error);
+        expect(http).toBeInstanceOf(LXNSCollectionError);
+        expect(http).toMatchObject({ kind: "http", collectionType: "frame", status: 503 });
+
+        const malformed = await fetchLXNSCollections({
+            fetch: makeFetch({ trophy: { body: {} } }),
+        }).catch((error: unknown) => error);
+        expect(malformed).toBeInstanceOf(LXNSCollectionError);
+        expect(malformed).toMatchObject({ kind: "malformed", collectionType: "trophy" });
+        expect((malformed as LXNSCollectionError).status).toBeUndefined();
     });
 
     it("rejects when a response does not contain the expected list", async () => {

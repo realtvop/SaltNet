@@ -1,7 +1,8 @@
 import type { FetchLike } from "../http";
 import type { SaltMetaMusicMetadataNextCompacted } from "./saltmeta";
 import { describe, expect, it, vi } from "vitest";
-import { fetchSaltMetaMusicList } from "./fetch";
+import { getFixtureSaltMetaCompacted } from "../fixtures/saltmeta";
+import { buildSaltMetaMusicList, fetchSaltMetaCompacted, fetchSaltMetaMusicList } from "./fetch";
 import { SALTMETA_NEXT_COMPACTED_URL } from "./saltmeta";
 
 function makeCompacted(version = 1): SaltMetaMusicMetadataNextCompacted {
@@ -101,5 +102,71 @@ describe("fetching SaltMeta metadata", () => {
         expect(malformed.ok).toBe(false);
         if (malformed.ok) return;
         expect(malformed.failure.kind).toBe("error");
+    });
+});
+
+describe("downloading without converting", () => {
+    it("returns the document as downloaded", async () => {
+        const document = makeCompacted();
+        const outcome = await fetchSaltMetaCompacted({ fetch: respondWith(document) });
+
+        expect(outcome).toEqual({ ok: true, compacted: document });
+    });
+
+    it("reports the same failures as the full fetch", async () => {
+        expect(
+            await fetchSaltMetaCompacted({ fetch: respondWith(null, { ok: false, status: 404 }) })
+        ).toEqual({
+            ok: false,
+            failure: { kind: "http", status: 404 },
+        });
+        expect(await fetchSaltMetaCompacted({ fetch: respondWith(makeCompacted(3)) })).toEqual({
+            ok: false,
+            failure: { kind: "version", expected: 1, actual: 3 },
+        });
+        const boom = new Error("boom");
+        expect(
+            await fetchSaltMetaCompacted({
+                fetch: vi.fn(async () => {
+                    throw boom;
+                }),
+            })
+        ).toEqual({ ok: false, failure: { kind: "error", error: boom } });
+    });
+
+    it("does not look at the contents, so converting is a separate step that can throw", async () => {
+        const outcome = await fetchSaltMetaCompacted({
+            fetch: respondWith({ version: 1, musics: [[1, "x"]], versions: [] }),
+        });
+        expect(outcome.ok).toBe(true);
+        if (!outcome.ok) return;
+        expect(() => buildSaltMetaMusicList(outcome.compacted)).toThrow();
+    });
+});
+
+describe("building the music list from a document", () => {
+    it("matches what the full fetch returns and merges nothing by default", async () => {
+        const document = getFixtureSaltMetaCompacted();
+        const built = buildSaltMetaMusicList(document);
+        const fetched = await fetchSaltMetaMusicList({ fetch: respondWith(document) });
+
+        expect(built.merged).toEqual([]);
+        expect(fetched.ok).toBe(true);
+        if (!fetched.ok) return;
+        expect(built.music).toEqual(fetched.value.music);
+        expect(built.metadata).toEqual(fetched.value.metadata);
+        // The web app keeps both entries of an upstream duplicate, so their charts collide.
+        expect(built.music.musicList[110851].charts).toHaveLength(2);
+    });
+
+    it("folds upstream duplicates when asked to", () => {
+        const built = buildSaltMetaMusicList(getFixtureSaltMetaCompacted(), {
+            mergeDuplicates: true,
+        });
+
+        expect(built.merged.map(entry => entry.id)).toEqual([100851, 100998]);
+        expect(built.music.musicList[110851].charts).toHaveLength(1);
+        expect(built.music.musicList[110998].charts).toHaveLength(1);
+        expect(built.music.chartList[11085110].music).toBe(built.music.musicList[110851]);
     });
 });

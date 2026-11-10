@@ -1,7 +1,7 @@
+import type { SavedMusicList } from "./type";
 import OpenCC from "opencc-js/t2cn";
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
-import type { SavedMusicList } from "./type";
 
 export const MUSIC_SEARCH_INDEX_VERSION = 1;
 

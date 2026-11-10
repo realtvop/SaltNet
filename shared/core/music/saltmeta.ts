@@ -1,7 +1,8 @@
 import type { ChartStats } from "../integrations/diving-fish/type";
+import type { MusicOrigin } from "../mai/types";
 import type { Chart, ChartInfo, Music, MusicInfo, SavedMusicList } from "./type";
 import { UTAGE_GRADE } from "../chart/difficulty";
-import { ChartType, MusicGenre, MusicOrigin } from "../mai/types";
+import { ChartType, MusicGenre } from "../mai/types";
 import { indexMusicSearchData } from "./search";
 
 export const SALTMETA_NEXT_COMPACTED_URL =
@@ -12,29 +13,29 @@ const SALTMETA_CHART_ID_MULTIPLIER = 100;
 export const SALTMETA_CURRENT_CN_VERSION = "舞萌DX 2026";
 export const SALTMETA_NEXT_COMPACTED_VERSION = 1;
 
-export type SaltMetaCnVersionInfo = {
+export interface SaltMetaCnVersionInfo {
     name: string;
     word: string;
-};
+}
 
 type SaltMetaRegion = "jp" | "intl" | "cn" | "us";
 type SaltMetaDifficulty = 0 | 1 | 2 | 3 | 4 | 10;
 type SaltMetaChartType = "sd" | "dx" | "utage";
 
-type SaltMetaVersion = {
+interface SaltMetaVersion {
     version: string;
     word: string;
     releaseDate: string;
     cnVerOverride: number | null;
-};
+}
 
-type SaltMetaChartRegionData = {
+interface SaltMetaChartRegionData {
     level: string;
     internalLevel: number;
     version: string | number;
-};
+}
 
-type SaltMetaFitDiffDF = {
+interface SaltMetaFitDiffDF {
     cnt: number;
     diff: string;
     fitDiff: number;
@@ -43,9 +44,9 @@ type SaltMetaFitDiffDF = {
     stdDev: number;
     dist: number[];
     fcDist: number[];
-};
+}
 
-type SaltMetaChartNext = {
+interface SaltMetaChartNext {
     type: SaltMetaChartType;
     difficulty: SaltMetaDifficulty;
     noteDesigner: string;
@@ -59,9 +60,9 @@ type SaltMetaChartNext = {
     };
     regions: Partial<Record<SaltMetaRegion, SaltMetaChartRegionData | null>>;
     fitDiffDF?: SaltMetaFitDiffDF;
-};
+}
 
-type SaltMetaMusicNext = {
+interface SaltMetaMusicNext {
     id: number;
     title: string;
     artist: string;
@@ -73,12 +74,12 @@ type SaltMetaMusicNext = {
     category: string;
     isLocked: boolean;
     charts: SaltMetaChartNext[];
-};
+}
 
-export type SaltMetaMusicMetadataNext = {
+export interface SaltMetaMusicMetadataNext {
     musics: SaltMetaMusicNext[];
     versions: SaltMetaVersion[];
-};
+}
 
 type SaltMetaVersionCompacted = [string, string, string, number | null];
 
@@ -123,11 +124,11 @@ type SaltMetaMusicNextCompacted = [
     string | null,
 ];
 
-export type SaltMetaMusicMetadataNextCompacted = {
+export interface SaltMetaMusicMetadataNextCompacted {
     version: number;
     musics: SaltMetaMusicNextCompacted[];
     versions: SaltMetaVersionCompacted[];
-};
+}
 
 const saltMetaCategories = [
     "POPS＆アニメ",

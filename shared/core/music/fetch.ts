@@ -1,8 +1,10 @@
 import type { CoreConfig } from "../config";
 import type { FetchInit, FetchLike } from "../http";
+import type { MergedDuplicateMusic } from "./duplicates";
 import type { SaltMetaMusicMetadataNextCompacted } from "./saltmeta";
 import type { MusicMetadataState, SavedMusicList } from "./type";
 import { resolveCoreConfig } from "../config";
+import { mergeDuplicateMusics } from "./duplicates";
 import {
     convertSaltMetaNextCompactedToNormal,
     convertSaltMetaNextToSavedMusicList,
@@ -30,6 +32,10 @@ export type SaltMetaFetchOutcome =
       }
     | { ok: false; failure: SaltMetaFetchFailure };
 
+export type SaltMetaCompactedOutcome =
+    | { ok: true; compacted: SaltMetaMusicMetadataNextCompacted }
+    | { ok: false; failure: SaltMetaFetchFailure };
+
 export interface SaltMetaFetchOptions {
     config?: Pick<Partial<CoreConfig>, "saltMetaUrl">;
     /** Defaults to the global `fetch`. */
@@ -37,13 +43,26 @@ export interface SaltMetaFetchOptions {
     requestInit?: FetchInit;
 }
 
+export interface SaltMetaBuildOptions {
+    /**
+     * Fold the songs that upstream lists twice into one entry (see `mergeDuplicateMusics`). The web
+     * app leaves them as they are.
+     */
+    mergeDuplicates?: boolean;
+}
+
+export interface SaltMetaBuildResult extends SaltMetaMusicListResult {
+    /** The songs that were folded together; empty unless `mergeDuplicates` was asked for. */
+    merged: MergedDuplicateMusic[];
+}
+
 /**
- * Downloads and converts the compacted SaltMeta document. It never throws and has no side effects
- * besides the request: reporting, caching and state updates belong to the caller.
+ * Downloads the compacted SaltMeta document and checks its format version, without converting it.
+ * It never throws and has no side effects besides the request.
  */
-export async function fetchSaltMetaMusicList(
+export async function fetchSaltMetaCompacted(
     options: SaltMetaFetchOptions = {}
-): Promise<SaltMetaFetchOutcome> {
+): Promise<SaltMetaCompactedOutcome> {
     try {
         const { saltMetaUrl } = resolveCoreConfig(options.config);
         const doFetch: FetchLike = options.fetch ?? fetch;
@@ -66,18 +85,42 @@ export async function fetchSaltMetaMusicList(
             };
         }
 
-        const metadata = convertSaltMetaNextCompactedToNormal(compacted);
-        const music = convertSaltMetaNextToSavedMusicList(metadata);
-        return {
-            ok: true,
-            compacted,
-            value: {
-                music,
-                metadata: {
-                    cnVersions: getSaltMetaCnVersions(metadata, music),
-                },
-            },
-        };
+        return { ok: true, compacted };
+    } catch (error) {
+        return { ok: false, failure: { kind: "error", error } };
+    }
+}
+
+/** Converts a compacted document to the music list and version metadata. It throws on bad data. */
+export function buildSaltMetaMusicList(
+    compacted: SaltMetaMusicMetadataNextCompacted,
+    options: SaltMetaBuildOptions = {}
+): SaltMetaBuildResult {
+    const normal = convertSaltMetaNextCompactedToNormal(compacted);
+    const { metadata, merged } = options.mergeDuplicates
+        ? mergeDuplicateMusics(normal)
+        : { metadata: normal, merged: [] };
+    const music = convertSaltMetaNextToSavedMusicList(metadata);
+    return {
+        music,
+        metadata: { cnVersions: getSaltMetaCnVersions(metadata, music) },
+        merged,
+    };
+}
+
+/**
+ * Downloads and converts the compacted SaltMeta document. It never throws and has no side effects
+ * besides the request: reporting, caching and state updates belong to the caller.
+ */
+export async function fetchSaltMetaMusicList(
+    options: SaltMetaFetchOptions = {}
+): Promise<SaltMetaFetchOutcome> {
+    const downloaded = await fetchSaltMetaCompacted(options);
+    if (!downloaded.ok) return downloaded;
+
+    try {
+        const { music, metadata } = buildSaltMetaMusicList(downloaded.compacted);
+        return { ok: true, compacted: downloaded.compacted, value: { music, metadata } };
     } catch (error) {
         return { ok: false, failure: { kind: "error", error } };
     }

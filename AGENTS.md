@@ -21,7 +21,7 @@ SaltNet is a three-package pnpm workspace:
   contents:
     - `mai/`: rank, combo and sync enums.
     - `music/`: types, SaltMeta conversion and fetching, cached-data restoration, `MusicSort` order,
-      and the precomputed simplified/traditional, pinyin and romaji search index.
+      and the precomputed simplified/traditional, pinyin and romaji search index. `music/duplicates.ts` folds the banquet songs that upstream lists twice into one entry (only the CLI asks for it; the web app keeps both) and `music/fetch.ts` offers the SaltMeta download and the conversion separately as well as together.
     - `config.ts` and `http.ts`: `CoreConfig` and the injectable `FetchLike`.
     - `chart/`: difficulty, chart identity, recent-change ordering.
     - `course/`: dan-course definitions and ordered chart matching.
@@ -33,7 +33,7 @@ SaltNet is a three-package pnpm workspace:
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
       indexes, search, grouping and statistics as pure functions).
     - `fixtures/`: a trimmed real SaltMeta document with a helper that converts it, used as fixed
-      test data by every package.
+      test data by every package, plus a trimmed copy of the four LXNS collection lists (`lxns.ts`).
     - `integrations/`: `diving-fish/type.ts`, `lxns/type.ts`, and the public
       `lxns/fetchCollection.ts`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
@@ -93,7 +93,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   user-backup compatibility.
 - `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
-- `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, and the shared SaltMeta test fixture.
+- `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, the duplicate-song merge, and the shared SaltMeta and LXNS test fixtures.
 - `pnpm test:query` compares the songs-page query helpers (ordering, category filtering, position
   indexes, search, grouping and statistics) with committed snapshots on the fixed fixture data.
   Regenerate the snapshots only for an intentional behavior change.

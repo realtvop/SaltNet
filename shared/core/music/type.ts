@@ -1,11 +1,11 @@
 import type { ChartStats } from "../integrations/diving-fish/type";
 import type {
-    MusicOrigin,
     ChartType,
-    MusicGenre,
     ComboStatus,
-    SyncStatus,
+    MusicGenre,
+    MusicOrigin,
     RankRate,
+    SyncStatus,
 } from "../mai/types";
 
 export type MaimaidxRegion = "jp" | "cn" | "ex";

@@ -276,11 +276,6 @@
       "count": 1
     }
   },
-  "shared/core/integrations/lxns/fetchCollection.ts": {
-    "unicorn/prefer-type-error": {
-      "count": 1
-    }
-  },
   "shared/core/kaleidxscope/data.ts": {
     "style/quotes": {
       "count": 2
@@ -302,24 +297,6 @@
   "shared/core/mai/types.ts": {
     "antfu/top-level-function": {
       "count": 1
-    }
-  },
-  "shared/core/music/saltmeta.ts": {
-    "ts/consistent-type-imports": {
-      "count": 1
-    },
-    "ts/consistent-type-definitions": {
-      "count": 8
-    }
-  },
-  "shared/core/music/search.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    }
-  },
-  "shared/core/music/type.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 3
     }
   },
   "shared/core/query/songs.ts": {

@@ -10,6 +10,20 @@ const responseKeys: Record<LXNSCollectionType, keyof LXNSCollectionLists> = {
     frame: "frames",
 };
 
+/** A collection list that LXNS refused to serve or served in an unexpected shape. */
+export class LXNSCollectionError extends Error {
+    constructor(
+        message: string,
+        readonly kind: "http" | "malformed",
+        readonly collectionType: LXNSCollectionType,
+        /** The HTTP status; only for `kind: "http"`. */
+        readonly status?: number
+    ) {
+        super(message);
+        this.name = "LXNSCollectionError";
+    }
+}
+
 export interface LXNSCollectionFetchOptions {
     config?: Pick<Partial<CoreConfig>, "lxnsBaseUrl">;
     /** Defaults to the global `fetch`. */
@@ -28,15 +42,22 @@ async function fetchLXNSCollectionList(
         options.requestInit
     );
     if (!response.ok) {
-        throw new Error(
-            `LXNS collection request failed for ${collectionType} (HTTP ${response.status})`
+        throw new LXNSCollectionError(
+            `LXNS collection request failed for ${collectionType} (HTTP ${response.status})`,
+            "http",
+            collectionType,
+            response.status
         );
     }
 
     const body = (await response.json()) as Partial<LXNSCollectionLists>;
     const items = body[responseKeys[collectionType]];
     if (!Array.isArray(items)) {
-        throw new Error(`LXNS collection response is malformed for ${collectionType}`);
+        throw new LXNSCollectionError(
+            `LXNS collection response is malformed for ${collectionType}`,
+            "malformed",
+            collectionType
+        );
     }
     return items;
 }
