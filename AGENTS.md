@@ -13,6 +13,11 @@ SaltNet is a two-package pnpm workspace:
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
 - `src/components/data/` contains domain logic: `music/` for chart metadata and its precomputed simplified/traditional, pinyin, and romaji search indexes, `chart/` for score/rating UI and calculations, `course/` for static dan-course definitions and ordered chart matching, `kaleidxscope/` for CN gate conditions, life calendars, draw pools, and the songs-page overview backed by the shared `ScoreSection`, `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for cached LXNS collections, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and ChartInfo reverse associations.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
+- `shared/core/` holds platform-neutral domain logic shared by the web app and the CLI. It must not
+  depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
+  imports are relative, and web code imports it through the `@core/*` alias. `pnpm check` type-checks
+  it with `shared/core/tsconfig.json` (no DOM or Node types) and the `saltnet/shared-core-boundary`
+  block in `eslint.config.js` rejects framework imports. See `shared/core/README.md`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 
@@ -47,7 +52,7 @@ well as the legacy API envelope. Startup callback dialogs wait for
 Install all workspace dependencies with `pnpm install`. From the repository root:
 
 - `pnpm dev` starts the frontend Vite server.
-- `pnpm check` runs Vue/TypeScript checks and verifies Prettier formatting.
+- `pnpm check` runs Vue/TypeScript checks, the DOM-free `shared/core` type check, and verifies Prettier formatting.
 - `pnpm lint` runs ESLint across the repository. Violations that predate the CLI work are frozen in
   `eslint-suppressions.json` (ESLint bulk suppressions), so only new violations fail. After fixing
   old ones, run `pnpm exec eslint . --prune-suppressions` to shrink that file; when moving a file

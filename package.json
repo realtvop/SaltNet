@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "check": "vue-tsc -b && prettier --check .",
+        "check": "vue-tsc -b && tsc -p shared/core/tsconfig.json && prettier --check .",
         "build": "vue-tsc -b && vite build && node ./script/generateBuildInfo.cjs",
         "preview": "vite preview",
         "pret": "prettier --check .",

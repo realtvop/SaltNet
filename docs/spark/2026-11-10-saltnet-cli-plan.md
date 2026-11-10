@@ -52,7 +52,7 @@
 
 **脚手架**
 
-- [ ] P0-1 `build(core): add shared/core scaffold with dom-free typecheck and import guard`
+- [x] P0-1 `build(core): add shared/core scaffold with dom-free typecheck and import guard`
     - `shared/core/tsconfig.json`：不带 DOM 库，也不带 node 类型，接进 `pnpm check`
     - `eslint.config.js`：`shared/core/**` 下禁止 import `vue`、`mdui`、`localforage`、`@/`（以及 `vue-router`、`pinia`、`node:*`、指向 `src/` 的相对路径）
     - 网页端引用 core 用的 `@core/*` 别名（vite、tsconfig）
