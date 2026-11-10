@@ -1,14 +1,13 @@
 import process from "node:process";
+import { runCli } from "./cli";
+import { createRegistry } from "./commands";
+import { createProcessIo } from "./runtime/io";
 import { VERSION } from "./version";
 
-// Placeholder entry point: the command registry and parser replace it in the next steps.
-function main(argv: readonly string[]): number {
-    if (argv.includes("--version")) {
-        process.stdout.write(`${VERSION}\n`);
-        return 0;
-    }
-    process.stderr.write("saltnet: no commands are available yet\n");
-    return 2;
-}
-
-process.exitCode = main(process.argv.slice(2));
+// Set the exit code instead of calling process.exit(): output piped to another process is
+// flushed asynchronously, and exiting early would cut it off.
+process.exitCode = await runCli(process.argv.slice(2), {
+    io: createProcessIo(),
+    registry: createRegistry(),
+    version: VERSION,
+});

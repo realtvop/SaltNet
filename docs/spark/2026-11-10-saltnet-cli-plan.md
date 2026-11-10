@@ -92,7 +92,7 @@
 
 - [x] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
 - [x] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
-- [ ] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
+- [x] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
 - [ ] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
 - [ ] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
 - [ ] P1-6 `feat(cli): refresh catalog and collections into the store`：拉取 SaltMeta 和落雪收藏品，整体替换写入，原始快照存 `cache/`，过期检查、`--offline`、`refresh`；合并上游重复的宴谱
@@ -274,3 +274,12 @@
     - 测试不碰真实目录：`cli/tests/setup.ts` 给每个测试文件一个临时的 `SALTNET_HOME` 和 `HOME`，即使哪个测试忘了传路径，也只会落在临时目录里。
     - 小事：`cli/tsconfig.json` 打开 `allowJs`（`checkJs` 保持关）只是为了让测试能 import `build-defaults.mjs`。十六进制字面量在 Prettier（小写）和 `unicorn/number-literal-case`（大写）之间冲突，所以字节序标记写成十进制 65279。ESLint 的 `style/quotes` 不允许为了少转义而用单引号，Prettier 却会这样改写，所以测试里需要引号的 JSON 都用 `JSON.stringify` 生成，要引号的 `.env` 值用单引号。
     - 一次疏忽，记在这里以便写进最终报告：核对 `.env` 的键名时，用来遮住取值的 `sed` 没有覆盖「等号两边带空格」的写法，三个公开的服务地址（后端主备地址、渲染服务地址）因此出现在我自己的命令输出里。它们不是凭据，也没有写进任何文件、提交或发往任何服务；之后核对 `.env` 只输出布尔值或长度。
+21. **命令注册表、解析器和帮助（P1-3）**：
+    - 一张类型化的注册表（`cli/src/commands/registry.ts`）是命令的唯一来源：解析器、`--help`，以及之后的 `schema`、`guide` 都从它生成。`defineCommand(spec, run)` 用 `const` 泛型从字面量规格推出处理函数拿到的参数类型（必填或有默认值的选项一定有值，开关一定是 boolean），测试用 `expectTypeOf` 在 `tsc` 下检查。`buildRegistry` 启动时校验：命令名和选项键的写法、重复、以 `no` 开头会和 `--no-x` 冲突的键，以及每条示例都必须能被解析器接受（示例用 `splitCommandLine` 切词），所以帮助和 `guide` 里的示例不会过时；P1-18 的端到端测试会把 `guide` 里的示例真正跑一遍。
+    - 错误码和退出码表（`cli/src/errors.ts`）从 P1-4 提前到这里，因为解析器要返回 `USAGE`。`CliError` 带 `code`、`candidates`、`fix`、`retryable`（`NETWORK`、`SYNC_IN_PROGRESS`、`DB_LOCKED` 默认可重试）。P1-4 仍然负责格式（tsv、text、`--fields`）、分页和 stdout/stderr 约定，这一步的外层结构（`cli/src/output/envelope.ts`）只有最小形态：`v`、`ok`、`command`、`data` 或 `error`、`meta`、`warnings`，键的顺序固定。
+    - 解析器（`parse.ts`）不抛异常，返回「运行 / 帮助 / 版本 / 出错」之一；出错时带着已经读到的全局选项，所以命令行写错时 `--pretty` 照样生效，能确定命令时 `command` 字段也会填上。约定：位置参数只给对象（曲目、用户等），其余都是 `--kebab-case` 选项；开关写 `--x` 或 `--no-x`；列表用逗号、范围用 `a..b`；枚举不分大小写并支持别名；`--` 之后全是位置参数；除 `-h` 外没有短选项；`--version` 只在命令名之前才是版本（`charts --version 熊` 里它是命令自己的选项）；全局选项 `--pretty`、`--format`、`--verbose`、`--offline` 写在哪里都行。同一个选项写两次报错，列表选项例外（合并去重）。`--help` 优先于其他写错的地方，但不优先于未知命令；单独的 `saltnet` 显示根帮助、退出码 0；单独的命令组（如 `saltnet user`）报 `USAGE` 并列出子命令；未知命令、选项和枚举值都会给出最接近的候选（带换位的编辑距离，前缀也算）。
+    - 凭据选项（`--qr`、`--token`、`--callback`）在解析阶段就强制只能写 `-`，表示从 stdin 读；它们的值，以及任何看起来不像普通词语的值，都不会回显到错误信息里（`echo` 只回显 40 个字符以内的字母、数字和 `_.:+-`），所以写在命令行上的二维码或令牌不会出现在任何输出里。stdin 只在命令真的要读凭据时才读，stdin 是终端时直接报 `USAGE` 而不是干等。
+    - `--offline` 做成全局选项（规格里它出现在多个命令上，统一成全局更省事；不联网的命令忽略它）。规格里的输出类型落成 `output: "object" | "list" | "text"`，tsv 只对 `list` 有效。开关默认 false；默认开启的开关在帮助里显示为 `--[no-]x`。
+    - 帮助是纯文本、不包外层结构（规格 4.1）：根帮助按分类列命令、命令组折成一行；命令帮助依次是用法、说明、参数、选项、示例、副作用、全局选项。列对齐按显示宽度算（中文和全角字符占两列），标签超过 30 列的描述换到下一行；根帮助的命令列表整体共用一列宽，其余每个表各自算宽度。长枚举在选项里写成 `<值>` 并把取值放进括号说明，短枚举直接写成 `<a|b|c>`。参数表里的标签和用法行用同一个写法（`<曲目...>`、`[难度]`）。
+    - 测试里的小事：`JSON.stringify(error)` 不含不可枚举的 `message`，检查「凭据没有泄露到输出」时必须用 `failureEnvelope` 生成的文本，否则断言会空转。
+    - ESLint：`saltnet/cli` 段再关掉两条会和 Prettier 打架的规则：`style/quotes`（Prettier 对含双引号的字符串改用单引号）和 `unicorn/number-literal-case`（Prettier 把十六进制写成小写，`cli/src/util/width.ts` 里的 Unicode 区间用十六进制才好读）。基线里没有 `cli/` 的条目，所以这个改动不影响存量违规的计数。

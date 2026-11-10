@@ -124,10 +124,16 @@ export default antfu(
         },
     },
     {
-        // CLI 包由 Prettier 格式化；它跑在 Node 里，可以用 node: 内置模块
+        // CLI 包由 Prettier 格式化；它跑在 Node 里，可以用 node: 内置模块。
+        // Prettier 会给含双引号的字符串改用单引号、把十六进制数字写成小写，
+        // 这两处正好和 style/quotes、unicorn/number-literal-case 相反。
         name: "saltnet/cli",
         files: ["cli/**/*.{ts,mjs}"],
-        rules: prettierOwnedFormattingRules,
+        rules: {
+            ...prettierOwnedFormattingRules,
+            "style/quotes": "off",
+            "unicorn/number-literal-case": "off",
+        },
     },
     {
         // 配置文件本身由 Prettier 格式化
