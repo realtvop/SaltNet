@@ -167,7 +167,8 @@ export function replaceMusic(
 
 export type CollectionCounts = Record<LXNSCollectionType, number>;
 
-const LIST_OF_KIND = {
+/** The list of `LXNSCollectionLists` that each kind of collection is kept in. */
+export const LIST_OF_KIND = {
     trophy: "trophies",
     icon: "icons",
     plate: "plates",

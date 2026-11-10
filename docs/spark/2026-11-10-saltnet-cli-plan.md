@@ -98,7 +98,9 @@
 - [x] P1-6a `refactor(core): split saltmeta download from conversion and merge duplicate banquet songs`：core 里的准备工作：`fetchSaltMetaCompacted`/`buildSaltMetaMusicList`、`mergeDuplicateMusics`、`LXNSCollectionError`、落雪收藏品固定数据（见「实现中的决定」第 24 条，它也记着 P1-6c 的设计备忘）
 - [x] P1-6b `feat(cli): add injectable fetch with deadline and error mapping`：`Io.fetch`、`ctx.http()`、统一的超时和 `NETWORK`/`UPSTREAM_ERROR` 错误映射、测试用的模拟网络（见「实现中的决定」第 25 条）
 - [x] P1-6c `feat(cli): refresh catalog and collections into the store`：库表（迁移 2）、拉取 SaltMeta 和落雪收藏品并整体替换写入、原始快照存 `cache/`、`metadata` 锁、`refresh` 命令（`--offline` 报 `USAGE`）；合并上游重复的宴谱（见「实现中的决定」第 26 条；过期检查挪到了 P1-7）
-- [ ] P1-7 `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构；静态数据（段位、万花筒、旅行伙伴、搭档）随版本写入；加上过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建，设计见第 24、26 条）
+- [x] P1-7a `feat(cli): load catalog from the store into core structures`：从 SQLite 还原成和网页端相同的内存结构（`loadMusic`、`loadCollections`），测试证明结果和 core 从同一份文档构建的逐项相等（见第 27 条）
+- [ ] P1-7b `feat(cli): write static courses and collections with the CLI version`：库里收藏品的 `kind` 改用设计里的六个名字，旅行伙伴、搭档和段位随 CLI 版本写入（万花筒不进库，见第 27 条）
+- [ ] P1-7c `feat(cli): refresh stale metadata before a command reads it`：过期检查 `ensureMetadata`（`metadata.maxAgeHours`、`STALE_METADATA`、`OFFLINE_NO_CACHE`、`builder` 变了时从快照重建，设计见第 24、26、27 条）
 - [ ] P1-8 `feat(cli): resolve song, chart and difficulty references`：引用解析、歧义与候选、数字标题、难度写法
 - [ ] P1-9 `feat(cli): add search, song and chart commands`
 - [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
@@ -337,3 +339,9 @@
     - 时间：输出里的时间写成本机时区加偏移（`2026-11-11T09:12:03+08:00`，`util/time.ts` 的 `formatLocalTime`），库里存毫秒时间戳。
     - `toCliError` 从 `cli.ts` 挪到 `src/toCliError.ts`：`catalog/refresh.ts` 要把每个来源的异常也转成 `CliError`，而 `cli.ts` 依赖命令层，不挪会成环。测试 harness 加了 `now` 选项（命令看到的时钟）；`help.test.ts` 里「还没有命令」的用例改用空注册表，因为真正的注册表现在有 `refresh`。
     - 测试：`tests/catalog/store.test.ts`（真实的固定数据：50 首、183 张谱、20 个版本，SD/DX 的 `meta_id`，宴谱的空值，合并后的重复宴谱，替换和回滚）、`snapshots.test.ts`、`tests/commands/refresh.test.ts`（成功、`--offline`、一个来源失败而另一个照常更新、保留旧数据并说明它的时间、连接失败、超时、格式版本、非 JSON、空数据、形状错误、锁）、`util/time.test.ts`。全部用模拟网络，没有真实请求。
+27. **P1-7 拆成三步：读库（P1-7a）、静态数据（P1-7b）、过期检查（P1-7c）**：
+    - 拆分原因同第 24 条：每步一个提交，各自能单独验证。
+    - P1-7a：`catalog/load.ts` 的 `loadMusic`、`loadCollections` 把库里的行还原成网页端的内存结构。曲目和谱面（含 `chart.music` 回指和 `chartList`，由 core 的 `restoreCachedMusicData` 建）、`cnVersions`，以及落雪的四个列表（用 `raw` 重建，再交给 core 的 `mapLXNSCollections`，所以版本牌子也一样）。宴谱缺的值（`bpm`、`charter`、`notes` 里的 `null`）还原成 `null`，和网页端一样；没有的可选字段（`stat`、`aliases`）不出现在对象里。没刷新过时返回 `undefined`。每次读都是一份新副本，一个命令改了它不会影响下一个。
+    - P1-7a 的测试：`tests/catalog/load.test.ts` 用 `toEqual` 证明还原的结果和 core 从同一份固定文档构建的结果逐项相等（曲目、谱面、版本、收藏品映射），还查了回指的同一性、宴谱的空值、搜索索引、新副本和后一次刷新覆盖前一次。
+    - 给 P1-7b 的设计备忘（还没写代码）：库里收藏品的 `kind` 改成设计里的六个名字 `plate`、`title`、`icon`、`frame`、`character`、`partner`（落雪的 `trophy` 改叫 `title`），`refresh` 输出的 `counts` 也跟着用这些名字；`replaceCollections` 只删落雪的四类，不碰静态的两类。新增迁移 3：`courses`、`course_tracks`（带 `chart_key`，能直接和 `charts` 连接）。静态数据（旅行伙伴、搭档、段位）用 `meta_state` 里 `static` 一行的 `builder`（`static-1/<数据内容的 sha256 前 12 位>`）判断要不要重写：数据文件一变就自动重写，不用记得改版本号，开发时也不会读到旧的。**万花筒的数据不进库**：设计里没有对应的视图，`kaleidxscope` 命令直接读 core 的静态数据（偏离了 P1-7 原来的描述）。
+    - 给 P1-7c 的设计备忘（还没写代码）：`ensureMetadata` 只处理这次命令要用的来源。「过期」是没有这一行，或者 `now − fetchedAt ≥ metadata.maxAgeHours`（0 表示每次都刷新）；「要重建」是 `builder` 和当前的不同。要重建时不联网，用 `cache/` 里这个来源的快照重建，`fetchedAt` 沿用旧值；快照没有或读不了就当作没有缓存。要下载（过期、没有缓存、重建不了）又没有 `--offline` 时，只刷新需要的来源：撞锁就用旧缓存继续（没有旧缓存是 `SYNC_IN_PROGRESS`，不等待）；下载失败有旧缓存就带 `STALE_METADATA`（`fix: "saltnet refresh"`），没有就报该来源的错。`--offline` 不下载：有缓存而且过期就带 `STALE_METADATA`，没有缓存是 `OFFLINE_NO_CACHE`。结果还给调用方 `meta.dataAsOf` 要的时间（`catalog`、`collections`）。
