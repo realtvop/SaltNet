@@ -1,5 +1,5 @@
 import type { FailedOutcome, SourceOutcome } from "../catalog/refresh";
-import { refreshCatalog, SOURCE_LABELS } from "../catalog/refresh";
+import { refreshBusyError, refreshCatalog, SOURCE_LABELS } from "../catalog/refresh";
 import { CliError, usageError } from "../errors";
 import { formatLocalTime } from "../util/time";
 import { defineCommand } from "./registry";
@@ -64,18 +64,7 @@ export const refresh = defineCommand(
             log: ctx.log,
         });
 
-        if (!result.refreshed) {
-            const { holder } = result;
-            throw new CliError(
-                "SYNC_IN_PROGRESS",
-                `另一个 saltnet 进程（pid ${holder.pid}）正在刷新曲库和收藏品；等它结束后再试`,
-                {
-                    extra: {
-                        holder: { pid: holder.pid, since: time(holder.acquiredAt) },
-                    },
-                }
-            );
-        }
+        if (!result.refreshed) throw refreshBusyError(result.holder);
 
         const sources = result.outcomes.map(report);
         const failed = result.outcomes.filter((outcome): outcome is FailedOutcome => !outcome.ok);

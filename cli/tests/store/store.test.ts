@@ -350,3 +350,91 @@ describe("store.transaction", () => {
         store.close();
     });
 });
+
+describe("store.read", () => {
+    /** Two connections to one database, as two saltnet processes are. */
+    function open() {
+        const paths = makeHome();
+        const reader = openStore(paths, { migrations: [createA] });
+        const writer = openStore(paths, { migrations: [createA] });
+        const count = (): number =>
+            (reader.db.prepare("SELECT count(*) AS n FROM a").get() as { n: number }).n;
+        const commit = (x: string): void =>
+            writer.transaction(() => void writer.db.prepare("INSERT INTO a (x) VALUES (?)").run(x));
+        return { reader, writer, count, commit };
+    }
+
+    it("returns what the work returns", () => {
+        const { reader, writer } = open();
+        expect(reader.read(() => 42)).toBe(42);
+        expect(reader.db.isTransaction).toBe(false);
+        reader.close();
+        writer.close();
+    });
+
+    it("sees one state of the database while another connection commits", () => {
+        const { reader, writer, count, commit } = open();
+
+        const seen = reader.read(() => {
+            const before = count();
+            commit("while reading");
+            return [before, count()];
+        });
+
+        expect(seen).toEqual([0, 0]);
+        // The next view has it.
+        expect(count()).toBe(1);
+        reader.close();
+        writer.close();
+    });
+
+    it("is needed: two plain reads around a commit disagree", () => {
+        const { reader, writer, count, commit } = open();
+
+        const before = count();
+        commit("in between");
+
+        expect([before, count()]).toEqual([0, 1]);
+        reader.close();
+        writer.close();
+    });
+
+    it("lets the error through and ends its view", () => {
+        const { reader, writer, count, commit } = open();
+
+        expect(() =>
+            reader.read(() => {
+                throw new Error("broken");
+            })
+        ).toThrow("broken");
+
+        expect(reader.db.isTransaction).toBe(false);
+        commit("after");
+        expect(count()).toBe(1);
+        reader.close();
+        writer.close();
+    });
+
+    it("refuses work that is asynchronous", () => {
+        const { reader, writer } = open();
+
+        expect(() => reader.read(async () => 1)).toThrow(TypeError);
+
+        expect(reader.db.isTransaction).toBe(false);
+        reader.close();
+        writer.close();
+    });
+
+    it("joins the transaction it is called from", () => {
+        const { reader, writer } = open();
+
+        const seen = reader.transaction(() => {
+            reader.db.exec("INSERT INTO a (x) VALUES ('mine')");
+            return reader.read(() => reader.db.prepare("SELECT x FROM a").all());
+        });
+
+        expect(seen).toEqual([{ x: "mine" }]);
+        reader.close();
+        writer.close();
+    });
+});

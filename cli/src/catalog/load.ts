@@ -87,14 +87,25 @@ function buildChart(row: ChartRow, music: Music): Chart {
  * (`CATALOG_BUILDER`); `ensureMetadata` sees to that before a command reads them.
  */
 export function loadMusic(store: Store): LoadedMusic | undefined {
-    const state = readMetaState(store, "saltmeta");
-    if (!state) return undefined;
-    const { db } = store;
-
-    const songs = db.prepare("SELECT * FROM songs ORDER BY id").all() as unknown as SongRow[];
-    const charts = db
-        .prepare("SELECT * FROM charts ORDER BY song_id, position")
-        .all() as unknown as ChartRow[];
+    // One view for every query: a refresh that another process commits in between must not leave
+    // this with the songs of one download and the charts of another.
+    const rows = store.read(() => {
+        const state = readMetaState(store, "saltmeta");
+        if (!state) return undefined;
+        const { db } = store;
+        return {
+            state,
+            songs: db.prepare("SELECT * FROM songs ORDER BY id").all() as unknown as SongRow[],
+            charts: db
+                .prepare("SELECT * FROM charts ORDER BY song_id, position")
+                .all() as unknown as ChartRow[],
+            versions: db
+                .prepare("SELECT name, word FROM versions ORDER BY position")
+                .all() as unknown as MusicMetadataState["cnVersions"],
+        };
+    });
+    if (!rows) return undefined;
+    const { state, songs, charts, versions } = rows;
 
     const musicList: Record<number, Music> = {};
     for (const row of songs) {
@@ -118,10 +129,6 @@ export function loadMusic(store: Store): LoadedMusic | undefined {
         if (music) music.charts.push(buildChart(row, music));
     }
 
-    const versions = db
-        .prepare("SELECT name, word FROM versions ORDER BY position")
-        .all() as unknown as MusicMetadataState["cnVersions"];
-
     return {
         music: restoreCachedMusicData({
             musicList,
@@ -138,16 +145,19 @@ export function loadMusic(store: Store): LoadedMusic | undefined {
 /** The LXNS lists as downloaded, rebuilt from the whole items the rows keep. */
 export function loadCollectionLists(store: Store): LXNSCollectionLists {
     const lists: LXNSCollectionLists = { trophies: [], icons: [], plates: [], frames: [] };
-    const rows = store.db
-        .prepare(
-            `SELECT kind, raw FROM collections
-             WHERE kind IN (${LXNS_COLLECTION_KINDS.map(() => "?").join(", ")})
-             ORDER BY kind, position`
-        )
-        .all(...LXNS_COLLECTION_KINDS) as unknown as {
-        kind: keyof typeof LIST_OF_KIND;
-        raw: string;
-    }[];
+    const rows = store.read(
+        () =>
+            store.db
+                .prepare(
+                    `SELECT kind, raw FROM collections
+                     WHERE kind IN (${LXNS_COLLECTION_KINDS.map(() => "?").join(", ")})
+                     ORDER BY kind, position`
+                )
+                .all(...LXNS_COLLECTION_KINDS) as unknown as {
+                kind: keyof typeof LIST_OF_KIND;
+                raw: string;
+            }[]
+    );
     for (const row of rows)
         lists[LIST_OF_KIND[row.kind]].push(parseJson<LXNSCollectionItem>(row.raw));
     return lists;
@@ -158,10 +168,11 @@ export function loadCollectionLists(store: Store): LXNSCollectionLists {
  * nothing has been fetched yet.
  */
 export function loadCollections(store: Store): LoadedCollections | undefined {
-    const state = readMetaState(store, "lxns-collections");
-    if (!state) return undefined;
-    return {
-        collections: mapLXNSCollections(loadCollectionLists(store)),
-        fetchedAt: state.fetchedAt,
-    };
+    // The time and the lists from one view, so the time belongs to the items next to it.
+    const read = store.read(() => {
+        const state = readMetaState(store, "lxns-collections");
+        return state && { fetchedAt: state.fetchedAt, lists: loadCollectionLists(store) };
+    });
+    if (!read) return undefined;
+    return { collections: mapLXNSCollections(read.lists), fetchedAt: read.fetchedAt };
 }

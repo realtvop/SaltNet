@@ -36,6 +36,13 @@ export interface Store {
      * the outer code catches undoes only the inner changes. `work` must be synchronous.
      */
     transaction: <T>(work: () => T) => T;
+    /**
+     * Runs `work` against one consistent view of the database: what another process commits while
+     * `work` runs is not seen halfway, so several queries that belong together (a song table and
+     * its charts) never mix the old rows with the new. It takes no write lock and `work` must only
+     * read (anything it writes is undone); like `transaction`, it must be synchronous.
+     */
+    read: <T>(work: () => T) => T;
     /** Closes the database; closing twice is fine. */
     close: () => void;
 }
@@ -116,11 +123,27 @@ function createStore(db: DatabaseSync, file: string, migration: MigrationResult)
         }
     }
 
+    function read<T>(work: () => T): T {
+        // Inside a transaction the view is consistent already.
+        if (db.isTransaction) return work();
+
+        // A deferred transaction takes its view at the first read and keeps it until it ends.
+        db.exec("BEGIN");
+        try {
+            const result = work();
+            assertSynchronous(result);
+            return result;
+        } finally {
+            quietly(() => db.exec("ROLLBACK"));
+        }
+    }
+
     return {
         db,
         path: file,
         migration,
         transaction,
+        read,
         close() {
             if (closed) return;
             closed = true;

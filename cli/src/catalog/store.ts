@@ -18,7 +18,9 @@ import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
 export const CATALOG_BUILDER = `catalog-2/search-${MUSIC_SEARCH_INDEX_VERSION}`;
 
 /** The sources that are downloaded, and kept as a raw snapshot in `cache/`. */
-export type DownloadedSource = "saltmeta" | "lxns-collections";
+export const DOWNLOADED_SOURCES = ["saltmeta", "lxns-collections"] as const;
+
+export type DownloadedSource = (typeof DOWNLOADED_SOURCES)[number];
 
 /** Everything `meta_state` has a row for: the downloads, and the data that ships with the CLI. */
 export type MetaSource = DownloadedSource | "static";

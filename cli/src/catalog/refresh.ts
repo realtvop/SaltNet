@@ -9,7 +9,8 @@
 import type { FetchLike } from "@core/http";
 import type { LXNSCollectionLists } from "@core/integrations/lxns/type";
 import type { MergedDuplicateMusic } from "@core/music/duplicates";
-import type { SaltMetaFetchFailure } from "@core/music/fetch";
+import type { SaltMetaBuildResult, SaltMetaFetchFailure } from "@core/music/fetch";
+import type { SaltMetaMusicMetadataNextCompacted } from "@core/music/saltmeta";
 import type { ConfigValues } from "../runtime/config";
 import type { RuntimePaths } from "../runtime/paths";
 import type { LockHolder } from "../store/locks";
@@ -23,8 +24,9 @@ import { toCoreConfig } from "../runtime/config";
 import { upstreamStatusError } from "../runtime/http";
 import { withLock } from "../store/locks";
 import { toCliError } from "../toCliError";
+import { formatLocalTime } from "../util/time";
 import { writeSnapshot } from "./snapshots";
-import { readMetaState, replaceCollections, replaceMusic } from "./store";
+import { DOWNLOADED_SOURCES, readMetaState, replaceCollections, replaceMusic } from "./store";
 
 /** The lock a refresh holds, so two processes do not download and write at the same time. */
 export const METADATA_LOCK = "metadata";
@@ -77,6 +79,24 @@ export interface RefreshDeps {
     http: FetchLike;
     now: () => Date;
     log: (message: string) => void;
+    /** What to download; both sources when omitted. The outcomes come back in this order. */
+    sources?: readonly DownloadedSource[];
+}
+
+/**
+ * The error for a refresh that could not start because another process holds the `metadata` lock.
+ * `why` says what the caller wanted the refresh for.
+ */
+export function refreshBusyError(holder: LockHolder, why = ""): CliError {
+    return new CliError(
+        "SYNC_IN_PROGRESS",
+        `另一个 saltnet 进程（pid ${holder.pid}）正在刷新曲库和收藏品${why}；等它结束后再试`,
+        {
+            extra: {
+                holder: { pid: holder.pid, since: formatLocalTime(new Date(holder.acquiredAt)) },
+            },
+        }
+    );
 }
 
 function describeError(error: unknown): string {
@@ -120,15 +140,15 @@ function collectionsFailure(error: unknown, baseUrl: string): CliError {
     });
 }
 
-async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
-    const core = toCoreConfig(deps.config);
-    deps.log(`正在下载${SOURCE_LABELS.saltmeta}`);
-    const downloaded = await fetchSaltMetaCompacted({ config: core, fetch: deps.http });
-    if (!downloaded.ok) throw saltMetaFailure(downloaded.failure, core.saltMetaUrl);
-
-    let build;
+/**
+ * Converts a SaltMeta document (downloaded, or saved in `cache/`) into the songs, charts and
+ * versions the store keeps. A document that cannot be converted, or that has no CN song at all,
+ * is a `CliError`: it must never replace a good catalog.
+ */
+export function buildCatalog(compacted: SaltMetaMusicMetadataNextCompacted): SaltMetaBuildResult {
+    let build: SaltMetaBuildResult;
     try {
-        build = buildSaltMetaMusicList(downloaded.compacted, { mergeDuplicates: true });
+        build = buildSaltMetaMusicList(compacted, { mergeDuplicates: true });
     } catch (error) {
         throw new CliError("UPSTREAM_ERROR", `SaltMeta 的内容无法转换：${describeError(error)}`, {
             cause: error,
@@ -137,6 +157,16 @@ async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
     if (Object.keys(build.music.musicList).length === 0) {
         throw new CliError("UPSTREAM_ERROR", "SaltMeta 里没有国服曲目，已有的曲库没有被替换");
     }
+    return build;
+}
+
+async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
+    const core = toCoreConfig(deps.config);
+    deps.log(`正在下载${SOURCE_LABELS.saltmeta}`);
+    const downloaded = await fetchSaltMetaCompacted({ config: core, fetch: deps.http });
+    if (!downloaded.ok) throw saltMetaFailure(downloaded.failure, core.saltMetaUrl);
+
+    const build = buildCatalog(downloaded.compacted);
 
     writeSnapshot(deps.paths, "saltmeta", downloaded.compacted);
     const fetchedAt = deps.now().getTime();
@@ -171,6 +201,11 @@ async function refreshCollections(deps: RefreshDeps): Promise<SourceOutcome> {
     return { source: "lxns-collections", ok: true, fetchedAt, counts };
 }
 
+const RUNNERS: Readonly<Record<DownloadedSource, (deps: RefreshDeps) => Promise<SourceOutcome>>> = {
+    saltmeta: refreshMusic,
+    "lxns-collections": refreshCollections,
+};
+
 /** Runs one source and turns whatever goes wrong into its outcome, so the other still runs. */
 async function attempt(
     source: DownloadedSource,
@@ -191,20 +226,18 @@ async function attempt(
 }
 
 /**
- * Downloads both sources and replaces what is stored. When another process is already refreshing,
- * nothing is downloaded and the holder of the lock comes back instead: a `refresh` command
- * refuses, a command that merely wants fresh data carries on with what is stored.
+ * Downloads the sources (both unless `deps.sources` names fewer) and replaces what is stored.
+ * When another process is already refreshing, nothing is downloaded and the holder of the lock
+ * comes back instead: a `refresh` command refuses, a command that merely wants fresh data carries
+ * on with what is stored.
  */
 export async function refreshCatalog(deps: RefreshDeps): Promise<RefreshResult> {
+    const sources = deps.sources ?? DOWNLOADED_SOURCES;
     const locked = await withLock(
         deps.store,
         METADATA_LOCK,
         { ttlMs: METADATA_LOCK_TTL_MS, now: () => deps.now().getTime() },
-        () =>
-            Promise.all([
-                attempt("saltmeta", deps, () => refreshMusic(deps)),
-                attempt("lxns-collections", deps, () => refreshCollections(deps)),
-            ])
+        () => Promise.all(sources.map(source => attempt(source, deps, () => RUNNERS[source](deps))))
     );
     if (!locked.acquired) return { refreshed: false, holder: locked.holder };
     return { refreshed: true, outcomes: locked.value };
