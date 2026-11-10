@@ -268,6 +268,24 @@
       "count": 1
     }
   },
+  "shared/core/kaleidxscope/data.ts": {
+    "style/quotes": {
+      "count": 2
+    }
+  },
+  "shared/core/kaleidxscope/index.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "test/prefer-lowercase-title": {
+      "count": 1
+    }
+  },
+  "shared/core/kaleidxscope/index.ts": {
+    "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
   "shared/core/mai/types.ts": {
     "antfu/top-level-function": {
       "count": 1
@@ -1017,62 +1035,6 @@
     },
     "format/prettier": {
       "count": 157
-    }
-  },
-  "src/components/data/kaleidxscope/data.ts": {
-    "style/comma-dangle": {
-      "count": 1
-    },
-    "style/quotes": {
-      "count": 2
-    }
-  },
-  "src/components/data/kaleidxscope/index.test.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "test/prefer-lowercase-title": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 21
-    },
-    "style/operator-linebreak": {
-      "count": 2
-    },
-    "style/indent-binary-ops": {
-      "count": 1
-    },
-    "style/brace-style": {
-      "count": 1
-    },
-    "antfu/if-newline": {
-      "count": 2
-    }
-  },
-  "src/components/data/kaleidxscope/index.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 4
-    },
-    "antfu/if-newline": {
-      "count": 7
-    },
-    "style/operator-linebreak": {
-      "count": 4
-    }
-  },
-  "src/components/data/kaleidxscope/type.ts": {
-    "style/indent-binary-ops": {
-      "count": 10
-    },
-    "style/member-delimiter-style": {
-      "count": 25
-    },
-    "style/operator-linebreak": {
-      "count": 1
     }
   },
   "src/components/data/music/index.ts": {

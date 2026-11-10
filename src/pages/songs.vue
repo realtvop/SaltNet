@@ -58,7 +58,7 @@
         getKaleidxscopeCurrentPhase,
         getKaleidxscopeNextPhase,
         getOpenedKaleidxscopeGates,
-    } from "@/components/data/kaleidxscope";
+    } from "@core/kaleidxscope";
     import { getCoverURL } from "@/components/integrations/assets";
     import { handleSelectChange } from "@/utils";
 

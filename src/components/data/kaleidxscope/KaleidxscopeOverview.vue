@@ -9,13 +9,13 @@
         getKaleidxscopePhaseStatus,
         getKaleidxscopePreferredGrade,
         resolveKaleidxscopeSongChart,
-    } from "./index";
+    } from "@core/kaleidxscope/index";
     import type {
         KaleidxscopeGate,
         KaleidxscopePhaseStatus,
         KaleidxscopeSelectionPool,
         KaleidxscopeSong,
-    } from "./type";
+    } from "@core/kaleidxscope/type";
 
     const props = withDefaults(
         defineProps<{
