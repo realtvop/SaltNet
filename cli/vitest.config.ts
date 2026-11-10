@@ -9,6 +9,8 @@ export default defineConfig({
     },
     test: {
         environment: "node",
+        // Gives every test file its own throwaway SALTNET_HOME and HOME.
+        setupFiles: ["tests/setup.ts"],
         include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
         testTimeout: 20000,
     },

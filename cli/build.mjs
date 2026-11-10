@@ -5,36 +5,19 @@
 // Node's own type stripping cannot run, so the bundle is also the only supported way to run it.
 //
 // Defaults for the backend, render service and LXNS client are read from the same `.env` files the
-// web app is built from and compiled into the bundle. They can be overridden at run time (see
-// src/runtime/config.ts). Their values are never printed.
-import { chmodSync, existsSync, readFileSync } from "node:fs";
+// web app is built from (see build-defaults.mjs) and compiled into the bundle. They can be
+// overridden at run time (see src/runtime/config.ts). Their values are never printed.
+import { chmodSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { parseEnv } from "node:util";
 import { build } from "esbuild";
+import { readBuildDefaults } from "./build-defaults.mjs";
 
 const cliDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(cliDir, "..");
 
-/** Loads env files in the order Vite uses for a production build; later files win. */
-function loadEnv() {
-    const env = {};
-    for (const name of [".env", ".env.local", ".env.production", ".env.production.local"]) {
-        const file = path.join(repoRoot, name);
-        if (existsSync(file)) Object.assign(env, parseEnv(readFileSync(file, "utf8")));
-    }
-    return env;
-}
-
-const env = loadEnv();
-const buildDefaults = {
-    apiUrl: env.VITE_API_URL ?? "",
-    apiFallbackUrl: env.VITE_API_FALLBACK_URL ?? "",
-    renderUrl: env.VITE_TAKUMI_RENDERER_URL ?? "",
-    lxnsClientId: env.VITE_LXNS_OAUTH_CLIENT_ID ?? "",
-    lxnsRedirectUri: env.VITE_LXNS_OAUTH_REDIRECT_URI ?? "",
-};
+const buildDefaults = readBuildDefaults(repoRoot, process.env);
 
 const pkg = JSON.parse(readFileSync(path.join(cliDir, "package.json"), "utf8"));
 const outfile = path.join(cliDir, "dist", "saltnet.mjs");

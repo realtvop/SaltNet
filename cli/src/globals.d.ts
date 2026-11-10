@@ -2,11 +2,5 @@
 // (Vitest), so every reader must handle that.
 declare const __SALTNET_VERSION__: string | undefined;
 declare const __SALTNET_BUILD_DEFAULTS__:
-    | {
-          apiUrl: string;
-          apiFallbackUrl: string;
-          renderUrl: string;
-          lxnsClientId: string;
-          lxnsRedirectUri: string;
-      }
+    | import("./runtime/buildDefaults").BuildDefaults
     | undefined;

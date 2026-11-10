@@ -7,6 +7,9 @@
         "lib": ["ES2023"],
         "types": ["node"],
         "resolveJsonModule": true,
+        // Tests import build-defaults.mjs; it is read for its types but not checked.
+        "allowJs": true,
+        "checkJs": false,
         "isolatedModules": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,

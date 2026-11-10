@@ -91,7 +91,7 @@
 完成标准：首次刷新之后，即使离线也能回答曲库方面的问题。
 
 - [x] P1-1 `build(cli): scaffold saltnet-cli workspace package`：`cli/` 包、esbuild 打包到 `cli/dist/saltnet.mjs`、`bin`、Vitest、类型检查；根脚本 `test:cli`、`build:cli`，`pnpm check` 带上 cli 的类型检查；`.gitignore` 和 `.prettierignore` 加上 `cli/dist`
-- [ ] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
+- [x] P1-2 `feat(cli): add runtime paths and config loading`：`SALTNET_HOME`、`config.json`、环境变量覆盖、构建时从网页端 `.env` 带入默认值（后端主备地址、渲染服务地址、落雪 client id）
 - [ ] P1-3 `feat(cli): add command registry and argument parser`：命令注册表、解析器、`--help`、未知参数返回 `USAGE`
 - [ ] P1-4 `feat(cli): add output envelope, error codes and formats`：外层结构、错误码与退出码、json/tsv/text、`--fields`、分页、stdout/stderr 约定
 - [ ] P1-5 `feat(cli): add sqlite store with migrations and locks`：`node:sqlite`、WAL、`user_version` 迁移、迁移前备份、锁
@@ -265,3 +265,12 @@
     - 基线：根 `package.json` 多了两行脚本（`jsonc/indent` 55 变 57），`pnpm-workspace.yaml` 多了一行 `- "cli"`（`yaml/indent` 7 变 8、`yaml/plain-scalar` 2 变 3、`yaml/quotes` 3 变 4），都是第 10 条说的存量冲突，按新增的行数手工调高了计数。没有用 `eslint --suppress-rule`：它会把整份基线重新排序，一次改动 800 多行，淹没真正的变化。
     - 锁文件：`pnpm install` 给 `cli` 加了 importer，也给 `vitest` 加了一个带 `@types/node@24` 的变体，同时清掉了一个陈旧的 `database` importer（工作区里早就没有这个包）和只有它用到的包条目，一共约 1170 行删除。这是 pnpm 对锁文件的整理，和 CLI 无关，但留着不提交会让下一次 `pnpm install` 再改一遍，所以一起提交，在最终报告里说明。
     - 之后要处理的打包问题，先记在这里：(a) `pinyin-pro`、`wanakana`、`opencc-js` 体积大，只有搜索索引用得到，P1-9 用 esbuild 插件做成懒加载，不涉及搜索的命令不付这笔启动成本；(b) `node:sqlite` 在 Node 24 下会输出 ExperimentalWarning，P1-5 要在动态 import 它之前压掉，不能污染 stderr。
+20. **运行时路径和配置（P1-2）**：
+    - 路径（`cli/src/runtime/paths.ts`）：只算路径、不碰磁盘，因为 `--help`、`schema` 之类不该创建 `~/.saltnet`；需要存储的命令再调 `ensureRuntimeDirs`，新建的数据目录和 `cache/` 权限是 0700。`SALTNET_HOME` 为空或只有空白按没设置处理；相对路径按当前目录解析；开头的 `~` 在没有 shell 展开的地方（agent 的环境变量块、`.env`）由程序自己展开，否则会在当前目录里建出一个叫 `~` 的目录。
+    - 设置（`cli/src/runtime/config.ts`）：一张表定义全部设置——点号路径的键、类型和取值范围、中文说明、默认值；解析、环境变量覆盖、之后的 `config` 命令（P1-15）、`schema` 和 `guide` 都从这张表出。共 17 项：`api.url`、`api.fallbackUrl`、`render.url`、`saltmeta.url`、`lxns.baseUrl`、`lxns.clientId`、`lxns.redirectUri`、`lxns.refreshTokenDays`（30）、`lxns.expiringWarnDays`（3）、`metadata.maxAgeHours`（24）、`metadata.timeoutMs`（8000）、`scores.staleDays`（3）、`network.timeoutMs`（15000）、`network.updateTimeoutMs`（120000）、`network.userAgent`（`saltnet-cli/<版本>`）、`output.format`（`json` 或 `text`）、`sync.qrOtherAccount`（`rewrite` 或 `error`）。设计文档只给了其中一部分的名字（过期时间、地址、client id、UA），超时、数据源地址和二维码处理方式的键名是按 5.5 和「待确认」的默认做法补的；`output.format` 只允许 `json` 和 `text`，因为 `tsv` 只适用于列表命令。
+    - 优先级：环境变量 > `config.json` > 构建时从 `.env` 带入的默认值 > 内置默认值，每个值同时记下来源（`env`、`file`、`build`、`default`），给 `config list` 用。环境变量名由键机械推出：`SALTNET_` 加大写下划线形式（`lxns.clientId` 对应 `SALTNET_LXNS_CLIENT_ID`），所以每一项都能覆盖，测试和端到端也可以把 `SALTNET_SALTMETA_URL` 指到本地的假服务。设成空的环境变量只对允许留空的项生效（例如 `SALTNET_API_FALLBACK_URL=` 去掉备用地址），其余按没设置处理。
+    - 出错：一个无效值不会让整份配置作废，这一项退回下一层，并记一条 `ConfigProblem`。`config.json` 读不了、不是合法 JSON、不是对象、某一组不是对象、值的类型或范围不对、环境变量的值无效，都是 error；不认识的键是 warning。要不要因此中止命令由调用方定（P1-4 起：有 error 就返回 `USAGE`，退出码 2；`config`、`--help`、`schema`、`guide` 不受影响），这样手滑写错一项设置不会连修它的命令也用不了。消息里只回显数字和枚举值，不回显网址和文字（可能带凭据）。
+    - 构建默认值：从 `build.mjs` 里挪到 `cli/build-defaults.mjs`，这样能测。按 Vite 的优先级读 `.env`、`.env.local`、`.env.production`、`.env.production.local`，构建进程自己的环境变量压过文件（和 Vite 一样）；网页端 `.env` 里 `KEY = value` 这种等号两边带空格的写法和引号都能解析。用真实的 `.env` 构建一次，确认五个值都进了包（只核对「是否非空」，没有输出任何值）。
+    - 测试不碰真实目录：`cli/tests/setup.ts` 给每个测试文件一个临时的 `SALTNET_HOME` 和 `HOME`，即使哪个测试忘了传路径，也只会落在临时目录里。
+    - 小事：`cli/tsconfig.json` 打开 `allowJs`（`checkJs` 保持关）只是为了让测试能 import `build-defaults.mjs`。十六进制字面量在 Prettier（小写）和 `unicorn/number-literal-case`（大写）之间冲突，所以字节序标记写成十进制 65279。ESLint 的 `style/quotes` 不允许为了少转义而用单引号，Prettier 却会这样改写，所以测试里需要引号的 JSON 都用 `JSON.stringify` 生成，要引号的 `.env` 值用单引号。
+    - 一次疏忽，记在这里以便写进最终报告：核对 `.env` 的键名时，用来遮住取值的 `sed` 没有覆盖「等号两边带空格」的写法，三个公开的服务地址（后端主备地址、渲染服务地址）因此出现在我自己的命令输出里。它们不是凭据，也没有写进任何文件、提交或发往任何服务；之后核对 `.env` 只输出布尔值或长度。
