@@ -112,10 +112,10 @@
 - [x] P1-14 `feat(cli): add collection list and show commands`（不含进度）
 - [x] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
 - [x] P1-15 `feat(cli): add status and config commands`
-- [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
-- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成
+- [x] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
+- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）
 - [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI
-- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）
+- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）
 
 ### P2 本地成绩
 
@@ -137,7 +137,7 @@
 
 **P2 的 CLI 部分**
 
-- [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2
+- [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）
 - [ ] P2-13 `feat(cli): add user repository on top of the store`
 - [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6
 - [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户
@@ -150,7 +150,7 @@
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`
 - [ ] P2-24 `feat(cli): add collection progress to collection and charts`
-- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）
+- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`
 - [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）
 
@@ -494,3 +494,23 @@
     - **验证**：新增 106 个测试（`files` 7、`configFile` 20、`configRows` 4、`setting` 7、`statusView` 10、`status` 10、`config` 命令 39、`runtime/config` 9；Gemini 写了 96 个，我补了 10 个），CLI 共 75 个文件 1161 个测试。破坏检查共 124 处（`files.ts` 7、`configFile.ts` 24、`configRows.ts` 11、`setting.ts` 8、`runtime/config.ts` 7、`statusView.ts` 22、`status.ts` 19、`commands/config.ts` 24、`index.ts` 1、`snapshots.ts` 1），第一轮 123 处里 121 处变红，2 处没被发现：`set` 的结果里 `changed` 不在最前面，和 `config get` 里用户代理的默认值带 CLI 版本（只在 `list` 里测过）。我补了对应的测试，再加上第 124 处「`set` 和 `unset` 的结果行用了另一个版本号」，三处全部变红，没有幸存的。
     - **我补的测试**：读 Gemini 的测试时我看出几处缺口，先补了 7 个测试（`set` 和 `unset` 的键不分大小写和全半角；`config.json` 整个是 `null`、数字、字符串、`true`，或者其中的组是 `null`、数组；字符串 `"12"` 不等于数字 12），以及几条断言（`maxAgeHours`、`clientId` 单独写也是 `NOT_FOUND`；100 分钟的 `ageHours` 是 1.7；`mergedDuplicates` 里缺标题、缺 `mergedTitles`、混着数字的条目要丢掉；`config unset --help` 和 `config get --help` 的副作用说明）。第一轮破坏检查是在这些都加上之后跑的；检查之后又补了上面说的 3 个测试。Gemini 对 `-1` 只断言了错误码，我改成断言完整的消息（负数是值，不是选项）。
     - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（640 秒），快照里不含 `.env*`。它提出一个分歧：`status --pretty` 的缩进，我的说明写成了 4 个空格，其实 `--pretty` 是每层 4 个空格、`data` 里的键在第二层，所以是 8 个；是说明写错了，Gemini 照实报告、没有去改这个测试，我把它改成检查信封的 `"v"`（4 个空格）和 `"version"`（8 个空格）。`tsc` 它报告干净，我重跑后确实干净；AGENTS.md 的四处改动和说明里给的原文一致，我另外在 `tests/commandRun.ts` 那句后面补了「测试可以加或去掉环境变量」。
+41. **P1-16 的实现（`sql` 命令和对外视图）**：
+    - **设计 2.2 改了做法：在内存沙盒里跑，而不是在只读连接上装 authorizer**：设计写的是「`sql` 用只读连接执行，再用 `setAuthorizer` 限制成只能读这些视图」。试下来这条路不严：SQLite 报告对视图的读取时，给 authorizer 的是底层表的 `SQLITE_READ`，不带「是通过哪个视图读的」，所以 `SELECT count(*) FROM <底层表>` 和 `SELECT count(*) FROM <视图>` 在 authorizer 眼里没有区别，放行后者就放行了前者；查询里用 CTE 起一个和视图同名的名字，还能冒充视图的上下文。目标没变（只能读这些视图、写不了东西、读不到基础表，设计的验收标准里也这么写），办法换成让查询根本够不到基础表：每次执行开一个内存数据库，只把查询里写到的视图复制进去（`CREATE TABLE` 加 `INSERT … SELECT`，列的类型保留），然后断开真正的数据库，用户的 SQL 在只有这些副本的连接里跑。设计文档的那句话同一个提交里改了，`AGENTS.md` 也写了。
+        - **复制的时候**：真正的数据库用 `file:` 地址加 `?mode=ro` 以只读 `ATTACH`（路径用 `pathToFileURL`，空格、`?`、`#`、`%` 都转义，Windows 路径也是这个形式），复制所有视图和 `readAlso`（`sql` 用它读各来源的下载时间）在同一个事务里，所以是同一份快照（WAL 下另一个进程这时写入，快照里没有，有测试），复制完 `DETACH`，再装限制。没有写到任何视图的查询不打开数据库文件，所以 `SELECT 1` 在数据目录还不存在时也能跑，也不会建出它。
+        - **限制有三层**：authorizer 默认拒绝，只放行 `SELECT`、`RECURSIVE`、对这几个视图副本的 `READ`（表名转成小写再比，SQL 名字本来就不分大小写）、`json_each`、`json_tree`、`jsonb_each`、`jsonb_tree` 和普通函数（`load_extension`、`fts3_tokenizer`、`readfile`、`writefile`、`edit` 除外）；`PRAGMA query_only = ON`；`enableDefensive(true)`（这个 Node 默认就是 defensive，沙盒自己也要一次，不靠 Node 的默认；SQLite 自己默认是关的）。后两层在 authorizer 之外，测试里把 authorizer 摘掉来验证它们。
+        - **试出来的几件事**：所有被 authorizer 拒绝的语句错误码都是 23（`SQLITE_AUTH`），但话不一样（多数是 `not authorized`，`VACUUM` 是 `authorization denied`，读 `sqlite_master`、`pragma_*`、`dbstat` 是 `access to … is prohibited`），所以 `runQuery` 靠错误码认，信息换成统一的一句（`这条语句不被允许：…`，`fix` 是 `saltnet schema --views`）；单独一条 `REINDEX` authorizer 根本没问到，但沙盒里没有索引，什么也不做（`query_only` 也会拦真的写入）；`jsonb_each`、`jsonb_tree` 一开始被拒绝而 `json_each`、`json_tree` 能用，两者都只是拆给定的 JSON，所以放行，`pragma_*` 表函数和 `dbstat` 继续拒绝；`readfile`、`writefile`、`edit` 在这个构建里不存在（`no such function`），列在拒绝名单里只是防以后；`load_extension` 和 `fts3_tokenizer` 存在，被 authorizer 拒绝（单参数的 `fts3_tokenizer` 会泄露一个指针）。
+    - **`runQuery`**：一次只执行一条语句（后面再有语句是 `SQL_ERROR`，末尾的分号、空白和注释可以），空查询或只有注释是 `SQL_ERROR`；结果的列名重复（`SELECT a, a`）是 `SQL_ERROR`，因为行是以列名为键的对象；整数以 BigInt 读，在 JavaScript 安全范围内给数字，超出给文本，浮点的无穷大给 `null`，BLOB 给十六进制文本；行是没有原型的对象，叫 `__proto__` 的列也安全；读到第 `limit + 1` 行就停（`truncated`），不会把一个跑不完的查询读光。`runQuery` 本身不拦写入，拦写入的是沙盒（测试里对普通数据库执行 `INSERT` 来说明这一点）。SQLite 的错误是调用者的错，所以都是 `SQL_ERROR`（退出码 2），带 SQLite 自己的话；`no such table` 和 `no such column` 的 `fix` 是 `saltnet schema --views`。
+    - **`sql` 命令**：`sql <查询…>`，多个词用空格连起来，选项 `--limit`（默认 1000，1 到 10000）和 `--fields`，没有 `--offset`（查询自己用 `LIMIT … OFFSET …`）；effect `none`，输出 `data.items`。`meta` 是 `{dataAsOf, viewsVersion, columns, limit, truncated}`，`dataAsOf` 只有查询用到的视图依赖的来源（`catalog`、`collections`）的下载时间，用到的来源先用 `ensureStored` 弄成最新（和别的命令同一套：过期就刷新，刷新失败用旧的并给 `STALE_METADATA`，`--offline` 没缓存是 `OFFLINE_NO_CACHE`）。截断时带 `TRUNCATED` 警告（没到上限时建议用 `--limit` 要更多，到了 10000 就只建议缩小范围）。没有 CPU 或时间限制：写不完的 `WITH RECURSIVE` 要从外面结束进程，`--help` 里写了。SQL 以 `-` 开头（比如第一行是注释）会被当成选项，要写 `sql -- <查询>`，`--help` 里也写了。查询只在字符串或注释里提到某个视图的名字，这个视图也会被复制（多花一点时间，不影响结果），同样写在说明里。
+    - **`ensureStored` 和 `useStoredMetadata`**：`ensureMetadata` 前半段拆成 `ensureStored`（写入随 CLI 带的静态数据，再检查并刷新要求的来源，只返回警告，不读行），`sql` 只要这一半；`ensureMetadata` 调它，行为不变。`useStoredMetadata(args, ctx, kinds)` 是命令用的入口。`SOURCE_OF_KIND` 现在导出。传进来的重复种类先去重（测试里有）。
+    - **对外视图**（`catalog/views.ts`；`PUBLIC_VIEWS` 里每个视图有名字、一句话说明、依赖哪些来源、各列的名字类型和说明、`SELECT` 文本；`VIEWS_VERSION = 1`，视图有不兼容的改动就加一，报在 `meta.viewsVersion` 里）：`v_charts`（28 列）、`v_collections`（8 列）、`v_collection_targets`（10 列）、`v_course_tracks`（16 列）。视图只以 `SELECT` 文本的形式存在于代码里，数据库里不建视图，所以不需要迁移；`v_collection_targets` 不另存表，在查询时用 `json_each` 从 `collections.required` 展开。规则和 `chart`、`collection show`、`course show` 输出的一样（测试把整份固定数据的视图结果和这些命令用的构造函数逐行比较：183 张谱面、966 个收藏品、176 个条件）：
+        - **`v_charts`**：`difficulty` 是难度名；`constant` 不大于 0 时是 `NULL`（0 在上游表示未知），`fit_constant` 同理并四舍五入到 4 位；`charter` 去掉两端的空格、制表符、换行、U+00A0 和 U+3000，空串和 `-` 是 `NULL`；音符数 SD 谱四个数、DX 谱五个数（touch 在 break 前），`tap`、`hold`、`break` 三个都没有时整条谱面没有物量（`notes_slide`、`notes_touch` 也是 `NULL`，因为宴会谱上游放的零不是物量），有一项未知时 `notes_total` 是 `NULL`；统计里的 `rank_dist`、`combo_dist` 是 JSON，缺的计数算 0，没有统计时是 `NULL`；`music_id` 是目录用的曲目 id（DX 谱和宴会谱是 SaltMeta 的 id 加 10000，已经不小于 10000 的不再加），`song_id` 是 SaltMeta 的 id。排序是歌的位置、难度。
+        - **`v_collections`**：`ref` 是 `类型:id`；牌子、称号、头像、姓名框的 `genre` 没有时是空串，旅行伙伴和搭档保持 `NULL`；`color` 只有称号有（`Normal`、`Bronze`、`Silver`、`Gold`、`Rainbow`，不分大小写，认不出的算 `Normal`）；`description` 不会是 `NULL`；歌的数量按曲目 id 去重计数。排序是类型（牌子、称号、头像、姓名框、旅行伙伴、搭档，不认识的类型排最后）再按位置。
+        - **`v_collection_targets`**：一个条件里的每首歌、每个难度一行，条件从 1 起编号，条件没写难度的行 `difficulty` 是 `NULL`；排序是收藏品的顺序、条件、歌、难度。
+        - **`v_course_tracks`**：`track` 从 1 起，`unlock_course_id` 只在课程上锁时给；排序是课程位置、曲序。不用下载任何东西（静态数据）。
+        - **为 P2 留的**：视图只加不改：P2 给 `v_charts` 加默认用户的成绩列，加 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`、`v_favorites`，每次加列或加视图时 `VIEWS_VERSION` 加一；计划里 P2-12 和 P2-25 的行已经写上。`schema --views`（P1-17）从 `PUBLIC_VIEWS` 生成，`sql` 的说明和错误的 `fix` 已经指向它，P1-17 的行写上了。
+    - **代码放在哪**：`commands/sql.ts`、`commands/metadata.ts`（`useStoredMetadata`）；`store/sandbox.ts`（`openSandbox`）、`store/query.ts`（`runQuery`）；`catalog/views.ts`（`PUBLIC_VIEWS`、`VIEWS_VERSION`、`viewsMentionedIn`、`fetchedAtOf`）、`catalog/ensure.ts`（`ensureStored`）。
+    - **验证**：新增 133 个测试（`sandbox` 51、`query` 13、`views` 44、`sql` 18、`ensure` 7；Gemini 写了约 113 个，我补了约 20 个），CLI 共 79 个文件 1294 个测试。破坏检查共 158 处有效的改动（`sandbox.ts` 32、`query.ts` 24、`views.ts` 81、`sql.ts` 15、`ensure.ts` 和 `metadata.ts` 5、`index.ts` 1）：第一轮 9 处没被发现，其中 SB09（想把所有函数都拒绝）写错了，改完其实和原来一样，换成 SB09b，被发现；另外 8 处是测试的缺口，补了测试之后都被发现：`query_only` 和 `enableDefensive` 这两层（把 authorizer 摘掉再试写入，另外盯住 `enableDefensive(true)` 确实被调用）、`fts3_tokenizer` 没被拒绝、忙等待时间的选项没人看（用 `PRAGMA busy_timeout` 读）、`meta.limit` 写死、`ensureStored` 不去重、只知道 `tap` 的谱面的 slide 和 touch 被当成没有物量。最后只剩 1 处等价的：SB32 把拒绝名单的比较改成区分大小写，因为 SQLite 交给 authorizer 的是登记的小写函数名（`Fts3_Tokenizer` 照样被拒绝），`toLowerCase()` 只是一层保险。
+    - **我补的测试**：读 Gemini 的测试时看出的缺口。`sandbox` 补了 6 个（`jsonb_*`、同一快照、忙等待时间、对外函数的拒绝、authorizer 摘掉后的两层、`enableDefensive` 被调用），并把 7 个锁定测试改成断言错误码 23；`views` 补了约 11 个（行的顺序 4 个、曲目 id 的规则、四类收藏品的空 `genre` 4 个、旅行伙伴的 `genre`、课程的 `unlock_course_id`）加上若干音符数用例和断言，还把一个原样写进去的 U+3000 改成转义；`sql` 补了不带视图时 `--offline` 也能跑的测试和 `meta.limit` 的断言；`ensure` 补了 2 个（重复种类）。
+    - **改掉的代码**：视图名放行表原来区分大小写（一个叫 `V_Mixed` 的视图读不了，现在转小写，有测试）；`fetchedAtOf` 的多行 `if` 补了花括号（`antfu/curly`）；`jsonb_each`、`jsonb_tree` 放行。
+    - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（974 秒，快照里不含 `.env*`）。它报告了 7 处「分歧」，全是我的说明写错了：我要求所有 authorizer 拒绝都是 `not authorized`，实际错误码都是 23，话不同；它照说明写了测试，测试失败，它如实报告了。我先用探测弄清真实行为（见上）再改测试。
+    - **要留意的**：(a) 用到视图的查询每次都要复制视图，P1-19 在真实数据上量一下耗时；(b) `v_charts` 和 `chart` 输出的对照在固定数据上逐行一致，SQLite 的 `round`、`trim` 与 JavaScript 的舍入、去空白在边角上会不会有差别，P1-19 用真实数据再对一次；(c) 以只读方式 `ATTACH` WAL 数据库可能留下 `-shm`、`-wal` 文件，无害，P1-19 看一下有没有留下别的；(d) Windows 路径的 `file:` 地址我没法在这里验证。

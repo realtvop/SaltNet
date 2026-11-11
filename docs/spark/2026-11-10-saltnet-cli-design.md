@@ -146,7 +146,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 - `v_collections`、`v_collection_targets`、`v_user_items`
 - `v_course_tracks`、`v_favorites`
 
-`sql` 用只读连接执行，再用 SQLite 的 authorizer（`node:sqlite` 的 `setAuthorizer`）限制成只能读这些视图。
+`sql` 在一个临时的内存数据库里执行：先以只读方式打开真正的数据库，在同一个事务里把查询里写到的视图复制进去，然后断开真正的数据库，再用 SQLite 的 authorizer（`node:sqlite` 的 `setAuthorizer`，默认拒绝）、`query_only` 和 defensive 模式把查询限制成只能 `SELECT` 这些副本，所以查询运行时够不到任何基础表。（不在真实连接的视图上装 authorizer：SQLite 报告对视图的读取时，给的是底层表的读取，不带「是通过哪个视图读的」，`count(*)` 这类查询没法和直接读基础表区分，CTE 也能冒充视图的上下文。）
 
 **写入与并发**
 

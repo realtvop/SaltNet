@@ -10,7 +10,7 @@ import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { buildSaltMetaMusicList } from "@core/music/fetch";
 import { SALTMETA_NEXT_COMPACTED_VERSION } from "@core/music/saltmeta";
 import { afterEach, describe, expect, it } from "vitest";
-import { ensureMetadata } from "../../src/catalog/ensure";
+import { ensureMetadata, ensureStored } from "../../src/catalog/ensure";
 import { METADATA_LOCK } from "../../src/catalog/refresh";
 import { snapshotPath } from "../../src/catalog/snapshots";
 import { CATALOG_BUILDER, readMetaState } from "../../src/catalog/store";
@@ -553,5 +553,88 @@ describe("rows built by another version of the CLI", () => {
         expect(raced).toBe(true);
         expect(readMetaState(env.store, "saltmeta")?.fetchedAt).toBe(NOW.getTime());
         expect(result.dataAsOf.catalog).toBe(formatLocalTime(NOW));
+    });
+});
+
+describe("ensureStored", () => {
+    it("downloads and writes what is requested without loading rows into memory", async () => {
+        const env = createEnv();
+        const { deps, requests } = env.call();
+
+        const warnings = await ensureStored(deps, ["catalog"]);
+
+        expect(Array.isArray(warnings)).toBe(true);
+        expect(warnings).toEqual([]);
+        expect(urls(requests)).toEqual([META_URL]);
+        expect(readMetaState(env.store, "saltmeta")?.fetchedAt).toBe(NOW.getTime());
+        expect(readMetaState(env.store, "lxns-collections")).toBeUndefined();
+        expect(readMetaState(env.store, "static")).toBeDefined();
+    });
+
+    it("writes static data and makes no network requests when kinds is empty", async () => {
+        const env = createEnv();
+        const { deps, requests } = env.call();
+
+        const warnings = await ensureStored(deps, []);
+
+        expect(Array.isArray(warnings)).toBe(true);
+        expect(warnings).toEqual([]);
+        expect(requests).toHaveLength(0);
+        expect(readMetaState(env.store, "static")).toBeDefined();
+    });
+
+    it("returns a STALE_METADATA warning when stored data is stale and refresh fails", async () => {
+        const env = createEnv();
+        await env.prime(ago(30));
+        const { deps } = env.call({ network: { [META_URL]: refusedConnection } });
+
+        const warnings = await ensureStored(deps, ["catalog"]);
+
+        expect(Array.isArray(warnings)).toBe(true);
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0].code).toBe("STALE_METADATA");
+        expect(warnings[0].message).toContain("30 小时");
+    });
+
+    it("makes no network requests and returns no warnings when data is fresh", async () => {
+        const env = createEnv();
+        await env.prime(ago(2));
+        const { deps, requests } = env.call();
+
+        const warnings = await ensureStored(deps, ["catalog"]);
+
+        expect(Array.isArray(warnings)).toBe(true);
+        expect(warnings).toEqual([]);
+        expect(requests).toHaveLength(0);
+    });
+
+    it("rejects with OFFLINE_NO_CACHE when offline and nothing is stored", async () => {
+        const env = createEnv();
+
+        await expect(
+            ensureStored(env.call({ offline: true }).deps, ["catalog"])
+        ).rejects.toMatchObject({ code: "OFFLINE_NO_CACHE" });
+    });
+
+    it("downloads a source once when its kind is asked for twice", async () => {
+        const env = createEnv();
+        const { deps, requests } = env.call();
+
+        await ensureStored(deps, ["catalog", "catalog"]);
+
+        expect(urls(requests)).toEqual([META_URL]);
+    });
+
+    it("warns once about a stale source when its kind is asked for twice", async () => {
+        const env = createEnv();
+        await env.prime(ago(30));
+        const { deps, requests } = env.call({ offline: true });
+
+        const warnings = await ensureStored(deps, ["catalog", "collections", "catalog"]);
+
+        expect(requests).toHaveLength(0);
+        expect(warnings.map(warning => warning.code)).toEqual(["STALE_METADATA", "STALE_METADATA"]);
+        expect(warnings[0].message).toContain("曲库");
+        expect(warnings[1].message).toContain("收藏品");
     });
 });

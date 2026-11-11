@@ -33,7 +33,8 @@ import { CATALOG_BUILDER, readMetaState, replaceCollections, replaceMusic } from
 /** What a command can ask for: the songs, charts and versions, or the collections. */
 export type MetadataKind = "catalog" | "collections";
 
-const SOURCE_OF_KIND: Readonly<Record<MetadataKind, DownloadedSource>> = {
+/** The source (the key of its `meta_state` row) each kind of metadata comes from. */
+export const SOURCE_OF_KIND: Readonly<Record<MetadataKind, DownloadedSource>> = {
     catalog: "saltmeta",
     collections: "lxns-collections",
 };
@@ -209,18 +210,20 @@ async function refreshDue(
 }
 
 /**
- * Makes sure the sources a command reads are stored and current (or as current as they can be) and
- * returns them as the web app keeps them. See the top of this file for what happens in each state.
+ * Makes sure the sources a command reads are stored and current (or as current as they can be),
+ * without reading them: the data that ships with the CLI is written first, whatever is asked for,
+ * then each source asked for goes through the states at the top of this file. Returns the
+ * `STALE_METADATA` warnings. A command that reads the rows itself (`sql`) stops here; the others
+ * use `ensureMetadata`.
  */
-export async function ensureMetadata<const K extends MetadataKind>(
+export async function ensureStored(
     deps: EnsureDeps,
-    kinds: readonly K[]
-): Promise<EnsuredMetadata<K>> {
+    kinds: readonly MetadataKind[]
+): Promise<readonly Warning[]> {
     const now = deps.now();
     ensureStaticData(deps.store, now);
 
-    const wanted = [...new Set(kinds)];
-    const standings = wanted.map(kind => inspect(deps, SOURCE_OF_KIND[kind], now));
+    const standings = [...new Set(kinds)].map(kind => inspect(deps, SOURCE_OF_KIND[kind], now));
     const due = standings.filter(standing => standing.due);
     const warnings: Warning[] = [];
 
@@ -241,7 +244,20 @@ export async function ensureMetadata<const K extends MetadataKind>(
             warnings.push(...(await refreshDue(deps, due, now)));
         }
     }
+    return warnings;
+}
 
+/**
+ * Makes sure the sources a command reads are stored and current (or as current as they can be) and
+ * returns them as the web app keeps them. See the top of this file for what happens in each state.
+ */
+export async function ensureMetadata<const K extends MetadataKind>(
+    deps: EnsureDeps,
+    kinds: readonly K[]
+): Promise<EnsuredMetadata<K>> {
+    const warnings = await ensureStored(deps, kinds);
+
+    const wanted = [...new Set(kinds)];
     const loaded: Partial<LoadedMetadata> = {};
     const dataAsOf: Partial<Record<MetadataKind, string>> = {};
     for (const kind of wanted) {
