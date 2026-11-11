@@ -1,6 +1,7 @@
 import type { CommandDefinition, Registry } from "./registry";
 import { chart } from "./chart";
 import { charts } from "./charts";
+import { collectionList, collectionShow } from "./collection";
 import { courseList, courseShow } from "./course";
 import { kaleidxscope } from "./kaleidxscope";
 import { refresh } from "./refresh";
@@ -14,6 +15,8 @@ export const COMMANDS: readonly CommandDefinition[] = [
     song,
     chart,
     charts,
+    collectionList,
+    collectionShow,
     courseList,
     courseShow,
     kaleidxscope,
@@ -22,6 +25,7 @@ export const COMMANDS: readonly CommandDefinition[] = [
 
 /** One line for each group of two-word commands, keyed by its first word. */
 export const COMMAND_GROUPS: Readonly<Record<string, string>> = {
+    collection: "收藏品：列表和详情",
     course: "段位：列表和详情",
 };
 

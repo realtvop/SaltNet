@@ -109,7 +109,7 @@
 - [x] P1-11 `feat(cli): add charts sorting, grouping and paging`
 - [x] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
 - [x] P1-13 `feat(cli): add course and kaleidxscope commands`
-- [ ] P1-14 `feat(cli): add collection list and show commands`（不含进度）
+- [x] P1-14 `feat(cli): add collection list and show commands`（不含进度）
 - [ ] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
 - [ ] P1-15 `feat(cli): add status and config commands`
 - [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
@@ -450,3 +450,17 @@
     - **验证**：五个测试文件共 101 个测试（Gemini 写了 92 个，我补了 9 个和若干断言），CLI 全部 65 个文件 984 个测试。写给 Gemini 的说明里的期望值，我都先用真实的离线数据（1440 首歌、5702 张谱）核对过。破坏检查共 134 处（`time.ts` 34、`courseView.ts` 21、`gateView.ts` 45、`course.ts` 13、`kaleidxscope.ts` 21），第一轮 135 处里 13 处没被发现：一位数的月份（`2026-1-01` 被接受）、多余的月份检查（等价，见上）、`locked`、`trackCount` 和 `track` 的字段顺序没有断言、4 处时间没换成本机偏移（见上）、一首歌既没有要的难度、也没有 MASTER 和 EXPERT 时「取第一张」的退路没测、一首歌在门里出现两次时被去重没测、以及 2 处「先解析再取元数据」的断言其实是空的（同一个数据目录里前面的调用已经把曲库缓存好了，之后不联网本来就是对的），改成每个用例用全新的数据目录，并断言数据目录根本没有建出来。补完以后 134 处全部变红，没有幸存的。
     - **「第一张谱」是最难的那张**：`resolveKaleidxscopeSongChart` 最后的退路是传进去的谱面里的第一张，命令传进去的谱面是游戏的顺序（最难的在前），所以一首没有指定难度、也没有 MASTER 和 EXPERT 的歌给出的是它最难的那张，不是最简单的；网页端传的是曲目页当前排序下的谱面，退路取到哪张取决于排序，CLI 固定用游戏的顺序；测试里写明了。
     - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（585 秒），快照里不含 `.env*`。说明里给出的期望值都先用真实数据核对过，Gemini 照着写，没有提出分歧。它写的 AGENTS.md 里有两处我手工改了：一处括号多了一个，一处把 `parseTime` 和 `parseTimeOption` 写混了。上面的 9 个测试、`tests/zone.ts` 和破坏检查之后的所有断言是我手写的。
+38. **P1-14 的实现（`collection list` 和 `collection show`）**：
+    - **`collection` 是两个字的命令组**（`COMMAND_GROUPS` 里给了说明），类别 `collection`，不写数据。用户的数据（是否拥有、进度、每张谱做没做）要到 P2 才有，现在 `owned`、`progress` 和 `done` 恒为 `null`，先占着位置，到时候只是填上值，不改名也不删字段（设计 4.4）。设计里的 `--all`、默认只列没做完的、按拥有状态筛选和 `collection list` 的「大致进度」都跟着用户数据，放在 P2-24。
+    - **`collection list` 只要收藏品，不要曲库**：命令只调 `useMetadata(["collections"])`，数据目录是空的时只请求落雪的四个列表（trophy、icon、plate、frame），不请求 SaltMeta；`meta.dataAsOf` 只有 `collections`，过期的警告也只有「收藏品（落雪）」一条。`--offline` 下没有缓存是 `OFFLINE_NO_CACHE`，有缓存就一个请求也不发。
+    - **行的字段**：`{ref, kind, id, name, genre, color, description, songCount, owned, progress}`。`ref` 是 `类型:id`（如 `title:5108`），可以直接给 `collection show` 和 `charts --collection`；`genre` 是游戏里把它归在哪一类，搭档没有，是 `null`；`color` 只有称号有（Normal、Bronze、Silver、Gold、Rainbow），其他类型一律 `null`，哪怕数据对象上带着 `color`；`songCount` 是获取条件点名的不同曲目数，按 music id 数（`dx` 的曲目 id 小于 10000 时加 10000，和核心的 `getSaltNetMusicIdForChartType` 一致，`standard` 和 `utage` 用原来的 id），不同条件里的同一首只算一次，没有曲目条件的是 0。
+    - **顺序和筛选**：先按类型（plate、title、icon、frame、character、partner），再按落雪列表里的顺序；`--kind` 写的顺序不影响结果（`--kind frame,plate` 还是牌子在前），只收这六个英文名，写错是 `USAGE`，在联网之前就报。`--search` 只搜名称：不分大小写和全半角（NFKC 加小写），先去掉两端的空白，不做简繁转换，不搜分类、描述和 ref（描述多是「全曲/BASIC～MASTER/ALL PERFECT」这类固定写法，搜进去会命中一大批）；只有空白是 `USAGE`，同样在联网之前，不建数据目录。
+    - **`collection show` 的引用**：`类型:id`（类型大小写都行）或完整的名称，用 `resolveCollection`，不做名称的一部分匹配；名称很短又常重名（`デフォルト` 同时是牌子、头像和背景的名字），重名时是 `AMBIGUOUS_REF`，候选的 ref 写成 `类型:id`，可以直接拿去重试。先取收藏品并解析引用，然后才取曲库，所以写错或有歧义的引用不会去下载曲库（测试里断言了这时只发了落雪的四个请求）。
+    - **`collection show` 的结果**：`{collection, missing, items}`。`collection` 是列表里的那一行加 `requirements`，也就是获取条件，每条 `{difficulties, rank, combo, sync, songCount}`：`difficulties` 是要求的难度（`null` 是任意难度都行，数据里写空列表也当作任意），`rank`、`combo`、`sync` 是至少要达到什么（不要求的是 `null`，三个都是 `null` 就是打过就行），`songCount` 是这一条适用于几首歌。`items` 是条件点名的谱面，谱面行（`chartRow`）加 `done`，顺序和 `charts` 一样，`--limit` 和 `--offset` 只翻 `items`，`collection` 和 `missing` 总是完整的，`page.total` 是谱面数。没有曲目条件的收藏品（多数称号、头像和背景，所有旅行伙伴和搭档）`items` 是空的，命令照常成功，获取方式只有 `description` 里那句话。
+    - **`missing`**：条件点名、但曲库里没有的歌（多半是国服还没有的歌），每首 `{musicId, title}`，同一首只出一次，按数据里的顺序，标题用最先点名它的那条条件里的写法。歌在曲库、只是没有条件要的难度，不算缺。
+    - **`meta` 和警告**：`dataAsOf` 同时有 `catalog` 和 `collections`，警告先曲库后收藏品（和 `charts` 一致）；两个都过期又都刷新不了时有两条 `STALE_METADATA`，只有收藏品过期时一条。`--offline` 下只存了收藏品、没有曲库时是 `OFFLINE_NO_CACHE`，信息里点名「曲库（SaltMeta）」。
+    - **新增 `syncLabel`**（`refs/status.ts`）：`SyncStatus` 在游戏里的写法 `SYNC`、`FS`、`FS+`、`FDX`、`FDX+`，没有是 `null`（评级和连击的 `rankLabel`、`comboLabel` 早就有）。
+    - **真实数据**：落雪的真实列表加上随 CLI 带的静态数据，一共 5783 个收藏品（姓名框 400、称号 3032、头像 1059、背景 353、旅行伙伴 917、搭档 22），分类都有值，只有搭档的分类是 `null`，旅行伙伴和搭档的 `description` 是空串。固定测试数据是 966 个（27 个落雪的加 917 个旅行伙伴和 22 个搭档），其中几个收藏品点名的歌曲库里没有（`plate:409506`、`title:5101`、`title:158511` 等），所以 `missing` 有真实的测试数据。写给 Gemini 的说明里的期望值，都先用固定数据和探测脚本核对过。
+    - **没做的**：`owned`、`progress`、`done` 的值、`--all`、默认只列没完成的、按拥有状态筛选（P2-24）；`song` 和 `chart` 的 `--with related`（用到这首歌或这张谱的收藏品、段位和门）是下一步 P1-14b。
+    - **验证**：新增 30 个测试（`status` 2 个、`collectionView` 13 个、`collection` 15 个，Gemini 写了 28 个，我补了 2 个），CLI 全部 67 个文件 1014 个测试。破坏检查共 86 处（`status.ts` 7、`collectionView.ts` 48、`collection.ts` 31），第一轮 85 处变红，1 处没被发现：同一条条件里把同一首歌点了两次时，这一条自己的 `songCount` 不去重（Gemini 的用例里重复的歌只检查了整个收藏品的 `songCount`）。补了这个测试以后 86 处全部变红，没有幸存的。
+    - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（559 秒），快照里不含 `.env*`，没有提出分歧，AGENTS.md 的改动和说明里要求的一致。它的报告说 `tsc` 是干净的，我重跑后 `collection.test.ts` 报了 26 处 TS7006（命令输出的 `json.data` 是 `any`，回调参数没有类型），照 `charts.test.ts` 的写法加了 `ListOutput` 和 `ShowOutput` 两个类型；另一个手补的测试是 `collection show --fields`（只投影 `items`，`collection` 和 `missing` 不受影响，未知字段是 `USAGE`）。

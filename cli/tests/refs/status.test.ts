@@ -1,6 +1,6 @@
-import { ComboStatus, RankRate } from "@core/mai/types";
+import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
-import { comboLabel, COMBOS, rankLabel, RANKS } from "../../src/refs/status";
+import { comboLabel, COMBOS, rankLabel, RANKS, syncLabel } from "../../src/refs/status";
 
 const EXPECTED_RANKS = [
     "d",
@@ -81,5 +81,22 @@ describe("the COMBOS list and comboLabel", () => {
         expect(comboLabel(ComboStatus.FullComboPlus)).toBe("FC+");
         expect(comboLabel(ComboStatus.AllPerfect)).toBe("AP");
         expect(comboLabel(ComboStatus.AllPerfectPlus)).toBe("AP+");
+    });
+});
+
+const EXPECTED_SYNC_LABELS = [null, "SYNC", "FS", "FS+", "FDX", "FDX+"] as const;
+
+describe("the sync labels", () => {
+    it("maps all six SyncStatus values in enum order to the expected labels", () => {
+        expect(Object.values(SyncStatus).map(syncLabel)).toEqual(EXPECTED_SYNC_LABELS);
+    });
+
+    it("gives the exact label for each individual sync status", () => {
+        expect(syncLabel(SyncStatus.None)).toBeNull();
+        expect(syncLabel(SyncStatus.Sync)).toBe("SYNC");
+        expect(syncLabel(SyncStatus.FullSync)).toBe("FS");
+        expect(syncLabel(SyncStatus.FullSyncPlus)).toBe("FS+");
+        expect(syncLabel(SyncStatus.FullSyncDX)).toBe("FDX");
+        expect(syncLabel(SyncStatus.FullSyncDXPlus)).toBe("FDX+");
     });
 });
