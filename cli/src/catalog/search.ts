@@ -10,7 +10,7 @@
  * titles, aliases, sounds, artists and charters.
  */
 import type { MusicSearchVariant } from "@core/music/search";
-import type { Song, SongCatalog } from "./songs";
+import type { ChartEntry, Song, SongCatalog } from "./songs";
 import {
     createMusicSearchQuery,
     createMusicSearchVariants,
@@ -215,4 +215,29 @@ export function searchSongs(catalog: SongCatalog, text: string): SongMatch[] {
         if (match) matches.push(match);
     }
     return matches.sort((a, b) => b.score - a.score || a.song.musicId - b.song.musicId);
+}
+
+/**
+ * The charts a text finds (`charts --search`): all the charts of a song found by its names,
+ * artist or id, but, for a song only a charter's name matched, just the charts that charter made;
+ * the web app searches charters per chart too. The order is the songs' (best first), each song's
+ * charts from the easiest, SD before DX.
+ */
+export function searchChartEntries(catalog: SongCatalog, text: string): ChartEntry[] {
+    const query = buildQuery(text);
+    if (!query) return [];
+
+    const byCharter = (charter: string | null | undefined): boolean =>
+        !!charter &&
+        createMusicSearchVariants(charter).some(variant =>
+            relationToAny(variant.text, query.normalized)
+        );
+    const entries: ChartEntry[] = [];
+    for (const { song, matchedBy } of searchSongs(catalog, text)) {
+        const charterOnly = matchedBy.length === 1 && matchedBy[0] === "charter";
+        for (const chart of songCharts(song)) {
+            if (!charterOnly || byCharter(chart.info.charter)) entries.push({ chart, song });
+        }
+    }
+    return entries;
 }

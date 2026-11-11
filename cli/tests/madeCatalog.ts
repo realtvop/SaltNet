@@ -9,7 +9,14 @@ import { buildSongCatalog } from "../src/catalog/songs";
  * `charter` has one chart by that charter; without one it has no chart.
  */
 export function catalogOf(
-    entries: { id: number; title: string; aliases?: string[]; artist?: string; charter?: string }[],
+    entries: {
+        id: number;
+        title: string;
+        aliases?: string[];
+        artist?: string;
+        charter?: string;
+        charters?: (string | undefined)[];
+    }[],
     options: { indexed?: boolean } = {}
 ): SongCatalog {
     const musicList: Record<number, Music> = {};
@@ -29,7 +36,23 @@ export function catalogOf(
             },
             charts: [],
         };
-        if (entry.charter !== undefined) {
+        if (entry.charters !== undefined) {
+            for (let grade = 0; grade < entry.charters.length; grade++) {
+                const charter = entry.charters[grade];
+                music.charts.push({
+                    id: entry.id * 10 + grade,
+                    info: {
+                        notes: [0, 0, 0, 0],
+                        charter: charter as string,
+                        level: "1",
+                        grade,
+                        constant: 1,
+                        deluxeScoreMax: 0,
+                    },
+                    music,
+                });
+            }
+        } else if (entry.charter !== undefined) {
             music.charts.push({
                 id: entry.id * 10,
                 info: {

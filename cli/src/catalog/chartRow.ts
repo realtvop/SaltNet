@@ -44,6 +44,11 @@ function fitConstantOf(stat: ChartStats | undefined): number | null {
     return fit === null ? null : round(fit, 4);
 }
 
+/** The internal level of a chart; null where the game has none (banquet charts). */
+export function constantOf(chart: Pick<Chart, "info">): number | null {
+    return positive(chart.info.constant);
+}
+
 export function chartRow({ chart }: ChartEntry): ChartRow {
     const { info, music } = chart;
     return {
@@ -53,7 +58,7 @@ export function chartRow({ chart }: ChartEntry): ChartRow {
         type: musicType(music),
         difficulty: difficultyLabel(info.grade),
         level: info.level,
-        constant: positive(info.constant),
+        constant: constantOf(chart),
         fitConstant: fitConstantOf(info.stat),
         version: String(music.info.from),
         score: null,

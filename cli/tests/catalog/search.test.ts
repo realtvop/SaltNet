@@ -1,6 +1,12 @@
+import { createFixtureMusicList } from "@core/fixtures/saltmeta";
 import { describe, expect, it } from "vitest";
-import { MATCH_KINDS, NAME_MATCH_KINDS, searchSongs } from "../../src/catalog/search";
-import { songCharts } from "../../src/catalog/songs";
+import {
+    MATCH_KINDS,
+    NAME_MATCH_KINDS,
+    searchChartEntries,
+    searchSongs,
+} from "../../src/catalog/search";
+import { chartKeyOf, songCharts } from "../../src/catalog/songs";
 import { fixtureSongCatalog } from "../fixtureCatalog";
 import { catalogOf } from "../madeCatalog";
 
@@ -350,5 +356,72 @@ describe("searchSongs fixture queries", () => {
                 seenSongs.add(match.song.id);
             }
         }
+    });
+});
+
+describe("searchChartEntries", () => {
+    it("returns all charts of a song matching by title in songCharts order and not charts of other songs", () => {
+        const catalog = catalogOf([
+            { id: 1, title: "Alpha", charters: ["c0", "c1", "c2"] },
+            { id: 2, title: "Beta", charters: ["c0", "c1"] },
+        ]);
+        const entries = searchChartEntries(catalog, "Alpha");
+        expect(entries.map(e => chartKeyOf(e.chart))).toEqual(["1-0", "1-1", "1-2"]);
+    });
+
+    it("returns only matching charts when only charter matched, and all charts when title also matched", () => {
+        const catalogCharterOnly = catalogOf([
+            { id: 1, title: "Alpha", charters: ["Alice", "Bob", "Charlie"] },
+        ]);
+        const entriesCharterOnly = searchChartEntries(catalogCharterOnly, "Bob");
+        expect(entriesCharterOnly.map(e => chartKeyOf(e.chart))).toEqual(["1-1"]);
+
+        const catalogTitleAndCharter = catalogOf([
+            { id: 1, title: "Bob Song", charters: ["Alice", "Bob", "Charlie"] },
+        ]);
+        const entriesTitleAndCharter = searchChartEntries(catalogTitleAndCharter, "Bob");
+        expect(entriesTitleAndCharter.map(e => chartKeyOf(e.chart))).toEqual(["1-0", "1-1", "1-2"]);
+
+        const catalogTwoSongs = catalogOf([
+            { id: 1, title: "Bob", charters: ["Alice", "Bob"] },
+            { id: 2, title: "Other", charters: ["Bob", "Dave"] },
+        ]);
+        const entriesTwoSongs = searchChartEntries(catalogTwoSongs, "Bob");
+        expect(entriesTwoSongs.map(e => chartKeyOf(e.chart))).toEqual(["1-0", "1-1", "2-0"]);
+    });
+
+    it("skips the charts that have no charter when only a charter matched", () => {
+        const catalog = catalogOf([
+            { id: 1, title: "Alpha", charters: ["Alice", undefined, "Bob", undefined] },
+        ]);
+        expect(searchChartEntries(catalog, "Bob").map(e => chartKeyOf(e.chart))).toEqual(["1-2"]);
+    });
+
+    it("returns an empty list for blank text", () => {
+        const catalog = fixtureSongCatalog();
+        expect(searchChartEntries(catalog, "")).toEqual([]);
+        expect(searchChartEntries(catalog, "  ")).toEqual([]);
+    });
+
+    it("finds all charts on the fixture for Link, charters for ニャイン, and songCharts order for True Love Song", () => {
+        const catalog = fixtureSongCatalog();
+
+        const linkEntries = searchChartEntries(catalog, "Link");
+        const song131Charts = songCharts(catalog.songs.find(s => s.id === 131)!);
+        const song383Charts = songCharts(catalog.songs.find(s => s.id === 383)!);
+        expect(linkEntries.map(e => chartKeyOf(e.chart))).toEqual([
+            ...song131Charts.map(c => chartKeyOf(c)),
+            ...song383Charts.map(c => chartKeyOf(c)),
+        ]);
+
+        const expectedNyainKeys = Object.values(createFixtureMusicList().musicList)
+            .flatMap(m => m.charts)
+            .filter(c => c.info.charter && c.info.charter.includes("ニャイン"))
+            .map(c => `${c.music.id}-${c.info.grade}`);
+        const nyainEntries = searchChartEntries(catalog, "ニャイン");
+        expect(nyainEntries.map(e => chartKeyOf(e.chart)).sort()).toEqual(expectedNyainKeys.sort());
+
+        const tlsEntries = searchChartEntries(catalog, "True Love Song");
+        expect(tlsEntries.map(e => chartKeyOf(e.chart))).toEqual(["8-0", "8-1", "8-2", "8-3"]);
     });
 });

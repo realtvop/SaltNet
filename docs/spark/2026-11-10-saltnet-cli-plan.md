@@ -105,7 +105,7 @@
 - [x] P1-9a `refactor(core): tell which kind of variant a search text matched`：`createMusicSearchVariants` 把原文、拼音、罗马音分开给出，`createMusicSearchIndex` 的结果不变（见第 31 条）
 - [x] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
 - [x] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
-- [ ] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage、fav 的筛选
+- [x] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage 的筛选（`fav` 推到 P2-25，见第 34 条）
 - [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
 - [ ] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
 - [ ] P1-13 `feat(cli): add course and kaleidxscope commands`
@@ -150,7 +150,7 @@
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`
 - [ ] P2-24 `feat(cli): add collection progress to collection and charts`
-- [ ] P2-25 `feat(cli): add fav commands`
+- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`
 - [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）
 
@@ -398,3 +398,17 @@
     - 在真实的公开 SaltMeta 数据上（临时 `SALTNET_HOME`）跑过 `song 146`、`song 标39`、`chart 146-3`、`chart 110018-10`、各种出错的写法和 `--format text`：真实数据里宴谱有拟合数据和统计，固定数据里没有，所以固定数据测不到「宴谱有统计」，只能靠手造的谱面。
     - 测试：`tests/refs/status.test.ts`（6 个）、`tests/catalog/chartRow.test.ts`（17 个）、`tests/commands/song.test.ts`（11 个）、`tests/commands/chart.test.ts`（11 个）由 Gemini 3.8 Flash 按我写的行为说明写出，`tests/commandRun.ts` 是它抽出的共用函数（`search` 的测试也改用了它，12 个仍然通过）。我逐条核对了期望值来自固定数据和行为说明（输出键的顺序、固定数据里每个谱面的定数、物量、统计），然后手工破坏实现 49 处（各个字段、取整位数、物量的 SD/DX 差异、宴谱的整组 `null`、`total` 的缺项规则、`charter` 的修剪、统计的分布顺序、`--type` 的处理、元数据和警告的透传……）。第一轮 4 处没被发现：`constant` 不是有限数时的 `null`、`fitConstant` 不是正数时的 `null`、`chart` 的 `meta.dataAsOf`，以及把 `!stat` 改成 `stat === undefined`。前三处我补了 1 个测试和 2 条断言，三处都变红；最后一处等价：库里读出的谱面没有统计时 `stat` 是 `undefined`，从不会是 `null`，统计对象也不会是假值，没有测试能区分，代码保留。
     - 委托的经过：第一次运行（201 秒）没有产出，因为 Gemini 用了 `pnpm --filter saltnet-cli vitest run …`，不在白名单里，无头模式放弃整次运行；放宽白名单（`--filter`、`exec` 的写法）并在提示里列出能用的命令之后，第二次成功（659 秒）。
+
+34. **P1-10 的实现（`charts` 的筛选）**：
+    - `charts` 一次只做筛选和分页：选项是 `--level`、`--constant`、`--diff`、`--version`、`--search` 和列表命令共有的 `--limit`、`--offset`、`--fields`，结果是 `data.items`（和 `song`、`chart` 同一种谱面行）加 `meta.page`。顺序固定为网页端的游戏内顺序（`createGameOrderComparator(MusicSort)`：难度高的在前，同一难度里新曲在前）；`--sort`、`--group-by`、`--stats` 是 P1-11，所以现在写 `--sort` 会得到「未知选项」的 `USAGE`。`MusicSort`（`@core/music/sort.json`）网页端和 CLI 共用，不进数据库。
+    - **`--fav` 推迟到 P2-25**：收藏夹的表和 `fav` 命令是 P2 的内容，P1 里没有任何办法建出一个收藏夹，现在加一个永远找不到名字的过滤选项只是死代码。P2-25 把 `favorites` 表、`fav` 命令和 `charts --fav` 放进同一个提交。这只是调整先后，没有改设计文档里 `charts` 的参数表。`--recent` 同理（依赖成绩变化记录，P2）。`--gate`、`--course`、`--plate`、`--collection` 是 P1-12。
+    - `--level` 把等级放在同一条数轴上：`13` 是 13，`13+` 是 13.5。区间两端都含，所以 `13..14` 含 `13`、`13+`、`14`，不含 `14+`；要含就写 `13..14+`。单个值是精确匹配（`13+` 不含 `13`）。设计文档只写了区间格式，没有说 `+` 怎么算，这是照游戏里的写法定的：`13+` 比 `13` 难、比 `14` 容易。宴谱等级末尾的 `?` 可写可不写，比较时忽略，所以 `--diff utage --level 13` 找得到 `13?`。两端不是等级、或下限大于上限都是 `USAGE`。
+    - `--constant` 区间两端都含，没有定数的谱（宴谱，核对时是 0 或缺失）一律不通过，包括只写一端的情况。
+    - `--diff` 的取值和写法来自 P1-9a 的 `DIFFICULTIES`（`mas`、`master`、`3`、`紫` 都行，不分大小写和全半角），输出统一成短名。不写 `--diff` 时不含宴谱（和设计文档 3.3 一致：宴谱只有写了 `utage` 才返回）；写了就只要这些，所以 `--diff mas,utage` 两种都有。
+    - `--version` 是列表选项，多个值取并集。每个值按从严到宽的顺序找，哪一步先找到就用哪一步：完整版本名（不分大小写和全半角）→ 省略 `maimai ` 或 `舞萌` 前缀的写法（`green`、`plus`、`dx 2024`；`plus` 只指 `maimai PLUS`，不是所有 PLUS）→ 牌子字（所有带这个字的版本，真实数据里 `真` 同时是 `maimai` 和 `maimai PLUS`）→ 只有一个版本名包含的片段（`2024`）。一个片段对应多个版本是 `AMBIGUOUS_REF`，候选的 `ref` 就是完整版本名；完全找不到是 `NOT_FOUND`，候选是最像的版本名，一个都不像就列最新的 8 个。版本表用 `catalog.metadata.cnVersions`（SaltMeta 的 `versions`），谱面的版本是 `music.info.from`。
+    - `--search` 用 `search` 同一套匹配（`searchChartEntries`，在 `catalog/search.ts` 里）：歌的标题、别名、拼音、罗马音、曲师或 id 命中，就取这首歌的全部谱面；只有谱师命中的歌，只取那个谱师做的谱，和网页端按谱面搜谱师一致（`chart.info.searchIndex` 是每张谱自己的）。网页端的搜索还会匹配达成率、combo 和 sync 文本，这是成绩相关的，不照搬，CLI 用 P2 的 `--achieved`/`--missing`。
+    - 真实公开数据（临时 `SALTNET_HOME`，离线）核对：共 5702 张谱，非宴谱 5637、宴谱 65；`--level 13..14` 1072 张、`13..14+` 1151 张；`--constant 13.7` 131 张；`--version 真` 378 张（`maimai` 186 张加 `maimai PLUS`）；`--diff utage --level 13` 20 张；`--version zzzz` 是 `NOT_FOUND` 且带候选，`--level abc` 是 `USAGE`。
+    - 「谱面有定数」只有一个定义：`chartRow.ts` 的 `constantOf`（正的有限数，否则 `null`）。谱面行的 `constant` 和 `--constant` 筛选都用它，不会出现一边认 0、另一边不认的情况。
+    - 测试：`tests/refs/level.test.ts`（12 个）、`tests/refs/version.test.ts`（12 个）、`tests/catalog/chartQuery.test.ts`（9 个）、`tests/commands/charts.test.ts`（7 个）、`tests/catalog/search.test.ts` 里的 `searchChartEntries`（5 个）和 `tests/madeCatalog.ts` 的 `charters` 参数，大部分由 Gemini 3.8 Flash 按我写的行为说明写出；说明里的期望值是我用独立脚本从固定数据算出来的（等级的几份列表我另外又算了一遍，逐项相同）。它报告了两处和说明不一致，都是说明写得不准，代码没有错：谱师 `ニャイン` 做的谱还有 `146-2`（说明里的列表不全，本来就要它从固定数据算）；固定数据里有几首歌不在 `MusicSort` 里（`10030`、`10225`、`11726`、`12025` 和几首宴谱），同一难度下它们的排序分数相同，所以「相邻两张的分数严格递减」只对在表里的歌成立，它据此改了断言。
+    - 我逐条核对期望值之后手工破坏实现 57 处（等级的正则和换算、区间两端是否包含、反向区间、版本匹配的每一步和候选个数、`chartQuery` 的每个筛选和排序、宴谱的默认排除、定数的判断、只有谱师命中时只取那个谱师的谱、命令层的每个选项和 `meta`）。第一轮 7 处没被发现：`levelInRange` 对非等级的判断、版本的完整名精确匹配（`舞萌DX` 不该因为 `舞萌DX 2021` 里也有它而变成歧义）、`resolveVersions` 对首尾空格的处理、「找不到」时候选个数的上限、空白的搜索词（它不等于没有搜索）、没有谱师的谱。我补了 6 个断言或测试，前六处都变红；最后一处是等价的：`createMusicSearchVariants` 本身对空文本返回空表，`byCharter` 里的 `!!charter` 只是给类型用的。把「有定数」改成共用的 `constantOf` 之后又补了 5 处破坏，全部被发现。`charts --search ""` 是 `USAGE`（解析器不接受空值），不是空结果。
+    - 委托的经过：这一次一次成功（788 秒），提示里列出能用的命令之后没有再被拒；快照里不含 `.env*`。

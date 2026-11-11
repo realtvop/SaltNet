@@ -1,7 +1,13 @@
 import type { ChartStats } from "@core/integrations/diving-fish/type";
 import type { Chart } from "@core/music/type";
 import { describe, expect, it } from "vitest";
-import { chartDetails, chartNotes, chartRow, chartStats } from "../../src/catalog/chartRow";
+import {
+    chartDetails,
+    chartNotes,
+    chartRow,
+    chartStats,
+    constantOf,
+} from "../../src/catalog/chartRow";
 import { songCharts } from "../../src/catalog/songs";
 import { fixtureSongCatalog } from "../fixtureCatalog";
 
@@ -275,6 +281,22 @@ describe("chartRow", () => {
             expect(row.fitConstant, String(bad)).toBeNull();
         }
         expect(rowOf(0.1, 0.1)).toMatchObject({ constant: 0.1, fitConstant: 0.1 });
+    });
+});
+
+describe("constantOf", () => {
+    const chartOf = (constant: number | undefined) => ({ info: { constant } }) as unknown as Chart;
+
+    it("is the constant of a chart that has one", () => {
+        expect(constantOf(getChartEntry("146-3").chart)).toBe(13);
+        expect(constantOf(chartOf(0.1))).toBe(0.1);
+    });
+
+    it("is null where the game has none or the number is no constant", () => {
+        expect(constantOf(getChartEntry("110018-10").chart)).toBeNull();
+        for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
+            expect(constantOf(chartOf(bad)), String(bad)).toBeNull();
+        }
     });
 });
 
