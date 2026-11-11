@@ -45,7 +45,12 @@ export async function commandIn(
     paths: RuntimePaths,
     command: string,
     args: string[],
-    options: { now?: Date; network?: Record<string, Route> } = {}
+    options: {
+        now?: Date;
+        network?: Record<string, Route>;
+        /** More variables for the command's environment, after the ones below; `undefined` removes one. */
+        env?: Record<string, string | undefined>;
+    } = {}
 ): Promise<{ code: number; json: PrintedOutput; stdout: string; requests: { url: string }[] }> {
     const fetch = mockFetch(options.network ?? routes());
     const harness = createHarness({
@@ -53,6 +58,7 @@ export async function commandIn(
             SALTNET_HOME: paths.home,
             SALTNET_SALTMETA_URL: META_URL,
             SALTNET_LXNS_BASE_URL: LXNS_URL,
+            ...options.env,
         },
         fetch,
         now: options.now ?? NOW,

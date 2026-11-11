@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
     CONFIG_DEFINITIONS,
     configEnvName,
+    defaultConfigValue,
     findConfigDefinition,
     loadConfig,
     parseConfigText,
@@ -223,10 +224,10 @@ describe("resolveConfig problems", () => {
             ["error", "file", "output.format"],
         ]);
         expect(problems[0].message).toBe(
-            "config.json 里的 lxns.refreshTokenDays 应该是1 到 3650 的整数（现在是 0）"
+            "config.json 里的 lxns.refreshTokenDays 应该是 1 到 3650 的整数（现在是 0）"
         );
         expect(problems[5].message).toBe(
-            `config.json 里的 output.format 应该是json 或 text（现在是 ${JSON.stringify("xml")}）`
+            `config.json 里的 output.format 应该是 json 或 text（现在是 ${JSON.stringify("xml")}）`
         );
     });
 
@@ -404,5 +405,91 @@ describe("readConfigFile and loadConfig", () => {
                 message: "无法读取 config.json（EISDIR）",
             },
         ]);
+    });
+});
+
+describe("defaultConfigValue", () => {
+    it("returns build value with trailing slash removed when set", () => {
+        const def = findConfigDefinition("api.url")!;
+        expect(
+            defaultConfigValue(def, {
+                build: { ...noBuild, apiUrl: "https://api.example.test/" },
+                version: "9.9.9",
+            })
+        ).toEqual({ value: "https://api.example.test", source: "build" });
+    });
+
+    it("falls back to default source when build value is empty", () => {
+        const def = findConfigDefinition("api.url")!;
+        expect(defaultConfigValue(def, { build: noBuild, version: "9.9.9" })).toEqual({
+            value: "",
+            source: "default",
+        });
+    });
+
+    it("includes version in network.userAgent default", () => {
+        const def = findConfigDefinition("network.userAgent")!;
+        expect(defaultConfigValue(def, { build: noBuild, version: "1.2.3" })).toEqual({
+            value: "saltnet-cli/1.2.3",
+            source: "default",
+        });
+    });
+
+    it("returns default value for metadata.maxAgeHours", () => {
+        const def = findConfigDefinition("metadata.maxAgeHours")!;
+        expect(defaultConfigValue(def, { build: noBuild, version: "9.9.9" })).toEqual({
+            value: 24,
+            source: "default",
+        });
+    });
+
+    it("returns build value as it is when it does not pass the check", () => {
+        const def = findConfigDefinition("api.url")!;
+        expect(
+            defaultConfigValue(def, {
+                build: { ...noBuild, apiUrl: "not a url" },
+                version: "9.9.9",
+            })
+        ).toEqual({ value: "not a url", source: "build" });
+    });
+});
+
+describe("the wording of a bad value", () => {
+    it("formats the reason for a number setting", () => {
+        const def = findConfigDefinition("metadata.maxAgeHours")!;
+        expect(parseConfigText(def, "bad")).toEqual({
+            ok: false,
+            reason: '应该是 0 到 8760 的数字（现在是 "bad"）',
+        });
+    });
+
+    it("formats the reason for an enum setting", () => {
+        const def = findConfigDefinition("output.format")!;
+        expect(parseConfigText(def, "bad")).toEqual({
+            ok: false,
+            reason: '应该是 json 或 text（现在是 "bad"）',
+        });
+    });
+
+    it("formats the reason for an address setting", () => {
+        const defSaltMeta = findConfigDefinition("saltmeta.url")!;
+        expect(parseConfigText(defSaltMeta, "bad")).toEqual({
+            ok: false,
+            reason: "应该是 http 或 https 地址",
+        });
+
+        const defApi = findConfigDefinition("api.url")!;
+        expect(parseConfigText(defApi, "bad")).toEqual({
+            ok: false,
+            reason: "应该是 http 或 https 地址（可以留空）",
+        });
+    });
+
+    it("formats the reason for non-empty text without a gap", () => {
+        const def = findConfigDefinition("network.userAgent")!;
+        expect(parseConfigText(def, "")).toEqual({
+            ok: false,
+            reason: "应该是非空文字",
+        });
     });
 });

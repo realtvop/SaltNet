@@ -4,9 +4,9 @@
  * renamed, so a reader never sees half of one.
  */
 import type { RuntimePaths } from "../runtime/paths";
-import { readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
-import process from "node:process";
+import { writeFileAtomic } from "../runtime/files";
 
 export type SnapshotName = "saltmeta" | "lxns-collections";
 
@@ -17,15 +17,7 @@ export function snapshotPath(paths: RuntimePaths, name: SnapshotName): string {
 /** Saves `data` as `cache/<name>.json`, replacing the previous snapshot in one step. */
 export function writeSnapshot(paths: RuntimePaths, name: SnapshotName, data: unknown): string {
     const target = snapshotPath(paths, name);
-    const temporary = `${target}.${process.pid}.tmp`;
-    try {
-        // The mode only applies to a file that is created, which is what the temporary one is.
-        writeFileSync(temporary, JSON.stringify(data), { mode: 0o600 });
-        renameSync(temporary, target);
-    } catch (error) {
-        rmSync(temporary, { force: true });
-        throw error;
-    }
+    writeFileAtomic(target, JSON.stringify(data));
     return target;
 }
 

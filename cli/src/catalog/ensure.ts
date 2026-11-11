@@ -38,7 +38,7 @@ const SOURCE_OF_KIND: Readonly<Record<MetadataKind, DownloadedSource>> = {
     collections: "lxns-collections",
 };
 
-const HOUR_MS = 3_600_000;
+export const HOUR_MS = 3_600_000;
 
 export interface EnsureDeps extends Omit<RefreshDeps, "sources"> {
     /** `--offline`: nothing is downloaded, whatever the age of what is stored. */
@@ -66,7 +66,8 @@ interface Standing {
     due: boolean;
 }
 
-function isExpired(fetchedAt: number, now: Date, maxAgeHours: number): boolean {
+/** Whether something fetched at `fetchedAt` (epoch milliseconds) is due for a download. */
+export function isExpired(fetchedAt: number, now: Date, maxAgeHours: number): boolean {
     return now.getTime() - fetchedAt >= maxAgeHours * HOUR_MS;
 }
 

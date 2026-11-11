@@ -235,6 +235,23 @@ export function configEnvName(key: ConfigKey): string {
         .toUpperCase()}`;
 }
 
+/**
+ * What a setting is when neither the environment nor `config.json` says anything. A value that
+ * comes from the build is read like a typed-in one, so it is cleaned up the same way (a trailing
+ * slash on an address is dropped).
+ */
+export function defaultConfigValue(
+    definition: ConfigDefinition,
+    context: { build: BuildDefaults; version: string }
+): { value: ConfigValue; source: "build" | "default" } {
+    const resolved = definition.defaultValue(context);
+    if (resolved.source === "build") {
+        const parsed = parseConfigText(definition, String(resolved.value));
+        if (parsed.ok) return { value: parsed.value, source: "build" };
+    }
+    return resolved;
+}
+
 export type ParsedConfigValue = { ok: true; value: ConfigValue } | { ok: false; reason: string };
 
 /** Reads a value typed on the command line or set in the environment. */
@@ -267,10 +284,12 @@ export function describeConfigKind(kind: ConfigKind): string {
 const DECIMAL_TEXT = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
 function coerce(kind: ConfigKind, input: unknown, fromText: boolean): ParsedConfigValue {
-    const invalid = (): ParsedConfigValue => ({
-        ok: false,
-        reason: `应该是${describeConfigKind(kind)}${echo(kind, input)}`,
-    });
+    const invalid = (): ParsedConfigValue => {
+        const noun = describeConfigKind(kind);
+        // Chinese text is spaced from the letters and digits next to it: 应该是 1 到 3650 的整数.
+        const gap = /^[\da-z]/i.test(noun) ? " " : "";
+        return { ok: false, reason: `应该是${gap}${noun}${echo(kind, input)}` };
+    };
 
     switch (kind.type) {
         case "string": {
@@ -405,12 +424,7 @@ export function resolveConfig(input: ResolveConfigInput = {}): ResolvedConfig {
             resolved = { value: fileValue, source: "file" };
         }
 
-        resolved ??= definition.defaultValue(context);
-        if (resolved.source === "build") {
-            // The build values come straight from `.env`; treat them like a typed-in value.
-            const parsed = parseConfigText(definition, String(resolved.value));
-            if (parsed.ok) resolved = { value: parsed.value, source: "build" };
-        }
+        resolved ??= defaultConfigValue(definition, context);
 
         (values[group] ??= {})[name] = resolved.value;
         sources[definition.key] = resolved.source;

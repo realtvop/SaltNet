@@ -111,7 +111,7 @@
 - [x] P1-13 `feat(cli): add course and kaleidxscope commands`
 - [x] P1-14 `feat(cli): add collection list and show commands`（不含进度）
 - [x] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
-- [ ] P1-15 `feat(cli): add status and config commands`
+- [x] P1-15 `feat(cli): add status and config commands`
 - [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成
 - [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI
@@ -140,7 +140,7 @@
 - [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2
 - [ ] P2-13 `feat(cli): add user repository on top of the store`
 - [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6
-- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`
+- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户
 - [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`
 - [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`
 - [ ] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`
@@ -176,7 +176,7 @@
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`
 - [ ] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`
 - [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`
-- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`
+- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）
 - [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里
 - [ ] P3-17 `docs: update agents guide for cli phase 3`
@@ -477,3 +477,20 @@
     - **没做的**：`--with` 的 `all`、`stages`、`friends`、`history`、`position`（P2）；`related` 里收藏品的 `owned`、`progress`（随用户数据，P2-24）。
     - **验证**：新增 41 个测试（`relatedView` 19 个、`chartSets` 3 个、`song` 10 个、`chart` 9 个，Gemini 写了 40 个，我补了 1 个），CLI 全部 68 个文件 1055 个测试。四个属性测试拿核心里另外写好、另外测过的函数来核对：固定测试数据里的每一张谱对着 966 个收藏品（`collectionChartEntries`）和随 CLI 带的全部段位（`courseCharts`），门里点名的 235 首歌对着 `gateCharts`，再加「整首歌的结果 = 它每张谱单独结果的并集」。破坏检查共 90 处（`relatedView.ts` 55、`withRelated.ts` 8、`chartSets.ts` 7、`song.ts` 11、`chart.ts` 9），第一轮 88 处变红，2 处没被发现：段位的输出顺序（倒过来、按 id 排）。Gemini 的段位用例里同时命中的段位只有一个，我补了「两个段位同时命中、列表顺序和 id 顺序相反」的测试，补完 90 处全部变红，没有幸存的。
     - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（766 秒），快照里不含 `.env*`，没有提出分歧。这次的说明里特别写了「`json.data` 是 `any`，回调参数要写类型」和「`tsc` 的输出要原样引用」，它报告 `tsc` 干净，我重跑后确实干净（上一步是 26 处 TS7006）；AGENTS.md 的四处改动和说明里给的原文一致。
+40. **P1-15 的实现（`status` 和 `config`）**：
+    - **`status`**：不联网，也不创建数据目录（数据库文件不存在就不打开：`database` 是 `{exists: false, schemaVersion: null}`，两项数据都是 `missing`）。`data` 是 `{version, home, database, metadata, mergedDuplicates}`，`metadata` 是 `{maxAgeHours, catalog, collections}`，后两项各是 `{source, label, state, fetchedAt, ageHours, upstreamVersion, counts}`；`meta.dataAsOf` 只列已经存下来的来源（`catalog`、`collections`）；`warnings` 现在恒为空。
+        - **`state`**：`missing`（没存过）、`other-version`（存的行是别的版本的 CLI 建的，下次用到时会重建）、`stale`（超过 `metadata.maxAgeHours`，下次用到时会重新下载）、`fresh`。过期用 `ensureMetadata` 同一个判断（`isExpired` 现在导出了），所以正好到 `maxAgeHours` 就算过期，`maxAgeHours` 为 0 时一直是过期；`other-version` 排在过期前面，因为不管多新鲜都要重建。`ageHours` 保留一位小数，时钟比下载时间还早时是 0，不会是负的。过期不算警告：`status` 本来就是用来看这些的，警告留给真正去读数据的命令。
+        - **`counts` 和 `mergedDuplicates`**：`counts` 是下载时记下的数量（曲库是歌、谱面、版本，收藏品是各类各几个），取 `meta_state.detail` 里的数字；`mergedDuplicates` 是最近一次下载曲库时合并掉的上游重复宴谱（设计 3.1 说要在 `status` 里列出），读不懂的条目丢掉，每条只留 `id`、`title`、`mergedTitles`。
+        - **用户和凭据还没有**：设计 3.2 的 `status` 还要列用户列表和凭据状态，这一步没有用户可列，所以没做；P2-15（`user` 命令）加 `users`，P3-14（落雪 token）加凭据状态并由 `status` 给出 `LXNS_EXPIRING`，两处的计划行已经写上。
+    - **`config`** 是一个命令组 `config list|get|set|unset`（设计里只有一行 `config`）：`list`、`get` 不改任何东西（effect `none`），`set`、`unset` 是 `local`；四个都设了 `allowBadConfig`，配置坏了也能用它们去修。
+        - **行**：`{key, value, source, default, env, type, description}`，顺序固定。`value` 是现在生效的，`source` 是它从哪来（`env`、`file`、`build`、`default`），`default` 是没有环境变量和 `config.json` 时的值（构建时带进来的默认值也算，并像输入的值一样整理，例如去掉地址结尾的 `/`；`defaultConfigValue` 从 `resolveConfig` 里提了出来，两边用同一份），`env` 是覆盖它的环境变量名，`type` 是用话说的取值范围。`config list` 的 `data` 是 `{file, items, problems}`，`problems` 是读配置时发现的全部问题（含 warning），`meta.page` 照常，`--limit`、`--offset`、`--fields`、`--format tsv` 都能用。
+        - **键只认完整的名字**：点号连接的全名，不分大小写和全半角（`resolveSetting`）；不做「名字的一部分」或最后一段的简写，因为 `set` 和 `unset` 要写文件，认错了比报 `NOT_FOUND` 糟得多。`NOT_FOUND` 带最接近的键（`metadata.maxAgeHour` 只给 `metadata.maxAgeHours`），差得远就给表里的前 10 项。
+        - **`set`**：值先按这项设置的类型检查（`parseConfigText`），不合法是 `USAGE`，信息 `设置 <键> 应该是…`；数字和枚举回显收到的值，地址和文字不回显，因为可能带凭据。结果是这项设置现在的样子，`changed` 放最前面：文件里原来就是这个值时 `changed` 是 `false`，不写文件（文件一个字节不动）。环境变量比 `config.json` 优先，所以环境里已经设了的话 `set` 照样写文件，结果里 `source` 还是 `env`、`value` 还是环境的值，调用方一看就知道。
+        - **`unset`**：去掉这一项，组空了就连组一起去掉，什么都不剩时文件是 `{}`；没有文件、没有这个组或这一项时什么也不写，也不建目录，`changed` 是 `false`。
+        - **`config.json` 的写法**：整个文件读成普通 JSON，只改这一项，别的（这个版本不认识的设置、别的组、原来的顺序）原样保留；写回去是两个空格缩进加结尾换行，新的组加在最后；组不是对象（例如 `"lxns": 5`，它本来就是个错误）就整个换掉。文件不是合法 JSON、不是 JSON 对象、或者读不了时，`set` 和 `unset` 都不碰它，报 `USAGE`，信息里写明「没有改动，请先修好或删掉 <路径>」，因为重写会丢掉用户写的东西；只是某一项的值不合法（例如 `"maxAgeHours": "abc"`）不算，可以直接 `set` 改好或 `unset` 去掉。数据目录不存在时由 `set` 建（目录 0700、文件 0600）。
+        - **整份文件一次写好**：`runtime/files.ts` 的 `writeFileAtomic` 先写同目录里的临时文件，再改名盖过去，别的进程读到的要么是旧的要么是新的；`catalog/snapshots.ts` 以前自己写这一段，现在也用它。
+    - **措辞**：配置问题和 `config set` 的错误信息里，「应该是」后面的取值说明以字母或数字开头时（`1 到 3650 的整数`、`json 或 text`、`http 或 https 地址`）原来紧贴着「应该是」，现在中间有一个空格（`应该是 1 到 3650 的整数`）；以汉字开头的（`非空文字`）不变。`tests/runtime/config.test.ts` 里两处旧期望随之改了。这是已有消息的措辞改动，错误码和别的内容都没变。
+    - **代码放在哪**：`commands/status.ts`、`commands/config.ts`；`catalog/statusView.ts`（`sourceStatus`、`mergedDuplicatesOf`；`ensure.ts` 的 `isExpired` 和 `HOUR_MS` 导出供它用）；`runtime/configFile.ts`（`setConfigEntry`、`unsetConfigEntry`）、`runtime/configRows.ts`（`settingRow`、`settingRows`）、`runtime/files.ts`（`writeFileAtomic`）；`refs/setting.ts`（`resolveSetting`）。`tests/commandRun.ts` 的 `commandIn` 多了 `env` 选项，测试用它给一次运行加或去掉环境变量。
+    - **验证**：新增 106 个测试（`files` 7、`configFile` 20、`configRows` 4、`setting` 7、`statusView` 10、`status` 10、`config` 命令 39、`runtime/config` 9；Gemini 写了 96 个，我补了 10 个），CLI 共 75 个文件 1161 个测试。破坏检查共 124 处（`files.ts` 7、`configFile.ts` 24、`configRows.ts` 11、`setting.ts` 8、`runtime/config.ts` 7、`statusView.ts` 22、`status.ts` 19、`commands/config.ts` 24、`index.ts` 1、`snapshots.ts` 1），第一轮 123 处里 121 处变红，2 处没被发现：`set` 的结果里 `changed` 不在最前面，和 `config get` 里用户代理的默认值带 CLI 版本（只在 `list` 里测过）。我补了对应的测试，再加上第 124 处「`set` 和 `unset` 的结果行用了另一个版本号」，三处全部变红，没有幸存的。
+    - **我补的测试**：读 Gemini 的测试时我看出几处缺口，先补了 7 个测试（`set` 和 `unset` 的键不分大小写和全半角；`config.json` 整个是 `null`、数字、字符串、`true`，或者其中的组是 `null`、数组；字符串 `"12"` 不等于数字 12），以及几条断言（`maxAgeHours`、`clientId` 单独写也是 `NOT_FOUND`；100 分钟的 `ageHours` 是 1.7；`mergedDuplicates` 里缺标题、缺 `mergedTitles`、混着数字的条目要丢掉；`config unset --help` 和 `config get --help` 的副作用说明）。第一轮破坏检查是在这些都加上之后跑的；检查之后又补了上面说的 3 个测试。Gemini 对 `-1` 只断言了错误码，我改成断言完整的消息（负数是值，不是选项）。
+    - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（640 秒），快照里不含 `.env*`。它提出一个分歧：`status --pretty` 的缩进，我的说明写成了 4 个空格，其实 `--pretty` 是每层 4 个空格、`data` 里的键在第二层，所以是 8 个；是说明写错了，Gemini 照实报告、没有去改这个测试，我把它改成检查信封的 `"v"`（4 个空格）和 `"version"`（8 个空格）。`tsc` 它报告干净，我重跑后确实干净；AGENTS.md 的四处改动和说明里给的原文一致，我另外在 `tests/commandRun.ts` 那句后面补了「测试可以加或去掉环境变量」。
