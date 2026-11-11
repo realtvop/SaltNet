@@ -25,6 +25,8 @@ export interface ChartFilters {
     readonly versions?: readonly string[];
     /** The text `search` would be given. */
     readonly search?: string;
+    /** Only these charts, by chart key: what a gate, course, plate or collection stands for. */
+    readonly within?: ReadonlySet<string>;
 }
 
 /** Every chart of the catalog in the game's order. */
@@ -49,7 +51,7 @@ export function filterCharts(
     entries: readonly ChartEntry[],
     filters: ChartFilters
 ): ChartEntry[] {
-    const { levels, constants, grades, versions, search } = filters;
+    const { levels, constants, grades, versions, search, within } = filters;
     const found = search === undefined ? undefined : searchChartEntries(catalog, search);
     const foundKeys = found && new Set(found.map(entry => chartKeyOf(entry.chart)));
     const gradeSet = grades && new Set(grades);
@@ -61,6 +63,8 @@ export function filterCharts(
         if (levels && !levelInRange(info.level, levels)) return false;
         if (constants && !inConstantRange(constantOf(chart), constants)) return false;
         if (versionSet && !versionSet.has(String(music.info.from))) return false;
-        return !foundKeys || foundKeys.has(chartKeyOf(chart));
+        const key = chartKeyOf(chart);
+        if (within && !within.has(key)) return false;
+        return !foundKeys || foundKeys.has(key);
     });
 }

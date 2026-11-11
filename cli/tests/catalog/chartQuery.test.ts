@@ -245,3 +245,56 @@ describe("filterCharts", () => {
         ]);
     });
 });
+
+describe("filterCharts with within", () => {
+    const entries = allChartEntries(catalog);
+
+    it("restricts charts to within set in game order", () => {
+        const res = filterCharts(catalog, entries, {
+            within: new Set(["70-4", "131-4"]),
+        });
+        expect(res.map(e => chartKeyOf(e.chart))).toEqual(["131-4", "70-4"]);
+
+        const empty = filterCharts(catalog, entries, { within: new Set() });
+        expect(empty).toEqual([]);
+
+        const withGrades = filterCharts(catalog, entries, {
+            within: new Set(["131-4", "131-3", "70-4"]),
+            grades: [3],
+        });
+        expect(withGrades.map(e => chartKeyOf(e.chart))).toEqual(["131-3"]);
+
+        const withLevels = filterCharts(catalog, entries, {
+            within: new Set(["131-4", "70-4", "58-4"]),
+            levels: { from: 13, to: 13 },
+        });
+        expect(withLevels.map(e => chartKeyOf(e.chart))).toEqual(["131-4", "58-4"]);
+
+        const banquetWithoutGrade = filterCharts(catalog, entries, {
+            within: new Set(["110227-10", "131-4"]),
+        });
+        expect(banquetWithoutGrade.map(e => chartKeyOf(e.chart))).toEqual(["131-4"]);
+
+        const banquetWithGrade = filterCharts(catalog, entries, {
+            within: new Set(["110227-10", "131-4"]),
+            grades: [10],
+        });
+        expect(banquetWithGrade.map(e => chartKeyOf(e.chart))).toEqual(["110227-10"]);
+
+        const withNonexistentKey = filterCharts(catalog, entries, {
+            within: new Set(["70-4", "131-4", "999999-3"]),
+        });
+        expect(withNonexistentKey.map(e => chartKeyOf(e.chart))).toEqual(["131-4", "70-4"]);
+
+        const withinUndefined = filterCharts(catalog, entries, { within: undefined });
+        expect(withinUndefined).toHaveLength(175);
+    });
+
+    it("still applies the other filters, the search included", () => {
+        const withSearch = filterCharts(catalog, entries, {
+            within: new Set(["8-3", "8-1", "58-4"]),
+            search: "True Love Song",
+        });
+        expect(withSearch.map(e => chartKeyOf(e.chart))).toEqual(["8-3", "8-1"]);
+    });
+});

@@ -519,3 +519,69 @@ describe("sortCharts invariants", () => {
         }
     });
 });
+
+describe("sortCharts with order", () => {
+    const versions = ["v1", "v2", "v3", "v4"];
+    const entries = [
+        entryOf({ id: 1, grade: 3, constant: 12, from: "v1" }),
+        entryOf({ id: 2, grade: 3, constant: 11, from: "v2" }),
+        entryOf({ id: 3, grade: 3, constant: 14, from: "v3" }),
+        entryOf({ id: 4, grade: 3, constant: 13, from: "v4" }),
+    ];
+    const order = new Map([
+        ["3-3", 0],
+        ["1-3", 1],
+        ["4-3", 2],
+    ]);
+
+    it("uses order for default sort and places unmapped charts last in both directions", () => {
+        const desc = sortCharts(entries, {
+            key: "default",
+            ascending: false,
+            versions,
+            order,
+        });
+        expect(keysOf(desc)).toEqual(["3-3", "1-3", "4-3", "2-3"]);
+
+        const asc = sortCharts(entries, {
+            key: "default",
+            ascending: true,
+            versions,
+            order,
+        });
+        expect(keysOf(asc)).toEqual(["4-3", "1-3", "3-3", "2-3"]);
+    });
+
+    it("ignores order for constant and version sorts", () => {
+        const descConstant = sortCharts(entries, {
+            key: "constant",
+            ascending: false,
+            versions,
+            order,
+        });
+        expect(keysOf(descConstant)).toEqual(["3-3", "4-3", "1-3", "2-3"]);
+
+        const descVersion = sortCharts(entries, {
+            key: "version",
+            ascending: false,
+            versions,
+            order,
+        });
+        expect(keysOf(descVersion)).toEqual(["4-3", "3-3", "2-3", "1-3"]);
+    });
+
+    it("falls back to the game order, with ties told apart by chart key, without an order", () => {
+        // None of these ids has a place in the game's order, so the chart key decides, both ways.
+        for (const ascending of [false, true]) {
+            const omitted = sortCharts(entries, { key: "default", ascending, versions });
+            expect(keysOf(omitted)).toEqual(["1-3", "2-3", "3-3", "4-3"]);
+            const undefinedOrder = sortCharts(entries, {
+                key: "default",
+                ascending,
+                versions,
+                order: undefined,
+            });
+            expect(keysOf(undefinedOrder)).toEqual(["1-3", "2-3", "3-3", "4-3"]);
+        }
+    });
+});

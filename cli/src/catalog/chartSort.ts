@@ -9,6 +9,7 @@ import type { ChartEntry } from "./songs";
 import MusicSort from "@core/music/sort.json";
 import { createGameOrderComparator } from "@core/query/songs";
 import { constantOf } from "./chartRow";
+import { chartKeyOf } from "./songs";
 
 /** What is on offer until the user data arrives: scores bring `achievements` and the others. */
 export const SORT_KEYS = ["default", "constant", "version"] as const;
@@ -41,12 +42,18 @@ export interface ChartSort {
     readonly ascending: boolean;
     /** The CN version names, oldest first. */
     readonly versions: readonly string[];
+    /**
+     * The order a selection has of its own, by chart key (the tracks of a course). `default` takes
+     * it in place of the game's order: the first track first, and `--asc` the last.
+     */
+    readonly order?: ReadonlyMap<string, number>;
 }
 
 /** A copy of `entries` in the requested order. */
 export function sortCharts(entries: readonly ChartEntry[], sort: ChartSort): ChartEntry[] {
-    const { key, ascending, versions } = sort;
+    const { key, ascending, versions, order } = sort;
     const versionIndex = new Map(versions.map((name, index) => [name, index]));
+    const placeOf = (entry: ChartEntry) => order?.get(chartKeyOf(entry.chart)) ?? null;
     const primary = (a: ChartEntry, b: ChartEntry): number => {
         switch (key) {
             case "constant":
@@ -58,6 +65,7 @@ export function sortCharts(entries: readonly ChartEntry[], sort: ChartSort): Cha
                     ascending
                 );
             default:
+                if (order) return compareKnown(placeOf(a), placeOf(b), !ascending);
                 return ascending ? -gameOrder(a.chart, b.chart) : gameOrder(a.chart, b.chart);
         }
     };
