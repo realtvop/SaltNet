@@ -1,16 +1,16 @@
 /**
  * The charts a `charts` query selects (design 3.3). Every filter is optional and a chart has to
  * pass all the ones given. Without any the result is every chart except the banquet ones, which
- * only `--diff utage` asks for; the order is the game's (`createGameOrderComparator`): the
- * hardest difficulty first, and within it the newest song first.
+ * only `--diff utage` asks for; the order is the game's (`compareByGameOrder`): the hardest
+ * difficulty first, and within it the newest song first. Sorting and grouping are `chartSort.ts`
+ * and `chartGroups.ts`.
  */
 import type { LevelRange } from "../refs/level";
 import type { ChartEntry, SongCatalog } from "./songs";
 import { UTAGE_GRADE } from "@core/chart/difficulty";
-import MusicSort from "@core/music/sort.json";
-import { createGameOrderComparator } from "@core/query/songs";
 import { levelInRange } from "../refs/level";
 import { constantOf } from "./chartRow";
+import { compareByGameOrder } from "./chartSort";
 import { searchChartEntries } from "./search";
 import { chartKeyOf, songCharts } from "./songs";
 
@@ -27,15 +27,14 @@ export interface ChartFilters {
     readonly search?: string;
 }
 
-const compareByGameOrder = createGameOrderComparator(MusicSort);
-
 /** Every chart of the catalog in the game's order. */
 export function allChartEntries(catalog: SongCatalog): ChartEntry[] {
     return catalog.songs
         .flatMap(song => songCharts(song).map(chart => ({ chart, song })))
-        .sort((a, b) => compareByGameOrder(a.chart, b.chart));
+        .sort(compareByGameOrder);
 }
 
+/** A chart without a constant (banquet) is in no range, not even an open one. */
 function inConstantRange(constant: number | null, range: NonNullable<ChartFilters["constants"]>) {
     if (constant === null) return false;
     return (

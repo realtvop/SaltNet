@@ -106,7 +106,7 @@
 - [x] P1-9b `feat(cli): add the search command`：曲目搜索、命中方式、排序；引用解析的最后一步改用同一个搜索
 - [x] P1-9c `feat(cli): add song and chart commands`：谱面行、`song`、`chart`（成绩、吃分表和 `--with` 的其余取值留给 P2）
 - [x] P1-10 `feat(cli): add charts filters`：level、constant、version、diff、search、utage 的筛选（`fav` 推到 P2-25，见第 34 条）
-- [ ] P1-11 `feat(cli): add charts sorting, grouping and paging`
+- [x] P1-11 `feat(cli): add charts sorting, grouping and paging`
 - [ ] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
 - [ ] P1-13 `feat(cli): add course and kaleidxscope commands`
 - [ ] P1-14 `feat(cli): add collection list and show commands`（不含进度）
@@ -400,7 +400,7 @@
     - 委托的经过：第一次运行（201 秒）没有产出，因为 Gemini 用了 `pnpm --filter saltnet-cli vitest run …`，不在白名单里，无头模式放弃整次运行；放宽白名单（`--filter`、`exec` 的写法）并在提示里列出能用的命令之后，第二次成功（659 秒）。
 
 34. **P1-10 的实现（`charts` 的筛选）**：
-    - `charts` 一次只做筛选和分页：选项是 `--level`、`--constant`、`--diff`、`--version`、`--search` 和列表命令共有的 `--limit`、`--offset`、`--fields`，结果是 `data.items`（和 `song`、`chart` 同一种谱面行）加 `meta.page`。顺序固定为网页端的游戏内顺序（`createGameOrderComparator(MusicSort)`：难度高的在前，同一难度里新曲在前）；`--sort`、`--group-by`、`--stats` 是 P1-11，所以现在写 `--sort` 会得到「未知选项」的 `USAGE`。`MusicSort`（`@core/music/sort.json`）网页端和 CLI 共用，不进数据库。
+    - `charts` 一次只做筛选和分页：选项是 `--level`、`--constant`、`--diff`、`--version`、`--search` 和列表命令共有的 `--limit`、`--offset`、`--fields`，结果是 `data.items`（和 `song`、`chart` 同一种谱面行）加 `meta.page`。顺序固定为网页端的游戏内顺序（`createGameOrderComparator(MusicSort)`：难度高的在前，同一难度里新曲在前）；`--sort`、`--group-by` 是 P1-11（`--stats` 要用成绩，推到 P2，见第 35 条），所以现在写 `--sort` 会得到「未知选项」的 `USAGE`。`MusicSort`（`@core/music/sort.json`）网页端和 CLI 共用，不进数据库。
     - **`--fav` 推迟到 P2-25**：收藏夹的表和 `fav` 命令是 P2 的内容，P1 里没有任何办法建出一个收藏夹，现在加一个永远找不到名字的过滤选项只是死代码。P2-25 把 `favorites` 表、`fav` 命令和 `charts --fav` 放进同一个提交。这只是调整先后，没有改设计文档里 `charts` 的参数表。`--recent` 同理（依赖成绩变化记录，P2）。`--gate`、`--course`、`--plate`、`--collection` 是 P1-12。
     - `--level` 把等级放在同一条数轴上：`13` 是 13，`13+` 是 13.5。区间两端都含，所以 `13..14` 含 `13`、`13+`、`14`，不含 `14+`；要含就写 `13..14+`。单个值是精确匹配（`13+` 不含 `13`）。设计文档只写了区间格式，没有说 `+` 怎么算，这是照游戏里的写法定的：`13+` 比 `13` 难、比 `14` 容易。宴谱等级末尾的 `?` 可写可不写，比较时忽略，所以 `--diff utage --level 13` 找得到 `13?`。两端不是等级、或下限大于上限都是 `USAGE`。
     - `--constant` 区间两端都含，没有定数的谱（宴谱，核对时是 0 或缺失）一律不通过，包括只写一端的情况。
@@ -412,3 +412,15 @@
     - 测试：`tests/refs/level.test.ts`（12 个）、`tests/refs/version.test.ts`（12 个）、`tests/catalog/chartQuery.test.ts`（9 个）、`tests/commands/charts.test.ts`（7 个）、`tests/catalog/search.test.ts` 里的 `searchChartEntries`（5 个）和 `tests/madeCatalog.ts` 的 `charters` 参数，大部分由 Gemini 3.8 Flash 按我写的行为说明写出；说明里的期望值是我用独立脚本从固定数据算出来的（等级的几份列表我另外又算了一遍，逐项相同）。它报告了两处和说明不一致，都是说明写得不准，代码没有错：谱师 `ニャイン` 做的谱还有 `146-2`（说明里的列表不全，本来就要它从固定数据算）；固定数据里有几首歌不在 `MusicSort` 里（`10030`、`10225`、`11726`、`12025` 和几首宴谱），同一难度下它们的排序分数相同，所以「相邻两张的分数严格递减」只对在表里的歌成立，它据此改了断言。
     - 我逐条核对期望值之后手工破坏实现 57 处（等级的正则和换算、区间两端是否包含、反向区间、版本匹配的每一步和候选个数、`chartQuery` 的每个筛选和排序、宴谱的默认排除、定数的判断、只有谱师命中时只取那个谱师的谱、命令层的每个选项和 `meta`）。第一轮 7 处没被发现：`levelInRange` 对非等级的判断、版本的完整名精确匹配（`舞萌DX` 不该因为 `舞萌DX 2021` 里也有它而变成歧义）、`resolveVersions` 对首尾空格的处理、「找不到」时候选个数的上限、空白的搜索词（它不等于没有搜索）、没有谱师的谱。我补了 6 个断言或测试，前六处都变红；最后一处是等价的：`createMusicSearchVariants` 本身对空文本返回空表，`byCharter` 里的 `!!charter` 只是给类型用的。把「有定数」改成共用的 `constantOf` 之后又补了 5 处破坏，全部被发现。`charts --search ""` 是 `USAGE`（解析器不接受空值），不是空结果。
     - 委托的经过：这一次一次成功（788 秒），提示里列出能用的命令之后没有再被拒；快照里不含 `.env*`。
+
+35. **P1-11 的实现（`charts` 的排序、分组和分页）**：
+    - **这一步只做 `--sort default|constant|version`、`--asc`/`--desc` 和 `--group-by constant|version|level|difficulty`。** 设计 3.3 里的其他排序（`achievements`、`rating`、`playcount`、`recent`、`gain`）和分组（`rank`、`combo`、`sync`）要用成绩，加上 `--stats`、`--achieved`/`--missing`、`--recent`，都放在 P2-19 和 P2-23；现在写这些值是 `USAGE`，P2-19 要同步改 `tests/commands/charts.test.ts` 里对应的断言。
+    - **方向**（规格没细说，我定的）：每个 `--sort` 都有自己的「自然方向」，默认就是它，`--desc` 可以不写；`--asc` 反过来。`default` 是网页端的顺序（难度高的在前，同一难度里新曲在前），`--asc` 就是整个反过来；`constant` 是定数高的在前；`version` 是版本新的在前。`--asc` 和 `--desc` 一起写是 `USAGE`，而且在取元数据之前就报，不会白白联网刷新。
+    - **没有值的谱排在最后，不管往哪个方向排**：宴谱没有定数；谱面的版本不在 SaltMeta 的版本表里（以后新版本先出现在曲库里时可能发生）也没有位置。
+    - **相同的谱按谱面 key（曲目 id，再难度）从小到大排，两个方向都是**，所以同样的数据和参数永远给出同样的顺序（设计 4.5）。代价是 `--asc` 不是默认顺序在并列处的逐项倒序，只是依据反过来。
+    - **`default` 的顺序**复用网页端的 `createGameOrderComparator(MusicSort)`，原样，没有改 `sort.json`。固定数据里 `10030`、`10225`、`11726`、`12025` 和多数宴谱的 id 不在 `MusicSort` 里，它们在同一难度里并列，网页端对并列项的顺序取决于输入顺序，CLI 用谱面 key 定下来。`allChartEntries`（没有排序参数时的顺序）也用同一个比较函数。
+    - **分组**：结果放在 `data.groups`，每组 `{key, count, items}`。`key` 是这组共有的值，写法和谱面行一致：定数写一位小数（`13.7`）、等级照数据（`13+`、宴谱的 `13?`）、难度是短名、版本是版本名；宴谱没有定数，写了 `--diff utage` 时它们自成一组，`key` 是 `null`，排在最后。组的顺序固定：定数从高到低、版本从新到旧、等级从难到易、难度从 BASIC 起；`--sort` 和 `--asc` 只排组里的谱，不改组的顺序。等级一样的组（`13` 和 `13?`）、版本表里没有的版本，按 `key` 的文字顺序排，不依赖谁先出现。
+    - **分页对每一组分别生效**：`--limit` 和 `--offset` 取每组的第几条到第几条，`count` 是这一组一共有几张（不是这一页的条数），所以 agent 看得出每组还有没有。分组的结果没有 `meta.page`（一个总数、一个 `nextOffset` 对多个组没有意义）；`meta.dataAsOf` 和警告照常带。tsv 把所有组合成一张表、第一列是 `group`，text 是每组一个标题 `<key>（<count> 条）`加一张表（输出层 P1-4 就是这样定的）。
+    - **测试**：`tests/catalog/chartSort.test.ts`（17 个）、`tests/catalog/chartGroups.test.ts`（13 个）、`tests/commands/charts.test.ts` 新增 14 个（共 21 个）和 `tests/madeChart.ts`（做一张编出来的谱的小工具），其中 43 个由 Gemini 3.8 Flash 按我写的行为说明写出，1 个（分组结果也带 `STALE_METADATA`）是我补的；期望值来自我用独立脚本从固定数据算出来的结果（175 张非宴谱，难度分组 42/42/42/42/7，等级 21 组、版本 20 组、定数 60 组，加宴谱的 `null` 组）。`cli` 的测试共 816 个。
+    - **手工破坏实现 44 处**：谱面 key 的比较、各排序的比较和方向、没有值的排最后、版本位置的查找、并列时的次序、不改输入数组、各分组的 `key` 写法和位置、组的排序、`allChartEntries` 用游戏顺序、命令层的方向检查（要在取元数据之前）、选项的接线、每组分页、`count`、`meta`、警告。第一轮只有一处没被发现：分组的结果丢掉了 `STALE_METADATA` 警告（非分组的结果有测试，分组的没有）；我补了测试，再跑这一处变红。
+    - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（481 秒），快照里不含 `.env*`；这一次说明和代码之间没有出入。我逐项核对了它写的期望值，并改掉了它在 AGENTS.md 里写得不通的一句。
