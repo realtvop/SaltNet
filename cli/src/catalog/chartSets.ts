@@ -5,7 +5,7 @@
  */
 import type { Collection } from "@core/collection/type";
 import type { Course } from "@core/course";
-import type { KaleidxscopeGate } from "@core/kaleidxscope";
+import type { KaleidxscopeGate, KaleidxscopeSelectionPool } from "@core/kaleidxscope";
 import type { ChartEntry } from "./songs";
 import { getCollectionCharts } from "@core/collection/versionPlate";
 import { getCourseCharts } from "@core/course";
@@ -18,14 +18,28 @@ export interface ChartSet {
 }
 
 /**
+ * The pools of a gate that say which songs they draw from. The pool with an `unlistedDescription`
+ * (the scrambled chart of the noise gate) plays a chart that is not an ordinary one, so the song
+ * it names is not one the gate asks for, and the web app lists none for it.
+ */
+export function listedPools(gate: KaleidxscopeGate): readonly KaleidxscopeSelectionPool[] {
+    return gate.selectionPools.filter(pool => !pool.unlistedDescription);
+}
+
+/** The music ids of the songs the gate asks for: its key condition and its listed pools. */
+export function gateMusicIds(gate: KaleidxscopeGate): ReadonlySet<number> {
+    return new Set([
+        ...gate.keyCondition.songs.map(song => song.musicId),
+        ...listedPools(gate).flatMap(pool => pool.songs.map(song => song.musicId)),
+    ]);
+}
+
+/**
  * Every chart of every song the gate asks for: its key condition and the pools its tracks draw
  * from. The difficulty is left to the caller, as it is for every other filter.
  */
 export function gateCharts(gate: KaleidxscopeGate, entries: readonly ChartEntry[]): ChartSet {
-    const musicIds = new Set([
-        ...gate.keyCondition.songs.map(song => song.musicId),
-        ...gate.selectionPools.flatMap(pool => pool.songs.map(song => song.musicId)),
-    ]);
+    const musicIds = gateMusicIds(gate);
     const keys = entries.filter(({ chart }) => musicIds.has(chart.music.id)).map(entryKey);
     return { keys: new Set(keys) };
 }

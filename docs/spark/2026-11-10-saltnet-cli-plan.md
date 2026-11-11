@@ -110,7 +110,7 @@
 - [x] P1-12 `feat(cli): add charts gate, course, plate and collection filters`
 - [x] P1-13 `feat(cli): add course and kaleidxscope commands`
 - [x] P1-14 `feat(cli): add collection list and show commands`（不含进度）
-- [ ] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
+- [x] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
 - [ ] P1-15 `feat(cli): add status and config commands`
 - [ ] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成
@@ -464,3 +464,16 @@
     - **没做的**：`owned`、`progress`、`done` 的值、`--all`、默认只列没完成的、按拥有状态筛选（P2-24）；`song` 和 `chart` 的 `--with related`（用到这首歌或这张谱的收藏品、段位和门）是下一步 P1-14b。
     - **验证**：新增 30 个测试（`status` 2 个、`collectionView` 13 个、`collection` 15 个，Gemini 写了 28 个，我补了 2 个），CLI 全部 67 个文件 1014 个测试。破坏检查共 86 处（`status.ts` 7、`collectionView.ts` 48、`collection.ts` 31），第一轮 85 处变红，1 处没被发现：同一条条件里把同一首歌点了两次时，这一条自己的 `songCount` 不去重（Gemini 的用例里重复的歌只检查了整个收藏品的 `songCount`）。补了这个测试以后 86 处全部变红，没有幸存的。
     - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（559 秒），快照里不含 `.env*`，没有提出分歧，AGENTS.md 的改动和说明里要求的一致。它的报告说 `tsc` 是干净的，我重跑后 `collection.test.ts` 报了 26 处 TS7006（命令输出的 `json.data` 是 `any`，回调参数没有类型），照 `charts.test.ts` 的写法加了 `ListOutput` 和 `ShowOutput` 两个类型；另一个手补的测试是 `collection show --fields`（只投影 `items`，`collection` 和 `missing` 不受影响，未知字段是 `USAGE`）。
+39. **P1-14b 的实现（`song` 和 `chart` 的 `--with related`）**：
+    - **含义**：`related` 是「用到这首歌（或这张谱）的东西」：条件点名了它的收藏品、把它排成曲目的段位、拿它做钥匙歌或曲池歌的门。一首歌用到的东西，是它的任何一张谱用到的东西的并集（SD 和 DX 是两面，条件点名哪一面就是哪一面）。三种东西各走 `charts` 的 `--collection`、`--course`、`--gate` 用的同一套规则，所以「一张谱出现在 related 里」和「那个 `charts` 筛选会给出这张谱」是一回事；测试里用四个属性测试逐张谱对着核心函数核对（收藏品对 `collectionChartEntries`，段位对 `courseCharts`，门对 `gateCharts`，整首歌对它每张谱单独的结果）。
+    - **只有写了 `--with related` 才有**：不写时 `data` 里没有 `related`、不去取落雪的收藏品，`meta.dataAsOf` 只有 `catalog`，和以前完全一样。`--with` 是逗号分隔的列表（`related,related` 可以），目前只收 `related`，别的值（包括 `all`）是 `USAGE`，在联网之前就报，不建数据目录。设计里 `chart` 的 `--with` 还有 `stages`、`friends`、`history`、`position` 和 `all`，它们要用户的成绩，跟着 P2 加。
+    - **取收藏品的时机**：先取曲库、解析曲目或谱面，然后才取落雪的四个列表，所以写错的引用不会去下载收藏品（测试里断言这时只发了 `META_URL` 一个请求）。请求顺序是曲库在前、收藏品在后，和 `collection show` 相反（那边要先解析收藏品引用）。`meta.dataAsOf` 同时有 `catalog` 和 `collections`，警告先曲库后收藏品；`--offline` 下没有缓存收藏品是 `OFFLINE_NO_CACHE`，信息点名「收藏品（落雪）」；收藏品过期而曲库没过期时只有一条警告。
+    - **`related` 的形状**：`{collections, courses, gates}`，三个键永远都在，没有就是 `[]`。
+        - `collections[]` 是 `collection list` 里的那一行（十个键）加 `requirements`：只列点名了这首歌的条件（不是整个收藏品的全部条件），按数据里的顺序，每条是 `collection show` 里的条件（`difficulties`、`rank`、`combo`、`sync`、`songCount`）再加 `charts`，也就是这条条件对这首歌的哪几张谱适用（谱面 key，按谱面的顺序）。条件和行里的 `songCount` 仍然是整条条件、整个收藏品点名的歌数，不是「只数这一首」。条件点名了这首歌、难度也要符合才算（没写难度，或写了空列表，就是任意难度），判断用核心的 `requirementMatchesChart`。`title:5102` 只点名 DX 的《39》，所以 `song 146` 的 `charts` 是 `10146-0`～`10146-3`，而 `chart 146-3`（SD）的 `related` 三个列表都是空的。顺序是 `collection list` 的顺序（牌子、称号、头像、背景、旅行伙伴、搭档，各自按落雪列表的顺序），不按 ref 或 id 另排。
+        - `courses[]` 是 `course list` 里的那一行加 `tracks`：这首歌在这个段位里是第几首，每条 `{track, chartKey, difficulty}`，`track` 从 1 起；同一张谱在一个段位里出现两次就列两条；`trackCount` 是整个段位的曲数，不是命中的曲数；`unlockCourse` 的名字在传进来的同一份段位列表里查，查不到是 `null`。顺序是 `course list` 的顺序。
+        - `gates[]` 是 `{id, name, shortName, region, key, pools}`：`key` 是钥匙条件有没有点名这首歌，`pools` 是它在哪几个曲池里，每个 `{track, label}`（没有 `label` 的是 `null`），按曲池的顺序。门只按歌（music id）认，不看难度，和 `charts --gate` 一致；门在这里是静态的，不带 `opened`，开没开放看 `kaleidxscope`。顺序是 `kaleidxscope` 总览的顺序。
+    - **乱码门里加密的曲池**：以前 `gateCharts` 把门里所有曲池的歌都算进去，包括乱码门第 3 首那个带 `unlistedDescription` 的曲池（歌 11879，播的是乱码谱面，不是一张普通谱）；网页的总览和 `gateDetail` 早就不列它。现在 `chartSets.ts` 多了 `listedPools` 和 `gateMusicIds`，`gateCharts`（也就是 `charts --gate noise`）和 `related` 都不再把它当作这个门要的歌，三处一致。国服的曲库里没有 11879，所以对现在的真实数据没有影响，只是把规则讲齐。
+    - **代码放在哪**：`catalog/relatedView.ts` 是纯函数 `relatedTo(charts, sources)`，`sources` 带全部收藏品，段位和门不给就用随 CLI 带的那份（给空数组就是没有，测试里靠这个造出做出来的段位和门）；`commands/withRelated.ts` 是 `withOptions()`（`song`、`chart` 把它展开进自己的 `options`）和 `loadRelated(args, ctx, charts)`（没写 `related` 就返回 `undefined`，不碰网络；写了就 `useMetadata(["collections"])` 再 `relatedTo`）。P2 要往 `--with` 里加成绩类的值时，也加在这里。`collectionView.ts` 的 `requirementRow` 现在导出了。
+    - **没做的**：`--with` 的 `all`、`stages`、`friends`、`history`、`position`（P2）；`related` 里收藏品的 `owned`、`progress`（随用户数据，P2-24）。
+    - **验证**：新增 41 个测试（`relatedView` 19 个、`chartSets` 3 个、`song` 10 个、`chart` 9 个，Gemini 写了 40 个，我补了 1 个），CLI 全部 68 个文件 1055 个测试。四个属性测试拿核心里另外写好、另外测过的函数来核对：固定测试数据里的每一张谱对着 966 个收藏品（`collectionChartEntries`）和随 CLI 带的全部段位（`courseCharts`），门里点名的 235 首歌对着 `gateCharts`，再加「整首歌的结果 = 它每张谱单独结果的并集」。破坏检查共 90 处（`relatedView.ts` 55、`withRelated.ts` 8、`chartSets.ts` 7、`song.ts` 11、`chart.ts` 9），第一轮 88 处变红，2 处没被发现：段位的输出顺序（倒过来、按 id 排）。Gemini 的段位用例里同时命中的段位只有一个，我补了「两个段位同时命中、列表顺序和 id 顺序相反」的测试，补完 90 处全部变红，没有幸存的。
+    - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（766 秒），快照里不含 `.env*`，没有提出分歧。这次的说明里特别写了「`json.data` 是 `any`，回调参数要写类型」和「`tsc` 的输出要原样引用」，它报告 `tsc` 干净，我重跑后确实干净（上一步是 26 处 TS7006）；AGENTS.md 的四处改动和说明里给的原文一致。

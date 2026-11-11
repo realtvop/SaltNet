@@ -93,7 +93,7 @@ export function collectionRow(entry: CollectionEntry): CollectionRow {
     };
 }
 
-function requirementRow(requirement: CollectionRequired): RequirementRow {
+export function requirementRow(requirement: CollectionRequired): RequirementRow {
     const { difficulties, rate, fc, fs } = requirement;
     return {
         difficulties: difficulties?.length ? difficulties.map(difficultyLabel) : null,

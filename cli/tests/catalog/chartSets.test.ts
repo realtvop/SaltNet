@@ -1,5 +1,6 @@
 import type { Collection } from "@core/collection/type";
 import type { Course } from "@core/course";
+import type { KaleidxscopeGate } from "@core/kaleidxscope";
 import { mapLXNSCollections } from "@core/collection/map";
 import { courses } from "@core/course";
 import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
@@ -10,8 +11,10 @@ import {
     collectionCharts,
     courseCharts,
     gateCharts,
+    gateMusicIds,
     hasSongRequirement,
     intersectChartSets,
+    listedPools,
 } from "../../src/catalog/chartSets";
 import { fixtureSongCatalog } from "../fixtureCatalog";
 import { entryOf } from "../madeChart";
@@ -328,5 +331,108 @@ describe("chartSets", () => {
             const disjointRes = intersectChartSets([set1, disjoint]);
             expect(disjointRes).toEqual(new Set());
         });
+    });
+});
+
+describe("the listed pools of a gate", () => {
+    it("filters out pools with unlistedDescription and preserves other pools in order", () => {
+        const noise = kaleidxscopeGates.find(gate => gate.id === "noise")!;
+        expect(listedPools(noise).map(p => p.track)).toEqual([1, 2]);
+
+        const blue = kaleidxscopeGates.find(gate => gate.id === "blue")!;
+        expect(listedPools(blue).map(p => p.track)).toEqual([1, 2, 3]);
+
+        const finalGate = kaleidxscopeGates.find(gate => gate.id === "final")!;
+        expect(listedPools(finalGate).map(p => p.track)).toEqual([1, 2]);
+        expect(listedPools(finalGate).map(p => p.label)).toEqual([undefined, "BONUS TRACK"]);
+
+        for (const gate of kaleidxscopeGates) {
+            if (gate.id === "noise") continue;
+            expect(listedPools(gate)).toEqual(gate.selectionPools);
+        }
+
+        const madeUpGate = {
+            id: "test",
+            name: "test",
+            shortName: "test",
+            region: "test",
+            openedAt: "2026-01-01",
+            lifePhases: [],
+            keyCondition: { summary: "", songs: [] },
+            selectionPools: [
+                { track: 1, description: "", selection: "random" as const, songs: [] },
+                {
+                    track: 2,
+                    description: "",
+                    selection: "random" as const,
+                    songs: [],
+                    unlistedDescription: "x",
+                },
+                { track: 3, description: "", selection: "random" as const, songs: [] },
+            ],
+        } as unknown as KaleidxscopeGate;
+        expect(listedPools(madeUpGate).map(p => p.track)).toEqual([1, 3]);
+    });
+
+    it("returns correct gateMusicIds for gates", () => {
+        const noise = kaleidxscopeGates.find(gate => gate.id === "noise")!;
+        expect(gateMusicIds(noise)).toEqual(
+            new Set([
+                11739, 11744, 11752, 11808, 11813, 11817, 11740, 11745, 11749, 11753, 11809, 11814,
+                11818,
+            ])
+        );
+
+        const hope = kaleidxscopeGates.find(gate => gate.id === "hope")!;
+        expect(gateMusicIds(hope)).toEqual(new Set([1736, 10835, 1819]));
+
+        const finalGate = kaleidxscopeGates.find(gate => gate.id === "final")!;
+        expect(gateMusicIds(finalGate)).toEqual(new Set([11820, 11821]));
+
+        const prism = kaleidxscopeGates.find(gate => gate.id === "prism")!;
+        expect(gateMusicIds(prism).size).toBe(15);
+
+        const blue = kaleidxscopeGates.find(gate => gate.id === "blue")!;
+        const blueIds = gateMusicIds(blue);
+        expect(blueIds.has(11009)).toBe(true);
+        expect(blueIds.has(11739)).toBe(true);
+        expect(blueIds.has(11740)).toBe(true);
+        expect(blueIds.has(11879)).toBe(false);
+        expect(blueIds.has(9)).toBe(false);
+
+        const overlappingGate = {
+            keyCondition: { summary: "", songs: [{ musicId: 100, title: "A" }] },
+            selectionPools: [
+                {
+                    track: 1,
+                    description: "",
+                    selection: "random" as const,
+                    songs: [
+                        { musicId: 100, title: "A" },
+                        { musicId: 101, title: "B" },
+                    ],
+                },
+            ],
+        } as unknown as KaleidxscopeGate;
+        expect(gateMusicIds(overlappingGate)).toEqual(new Set([100, 101]));
+    });
+
+    it("selects correct charts ignoring scrambled unlisted pool in noise gate", () => {
+        const noise = kaleidxscopeGates.find(gate => gate.id === "noise")!;
+        const noiseCharts = gateCharts(noise, [
+            entryOf({ id: 11879, grade: 3 }),
+            entryOf({ id: 11740, grade: 3 }),
+            entryOf({ id: 11739, grade: 3 }),
+            entryOf({ id: 11818, grade: 3 }),
+            entryOf({ id: 9, grade: 3 }),
+        ]);
+        expect(noiseCharts.keys).toEqual(new Set(["11740-3", "11739-3", "11818-3"]));
+        expect(noiseCharts.keys.has("11879-3")).toBe(false);
+
+        const emptyNoise = gateCharts(noise, [
+            entryOf({ id: 11879, grade: 0 }),
+            entryOf({ id: 11879, grade: 3 }),
+        ]);
+        expect(emptyNoise.keys).toEqual(new Set());
     });
 });
