@@ -25,7 +25,7 @@ import {
  * does (filter, position indexes, search, queried indexes, grouping and statistics) on fixed data:
  * the trimmed SaltMeta fixture plus synthetic scores from a seeded generator. The snapshots record
  * what the page showed when the helpers were extracted from it. They were not changed when the
- * helpers moved to shared/core, and they are what keeps the web app and the CLI in agreement.
+ * helpers moved to shared/core; search snapshots now also record intentional relevance ordering.
  */
 
 // MARK: fixed data

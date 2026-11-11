@@ -11,7 +11,8 @@ import {
 import { checkCollectionChartFinish, getCollectionCharts } from "../collection/versionPlate";
 import { getCourseCharts } from "../course";
 import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
-import { createMusicSearchQuery, matchesMusicSearchIndex } from "../music/search";
+
+export { searchCharts } from "./search";
 
 /**
  * Query logic of the songs page: ordering, category filtering, position indexes, text search,
@@ -280,26 +281,6 @@ export function addChartPositionIndexes(allCharts: Chart[], filteredCharts: Char
     });
 
     return chartsWithOriginalIndex;
-}
-
-/** Keeps the charts matching `queryText` by title, alias, id, achievements or combo/sync status. */
-export function searchCharts<T extends Chart>(charts: T[], queryText: string): T[] {
-    if (!queryText) return charts;
-
-    const searchTerms = createMusicSearchQuery(queryText);
-    return charts.filter(chart => {
-        const chartData = chart.score;
-        return (
-            matchesMusicSearchIndex(chart.music.info.searchIndex, searchTerms) ||
-            matchesMusicSearchIndex(chart.info.searchIndex, searchTerms) ||
-            chart.music.info.id.toString() === queryText ||
-            (chartData &&
-                // 达成率 fc sync
-                (chartData.achievements?.toString().includes(queryText) ||
-                    chartData.comboStatus?.toString().includes(queryText) ||
-                    chartData.syncStatus?.toString().includes(queryText)))
-        );
-    });
 }
 
 /**

@@ -33,7 +33,10 @@ SaltNet is a three-package pnpm workspace:
       builder.
     - `user/inGame.ts`: in-game user types.
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
-      indexes, search, grouping and statistics as pure functions).
+      indexes, grouping and statistics as pure functions), which re-exports the web search in
+      `search.ts`: existing matches ranked by exact ID, whole title/alias, name prefix, name
+      substring, name pinyin/romaji, artist, charter, then score/status. Equal relevance preserves
+      incoming order; transliteration is cached per metadata object and refreshed when text changes.
     - `fixtures/`: a trimmed real SaltMeta document with a helper that converts it, used as fixed
       test data by every package, plus a trimmed copy of the four LXNS collection lists (`lxns.ts`).
     - `integrations/`: `diving-fish/type.ts`, `lxns/type.ts`, and the public
@@ -97,7 +100,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
 - `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, the duplicate-song merge, and the shared SaltMeta and LXNS test fixtures.
 - `pnpm test:query` compares the songs-page query helpers (ordering, category filtering, position
-  indexes, search, grouping and statistics) with committed snapshots on the fixed fixture data.
+  indexes, search, grouping and statistics) with committed snapshots on the fixed fixture data,
+  and validates web search relevance, stable ties and compatibility with the existing match set.
   Regenerate the snapshots only for an intentional behavior change.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
