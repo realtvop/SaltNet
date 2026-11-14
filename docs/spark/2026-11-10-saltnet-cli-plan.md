@@ -11,6 +11,40 @@
 - 被打断或上下文被压缩之后：先读本文件和 `git log --oneline`，**第一个没勾的步骤就是下一步**，不要凭记忆继续。
 - 计划可以调整（拆分、合并、补步骤），但每次调整都要在文末「实现中的决定」里写明原因。设计文档里已经确认的决定不推翻；设计确实有错或做不到，就在同一个 commit 里改设计文档，并在「实现中的决定」里说明。
 - 设计文档「待确认」里的事项：按设计给的默认值实现，相关取值做成可配置，实测留给用户（见 P3 和最终报告）。
+- 谁来做每一步、每一步怎么走，见下一节「分工与流程」。
+
+## 分工与流程
+
+2026-11-14 起，实现分给四个角色，**Opus 是总协调**。三个工具都通过各自的命令行工具启动，由协调者自己用 Bash 调用，不需要用户动手；脚本、快照的做法和试过什么在 [`2026-11-10-saltnet-cli-tools/`](./2026-11-10-saltnet-cli-tools/README.md)，让新的协调会话接着往下做的启动提示是同一个目录里的 `coordinator-prompt.md`。
+
+| 角色   | 谁                                                                          | 做什么                                                                                                                                                             | 怎么调用            |
+| ------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| 协调   | Opus                                                                        | 判断每一步归谁；设计决定（写进「实现中的决定」）；写 brief；审补丁、合进工作区；跑完整验证；更新计划和 `AGENTS.md`；提交；最终报告。几行的修正和文档措辞自己直接做 | —                   |
+| 简单活 | Gemini 3.8 Flash (Medium)，Antigravity 的 `agy`                             | 搬模块（`refactor(core): move …`）、给已经写好的代码补测试（包括拿固定数据存快照的测试）、写文档草稿                                                               | `delegate-agy.sh`   |
+| 新东西 | Codex GPT 5.6 Sol (high)，`codex exec`                                      | 新命令、新逻辑、数据库迁移、同步和绑定流程，以及需要读懂设计才切得对的重构                                                                                         | `delegate-codex.sh` |
+| 审查   | Codex GPT 6.1 Sol (high)，`codex exec`，可再加 `codex review --uncommitted` | 每个有代码的步骤提交前审一遍                                                                                                                                       | `review-codex.sh`   |
+
+步骤行末尾的 `〔简单〕`、`〔新〕`、`〔协调〕` 是建议的分工（`〔协调〕` 是协调者自己做，不外包；拿不准就按 `〔新〕`）。协调者可以改，改了要在「实现中的决定」里写一句。
+
+**每一步的流程**（一步一个 commit 不变）
+
+1. **分类**：看步骤行末尾的标记。
+2. **写 brief**（模板 `brief-template.md`）：目标、要读的文件、设计文档里相关的原文、硬性规则（照抄下面「开发与测试约束」）、验证命令、要它汇报什么。brief 要自足：工具看不到这次对话，也不知道设计文档写了什么。测试的期望值由协调者独立算好写进 brief，不让工具用被测代码去算期望值。
+3. **交出去**：脚本在快照里跑工具，拿回 `patch.diff` 和 `response.txt`。快照里没有 `.env*`、真实的 `.git` 和 `~/.saltnet`，工具不联网、不提交、不装依赖。
+4. **审补丁**：自己读完整个补丁，不只读它的汇报；自己跑 `tsc`、ESLint 和相关测试。**工具说「干净」「通过」不算数**（Gemini 说过 `tsc` 干净，实际有 6 处类型错误）。
+5. **打进工作区**（`git apply`）并修正：小问题自己改；成块的问题写成新的 brief 再交（带上它上一次的补丁和具体的问题）。同一处两轮还不对，就换「新」的工具或者自己做，并在决定里写下原因。
+6. **审查**：有代码的步骤跑 `review-codex.sh`（新功能和涉及凭据、账号、数据库的步骤加 `REVIEW_BUILTIN=1`；搬模块的步骤把 brief 的重点写成「行为有没有变」）。逐条核实：对的改掉，不对的在决定里记一句为什么不改。纯文档步骤协调者自己审，不跑审查。
+7. **测试够不够**：新逻辑的测试做破坏检查（`mutate.py`：写出有代表性的改动，每一个都要被测试发现，漏网的补测试）；声明式的数据（比如 JSON Schema）改做覆盖分析。
+8. **文档**：勾计划、在「实现中的决定」里写这一步（编号接着往下）、更新 `AGENTS.md`。
+9. **验证并提交**：`finish.sh <步骤>`（动了网页端代码或 `shared/core` 要加 `--build`），全部通过后 `commit.sh`。提交说明的 `AI assistance:` 写清楚谁做了什么：哪个工具写了什么、审查提了几条改了几条、协调者手写了什么。
+
+**几条规矩**
+
+- 工具只在快照里工作。凭据、二维码、第三方写入、舞萌账号相关的代码，brief 里写明只用模拟 HTTP 测试，数据一律虚构；`SALTNET_HOME` 一律指到临时目录。
+- 互不重叠的步骤（改的文件不同、不依赖对方的结果）可以同时交给不同工具，各自在自己的快照里做；补丁由协调者一个一个合进工作区、一个一个验证和提交，提交的顺序不变。
+- 工具跑得久（`agy` 约 10 到 20 分钟），用后台运行，结束时会通知，不要轮询。
+- 工具失败了：看 `response.txt` 和 `run.log`，改 brief 重来；连续两次失败就换工具或者自己做，并在决定里记一句。如果会话的权限设置不允许启动某个工具，也由协调者自己做那一步，不停下来提问，最终报告里说明。
+- 两个 Codex 模型的 id 要先确认能用（见 `README.md`），分别放在环境变量 `CODEX_MODEL_WRITE`、`CODEX_MODEL_REVIEW` 里。
 
 ## 通用规则
 
@@ -114,10 +148,10 @@
 - [x] P1-15 `feat(cli): add status and config commands`
 - [x] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [x] P1-16b `feat(cli): describe command data with JSON Schemas`：每条命令的 `data` 都有 JSON Schema（`CommandSpec.dataSchema`），用 `src/output/schema.ts` 的构造函数拼，共用的形状在 `src/catalog/schemas.ts`；测试用 Ajv 检查每条命令真实输出是否符合，注册表测试要求每条命令都有（设计 4.7 的「`data` 的 JSON Schema」，原计划放在 P1-17 里一起做，见第 42 条）
-- [ ] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）
-- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）
-- [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI
-- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）
+- [ ] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
+- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
+- [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
+- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
 
 ### P2 本地成绩
 
@@ -125,36 +159,36 @@
 
 **P2-0 先抽这一期要用的模块**
 
-- [ ] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬
-- [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）
-- [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`
-- [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`
-- [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`
-- [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`
-- [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算
-- [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`
-- [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`
-- [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`
-- [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断
+- [ ] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
+- [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
+- [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
+- [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
+- [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
+- [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
+- [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
+- [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
+- [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
+- [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
+- [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断〔新〕
 
 **P2 的 CLI 部分**
 
-- [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）
-- [ ] P2-13 `feat(cli): add user repository on top of the store`
-- [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6
-- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户
-- [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`
-- [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`
-- [ ] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`
-- [ ] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组
-- [ ] P2-20 `feat(cli): add b50 and rating commands`
-- [ ] P2-21 `feat(cli): add history command`
-- [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`
-- [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`
-- [ ] P2-24 `feat(cli): add collection progress to collection and charts`
-- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）
-- [ ] P2-26 `test(cli): extend offline end-to-end test with scores`
-- [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）
+- [ ] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 2；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）〔新〕
+- [ ] P2-13 `feat(cli): add user repository on top of the store`〔新〕
+- [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
+- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
+- [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
+- [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
+- [ ] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
+- [ ] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
+- [ ] P2-20 `feat(cli): add b50 and rating commands`〔新〕
+- [ ] P2-21 `feat(cli): add history command`〔新〕
+- [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
+- [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
+- [ ] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
+- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
+- [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
+- [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
 
 ### P3 同步和绑定
 
@@ -162,38 +196,50 @@
 
 **P3-0 先抽这一期要用的模块**
 
-- [ ] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`
-- [ ] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）
-- [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`
-- [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发
-- [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core
+- [ ] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
+- [ ] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
+- [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
+- [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
+- [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
 
 **P3 的 CLI 部分**
 
-- [ ] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换
-- [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`
-- [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务
-- [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`
-- [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`
-- [ ] P3-11 `feat(cli): add sync --all and --dry-run`
-- [ ] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`
-- [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`
-- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）
-- [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项
-- [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里
-- [ ] P3-17 `docs: update agents guide for cli phase 3`
+- [ ] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
+- [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
+- [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
+- [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
+- [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
+- [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
+- [ ] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
+- [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
+- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
+- [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项〔新〕
+- [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
+- [ ] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
 
 ### P4 账号操作和收尾
 
 完成标准：网页端能做的事 CLI 都能做（nearcade 除外）。
 
-- [ ] P4-1 `feat(cli): add ingame check-login and clear-tickets`：`clear-tickets` 要确认；只用模拟 HTTP 测试
-- [ ] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`
-- [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`
-- [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`
-- [ ] P4-5 `test(cli): run every guide example in the end-to-end test`
-- [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明
-- [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端
+- [ ] P4-1 `feat(cli): add ingame check-login and clear-tickets`：`clear-tickets` 要确认；只用模拟 HTTP 测试〔新〕
+- [ ] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
+- [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
+- [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
+- [ ] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
+- [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
+- [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
+
+## 最终报告要有的内容
+
+全部做完（P4-7 之后）写一份最终报告给用户看；不 push，不开 PR。要有：
+
+- **(a) 每一期**：完成标准有没有达到、怎么验证的、结果。
+- **(b) 实现中的决定和对设计的改动**：把「实现中的决定」整理成给人看的形式，特别要列出：lint 需要 `eslint-plugin-format` 和存量违规的基线（`eslint-suppressions.json`），前两个提交当时没法 lint；改 lockfile 时清掉了一个过期的 `database` importer；根 `package.json` 和 `pnpm-workspace.yaml` 的基线计数改动；`.env` 里三个公开的服务地址有一次出现在我自己的工具输出里（不是凭据，没有写进任何文件）；cli 的 ESLint 配置关了 `style/quotes` 和 `unicorn/number-literal-case`；`--fav` 和 `favorites` 表从 P1-10 推到 P2-25（第 34 条）；`--stats`、按成绩排序和分组、`--achieved`、`--missing`、`--recent` 推到 P2-19、P2-23（第 35 条）；`config` 做成命令组、`status` 还没有用户和凭据（第 40 条）；`sql` 改成内存沙盒（第 41 条，设计第 149 行改了）；每条命令的 `data` 有 JSON Schema 和 `ajv`、`pnpm lint` 没检查 `output` 目录（第 42 条）；分工（第 43 条）。
+- **(c) 用户要用真实账号手动测的**：落雪两步绑定（连同设计「待确认」的第 1、2 条）、舞萌全量更新和快速更新、上传到水鱼和落雪、清除非法票券。
+- **(d) 网页端我没法亲自检查的**：开发服务器的 HTML5 history 模式、B50 图片渲染、真实账号的流程、nearcade。
+- **(e) 安装和全局链接的命令**：写出来，但不执行；以及 `guide --skill` 的安装办法（不往 `~/.claude/skills` 里装东西）。
+- **(f) 委托记录**：P1 的大部分步骤交给了 Gemini 3.8 Flash（`agy`：每次用了多久、每一步我补了多少测试、它说「干净」而实际有错的几次）；2026-11-14 起由 Opus 协调，Codex GPT 5.6 Sol 写新功能，GPT 6.1 Sol 审查（各自做了哪些步骤，审查提了几条、几条是真的）。
+- **(g) 分支上不是我们做的提交**：`1a2ede8`（`.env`）和 `eafa00f`（网页端搜索排序），都是用户自己的。
 
 ## 实现中的决定
 
@@ -532,3 +578,11 @@
     - **验证**：新增 103 个测试（`output/schema` 36、`commands/dataSchemas` 67），CLI 共 81 个文件 1397 个测试。每条命令都用真实运行的结果对照它的 schema，另有故意写错的结果（多一个键、少一个键、类型不对）必须被拒绝。对声明式的 schema，改源码做破坏检查没什么意义（改一个字符几乎总会让某个测试失败，也说明不了 schema 够不够严），所以改做覆盖分析：用一个临时的脚本（不进仓库）给 schema 里的每个节点记下真实输出走过没有——`null` 和非 `null`、`anyOf` 的每种写法、可省略的键有和没有、数组空和非空；最后 264 个节点，没有缺口。固定数据产生不出的情形（带歌的门、`unlockCourse.name` 为 `null`、`missing` 为空列表）用手写的样本过一遍 schema。
     - **委托的经过**：schema 和测试交给 Gemini 3.8 Flash（1183 秒，补丁 99 771 字节，快照里不含 `.env*`）；构造函数（`output/schema.ts`）、Ajv 辅助、模型的几份 schema 和第一个测试是我先写的，给它当样子。它报告 `tsc`「干净」，实际有 6 处类型错误（把整个接口当类型参数传给 `extend`）；把 `maxAgeHours` 写成了整数；`refresh` 里写了一种永远出现不了的失败写法；枚举值是照抄成字面量的。这些都是我改的：`extend` 的类型改成 `<T extends Base, Base>`，`maxAgeHours` 改 `num` 并加小数的测试，`refresh` 只写成功的写法，枚举改成上面两种来源。
     - **我补的**：`strEnumOf`、`literal`、有类型的 `extend` 和它们的测试，`lintSchema` 和它的 4 个测试，约 22 个补覆盖的场景（上面覆盖分析找出来的缺口）。
+43. **分工改成四个角色（2026-11-14）**：
+    - **起因**：用户决定从 P1-17 起由 Opus 做总协调（「超级统筹开发」），用 Antigravity 里的 Gemini 3.8 Flash (Medium) 做简单任务、Codex 的 GPT 5.6 Sol (high) 做新东西、GPT 6.1 Sol (high) 做 code review，并说明 Codex 用 `codex` 命令行。计划里新增「分工与流程」一节，每个没勾的步骤行末尾加了 `〔简单〕`、`〔新〕`、`〔协调〕`；「最终报告要有的内容」一节把原先只存在记忆里的清单写进了计划。
+    - **怎么分类**：`〔简单〕` 是搬模块和抽模块（P2-1 到 P2-9、P3-1 到 P3-3，有快照测试兜底）、给写好的代码补测试（P2-17、P2-26、P3-16、P4-5）、文档草稿（P3-17）和一行配置（P1-16c）；`〔新〕` 是新命令、新逻辑、迁移、同步和绑定流程，以及要读懂设计才切得对的重构（P2-10、P2-11、P3-4、P3-5）；`〔协调〕` 是对真实的公开数据或网页端做验证和写终稿的步骤（P1-19、P2-27、P4-6、P4-7）。P3-16 是最难写的「简单」步骤（两个进程同时刷新、token 不出现在任何输出里）：brief 要逐条列出场景，并做破坏检查。P4-4 的代码归 `〔新〕`，手写的指南文字由协调者写。
+    - **脚本放进了仓库**：`docs/spark/2026-11-10-saltnet-cli-tools/`（`delegate-agy.sh`、`delegate-codex.sh`、`review-codex.sh`、`verify.sh`、`finish.sh`、`commit.sh`、`mutate.py`、`brief-template.md`、`coordinator-prompt.md`、`README.md`）。它们是 P1 期间用的脚本整理出来的，路径从仓库位置推出来；这个目录是开发过程的辅助，不是产品代码，分支做完后可以整个删掉（最终报告里提一句）。
+    - **交给工具的永远是快照**：一个没有远端的独立 git 仓库，提交 `base`，`node_modules` 链进去，没有 `.env*`、真实的 `.git` 和 `~/.saltnet`。写代码的两个脚本以「现在磁盘上的样子」为 `base`，工具的改动就是补丁；审查的脚本以最后一次提交为 `base`、把未提交的改动叠在上面，所以 `git diff base` 恰好是被审查的改动，沙盒只读。
+    - **试过的**：在一个玩具仓库里把三个脚本各跑了一次：`agy` 16 秒、`codex exec` 29 秒（沙盒 `workspace-write`，补丁正确）、审查 78 秒（发现了删掉的文件和新增的文件，没有 `.env`）；快照函数单独试过：删除的文件、未跟踪的文件、被改的 `.env` 都按预期。调用方式用的是用户 `~/.codex/config.toml` 里的默认模型 `gpt-6-luna`，**没有**用过 GPT 5.6 Sol 和 GPT 6.1 Sol 的模型 id（没有默认值，必须设 `CODEX_MODEL_WRITE`、`CODEX_MODEL_REVIEW`；第一次用之前先确认 id 能用）。
+    - **审查为什么用 `codex exec`**：`codex review --uncommitted` 不能带自定义说明（试过，报「`--uncommitted` cannot be used with `[PROMPT]`」），所以带 brief 的审查走 `codex exec -s read-only`；自带的 `codex review --uncommitted` 作为可选的第二意见（`REVIEW_BUILTIN=1`）。试跑里第二意见指出了脚本自己的一个真问题（`SALTNET_WORK` 给相对路径时，第二意见的输出写到了快照目录里；已改成先转成绝对路径，有试过），带 brief 的那一遍只指出了没写进 brief 的改动，所以两遍各有用。
+    - **没试过的**：用真实的步骤、真实的模型 id 跑；`verify.sh`、`finish.sh`、`commit.sh` 在新的位置上是这次提交和下一次提交用的，第一次真跑就是它们的验证。
