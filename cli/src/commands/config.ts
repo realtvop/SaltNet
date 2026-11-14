@@ -1,7 +1,10 @@
-import type { ConfigDefinition } from "../runtime/config";
+import type { ConfigDefinition, ConfigProblem } from "../runtime/config";
+import type { SettingRow } from "../runtime/configRows";
 import type { CommandContext } from "./registry";
+import { settingRowSchema } from "../catalog/schemas";
 import { usageError } from "../errors";
 import { paginate } from "../output/paging";
+import { bool, extend, list, object, str, strEnumOf } from "../output/schema";
 import { resolveSetting } from "../refs/setting";
 import { loadConfig, parseConfigText } from "../runtime/config";
 import { setConfigEntry, unsetConfigEntry } from "../runtime/configFile";
@@ -44,6 +47,31 @@ export const configList = defineCommand(
             },
         ],
         errors: ["USAGE"],
+        dataSchema: object(
+            {
+                file: str("config.json 配置文件路径"),
+                items: list(settingRowSchema, "全部设置项列表"),
+                problems: list(
+                    object<ConfigProblem>(
+                        {
+                            severity: strEnumOf<ConfigProblem["severity"]>(
+                                { error: "应当停下来", warning: "只是提醒" },
+                                "问题有多严重"
+                            ),
+                            source: strEnumOf<ConfigProblem["source"]>(
+                                { env: "环境变量", file: "config.json" },
+                                "问题出在哪里"
+                            ),
+                            key: str("出问题的设置的名称；整个文件有问题时是空字符串"),
+                            message: str("问题是什么"),
+                        },
+                        { description: "读取设置时发现的一个问题" }
+                    ),
+                    "读取设置时发现的问题；没有问题时是空数组"
+                ),
+            },
+            { description: "设置项列表与配置文件状态" }
+        ),
     },
     (args, ctx) => {
         const { items, page } = paginate(settingRows(ctx.config, ctx.version), args.options);
@@ -81,6 +109,7 @@ export const configGet = defineCommand(
             },
         ],
         errors: ["USAGE", "NOT_FOUND"],
+        dataSchema: settingRowSchema,
     },
     (args, ctx) => {
         const definition = resolveSetting(args.positionals.key);
@@ -117,6 +146,13 @@ export const configSet = defineCommand(
             },
         ],
         errors: ["USAGE", "NOT_FOUND"],
+        dataSchema: extend<SettingRow & { readonly changed: boolean }, SettingRow>(
+            settingRowSchema,
+            {
+                changed: bool("有没有改 config.json；文件里原来就是这个值时是 false，没有写文件"),
+            },
+            { description: "这项设置现在的样子（和 config get 一样），再加 changed" }
+        ),
     },
     (args, ctx) => {
         const definition = resolveSetting(args.positionals.key);
@@ -145,6 +181,13 @@ export const configUnset = defineCommand(
             },
         ],
         errors: ["USAGE", "NOT_FOUND"],
+        dataSchema: extend<SettingRow & { readonly changed: boolean }, SettingRow>(
+            settingRowSchema,
+            {
+                changed: bool("有没有改 config.json；没有这个文件或这一项时是 false，什么也没改"),
+            },
+            { description: "这项设置现在的样子（和 config get 一样），再加 changed" }
+        ),
     },
     (args, ctx) => {
         const definition = resolveSetting(args.positionals.key);

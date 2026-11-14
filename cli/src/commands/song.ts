@@ -1,5 +1,7 @@
 import { chartRow } from "../catalog/chartRow";
+import { chartRowSchema, relatedSchema, songTypeSchema } from "../catalog/schemas";
 import { buildSongCatalog, songCharts, songType } from "../catalog/songs";
+import { int, list, nullable, num, object, str } from "../output/schema";
 import { resolveSong } from "../refs/song";
 import { useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
@@ -39,6 +41,23 @@ export const song = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: object(
+            {
+                musicId: int("曲目 id；DX 谱的 id 是 SD 谱的 id 加 10000"),
+                title: str("标题"),
+                artist: str("曲师"),
+                genre: str("流派"),
+                bpm: nullable(num("曲目 BPM"), "曲目 BPM；没有 BPM（宴谱）时为 null"),
+                aliases: list(str("别名"), "这首歌的别名列表"),
+                type: songTypeSchema,
+                charts: list(chartRowSchema, "这首歌的所有谱面，SD 在前，各自从易到难"),
+                related: relatedSchema,
+            },
+            {
+                description: "一首歌的基本信息和所有谱面",
+                optional: ["related"],
+            }
+        ),
     },
     async (args, ctx) => {
         const metadata = await useMetadata(args, ctx, ["catalog"]);

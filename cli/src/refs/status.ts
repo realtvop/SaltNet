@@ -10,6 +10,9 @@ export const RANKS: readonly RankRate[] = Object.values(RankRate);
 /** Every combo status, from none to the best (the order of the enum). */
 export const COMBOS: readonly ComboStatus[] = Object.values(ComboStatus);
 
+/** Every sync status, from none to the best (the order of the enum). */
+export const SYNCS: readonly SyncStatus[] = Object.values(SyncStatus);
+
 /** `D` to `SSS+`. */
 export function rankLabel(rank: RankRate): string {
     return RANK_RATE_DISPLAY_NAMES[rank];

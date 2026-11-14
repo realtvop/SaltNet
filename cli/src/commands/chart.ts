@@ -1,9 +1,37 @@
+import type { ChartDetails, ChartNotes, ChartRow, ChartStatsRow } from "../catalog/chartRow";
+import type { Related } from "../catalog/relatedView";
 import { chartDetails, chartRow } from "../catalog/chartRow";
+import { chartRowSchema, relatedSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
+import { dictionary, extend, int, nullable, num, object, str } from "../output/schema";
 import { resolveChart } from "../refs/chart";
 import { useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 import { loadRelated, withOptions } from "./withRelated";
+
+const notesSchema = object<ChartNotes>(
+    {
+        tap: nullable(int("TAP 音符数"), "TAP 音符数；未知时为 null"),
+        hold: nullable(int("HOLD 音符数"), "HOLD 音符数；未知时为 null"),
+        slide: nullable(int("SLIDE 音符数"), "SLIDE 音符数；未知时为 null"),
+        touch: nullable(int("TOUCH 音符数"), "TOUCH 音符数；SD 谱或未知时为 null"),
+        break: nullable(int("BREAK 音符数"), "BREAK 音符数；未知时为 null"),
+        total: nullable(int("总音符物量"), "总音符物量；任何一种音符未知时为 null"),
+    },
+    { description: "各音符物量" }
+);
+
+const statsSchema = object<ChartStatsRow>(
+    {
+        samples: int("参与统计的玩家人数"),
+        avgAchievements: num("平均达成率，保留四位小数"),
+        avgDxScore: num("平均 DX 分数，保留两位小数"),
+        stdDevAchievements: num("达成率标准差，保留四位小数"),
+        rankDist: dictionary(int("人数"), "各评级（D 到 SSS+）的人数分布"),
+        comboDist: dictionary(int("人数"), "各连击状态（none、FC、FC+、AP、AP+）的人数分布"),
+    },
+    { description: "玩家成绩统计" }
+);
 
 export const chart = defineCommand(
     {
@@ -54,6 +82,22 @@ export const chart = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: extend<ChartRow & ChartDetails & { readonly related?: Related }, ChartRow>(
+            chartRowSchema,
+            {
+                charter: nullable(
+                    str("谱师"),
+                    "谱师；数据里没有（宴谱），或只写了一个短横线时是 null"
+                ),
+                notes: notesSchema,
+                stats: nullable(statsSchema, "玩家成绩统计；这张谱没有统计时是 null"),
+                related: relatedSchema,
+            },
+            {
+                description: "一张谱面的详细信息；加了 --with related 才有 related",
+                optional: ["related"],
+            }
+        ),
     },
     async (args, ctx) => {
         const metadata = await useMetadata(args, ctx, ["catalog"]);

@@ -12,9 +12,11 @@ import {
     intersectChartSets,
 } from "../catalog/chartSets";
 import { SORT_KEYS, sortCharts } from "../catalog/chartSort";
+import { chartRowSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { usageError } from "../errors";
 import { paginate } from "../output/paging";
+import { anyOf, int, list, nullable, object, str } from "../output/schema";
 import { collectionRef, listCollections, resolveCollection } from "../refs/collection";
 import { resolveCourse } from "../refs/course";
 import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
@@ -154,6 +156,32 @@ export const charts = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: anyOf(
+            "谱面筛选结果：普通列表或分组列表",
+            object(
+                { items: list(chartRowSchema, "符合条件的谱面列表") },
+                { description: "谱面列表" }
+            ),
+            object(
+                {
+                    groups: list(
+                        object(
+                            {
+                                key: nullable(
+                                    str("分组依据的值，例如定数 14.0、版本名、等级或难度"),
+                                    "分组依据的值，例如定数 14.0、版本名、等级或难度；没有定数的组是 null"
+                                ),
+                                count: int("该组包含的谱面总数"),
+                                items: list(chartRowSchema, "该组内的谱面列表"),
+                            },
+                            { description: "一个谱面分组" }
+                        ),
+                        "按指定依据分组的谱面列表"
+                    ),
+                },
+                { description: "谱面分组列表" }
+            )
+        ),
     },
     async (args, ctx) => {
         const { level, constant, diff, version, search, gate, course, plate, collection } =

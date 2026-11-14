@@ -1,6 +1,7 @@
 import type { MetadataKind } from "../catalog/ensure";
 import type { Warning } from "../output/warning";
 import { fetchedAtOf, PUBLIC_VIEWS, VIEWS_VERSION, viewsMentionedIn } from "../catalog/views";
+import { anything, dictionary, list, object } from "../output/schema";
 import { runQuery } from "../store/query";
 import { openSandbox } from "../store/sandbox";
 import { formatLocalTime } from "../util/time";
@@ -59,6 +60,15 @@ export const sql = defineCommand(
             "OFFLINE_NO_CACHE",
             "DB_LOCKED",
         ],
+        dataSchema: object(
+            {
+                items: list(
+                    dictionary(anything("列的值：数字、文本或 null"), "一行查询结果，键为列名"),
+                    "查询返回的行列表"
+                ),
+            },
+            { description: "SQL 查询结果" }
+        ),
     },
     async (args, ctx) => {
         const query = args.positionals.query.join(" ");

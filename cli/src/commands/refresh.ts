@@ -1,6 +1,9 @@
 import type { FailedOutcome, SourceOutcome } from "../catalog/refresh";
+import type { CollectionCounts } from "../catalog/store";
 import { refreshBusyError, refreshCatalog, SOURCE_LABELS } from "../catalog/refresh";
+import { mergedDuplicateSchema } from "../catalog/schemas";
 import { CliError, usageError } from "../errors";
+import { anyOf, int, list, literal, object, str } from "../output/schema";
 import { formatLocalTime } from "../util/time";
 import { defineCommand } from "./registry";
 
@@ -38,6 +41,37 @@ function report(outcome: SourceOutcome): Record<string, unknown> {
     };
 }
 
+const saltMetaResultSchema = object(
+    {
+        source: literal("saltmeta", "曲库"),
+        ok: literal(true, "刷新成功"),
+        fetchedAt: str("下载的时间，用本机时区的偏移写"),
+        songs: int("曲库里有几首歌"),
+        charts: int("曲库里有几张谱面"),
+        versions: int("曲库里有几个版本"),
+        mergedDuplicates: list(mergedDuplicateSchema, "上游列了两遍、被合并成一首的歌"),
+    },
+    { description: "曲库（SaltMeta）的刷新结果" }
+);
+
+const collectionsResultSchema = object(
+    {
+        source: literal("lxns-collections", "落雪的收藏品列表"),
+        ok: literal(true, "刷新成功"),
+        fetchedAt: str("下载的时间，用本机时区的偏移写"),
+        counts: object<CollectionCounts>(
+            {
+                title: int("称号的数量"),
+                icon: int("头像的数量"),
+                plate: int("姓名框的数量"),
+                frame: int("背景的数量"),
+            },
+            { description: "各类收藏品的数量；旅行伙伴和搭档随 saltnet 自带，不在其中" }
+        ),
+    },
+    { description: "收藏品（落雪）的刷新结果" }
+);
+
 export const refresh = defineCommand(
     {
         name: "refresh",
@@ -49,6 +83,15 @@ export const refresh = defineCommand(
         output: "object",
         examples: [{ command: "refresh", description: "强制刷新曲库和收藏品" }],
         errors: ["NETWORK", "UPSTREAM_ERROR", "SYNC_IN_PROGRESS", "DB_LOCKED"],
+        dataSchema: object(
+            {
+                sources: list(
+                    anyOf("一个数据源的结果", saltMetaResultSchema, collectionsResultSchema),
+                    "两个数据源各一项，曲库在前。只有都成功了才有 data；有失败时命令出错，各自的结果在 error.sources 里"
+                ),
+            },
+            { description: "刷新成功的结果" }
+        ),
     },
     async (args, ctx) => {
         if (args.global.offline) {

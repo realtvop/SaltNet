@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
+import { mergedDuplicateSchema, sourceStatusSchema } from "../catalog/schemas";
 import { mergedDuplicatesOf, sourceStatus } from "../catalog/statusView";
 import { readMetaState } from "../catalog/store";
+import { bool, int, list, nullable, num, object, str } from "../output/schema";
 import { formatLocalTime } from "../util/time";
 import { defineCommand } from "./registry";
 
@@ -15,6 +17,31 @@ export const status = defineCommand(
         output: "object",
         examples: [{ command: "status", description: "数据有多新、有没有缺" }],
         errors: ["DB_LOCKED"],
+        dataSchema: object(
+            {
+                version: str("saltnet CLI 版本号"),
+                home: str("数据目录路径"),
+                database: object(
+                    {
+                        exists: bool("数据库文件是否存在"),
+                        schemaVersion: nullable(int("数据库结构版本号；不存在时为 null")),
+                    },
+                    { description: "数据库状态" }
+                ),
+                metadata: object(
+                    {
+                        maxAgeHours: num(
+                            "曲库和收藏品多少小时后算过期（设置 metadata.maxAgeHours，可以是小数）"
+                        ),
+                        catalog: sourceStatusSchema,
+                        collections: sourceStatusSchema,
+                    },
+                    { description: "元数据状态" }
+                ),
+                mergedDuplicates: list(mergedDuplicateSchema, "上游重名合并的曲目列表"),
+            },
+            { description: "本地数据与缓存状态" }
+        ),
     },
     (_args, ctx) => {
         const now = ctx.io.now();

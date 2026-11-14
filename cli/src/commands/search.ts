@@ -1,7 +1,9 @@
+import { searchItemSchema } from "../catalog/schemas";
 import { searchSongs } from "../catalog/search";
 import { buildSongCatalog, songType } from "../catalog/songs";
 import { usageError } from "../errors";
 import { paginate } from "../output/paging";
+import { list, object } from "../output/schema";
 import { listOptions } from "./listOptions";
 import { useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
@@ -33,6 +35,10 @@ export const search = defineCommand(
             { command: "search true love --limit 3", description: "多个词，只要前三首" },
         ],
         errors: ["USAGE", "NETWORK", "UPSTREAM_ERROR", "OFFLINE_NO_CACHE"],
+        dataSchema: object(
+            { items: list(searchItemSchema, "搜到的歌，最相关的在前") },
+            { description: "搜索结果" }
+        ),
     },
     async (args, ctx) => {
         const text = args.positionals.text.join(" ").trim();

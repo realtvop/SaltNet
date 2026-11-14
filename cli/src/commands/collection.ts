@@ -1,3 +1,8 @@
+import type {
+    CollectionDetail,
+    CollectionRow,
+    MissingCollectionSong,
+} from "../catalog/collectionView";
 import { allChartEntries } from "../catalog/chartQuery";
 import {
     collectionChartEntries,
@@ -6,9 +11,15 @@ import {
     collectionRow,
     missingCollectionSongs,
 } from "../catalog/collectionView";
+import {
+    collectionChartRowSchema,
+    collectionRowSchema,
+    requirementRowSchema,
+} from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { usageError } from "../errors";
 import { paginate } from "../output/paging";
+import { extend, int, list, object, str } from "../output/schema";
 import { COLLECTION_KINDS, listCollections, resolveCollection } from "../refs/collection";
 import { foldName } from "../util/fold";
 import { listOptions } from "./listOptions";
@@ -52,6 +63,10 @@ export const collectionList = defineCommand(
             },
         ],
         errors: ["USAGE", "NETWORK", "UPSTREAM_ERROR", "OFFLINE_NO_CACHE"],
+        dataSchema: object(
+            { items: list(collectionRowSchema, "符合条件的收藏品列表") },
+            { description: "收藏品列表" }
+        ),
     },
     async (args, ctx) => {
         const { kind, search } = args.options;
@@ -106,6 +121,29 @@ export const collectionShow = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: object(
+            {
+                collection: extend<CollectionDetail, CollectionRow>(
+                    collectionRowSchema,
+                    {
+                        requirements: list(requirementRowSchema, "获取条件列表"),
+                    },
+                    { description: "收藏品详情与获取条件" }
+                ),
+                missing: list(
+                    object<MissingCollectionSong>(
+                        {
+                            musicId: int("曲目 id"),
+                            title: str("曲目标题"),
+                        },
+                        { description: "未收录的曲目" }
+                    ),
+                    "条件点名但曲库中未收录的曲目列表"
+                ),
+                items: list(collectionChartRowSchema, "条件点名的谱面列表"),
+            },
+            { description: "一个收藏品的获取条件和它点名的谱面" }
+        ),
     },
     async (args, ctx) => {
         // The collections come first: a name that is wrong or ambiguous costs no catalog download.

@@ -1,8 +1,26 @@
+import type { GateDetail, GateOverviewRow, GatePoolRow } from "../catalog/gateView";
 import { kaleidxscopeGates } from "@core/kaleidxscope";
 import { allChartEntries } from "../catalog/chartQuery";
 import { gateDetail, gateOverview } from "../catalog/gateView";
+import {
+    chartRowSchema,
+    DIFFICULTY_LABELS,
+    pendingSongSchema,
+    phaseRowSchema,
+} from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { usageError } from "../errors";
+import {
+    anyOf,
+    bool,
+    int,
+    list,
+    nullable,
+    object,
+    str,
+    strEnum,
+    strEnumOf,
+} from "../output/schema";
 import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
 import { resolveGate } from "../refs/gate";
 import { parseTimeOption } from "../refs/time";
@@ -12,6 +30,87 @@ import { defineCommand } from "./registry";
 
 /** A gate's songs are never banquet charts, so `utage` is not among the difficulties to pick. */
 const GATE_DIFFICULTIES = DIFFICULTIES.filter(difficulty => difficulty.grade !== 10);
+
+/** What every gate row says, in the overview and in the detail. */
+const gateBaseProperties = {
+    id: str("门 id，例如 blue"),
+    name: str("门的全名，例如 蓝色之门"),
+    shortName: str("门的简称，例如 蓝门"),
+    region: str("所在区域的名称"),
+    opened: bool("在 at 这个时间门开了没有"),
+    openedAt: str("门什么时候开，用本机时区的偏移写"),
+    currentPhase: nullable(phaseRowSchema, "在 at 这个时间生效的血量阶段；门还没开是 null"),
+    nextPhase: nullable(phaseRowSchema, "接下来的血量阶段；已经是最后一个阶段是 null"),
+};
+
+const overviewSchema = object(
+    {
+        at: str("按哪个时间算的开没开和血量阶段（--at，没写就是现在），用本机时区的偏移写"),
+        gates: list(
+            object<GateOverviewRow>(
+                {
+                    ...gateBaseProperties,
+                    keyCondition: object(
+                        {
+                            summary: str("钥匙条件的说明"),
+                            songCount: int("钥匙条件点名了几首曲目；条件不是点名曲目时是 0"),
+                        },
+                        { description: "钥匙条件" }
+                    ),
+                },
+                { description: "一个门的概况" }
+            ),
+            "所有的门，门没开的也在"
+        ),
+    },
+    { description: "所有门的总览" }
+);
+
+const detailSchema = object<GateDetail & { readonly at: string }>(
+    {
+        at: str("按哪个时间算的开没开和血量阶段（--at，没写就是现在），用本机时区的偏移写"),
+        ...gateBaseProperties,
+        description: nullable(str("门的说明；没有是 null")),
+        lifeNote: nullable(str("血量的补充说明；没有是 null")),
+        phases: list(phaseRowSchema, "完整的血量日历，按时间排"),
+        chartDifficulty: strEnum(
+            DIFFICULTY_LABELS,
+            "下面的歌是按这个难度查的（--diff，没写就是现在阶段的难度）；没有这个难度的歌取它的 MASTER"
+        ),
+        keyCondition: object(
+            {
+                summary: str("钥匙条件的说明"),
+                songCount: int("钥匙条件点名了几首曲目"),
+                songs: list(chartRowSchema, "点名的曲目，曲库里有的每首一张谱"),
+                pending: list(pendingSongSchema, "点名了、但曲库里还没有的曲目"),
+            },
+            { description: "钥匙条件" }
+        ),
+        pools: list(
+            object<GatePoolRow>(
+                {
+                    track: int("第几首的选曲池，从 1 开始"),
+                    label: nullable(str("选曲池的标签；没有标签是 null")),
+                    description: str("选曲池的说明"),
+                    selection: strEnumOf<GatePoolRow["selection"]>(
+                        { random: "从池里随机选", fixed: "固定的" },
+                        "这一首怎么选"
+                    ),
+                    unlistedDescription: nullable(
+                        str(
+                            "打的不是普通谱面（例如乱码谱）时的说明，这时 songs 和 pending 是空的；普通选曲池是 null"
+                        )
+                    ),
+                    songs: list(chartRowSchema, "池里的曲目，曲库里有的每首一张谱"),
+                    pending: list(pendingSongSchema, "池里有、但曲库里还没有的曲目"),
+                },
+                { description: "一首的选曲池" }
+            ),
+            "各首的选曲池，按出场顺序"
+        ),
+    },
+    { description: "一个门的详情" }
+);
 
 export const kaleidxscope = defineCommand(
     {
@@ -66,6 +165,11 @@ export const kaleidxscope = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: anyOf(
+            "不指定门时是所有门的总览，指定了门时是这个门的详情",
+            overviewSchema,
+            detailSchema
+        ),
     },
     async (args, ctx) => {
         const { gate: gateText } = args.positionals;

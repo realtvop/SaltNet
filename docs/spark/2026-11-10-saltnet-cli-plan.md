@@ -113,7 +113,9 @@
 - [x] P1-14b `feat(cli): add song and chart --with related`：用到这首歌或这张谱的收藏品、段位和门（设计 3.2 里有，原计划漏了；见第 31 条）
 - [x] P1-15 `feat(cli): add status and config commands`
 - [x] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
-- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）
+- [x] P1-16b `feat(cli): describe command data with JSON Schemas`：每条命令的 `data` 都有 JSON Schema（`CommandSpec.dataSchema`），用 `src/output/schema.ts` 的构造函数拼，共用的形状在 `src/catalog/schemas.ts`；测试用 Ajv 检查每条命令真实输出是否符合，注册表测试要求每条命令都有（设计 4.7 的「`data` 的 JSON Schema」，原计划放在 P1-17 里一起做，见第 42 条）
+- [ ] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）
+- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）
 - [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI
 - [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）
 
@@ -514,3 +516,19 @@
     - **改掉的代码**：视图名放行表原来区分大小写（一个叫 `V_Mixed` 的视图读不了，现在转小写，有测试）；`fetchedAtOf` 的多行 `if` 补了花括号（`antfu/curly`）；`jsonb_each`、`jsonb_tree` 放行。
     - **委托的经过**：测试和文档交给 Gemini 3.8 Flash，一次成功（974 秒，快照里不含 `.env*`）。它报告了 7 处「分歧」，全是我的说明写错了：我要求所有 authorizer 拒绝都是 `not authorized`，实际错误码都是 23，话不同；它照说明写了测试，测试失败，它如实报告了。我先用探测弄清真实行为（见上）再改测试。
     - **要留意的**：(a) 用到视图的查询每次都要复制视图，P1-19 在真实数据上量一下耗时；(b) `v_charts` 和 `chart` 输出的对照在固定数据上逐行一致，SQLite 的 `round`、`trim` 与 JavaScript 的舍入、去空白在边角上会不会有差别，P1-19 用真实数据再对一次；(c) 以只读方式 `ATTACH` WAL 数据库可能留下 `-shm`、`-wal` 文件，无害，P1-19 看一下有没有留下别的；(d) Windows 路径的 `file:` 地址我没法在这里验证。
+42. **P1-16b 的实现（每条命令的 `data` 都有 JSON Schema）**：
+    - **为什么多出这一步**：设计 4.7 要 `schema <命令>` 给出 `data` 的 JSON Schema，测试表里也写着「每个命令都有 schema」。原计划把它放在 P1-17 里一起做；可是十六条命令的输出形状要逐个写出来，写出来还得有测试保证没写错，所以拆成单独一步，P1-17 只管把它们读出来。写的时候又发现 `pnpm lint` 一直没检查两个目录（见下面「顺带发现的」），所以还多出 P1-16c。
+    - **写法**（`output/schema.ts`）：schema 是普通数据（`JsonSchema`），只用各家校验器都认的关键字（`type`、`enum`、`const`、`properties`、`required`、`additionalProperties`、`items`、`anyOf`、`description`）；构造函数有 `str`、`int`、`num`、`bool`、`strEnum`、`strEnumOf`、`literal`、`alwaysNull`、`anything`、`list`、`dictionary`、`anyOf`、`nullable`、`object`、`extend`。
+        - **对象是封闭的**：`object` 写出的对象带 `additionalProperties: false`，所有键都必须有，除非列在 `optional` 里；可以是 `null` 的字段要明写 `nullable(…)`，没有「缺了就等于 null」这回事。所以命令多打印一个没写进 schema 的字段、或少打印一个，测试都会失败。给 `object<接口>` 带上类型参数时，TypeScript 也会要求接口的每个键都有说明；`extend<整体, 底>` 在已有的对象上加字段（`chart` 的数据就是谱面行加上 `notes`、`stats`、`related`），只要求写整体比底多出来的键。
+        - **每个节点都要有 `description`**（`nullable` 加进去的 `{ type: "null" }` 这一种写法除外），`anyOf` 至少两种写法。注册表测试里的 `lintSchema` 查这些规则，也查对象和字典有没有写 `type`；它有自己的 4 个测试（一个合格的 schema，三类不合格的）。
+        - **枚举不会和代码走样**：值来自运行时的常量（`DIFFICULTIES`、`MATCH_KINDS`、`RANKS`、`COMBOS`、`SYNCS`、`DOWNLOADED_SOURCES`；`SYNCS` 是这一步加的，和 `RANKS`、`COMBOS` 并列在 `refs/status.ts`），或者用 `strEnumOf<联合类型>`：它要的是 `Record<联合类型, string>`，TypeScript 会逼着每个成员都写上、多写一个也报错，写的解释进 `description`。只有联合类型、没有运行时数组的几处（`KaleidxscopeDifficulty`、`KaleidxscopePhaseStatus`、`SourceState`、`ConfigSource`）走这一条。
+        - **只描述 `data`**：`meta` 和 `warnings` 不在 `dataSchema` 里（设计 4.7 只要求 `data`）；P1-17 若要给出 `meta` 的字段，另想办法，不要塞进这里。
+    - **共用的形状**在 `catalog/schemas.ts`：谱面行 `chartRowSchema`（`collection show` 的 `collectionChartRowSchema` 和 `course show` 的 `courseTrackRowSchema` 是它的 `extend`）、`songTypeSchema`、`searchItemSchema`、收藏品和它的条件（`collectionRowSchema`、`requirementRowSchema`）、段位（`courseInfoSchema`）、门的阶段（`phaseRowSchema`）、`pendingSongSchema`、`relatedSchema`、`sourceStatusSchema`、`settingRowSchema`、`mergedDuplicateSchema`；只有一条命令用的形状写在它自己的文件里。
+    - **P2 要记得改的**：`score`、`b50`（谱面行）、`owned`、`progress`（收藏品）、`done`（收藏品里的谱面行）现在是 `alwaysNull`，描述里写着「用户数据加入之前恒为 null」；P2 给它们真正的形状时改掉这几处（值一变就不再是 `null`，测试会提醒）。
+    - **和命令行为有关的两处**：`refresh` 失败是抛出的 `CliError`（`error.sources` 里写每个来源怎么了），不是 `data`，所以 `data.sources` 里只有成功的来源，schema 也只写成功的写法（用 `literal` 区分 SaltMeta 和落雪收藏品两种结果）；`status` 里的 `metadata.maxAgeHours` 是 `number`（设置允许小数，0 到 8760），不是整数。
+    - **Ajv**：`ajv` ^8.20.0 作为 `saltnet-cli` 的 devDependency（只有测试用，不进打包产物）；锁文件多出 `ajv`、`fast-uri`、`json-schema-traverse`、`require-from-string` 四个包和一份 `@vitest/mocker` 的快照。`tests/dataSchema.ts` 用 `strict: true, allErrors: true, allowUnionTypes: true` 建校验器，给出 `schemaErrors`、`expectConforms`、`expectValidSchema`。
+    - **顺带发现的**：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 从 P1-4 起就没检查过 `cli/src/output/` 和 `cli/tests/output/`。用 `eslint --no-ignore` 看，里面所有文件都是干净的，没有遗留问题。改配置是 P1-16c（原打算放进 P1-19，拆出来是因为它和文档无关）；在那之前，改这两个目录要手动跑 `pnpm exec eslint --no-ignore cli/src/output cli/tests/output`，`AGENTS.md` 里写着。
+    - **代码放在哪**：`output/schema.ts`（构造函数）、`catalog/schemas.ts`（共用形状）、各命令文件里的 `dataSchema`、`refs/status.ts`（`SYNCS`）、`tests/dataSchema.ts`（Ajv）、`tests/output/schema.test.ts`、`tests/commands/dataSchemas.test.ts`。
+    - **验证**：新增 103 个测试（`output/schema` 36、`commands/dataSchemas` 67），CLI 共 81 个文件 1397 个测试。每条命令都用真实运行的结果对照它的 schema，另有故意写错的结果（多一个键、少一个键、类型不对）必须被拒绝。对声明式的 schema，改源码做破坏检查没什么意义（改一个字符几乎总会让某个测试失败，也说明不了 schema 够不够严），所以改做覆盖分析：用一个临时的脚本（不进仓库）给 schema 里的每个节点记下真实输出走过没有——`null` 和非 `null`、`anyOf` 的每种写法、可省略的键有和没有、数组空和非空；最后 264 个节点，没有缺口。固定数据产生不出的情形（带歌的门、`unlockCourse.name` 为 `null`、`missing` 为空列表）用手写的样本过一遍 schema。
+    - **委托的经过**：schema 和测试交给 Gemini 3.8 Flash（1183 秒，补丁 99 771 字节，快照里不含 `.env*`）；构造函数（`output/schema.ts`）、Ajv 辅助、模型的几份 schema 和第一个测试是我先写的，给它当样子。它报告 `tsc`「干净」，实际有 6 处类型错误（把整个接口当类型参数传给 `extend`）；把 `maxAgeHours` 写成了整数；`refresh` 里写了一种永远出现不了的失败写法；枚举值是照抄成字面量的。这些都是我改的：`extend` 的类型改成 `<T extends Base, Base>`，`maxAgeHours` 改 `num` 并加小数的测试，`refresh` 只写成功的写法，枚举改成上面两种来源。
+    - **我补的**：`strEnumOf`、`literal`、有类型的 `extend` 和它们的测试，`lintSchema` 和它的 4 个测试，约 22 个补覆盖的场景（上面覆盖分析找出来的缺口）。

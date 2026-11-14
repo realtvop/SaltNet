@@ -1,7 +1,10 @@
+import type { CourseInfo, CourseTracks, MissingCourseTrack } from "../catalog/courseView";
 import { courses } from "@core/course";
 import { courseInfo, courseTracks } from "../catalog/courseView";
+import { courseInfoSchema, courseTrackRowSchema, DIFFICULTY_LABELS } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { paginate } from "../output/paging";
+import { extend, int, list, object, str, strEnum } from "../output/schema";
 import { resolveCourse } from "../refs/course";
 import { listOptions } from "./listOptions";
 import { useMetadata } from "./metadata";
@@ -25,6 +28,10 @@ export const courseList = defineCommand(
             },
         ],
         errors: ["USAGE"],
+        dataSchema: object(
+            { items: list(courseInfoSchema, "全部段位列表") },
+            { description: "全部段位列表" }
+        ),
     },
     args => {
         const { items, page } = paginate(
@@ -66,6 +73,26 @@ export const courseShow = defineCommand(
             "UPSTREAM_ERROR",
             "OFFLINE_NO_CACHE",
         ],
+        dataSchema: extend<CourseInfo & CourseTracks, CourseInfo>(
+            courseInfoSchema,
+            {
+                tracks: list(courseTrackRowSchema, "段位曲目谱面列表，按出场顺序排列"),
+                missing: list(
+                    object<MissingCourseTrack>(
+                        {
+                            track: int("在段位中的出场顺序，从 1 开始"),
+                            chartKey: str("谱面 key"),
+                            musicId: int("曲目 id"),
+                            title: str("曲目标题"),
+                            difficulty: strEnum(DIFFICULTY_LABELS, "难度"),
+                        },
+                        { description: "未收录的段位曲目" }
+                    ),
+                    "曲库中未收录的段位曲目列表"
+                ),
+            },
+            { description: "一个段位的血量规则和曲目" }
+        ),
     },
     async (args, ctx) => {
         // The courses ship with the CLI, so a wrong name fails before anything is fetched.
