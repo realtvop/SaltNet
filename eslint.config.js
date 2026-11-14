@@ -100,6 +100,9 @@ export default antfu(
             // 脚本生成的紧凑数据，格式不由 ESLint 管
             "shared/core/collection/additionalCollections.json",
             "shared/core/fixtures/*.json",
+            // antfu 默认忽略所有叫 output 的目录（构建产物），但 CLI 的这两个目录是源码和测试
+            "!cli/src/output/",
+            "!cli/tests/output/",
         ],
     },
     {

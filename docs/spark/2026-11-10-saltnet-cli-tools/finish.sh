@@ -5,6 +5,8 @@
 # for its last line, `finish exit=<n>`:
 #   ( nohup zsh finish.sh P1-17 > "$WORK/finish-P1-17.log" 2>&1; echo "finish exit=$?" >> "$WORK/finish-P1-17.log" ) > /dev/null 2>&1 &
 set -u
+# Without pipefail the last line's exit status would be grep's, so a failed verify looked like 0.
+setopt pipefail
 HERE=${0:A:h}
 source "$HERE/lib.sh"
 cd "$REPO" || exit 2

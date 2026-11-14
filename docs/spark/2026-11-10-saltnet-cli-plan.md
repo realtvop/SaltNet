@@ -148,7 +148,7 @@
 - [x] P1-15 `feat(cli): add status and config commands`
 - [x] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [x] P1-16b `feat(cli): describe command data with JSON Schemas`：每条命令的 `data` 都有 JSON Schema（`CommandSpec.dataSchema`），用 `src/output/schema.ts` 的构造函数拼，共用的形状在 `src/catalog/schemas.ts`；测试用 Ajv 检查每条命令真实输出是否符合，注册表测试要求每条命令都有（设计 4.7 的「`data` 的 JSON Schema」，原计划放在 P1-17 里一起做，见第 42 条）
-- [ ] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
+- [x] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
 - [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
 - [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
 - [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
@@ -239,7 +239,7 @@
 - **(d) 网页端我没法亲自检查的**：开发服务器的 HTML5 history 模式、B50 图片渲染、真实账号的流程、nearcade。
 - **(e) 安装和全局链接的命令**：写出来，但不执行；以及 `guide --skill` 的安装办法（不往 `~/.claude/skills` 里装东西）。
 - **(f) 委托记录**：P1 的大部分步骤交给了 Gemini 3.8 Flash（`agy`：每次用了多久、每一步我补了多少测试、它说「干净」而实际有错的几次）；2026-11-14 起由 Opus 协调，Codex GPT 5.6 Sol 写新功能，GPT 6.1 Sol 审查（各自做了哪些步骤，审查提了几条、几条是真的）。
-- **(g) 分支上不是我们做的提交**：`1a2ede8`（`.env`）和 `eafa00f`（网页端搜索排序），都是用户自己的。
+- **(g) 分支上不是我们做的提交**：`1a2ede8`（`.env`）、`1712f63`（游戏接口出错时显示友好的提示，提交说明写着由 Codex GPT-6 协助）和 `eafa00f`（网页端搜索排序），都是用户自己的。
 
 ## 实现中的决定
 
@@ -586,3 +586,10 @@
     - **试过的**：在一个玩具仓库里把三个脚本各跑了一次：`agy` 16 秒、`codex exec` 29 秒（沙盒 `workspace-write`，补丁正确）、审查 78 秒（发现了删掉的文件和新增的文件，没有 `.env`）；快照函数单独试过：删除的文件、未跟踪的文件、被改的 `.env` 都按预期。调用方式用的是用户 `~/.codex/config.toml` 里的默认模型 `gpt-6-luna`，**没有**用过 GPT 5.6 Sol 和 GPT 6.1 Sol 的模型 id（没有默认值，必须设 `CODEX_MODEL_WRITE`、`CODEX_MODEL_REVIEW`；第一次用之前先确认 id 能用）。
     - **审查为什么用 `codex exec`**：`codex review --uncommitted` 不能带自定义说明（试过，报「`--uncommitted` cannot be used with `[PROMPT]`」），所以带 brief 的审查走 `codex exec -s read-only`；自带的 `codex review --uncommitted` 作为可选的第二意见（`REVIEW_BUILTIN=1`）。试跑里第二意见指出了脚本自己的一个真问题（`SALTNET_WORK` 给相对路径时，第二意见的输出写到了快照目录里；已改成先转成绝对路径，有试过），带 brief 的那一遍只指出了没写进 brief 的改动，所以两遍各有用。
     - **没试过的**：用真实的步骤、真实的模型 id 跑；`verify.sh`、`finish.sh`、`commit.sh` 在新的位置上是这次提交和下一次提交用的，第一次真跑就是它们的验证。
+44. **P1-16c 的实现（`pnpm lint` 检查两个 `output` 目录）和两个 Codex 模型的 id（2026-11-15）**：
+    - **改法**：antfu 的默认忽略名单（`GLOB_EXCLUDE`）里有为构建产物准备的 `**/output`，所以 `cli/src/output/` 和 `cli/tests/output/` 一直被跳过。`eslint.config.js` 的 `ignores` 末尾加了两条取反的规则 `!cli/src/output/`、`!cli/tests/output/`（ESLint 9 的全局忽略可以把目录放回来），没有整条去掉 `**/output`：git 跟踪的文件里叫 `output` 的目录只有这两个，以后别处真有叫 `output` 的构建产物，默认照样跳过。antfu 也支持 `ignores: originals => …` 的函数写法把 `**/output` 删掉，范围太大，没用。
+    - **验证**：不带 `--no-ignore` 跑 `pnpm exec eslint cli/src/output cli/tests/output` 是干净的（和 P1-16b 用 `--no-ignore` 看到的一样）；在两个目录里各放一个有违规的探针文件，单独 lint 这个文件和整仓的 `pnpm lint` 都报出了它的违规（探针不提交）。`AGENTS.md` 里 `pnpm lint` 一条后面的提醒换成「配置只放回了这两个目录，别处新建叫 `output` 的源码目录要照样加进去」；`coordinator-prompt.md` 的「踩过的坑」同样改了。
+    - **分工**：计划里标的是 `〔简单〕`，实际是两行配置加一句文档，交给 Gemini 一次要 10 到 20 分钟，按「几行的修正协调者自己做」由我直接做；审查照常跑了一遍（也是 `review-codex.sh` 第一次用真实的模型 id 跑）。
+    - **两个 Codex 模型的 id**：`codex debug models` 列出的模型目录里有 `gpt-5.6-sol`（GPT-5.6-Sol）和 `gpt-6.1-sol`（GPT-6.1-Sol），各用 `codex exec -m <id> -s read-only --ephemeral "reply ok"` 试过，都回答 `ok`，所以 `CODEX_MODEL_WRITE=gpt-5.6-sol`、`CODEX_MODEL_REVIEW=gpt-6.1-sol`，没有去问用户。`README.md` 和 `coordinator-prompt.md` 写上了。
+    - **两个脚本的毛病（第一次真跑就暴露了）**：(a) `finish.sh` 把 `verify.sh` 的输出接给 `grep`，没开 `pipefail`，所以最后打印的 `finish exit=<n>` 是 `grep` 的退出码，验证失败了也是 0；加了 `setopt pipefail`。(b) `verify.sh` 原来把所有 `test:*` 和 `check`、`lint` 同时启动，每个 vitest 又各自占满所有核，网页端测试的 5 秒超时会被挤爆（这次 `test:collection-index`、`test:music-data`、`test:music-search`、`test:oauth` 超时，单独跑都过）；改成测试脚本一个接一个跑、和 `check`、`lint` 并行，整套反而从 2 分钟缩到 1 分半，全部通过。所以以后看结果要看每一行的 `ok`/`FAIL`，不要只看最后一行。
+    - **分支上的第三个用户提交**：`1712f63 fix: display friendly game API failure messages`（改了网页端的 `BindUserDialog.vue`、`updateUser.worker.ts`、`SaltNet/index.ts`）也是用户自己的提交，启动提示里只列了两个；「最终报告要有的内容」的 (g) 补上了它。

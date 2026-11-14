@@ -23,7 +23,7 @@
 - **新东西**（新命令、新逻辑、数据库迁移、同步和绑定流程）：Codex GPT 5.6 Sol (high)，经 `codex` CLI，`delegate-codex.sh`。
 - **Code review**（每个有代码的步骤提交前）：Codex GPT 6.1 Sol (high)，经 `codex` CLI，`review-codex.sh`（新功能和涉及凭据、账号、数据库的步骤加 `REVIEW_BUILTIN=1`）。
 
-两个 Codex 模型的 id 由用户给（用户的叫法是「GPT 5.6 Sol」和「GPT 6.1 Sol」，在 Codex 里的写法没验证过）。第一次用之前先试：`codex exec -m <id> -s read-only --ephemeral "reply ok"`；试不通就问用户一次，这是唯一可以中途问用户的事。然后 `export CODEX_MODEL_WRITE=<5.6 Sol 的 id> CODEX_MODEL_REVIEW=<6.1 Sol 的 id> SALTNET_WORK=<你的草稿目录>`。
+两个 Codex 模型的 id 是 `gpt-5.6-sol` 和 `gpt-6.1-sol`（2026-11-15 从 `codex debug models` 查到并试通）。每个新会话第一次用之前仍先试一次：`codex exec -m <id> -s read-only --ephemeral "reply ok"`；试不通就问用户一次，这是唯一可以中途问用户的事。然后 `export CODEX_MODEL_WRITE=<5.6 Sol 的 id> CODEX_MODEL_REVIEW=<6.1 Sol 的 id> SALTNET_WORK=<你的草稿目录>`。
 
 每一步的流程（分类、写 brief、交出去、审补丁、审查、测试够不够、文档、验证并提交）在计划的「分工与流程」里，按它做。步骤行末尾的 `〔简单〕`、`〔新〕`、`〔协调〕` 是建议的分工。工具跑得久（10 到 20 分钟），用后台运行，结束时会通知，不要轮询。互不重叠的步骤可以同时交给不同工具，补丁一个一个合、一个一个验证和提交。
 
@@ -49,7 +49,7 @@ Conventional Commits、一步一个提交、勾掉计划里的复选框、`pnpm 
 
 - 工具说「`tsc` 干净」「测试通过」不算数，自己跑。Gemini 说干净的补丁里有过 6 处类型错误；它还把小数的设置写成整数、写过永远出现不了的分支、把枚举抄成字面量。工具的汇报只当线索，补丁要自己读完。
 - 无头的 `agy` 遇到白名单之外的命令会整次中止并丢掉改动；brief 里要写清楚它有哪些命令。
-- `pnpm lint` 目前不检查 `cli/src/output/` 和 `cli/tests/output/`（antfu 默认忽略叫 `output` 的目录）：P1-16c 修；在那之前对这两个目录用 `pnpm exec eslint --no-ignore`。
+- antfu 默认忽略叫 `output` 的目录：P1-16c 起 `eslint.config.js` 只把 `cli/src/output/` 和 `cli/tests/output/` 放了回来，别处新建叫 `output` 的源码目录要照样加进去。
 - 审查意见逐条核实，不要照单全收；对的改，不对的在决定里记一句为什么不改。
 - 破坏检查（`mutate.py`）比看覆盖率靠谱：新逻辑的测试要让每一处有代表性的改动都被发现；声明式的数据（比如 JSON Schema）用覆盖分析。
 - zsh：变量里的文件列表不会自动分词，glob 要加引号；cwd 会漂，命令里用绝对路径；临时文件放草稿目录，不放 `/tmp`。

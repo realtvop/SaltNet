@@ -28,7 +28,7 @@
 
 ## 试过的和没试过的
 
-- 2026-11-14 在一个玩具仓库里把三个交给工具的脚本各跑了一次，都正常：改动以补丁拿回来，审查在快照里发现了删掉的文件和新增的文件；`.env` 不在快照里。调用方式是拿用户 `~/.codex/config.toml` 里的默认模型（`gpt-6-luna`）试的，**没有**用过 GPT 5.6 Sol 和 GPT 6.1 Sol 的模型 id。第一次正式用之前，先确认 id 能用：`codex exec -m <id> -s read-only --ephemeral "reply ok"`。
+- 2026-11-14 在一个玩具仓库里把三个交给工具的脚本各跑了一次，都正常：改动以补丁拿回来，审查在快照里发现了删掉的文件和新增的文件；`.env` 不在快照里。调用方式是拿用户 `~/.codex/config.toml` 里的默认模型（`gpt-6-luna`）试的，当时**没有**用过 GPT 5.6 Sol 和 GPT 6.1 Sol 的模型 id。2026-11-15 从 `codex debug models`（Codex 的模型目录）查到它们是 `gpt-5.6-sol` 和 `gpt-6.1-sol`，`codex exec -m <id> -s read-only --ephemeral --skip-git-repo-check "reply ok"` 都回答了 `ok`。
 - `codex review --uncommitted` 不能带自定义说明（试过，会报错），所以带 brief 的审查走 `codex exec -s read-only`，自带的 `codex review` 作为可选的第二意见。第二意见在试跑里指出了脚本自己的一个真问题（`SALTNET_WORK` 给相对路径时输出写错地方，已经改成先转成绝对路径），带 brief 的那一遍只指出了没写进 brief 的改动。两遍各有用，新功能和涉及凭据的步骤两遍都跑。
 - Codex 的 stderr 里会有「`[features].multi_agent` 已弃用」之类来自用户自己配置的警告，无害。
 - `verify.sh`、`finish.sh`、`commit.sh`、`mutate.py` 是 P1 期间用的脚本，整理时把写死的路径改成从仓库位置推出来；`delegate-agy.sh` 的白名单和快照做法没变。

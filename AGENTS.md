@@ -80,9 +80,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm lint` runs ESLint across the repository. Violations that predate the CLI work are frozen in
   `eslint-suppressions.json` (ESLint bulk suppressions), so only new violations fail. After fixing
   old ones, run `pnpm exec eslint . --prune-suppressions` to shrink that file; when moving a file
-  that has suppressed violations, move its entry along with it. ESLint's defaults skip every
-  directory named `output`, so it does not look at `cli/src/output/` or `cli/tests/output/`; run
-  `pnpm exec eslint --no-ignore cli/src/output cli/tests/output` when you change them.
+  that has suppressed violations, move its entry along with it. The antfu defaults skip every
+  directory named `output`; `eslint.config.js` un-ignores `cli/src/output/` and
+  `cli/tests/output/` only, so a new source directory of that name must be added there too.
 - `pnpm build` type-checks, builds the frontend, and generates build metadata.
 - `pnpm preview` serves the production frontend build locally.
 - `pnpm build:cli` bundles the CLI into `cli/dist/saltnet.mjs`; `pnpm test:cli` runs its Vitest suite.
