@@ -64,6 +64,8 @@ interface ViewSpec {
     readonly summary: string;
     readonly needs: readonly MetadataKind[];
     readonly columns: readonly ColumnSpec[];
+    /** What precedes `SELECT`, such as a materialized CTE used by its column expressions. */
+    readonly prefix?: string;
     /** What follows `SELECT <columns>`: the FROM clause, and an ORDER BY that makes the order fixed. */
     readonly rest: string;
 }
@@ -80,7 +82,7 @@ function view(spec: ViewSpec): PublicView {
         columns: spec.columns.map(({ name, type, description }) => ({ name, type, description })),
         // The select list comes from the columns, so what a view selects and what it says it
         // selects cannot drift apart.
-        select: `SELECT ${spec.columns.map(({ name, expr }) => `${expr} AS "${name}"`).join(", ")} ${spec.rest}`,
+        select: `${spec.prefix ? `${spec.prefix} ` : ""}SELECT ${spec.columns.map(({ name, expr }) => `${expr} AS "${name}"`).join(", ")} ${spec.rest}`,
     };
 }
 
@@ -348,6 +350,7 @@ const COLLECTION_TARGETS = view({
     name: "v_collection_targets",
     summary: "收藏品的获取条件展开成一行一条：收藏品、条件、歌、难度",
     needs: ["collections"],
+    prefix: `WITH collection_conditions AS MATERIALIZED (SELECT c.kind, c.id, c.position, r.key AS condition_index, r.value AS condition_json, json_extract(r.value, '$.rate') AS rate, json_extract(r.value, '$.fc') AS fc, json_extract(r.value, '$.fs') AS fs FROM ${REAL_SCHEMA}.collections c JOIN json_each(c.required) r)`,
     columns: [
         column(
             "collection_ref",
@@ -357,7 +360,7 @@ const COLLECTION_TARGETS = view({
         ),
         column("collection_kind", "TEXT", "收藏品的类型", "c.kind"),
         column("collection_id", "INTEGER", "收藏品 id", "c.id"),
-        column("condition", "INTEGER", "这是收藏品的第几条条件，从 1 起", "r.key + 1"),
+        column("condition", "INTEGER", "这是收藏品的第几条条件，从 1 起", "c.condition_index + 1"),
         column(
             "music_id",
             "INTEGER",
@@ -376,26 +379,21 @@ const COLLECTION_TARGETS = view({
             "条件点名的难度（BASIC 到 Re:MASTER）；NULL 是这首歌的任何难度都行。条件点名几个难度就有几行",
             difficultyOf("d.value")
         ),
-        column(
-            "rank",
-            "TEXT",
-            "条件要求的最低评级，如 SSS；不要求是 NULL",
-            rankOf("json_extract(r.value, '$.rate')")
-        ),
+        column("rank", "TEXT", "条件要求的最低评级，如 SSS；不要求是 NULL", rankOf("c.rate")),
         column(
             "combo",
             "TEXT",
             "条件要求的最低连击状态：FC、FC+、AP 或 AP+；不要求是 NULL",
-            comboOf("json_extract(r.value, '$.fc')")
+            comboOf("c.fc")
         ),
         column(
             "sync",
             "TEXT",
             "条件要求的最低同步状态：SYNC、FS、FS+、FDX 或 FDX+；不要求是 NULL",
-            syncOf("json_extract(r.value, '$.fs')")
+            syncOf("c.fs")
         ),
     ],
-    rest: `FROM ${REAL_SCHEMA}.collections c JOIN json_each(c.required) r JOIN json_each(r.value, '$.songs') s LEFT JOIN json_each(r.value, '$.difficulties') d ORDER BY ${kindOrder("c.kind")}, c.position, r.key, s.key, d.key`,
+    rest: `FROM collection_conditions c JOIN json_each(c.condition_json, '$.songs') s LEFT JOIN json_each(c.condition_json, '$.difficulties') d ORDER BY ${kindOrder("c.kind")}, c.position, c.condition_index, s.key, d.key`,
 });
 
 // --- v_course_tracks ------------------------------------------------------------------------

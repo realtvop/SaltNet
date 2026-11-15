@@ -1049,6 +1049,19 @@ describe("v_collections", () => {
 });
 
 describe("v_collection_targets", () => {
+    it("returns the old SELECT's rows in the same order", () => {
+        const paths = makeHome();
+        populate(paths, { collections: true });
+        const vTargets = PUBLIC_VIEWS.find(v => v.name === "v_collection_targets")!;
+        const oldSelect = `SELECT c.kind || ':' || c.id AS "collection_ref", c.kind AS "collection_kind", c.id AS "collection_id", r.key + 1 AS "condition", CASE WHEN upper(json_extract(s.value, '$.type')) = 'DX' THEN CASE WHEN json_extract(s.value, '$.id') >= 10000 THEN json_extract(s.value, '$.id') ELSE json_extract(s.value, '$.id') + 10000 END ELSE json_extract(s.value, '$.id') END AS "music_id", json_extract(s.value, '$.title') AS "song_title", CASE d.value WHEN 0 THEN 'BASIC' WHEN 1 THEN 'ADVANCED' WHEN 2 THEN 'EXPERT' WHEN 3 THEN 'MASTER' WHEN 4 THEN 'Re:MASTER' WHEN 10 THEN 'UTAGE' ELSE CAST(d.value AS TEXT) END AS "difficulty", CASE json_extract(r.value, '$.rate') WHEN 'd' THEN 'D' WHEN 'c' THEN 'C' WHEN 'b' THEN 'B' WHEN 'bb' THEN 'BB' WHEN 'bbb' THEN 'BBB' WHEN 'a' THEN 'A' WHEN 'aa' THEN 'AA' WHEN 'aaa' THEN 'AAA' WHEN 's' THEN 'S' WHEN 'sp' THEN 'S+' WHEN 'ss' THEN 'SS' WHEN 'ssp' THEN 'SS+' WHEN 'sss' THEN 'SSS' WHEN 'sssp' THEN 'SSS+' ELSE NULL END AS "rank", CASE json_extract(r.value, '$.fc') WHEN 'fc' THEN 'FC' WHEN 'fcp' THEN 'FC+' WHEN 'ap' THEN 'AP' WHEN 'app' THEN 'AP+' ELSE NULL END AS "combo", CASE json_extract(r.value, '$.fs') WHEN 'sync' THEN 'SYNC' WHEN 'fs' THEN 'FS' WHEN 'fsp' THEN 'FS+' WHEN 'fsd' THEN 'FDX' WHEN 'fsdp' THEN 'FDX+' ELSE NULL END AS "sync" FROM real.collections c JOIN json_each(c.required) r JOIN json_each(r.value, '$.songs') s LEFT JOIN json_each(r.value, '$.difficulties') d ORDER BY CASE c.kind WHEN 'plate' THEN 0 WHEN 'title' THEN 1 WHEN 'icon' THEN 2 WHEN 'frame' THEN 3 WHEN 'character' THEN 4 WHEN 'partner' THEN 5 ELSE 6 END, c.position, r.key, s.key, d.key`;
+        const sb = sandboxOf<readonly Record<string, unknown>[]>(paths, [vTargets], db =>
+            db.prepare(oldSelect).all()
+        );
+
+        const newRows = runQuery(sb.db, "SELECT * FROM v_collection_targets", 500).rows;
+        expect(newRows).toEqual(sb.also);
+    });
+
     it("matches requirement rows from collectionDetail across all 176 targets", () => {
         const paths = makeHome();
         populate(paths, { music: true, collections: true, static: true });

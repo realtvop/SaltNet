@@ -152,7 +152,7 @@
 - [x] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
 - [x] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
 - [x] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
-- [ ] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
+- [x] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
 - [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
 
 ### P2 本地成绩
@@ -661,3 +661,16 @@
     - 从 P1-18b 起，Claude Code 的系统指示要求提交信息和 PR 描述里不加署名行，项目规则要求也一样。`AI assistance:` 一行写的是哪个模型做了什么，属于署名，所以不再写，只留 `Validation:`。
     - 谁做了什么照旧写在这里每一步的决定里。
     - 仓库里的 `commit.sh` 没有改，提交用 scratchpad 里去掉这一行的副本。README 要求在 PR 里说明用了哪些 AI 工具，开 PR 时由用户决定怎么写。
+49. **P1-19a 的实现（`v_collection_targets` 每条条件只解析一次）（2026-11-16）**：
+    - **原因**：这个视图把收藏品条件展开成每首歌、每个难度一行。`rank`、`combo`、`sync` 三列原来每一行都对整条条件的 JSON 调一次 `json_extract`，而一条条件可能含几千首歌，等于每行把那段大 JSON 重新解析一遍。
+    - **做法**：
+        - 视图的构造器加了可选的 `prefix`。`v_collection_targets` 用 `WITH collection_conditions AS MATERIALIZED (…)` 先把每条条件的这三个字段取出来，每条条件一次，再和歌、难度连接。难度仍是 LEFT JOIN，排序不变。
+        - 沙盒复制视图用的是 `INSERT INTO … <prefix> SELECT …`。这个 CTE 只在复制时存在，用户的查询看不到也碰不到它，用户自己写同名的 CTE 也不冲突。
+    - **结果不变**：
+        - 新测试把旧的 SELECT 原样写在测试里，和新视图在固定数据的 176 行上逐行比较。
+        - 真实数据（51 277 行）上，新旧两个产物各跑一次：每一列取 `quote()`，按视图顺序拼起来，sha256 相同。
+        - `VIEWS_VERSION` 不变。
+    - **快了多少**：真实数据上，`saltnet sql "SELECT count(*) FROM v_collection_targets"` 整条命令（含启动 Node 和复制视图）各跑 5 次，中位数从 1.85 秒降到 0.33 秒。
+    - **委托的经过**：
+        - Codex（GPT 5.6 Sol）写的，对 brief 没有异议。审查（GPT 6.1 Sol）没有意见；它的沙盒跑不了测试，测试和真实数据的对照是我跑的。
+        - 破坏检查：难度改成 INNER JOIN、歌和难度的排序对调、`fc` 读成 `fs`、条件序号加一，4 处都被发现。去掉 `MATERIALIZED` 结果不变、只影响速度，测试不管速度，这一处没被发现是预期的。
