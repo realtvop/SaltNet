@@ -4,9 +4,11 @@ import { charts } from "./charts";
 import { collectionList, collectionShow } from "./collection";
 import { configGet, configList, configSet, configUnset } from "./config";
 import { courseList, courseShow } from "./course";
+import { guide } from "./guide";
 import { kaleidxscope } from "./kaleidxscope";
 import { refresh } from "./refresh";
 import { buildRegistry } from "./registry";
+import { schema } from "./schema";
 import { search } from "./search";
 import { song } from "./song";
 import { sql } from "./sql";
@@ -30,6 +32,8 @@ export const COMMANDS: readonly CommandDefinition[] = [
     configSet,
     configUnset,
     sql,
+    schema,
+    guide,
 ];
 
 /** One line for each group of two-word commands, keyed by its first word. */

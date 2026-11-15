@@ -25,7 +25,7 @@ import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
 import { resolveGate } from "../refs/gate";
 import { parseTimeOption } from "../refs/time";
 import { formatLocalTime } from "../util/time";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 /** A gate's songs are never banquet charts, so `utage` is not among the difficulties to pick. */
@@ -157,14 +157,7 @@ export const kaleidxscope = defineCommand(
                 description: "看那个时间的开放情况和血量阶段",
             },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: anyOf(
             "不指定门时是所有门的总览，指定了门时是这个门的详情",
             overviewSchema,

@@ -71,6 +71,13 @@ describe("root help", () => {
         expect(text).toContain("给 agent 的使用指南");
     });
 
+    it("lists schema and guide in the real root help's more section", () => {
+        const text = renderHelp(createRegistry(), { kind: "root" }, "1.0.0");
+        expect(text).toContain(
+            "更多：\n  saltnet <命令> --help  某个命令的用法\n  saltnet schema [命令]  机器可读的命令说明，agent 请用这个\n  saltnet guide          给 agent 的使用指南\n"
+        );
+    });
+
     it("says so while there are no commands", () => {
         const empty = buildRegistry({ commands: [] });
         expect(renderHelp(empty, { kind: "root" }, "0.1.0")).toContain("（还没有可用的命令）");

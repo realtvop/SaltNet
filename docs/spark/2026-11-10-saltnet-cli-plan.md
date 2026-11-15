@@ -149,7 +149,7 @@
 - [x] P1-16 `feat(cli): add read-only sql views and sql command`：对外视图、只读连接、`setAuthorizer`
 - [x] P1-16b `feat(cli): describe command data with JSON Schemas`：每条命令的 `data` 都有 JSON Schema（`CommandSpec.dataSchema`），用 `src/output/schema.ts` 的构造函数拼，共用的形状在 `src/catalog/schemas.ts`；测试用 Ajv 检查每条命令真实输出是否符合，注册表测试要求每条命令都有（设计 4.7 的「`data` 的 JSON Schema」，原计划放在 P1-17 里一起做，见第 42 条）
 - [x] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
-- [ ] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
+- [x] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
 - [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
 - [ ] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
 - [ ] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
@@ -595,3 +595,27 @@
     - **两个 Codex 模型的 id**：`codex debug models` 列出的模型目录里有 `gpt-5.6-sol`（GPT-5.6-Sol）和 `gpt-6.1-sol`（GPT-6.1-Sol），各用 `codex exec -m <id> -s read-only --ephemeral "reply ok"` 试过，都回答 `ok`，所以 `CODEX_MODEL_WRITE=gpt-5.6-sol`、`CODEX_MODEL_REVIEW=gpt-6.1-sol`，没有去问用户。`README.md` 和 `coordinator-prompt.md` 写上了。
     - **两个脚本的毛病（第一次真跑就暴露了）**：(a) `finish.sh` 把 `verify.sh` 的输出接给 `grep`，没开 `pipefail`，所以最后打印的 `finish exit=<n>` 是 `grep` 的退出码，验证失败了也是 0；加了 `setopt pipefail`。(b) `verify.sh` 原来把所有 `test:*` 和 `check`、`lint` 同时启动，每个 vitest 又各自占满所有核，网页端测试的 5 秒超时会被挤爆（这次 `test:collection-index`、`test:music-data`、`test:music-search`、`test:oauth` 超时，单独跑都过）；改成测试脚本一个接一个跑、和 `check`、`lint` 并行，整套反而从 2 分钟缩到 1 分半，全部通过。所以以后看结果要看每一行的 `ok`/`FAIL`，不要只看最后一行。
     - **分支上的第三个用户提交**：`1712f63 fix: display friendly game API failure messages`（改了网页端的 `BindUserDialog.vue`、`updateUser.worker.ts`、`SaltNet/index.ts`）也是用户自己的提交，启动提示里只列了两个；「最终报告要有的内容」的 (g) 补上了它。
+45. **P1-17 的实现（`schema` 和 `guide`）（2026-11-16）**：
+    - **都从注册表生成**：`commands/describe.ts` 是 `--help`、`schema`、`guide` 共用的描述（用法行、参数、选项、错误码）。`help.ts` 原有的几个辅助函数挪进去以后，`--help` 的输出一字不变：原有的 `help.test.ts` 不改就通过。
+    - **`schema` 的三种形式**：
+        - 不带参数是索引：命令和命令组、分类、副作用级别、全局选项、每个退出码的含义和它下面的错误码、全部错误码（退出码、默认是否可重试、说明）、警告码，以及外层结构本身的 JSON Schema（`envelope.schema`）和它的版本历史 `ENVELOPE_CHANGES`。
+        - `schema <命令>` 给出用法、参数、选项、示例和可能出现的错误码。选项写明类型、默认值、可选值和别名、列表项、区间、最小最大值，不适用的写 null。示例带 `saltnet ` 前缀，可以直接复制运行。`data` 原样是 `spec.dataSchema`（第 42 条）。
+        - `schema --views` 给出 `VIEWS_VERSION`、`VIEWS_CHANGES`，以及每个视图的说明、依赖的来源和各列。不给 SELECT 原文，因为表的结构是内部细节（第 41 条）。
+        - 命令组（`schema config`）报 `AMBIGUOUS_REF`，候选是组里的命令。不存在的命令报 `NOT_FOUND`，候选是最接近的命令名。`--views` 和命令名一起写报 `USAGE`。
+    - **公开的错误码要和实际一致**：
+        - 每条命令都隐含 `INTERNAL` 和 `USAGE`。
+        - 要让元数据保持最新的命令共用 `METADATA_ERRORS`（`NETWORK`、`UPSTREAM_ERROR`、`OFFLINE_NO_CACHE`、`SYNC_IN_PROGRESS`、`DB_LOCKED`）。原来各写各的，都漏了后两个。
+        - `errorCodes.test.ts` 把每条命令的每个示例放在七种情形下跑：离线、断网、上游 500、灌好固定数据、`metadata` 锁被占、数据库被另一个连接写锁住、还要迁移时被写锁住。失败时的错误码必须在这条命令公开的清单里。测试还证明锁冲突的两个错误码真的会出现。
+        - 默认可重试的只有 `NETWORK`、`SYNC_IN_PROGRESS`、`DB_LOCKED`。每次失败的 `error.retryable` 才是那一次的结论。
+    - **`guide`**：输出 Markdown 文本，和 `--help` 一样不套外层结构（设计 4.2）。
+        - 内容分两部分。手写部分在 `guide/handwritten.ts`：开头、五条规则、每个退出码「怎么办」。`guide/markdown.ts` 从注册表生成其余部分：按分类的命令参考（没有命令的分类不出现）、全局选项、错误码表、警告表和视图列表。
+        - 同一个构建永远输出同样的文字。`guide --skill` 和术语表留给 P4-4。
+    - **配置坏了也能读说明**：`schema` 和 `guide` 都允许配置有错（`allowBadConfig`），也不会建数据目录。测试里注入可以辨认的构建默认值，先确认它们确实生效（`config get` 看得到）。然后确认 `schema`、每条命令的 `schema <命令>`、`schema --views` 和 `guide` 的输出里都没有这些值。
+    - **没有失败会带 `meta` 或 `warnings`**：外层结构的 schema 允许失败时带这两个字段，但现在没有哪条命令会这样失败，所以没写这样的测试，以后有了要补。
+    - **委托的经过**：
+        - 主体交给 Codex（GPT 5.6 Sol）。`errors.ts` 的三张表（退出码含义、错误码说明、默认可重试）和 `handwritten.ts` 是我先写的。它的补丁 `tsc` 干净、1420 个测试通过，对 brief 没有异议。
+        - 审查（GPT 6.1 Sol，加 Codex 自带的 `review --uncommitted`）提了 5 条，都核实过。两处文字不对，我改了：`INTERNAL` 不只是 saltnet 的缺陷，也可能是数据目录读写失败或数据库损坏；指南说「每条命令都输出 JSON」，漏了设计 4.2 的例外。三处测试不够强：没测锁冲突；外层结构没测 `command: null` 和 `--fields`；没测构建默认值会不会泄露。Codex 自带的审查没有意见。
+        - 补测试先交给 Gemini，两次都没有产出，因为无头模式拒绝了某条命令。第一次是 brief 没按模板列出能用的命令；第二次补上了仍然被拒，日志里看不出是哪一条。按「两轮不对就换工具」改交 Codex，一次完成。
+        - 破坏检查：16 处改动起初发现了 15 处，漏掉的 `command: null` 我补了测试。补测试以后又试了 3 处，`status` 去掉 `DB_LOCKED` 没被发现：WAL 模式下另一个连接的写锁不挡读。我加了「还要迁移时被写锁住」这种情形，最后全部被发现。
+    - **协调方式改了**：做这一步时用户指出，协调者不该通读工具写的补丁，太浪费。流程改成只看汇报和文件列表、自己跑检查、读代码交给审查（`b7c2c48`）。这一步的主体补丁是改流程之前通读的；补测试的补丁没有通读，只看了汇报，跑了测试和破坏检查。
+    - **并行**：这一步收尾时，P1-18、P1-18b、P1-19a 已经各自在 Codex 的快照里开工，快照里带着这一步未提交的改动。

@@ -5,7 +5,7 @@ import { usageError } from "../errors";
 import { paginate } from "../output/paging";
 import { list, object } from "../output/schema";
 import { listOptions } from "./listOptions";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 /** `search` shows a few songs unless asked for more: it is what to run when unsure which song. */
@@ -34,7 +34,7 @@ export const search = defineCommand(
             { command: "search sjjh", description: "按拼音首字母搜" },
             { command: "search true love --limit 3", description: "多个词，只要前三首" },
         ],
-        errors: ["USAGE", "NETWORK", "UPSTREAM_ERROR", "OFFLINE_NO_CACHE"],
+        errors: ["USAGE", ...METADATA_ERRORS],
         dataSchema: object(
             { items: list(searchItemSchema, "搜到的歌，最相关的在前") },
             { description: "搜索结果" }

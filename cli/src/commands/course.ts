@@ -7,7 +7,7 @@ import { paginate } from "../output/paging";
 import { extend, int, list, object, str, strEnum } from "../output/schema";
 import { resolveCourse } from "../refs/course";
 import { listOptions } from "./listOptions";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 export const courseList = defineCommand(
@@ -65,14 +65,7 @@ export const courseShow = defineCommand(
                 description: "名字里有「真九」的只有真九段，所以不用写全",
             },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: extend<CourseInfo & CourseTracks, CourseInfo>(
             courseInfoSchema,
             {

@@ -608,6 +608,20 @@ describe("sql", () => {
     });
 });
 
+describe("schema and guide", () => {
+    it("describes every schema result form", async () => {
+        for (const args of [[], ["charts"], ["--views"]]) {
+            const { json } = await commandIn(makeHome(), "schema", args);
+            expectConforms(schemaOf("schema"), json.data);
+        }
+    });
+
+    it("describes the guide's plain Markdown string", async () => {
+        const { stdout } = await commandIn(makeHome(), "guide", []);
+        expectConforms(schemaOf("guide"), stdout);
+    });
+});
+
 describe("how a search found a song", () => {
     it("describes a hit by id, by artist and by charter, and a song that has both sides", async () => {
         const home = makeHome();

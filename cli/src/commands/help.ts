@@ -7,17 +7,15 @@ import type {
     CommandCategory,
     CommandDefinition,
     CommandGroup,
-    EnumValue,
     OptionEntry,
-    PositionalSpec,
     Registry,
 } from "./registry";
 import { displayWidth, padDisplay } from "../util/width";
+import { commandUsage, optionLabel, optionNotes, positionalPlaceholder } from "./describe";
 import {
     COMMAND_CATEGORIES,
     commandOptionEntries,
     EFFECT_LABELS,
-    enumMember,
     GLOBAL_OPTION_ENTRIES,
 } from "./registry";
 
@@ -47,90 +45,11 @@ function section(title: string, lines: readonly string[]): string[] {
     return lines.length === 0 ? [] : [title, ...lines, ""];
 }
 
-/** `<谱面>`, `[门]`, `<曲目...>`: what the argument looks like in a usage line. */
-function placeholderOf(positional: PositionalSpec): string {
-    const name = `${positional.valueName ?? positional.name}${positional.variadic ? "..." : ""}`;
-    return positional.optional ? `[${name}]` : `<${name}>`;
-}
-
-function usageOf(positionals: readonly PositionalSpec[]): string {
-    return positionals.map(placeholderOf).join(" ");
-}
-
-/** The longest enum written inline as `<a|b|c>`; longer ones list their values in the notes. */
-const MAX_INLINE_ENUM = 24;
-
-function inlineEnum(values: readonly EnumValue[]): string | undefined {
-    const joined = values.map(value => enumMember(value).value).join("|");
-    return joined.length <= MAX_INLINE_ENUM ? joined : undefined;
-}
-
-function listedValues(values: readonly EnumValue[]): string {
-    return values.map(value => enumMember(value).value).join("、");
-}
-
-/** The words after a flag: `<整数>`, `<default|constant>`. */
-function valueNameOf(entry: OptionEntry): string {
-    const { spec } = entry;
-    if (spec.valueName) return `<${spec.valueName}>`;
-    switch (spec.kind) {
-        case "string":
-            return "<文本>";
-        case "credential":
-            return "-";
-        case "integer":
-            return "<整数>";
-        case "number":
-            return "<数字>";
-        case "enum": {
-            const inline = inlineEnum(spec.values);
-            return inline ? `<${inline}>` : "<值>";
-        }
-        case "list":
-            return spec.item.kind === "enum" ? "<值,值>" : "<值,值,…>";
-        case "range":
-            return "<起..止>";
-        case "boolean":
-            return "";
-    }
-}
-
-function flagLabel(entry: OptionEntry): string {
-    if (entry.spec.kind === "boolean") {
-        return entry.spec.default ? `--[no-]${entry.flag}` : `--${entry.flag}`;
-    }
-    return `--${entry.flag} ${valueNameOf(entry)}`;
-}
-
-function notesOf(entry: OptionEntry): string {
-    const { spec } = entry;
-    const notes: string[] = [];
-    if ("required" in spec && spec.required) notes.push("必填");
-    if (spec.kind === "enum" && !inlineEnum(spec.values))
-        notes.push(`可选：${listedValues(spec.values)}`);
-    if (spec.kind === "list" && spec.item.kind === "enum") {
-        notes.push(`可选：${listedValues(spec.item.values)}`);
-    }
-    if (spec.kind === "integer" || spec.kind === "number") {
-        if (spec.min !== undefined && spec.max !== undefined) {
-            notes.push(`范围：${spec.min} 到 ${spec.max}`);
-        } else if (spec.min !== undefined) {
-            notes.push(`最小：${spec.min}`);
-        } else if (spec.max !== undefined) {
-            notes.push(`最大：${spec.max}`);
-        }
-    }
-    if (spec.kind === "boolean") {
-        if (spec.default) notes.push("默认开启");
-    } else if ("default" in spec && spec.default !== undefined) {
-        const shown = Array.isArray(spec.default) ? spec.default.join(",") : String(spec.default);
-        notes.push(`默认：${shown}`);
-    }
-    return notes.length === 0 ? "" : `（${notes.join("；")}）`;
-}
-
 function optionRows(entries: readonly OptionEntry[]): Row[] {
-    return entries.map(entry => [flagLabel(entry), `${entry.spec.description}${notesOf(entry)}`]);
+    return entries.map(entry => [
+        optionLabel(entry),
+        `${entry.spec.description}${optionNotes(entry)}`,
+    ]);
 }
 
 function globalOptionLines(): string[] {
@@ -138,7 +57,7 @@ function globalOptionLines(): string[] {
 }
 
 function commandRow(command: CommandDefinition): Row {
-    const usage = usageOf(command.spec.positionals ?? []);
+    const usage = (command.spec.positionals ?? []).map(positionalPlaceholder).join(" ");
     return [
         usage === "" ? command.spec.name : `${command.spec.name} ${usage}`,
         command.spec.summary,
@@ -216,14 +135,12 @@ function renderGroupHelp(group: CommandGroup): string {
 function renderCommandHelp(command: CommandDefinition): string {
     const { spec } = command;
     const positionals = spec.positionals ?? [];
-    const usage = usageOf(positionals);
-    const hasOptions = commandOptionEntries(command).length > 0;
 
     const lines: string[] = [
         `saltnet ${spec.name} — ${spec.summary}`,
         "",
         "用法：",
-        `${INDENT}saltnet ${spec.name}${usage === "" ? "" : ` ${usage}`}${hasOptions ? " [选项]" : ""}`,
+        `${INDENT}${commandUsage(command)}`,
         "",
     ];
     if (spec.description) lines.push(spec.description.trim(), "");
@@ -232,7 +149,10 @@ function renderCommandHelp(command: CommandDefinition): string {
         ...section(
             "参数：",
             renderRows(
-                positionals.map(positional => [placeholderOf(positional), positional.description])
+                positionals.map(positional => [
+                    positionalPlaceholder(positional),
+                    positional.description,
+                ])
             )
         ),
         ...section("选项：", renderRows(optionRows(commandOptionEntries(command))))

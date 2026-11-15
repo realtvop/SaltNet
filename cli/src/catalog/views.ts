@@ -24,6 +24,14 @@ import { SOURCE_LABELS } from "./refresh";
 /** Raise it when a view changes in a way a query can notice; see the top of this file. */
 export const VIEWS_VERSION = 1;
 
+/** The incompatible public-view changes, in version order. */
+export const VIEWS_CHANGES = [
+    {
+        version: 1,
+        description: "第一版：v_charts、v_collections、v_collection_targets、v_course_tracks",
+    },
+] as const;
+
 export type ViewColumnType = "TEXT" | "INTEGER" | "REAL";
 
 export interface ViewColumn {

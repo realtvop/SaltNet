@@ -25,7 +25,7 @@ import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
 import { resolveVersions } from "../refs/version";
 import { listOptions } from "./listOptions";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 /** The charts a collection or plate asks for, or `USAGE` when its conditions name no song. */
@@ -148,14 +148,7 @@ export const charts = defineCommand(
             { command: "charts --plate 熊華極 --diff mas", description: "熊華極要求的紫谱" },
             { command: "charts --gate 蓝门 --diff mas", description: "蓝门曲池里歌的紫谱" },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: anyOf(
             "谱面筛选结果：普通列表或分组列表",
             object(

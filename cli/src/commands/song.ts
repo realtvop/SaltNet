@@ -3,7 +3,7 @@ import { chartRowSchema, relatedSchema, songTypeSchema } from "../catalog/schema
 import { buildSongCatalog, songCharts, songType } from "../catalog/songs";
 import { int, list, nullable, num, object, str } from "../output/schema";
 import { resolveSong } from "../refs/song";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 import { loadRelated, withOptions } from "./withRelated";
 
@@ -33,14 +33,7 @@ export const song = defineCommand(
                 description: "再加上用到这首歌的收藏品、段位和门",
             },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: object(
             {
                 musicId: int("曲目 id；DX 谱的 id 是 SD 谱的 id 加 10000"),

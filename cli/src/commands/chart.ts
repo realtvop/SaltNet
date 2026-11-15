@@ -5,7 +5,7 @@ import { chartRowSchema, relatedSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { dictionary, extend, int, nullable, num, object, str } from "../output/schema";
 import { resolveChart } from "../refs/chart";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 import { loadRelated, withOptions } from "./withRelated";
 
@@ -74,14 +74,7 @@ export const chart = defineCommand(
                 description: "再加上用到这张谱的收藏品、段位和门",
             },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: extend<ChartRow & ChartDetails & { readonly related?: Related }, ChartRow>(
             chartRowSchema,
             {

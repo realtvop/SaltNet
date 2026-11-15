@@ -5,6 +5,9 @@ import type { Warning } from "./warning";
 /** Bumped only when a field is renamed, removed or changes meaning. */
 export const ENVELOPE_VERSION = 1;
 
+/** The incompatible envelope changes, in version order. */
+export const ENVELOPE_CHANGES = [{ version: 1, description: "第一版" }] as const;
+
 export interface SuccessEnvelope {
     readonly v: typeof ENVELOPE_VERSION;
     readonly ok: true;

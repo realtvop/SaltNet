@@ -6,7 +6,7 @@ import { runQuery } from "../store/query";
 import { openSandbox } from "../store/sandbox";
 import { formatLocalTime } from "../util/time";
 import { listOptions, MAX_LIMIT } from "./listOptions";
-import { useStoredMetadata } from "./metadata";
+import { METADATA_ERRORS, useStoredMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 /** Enough for most questions, and what an agent can read without being flooded. */
@@ -52,14 +52,7 @@ export const sql = defineCommand(
                 description: "一个收藏品的条件点名的谱面",
             },
         ],
-        errors: [
-            "USAGE",
-            "SQL_ERROR",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-            "DB_LOCKED",
-        ],
+        errors: ["USAGE", "SQL_ERROR", ...METADATA_ERRORS],
         dataSchema: object(
             {
                 items: list(

@@ -23,7 +23,7 @@ import { extend, int, list, object, str } from "../output/schema";
 import { COLLECTION_KINDS, listCollections, resolveCollection } from "../refs/collection";
 import { foldName } from "../util/fold";
 import { listOptions } from "./listOptions";
-import { useMetadata } from "./metadata";
+import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 
 export const collectionList = defineCommand(
@@ -62,7 +62,7 @@ export const collectionList = defineCommand(
                 description: "旅行伙伴和搭档，只看 ref、名称和分类，输出成表格",
             },
         ],
-        errors: ["USAGE", "NETWORK", "UPSTREAM_ERROR", "OFFLINE_NO_CACHE"],
+        errors: ["USAGE", ...METADATA_ERRORS],
         dataSchema: object(
             { items: list(collectionRowSchema, "符合条件的收藏品列表") },
             { description: "收藏品列表" }
@@ -113,14 +113,7 @@ export const collectionShow = defineCommand(
                 description: "一个牌子点名的谱面，看第二页",
             },
         ],
-        errors: [
-            "USAGE",
-            "NOT_FOUND",
-            "AMBIGUOUS_REF",
-            "NETWORK",
-            "UPSTREAM_ERROR",
-            "OFFLINE_NO_CACHE",
-        ],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
         dataSchema: object(
             {
                 collection: extend<CollectionDetail, CollectionRow>(

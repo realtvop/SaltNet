@@ -7,6 +7,15 @@ import type { Warning } from "../output/warning";
 import type { CommandContext, GlobalOptions } from "./registry";
 import { ensureMetadata, ensureStored } from "../catalog/ensure";
 
+/** Failures shared by commands that make downloaded metadata current. */
+export const METADATA_ERRORS = [
+    "NETWORK",
+    "UPSTREAM_ERROR",
+    "OFFLINE_NO_CACHE",
+    "SYNC_IN_PROGRESS",
+    "DB_LOCKED",
+] as const;
+
 function ensureDeps(args: { readonly global: GlobalOptions }, ctx: CommandContext): EnsureDeps {
     return {
         store: ctx.store(),
