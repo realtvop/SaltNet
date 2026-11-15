@@ -151,7 +151,7 @@
 - [x] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
 - [x] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
 - [x] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
-- [ ] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
+- [x] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
 - [ ] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
 - [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
 
@@ -643,3 +643,21 @@
         - Codex（GPT 5.6 Sol）写的。`tsc` 干净，1420 个单元测试和端到端测试都通过。它指出 brief 有两处做不到：TSV 的 stderr 不可能是空的；CI 加步骤必然增加工作流的 suppression。都照它说的办。
         - 审查（GPT 6.1 Sol）提了 5 条，都核实过，由我改：子进程没有超时；没验证构建默认值编进了产物；成功的外层结构只查了 `v` 和 `ok`；`search 39` 没查 `data`；TSV 输出是什么都能通过。
         - 破坏检查：把一条示例改成不存在的牌子、TSV 输出换成 `broken`、去掉构建默认值的 `define`、`search` 返回空列表、外层结构去掉 `warnings`，五处都被发现。
+47. **P1-18b 的实现（按有没有退路选下载的期限）（2026-11-16）**：
+    - **在哪里选**：`ensure.ts` 先逐个来源检查，必要时用 `cache/` 重建别的版本存的数据，这之后才知道有没有能退回的数据，所以期限在这之后按来源选：
+        - 有能用的旧数据：`metadata.timeoutMs`（8 秒）。失败了就退回旧数据，带 `STALE_METADATA`。
+        - 没有能用的数据：`network.timeoutMs`（15 秒）。包括从没下载过，也包括别的版本存的、`cache/` 里又没有能用的原始文件。
+        - 显式的 `saltnet refresh` 一律用 `network.timeoutMs`。
+        - `ensureDeps` 给 `ensure.ts` 两个 `fetch`，各带自己的期限。
+    - **超时的 `fix`**：`createHttp` 多了 `timeoutKey`。超时（发请求和读响应两个阶段都算）的 `NETWORK` 错误在 `fix` 里写明调大哪个设置、怎么调；连接被拒之类的错误不带。
+    - **等价的改动**：短期限超时总是退回旧数据，而 `STALE_METADATA` 的 `fix` 是 `saltnet refresh`（它用长期限），所以写着 `metadata.timeoutMs` 的 `fix` 实际不会出现在输出里。破坏检查里把这个键名改错不会被发现，这是等价的改动。
+    - **两项设置的说明**改成写明各管哪些下载。
+    - **委托的经过**：
+        - Codex（GPT 5.6 Sol）写的，对 brief 没有异议。
+        - 审查（GPT 6.1 Sol，加 Codex 自带的审查）没找到缺陷，指出两处测试不够强：别的版本存的数据重建不了时用哪个期限没测；读响应阶段的超时没测 `fix`。补测试交给 Codex，源码没有改。
+        - 破坏检查：对调长短期限、都用短的、都用长的、`refresh` 用短的、`fix` 里写死键名、所有失败都当超时、重建不了的旧数据也当退路、读响应阶段写错键名，8 处都被发现。
+    - **顺带改了 P1-17 的测试**：`errorCodes.test.ts` 原来把每条命令的每个示例、七种情形放在一个测试里跑，三百多次命令。单独跑 4.5 秒；这一步的整套检查和 Gemini 的任务同时跑，机器很忙，它超过了 20 秒的期限。现在拆成每条命令一个测试，内容不变；去掉 `METADATA_ERRORS` 里的一项，拆开以后照样被发现。
+48. **提交信息不再写 `AI assistance:`（2026-11-16）**：
+    - 从 P1-18b 起，Claude Code 的系统指示要求提交信息和 PR 描述里不加署名行，项目规则要求也一样。`AI assistance:` 一行写的是哪个模型做了什么，属于署名，所以不再写，只留 `Validation:`。
+    - 谁做了什么照旧写在这里每一步的决定里。
+    - 仓库里的 `commit.sh` 没有改，提交用 scratchpad 里去掉这一行的副本。README 要求在 PR 里说明用了哪些 AI 工具，开 PR 时由用户决定怎么写。

@@ -89,11 +89,12 @@ async function run(
             paths,
             config,
             store: () => (store ??= openStore(paths, { now: () => io.now() })),
-            http: ({ timeoutMs } = {}) =>
+            http: options =>
                 createHttp({
                     fetch: io.fetch,
                     userAgent: config.values.network.userAgent,
-                    timeoutMs: timeoutMs ?? config.values.network.timeoutMs,
+                    timeoutMs: options?.timeoutMs ?? config.values.network.timeoutMs,
+                    timeoutKey: options?.timeoutKey ?? "network.timeoutMs",
                 }),
             log: logTo(io, args),
         });

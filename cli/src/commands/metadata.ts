@@ -21,7 +21,16 @@ function ensureDeps(args: { readonly global: GlobalOptions }, ctx: CommandContex
         store: ctx.store(),
         paths: ctx.paths,
         config: ctx.config.values,
-        http: ctx.http({ timeoutMs: ctx.config.values.metadata.timeoutMs }),
+        http: {
+            metadata: ctx.http({
+                timeoutMs: ctx.config.values.metadata.timeoutMs,
+                timeoutKey: "metadata.timeoutMs",
+            }),
+            network: ctx.http({
+                timeoutMs: ctx.config.values.network.timeoutMs,
+                timeoutKey: "network.timeoutMs",
+            }),
+        },
         now: () => ctx.io.now(),
         log: ctx.log,
         offline: args.global.offline,

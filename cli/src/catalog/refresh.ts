@@ -75,8 +75,8 @@ export interface RefreshDeps {
     store: Store;
     paths: RuntimePaths;
     config: ConfigValues;
-    /** Downloads with its deadline already set. */
-    http: FetchLike;
+    /** A download client with the deadline chosen for this source. */
+    http: (source: DownloadedSource) => FetchLike;
     now: () => Date;
     log: (message: string) => void;
     /** What to download; both sources when omitted. The outcomes come back in this order. */
@@ -163,7 +163,10 @@ export function buildCatalog(compacted: SaltMetaMusicMetadataNextCompacted): Sal
 async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
     const core = toCoreConfig(deps.config);
     deps.log(`正在下载${SOURCE_LABELS.saltmeta}`);
-    const downloaded = await fetchSaltMetaCompacted({ config: core, fetch: deps.http });
+    const downloaded = await fetchSaltMetaCompacted({
+        config: core,
+        fetch: deps.http("saltmeta"),
+    });
     if (!downloaded.ok) throw saltMetaFailure(downloaded.failure, core.saltMetaUrl);
 
     const build = buildCatalog(downloaded.compacted);
@@ -182,7 +185,10 @@ async function refreshCollections(deps: RefreshDeps): Promise<SourceOutcome> {
     deps.log(`正在下载${SOURCE_LABELS["lxns-collections"]}`);
     let lists: LXNSCollectionLists;
     try {
-        lists = await fetchLXNSCollections({ config: core, fetch: deps.http });
+        lists = await fetchLXNSCollections({
+            config: core,
+            fetch: deps.http("lxns-collections"),
+        });
     } catch (error) {
         throw collectionsFailure(error, core.lxnsBaseUrl);
     }

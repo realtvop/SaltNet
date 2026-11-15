@@ -7,6 +7,7 @@ import type { FetchLike } from "@core/http";
 import type { ErrorCode } from "../errors";
 import type { Warning } from "../output/warning";
 import type { ResolvedConfig } from "../runtime/config";
+import type { TimeoutConfigKey } from "../runtime/http";
 import type { Io } from "../runtime/io";
 import type { RuntimePaths } from "../runtime/paths";
 import type { Store } from "../store/store";
@@ -279,10 +280,10 @@ export interface CommandContext {
     readonly store: () => Store;
     /**
      * `fetch` for shared/core: it adds the User-Agent and a deadline (`network.timeoutMs` unless
-     * `timeoutMs` says otherwise) and reports a failed connection as `NETWORK` and an unreadable
-     * answer as `UPSTREAM_ERROR`. A status that is not a success is left to the caller.
+     * an explicit deadline says otherwise) and reports a failed connection as `NETWORK` and an
+     * unreadable answer as `UPSTREAM_ERROR`. A status that is not a success is left to the caller.
      */
-    readonly http: (options?: { timeoutMs?: number }) => FetchLike;
+    readonly http: (options?: { timeoutMs: number; timeoutKey: TimeoutConfigKey }) => FetchLike;
     /**
      * Progress and diagnostics, one line each. They go to stderr when a person is watching
      * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's

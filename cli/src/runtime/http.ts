@@ -6,8 +6,14 @@
  * can carry a token in its query.
  */
 import type { FetchInit, FetchLike, FetchResponse } from "@core/http";
+import type { ConfigKey } from "./config";
 import type { HttpFetch } from "./io";
 import { CliError } from "../errors";
+
+export type TimeoutConfigKey = Extract<
+    ConfigKey,
+    "metadata.timeoutMs" | "network.timeoutMs" | "network.updateTimeoutMs"
+>;
 
 export interface HttpOptions {
     /** The real network in production; a test passes its own. */
@@ -15,6 +21,8 @@ export interface HttpOptions {
     userAgent: string;
     /** For the whole exchange, the body included. */
     timeoutMs: number;
+    /** The setting to name when this deadline expires. */
+    timeoutKey: TimeoutConfigKey;
 }
 
 /** Just the host, for messages. */
@@ -71,13 +79,17 @@ function networkError(
     host: string,
     error: unknown,
     timeoutMs: number,
+    timeoutKey: TimeoutConfigKey,
     phase: "request" | "body"
 ): CliError {
     if (isTimeout(error)) {
         return new CliError(
             "NETWORK",
             `请求 ${host} 超时（超过 ${formatDuration(timeoutMs)} 没有完成）`,
-            { cause: error }
+            {
+                fix: `网络较慢时可以调大 ${timeoutKey}，例如 saltnet config set ${timeoutKey} 60000`,
+                cause: error,
+            }
         );
     }
     const reason = reasonOf(error);
@@ -106,7 +118,7 @@ export function upstreamStatusError(url: string, status: number): CliError {
  * `upstreamStatusError` is there for the callers that turn it into a `CliError`.
  */
 export function createHttp(options: HttpOptions): FetchLike {
-    const { timeoutMs } = options;
+    const { timeoutMs, timeoutKey } = options;
 
     return async (input: string, init?: FetchInit): Promise<FetchResponse> => {
         const host = hostOf(input);
@@ -118,7 +130,7 @@ export function createHttp(options: HttpOptions): FetchLike {
                 signal: AbortSignal.timeout(timeoutMs),
             });
         } catch (error) {
-            throw networkError(host, error, timeoutMs, "request");
+            throw networkError(host, error, timeoutMs, timeoutKey, "request");
         }
 
         // The deadline also covers the body, which is where a slow server usually stalls.
@@ -126,7 +138,7 @@ export function createHttp(options: HttpOptions): FetchLike {
             try {
                 return await response.text();
             } catch (error) {
-                throw networkError(host, error, timeoutMs, "body");
+                throw networkError(host, error, timeoutMs, timeoutKey, "body");
             }
         };
 

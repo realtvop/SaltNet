@@ -20,7 +20,7 @@ import { createHttp } from "../../src/runtime/http";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { formatLocalTime } from "../../src/util/time";
-import { jsonResponse, mockFetch } from "../mockHttp";
+import { delayedRoute, jsonResponse, mockFetch } from "../mockHttp";
 import { useTempHome } from "../tempHome";
 
 const META_URL = "https://meta.test/saltmeta.json";
@@ -86,7 +86,13 @@ function createEnv(env: Record<string, string> = {}) {
     }).values;
 
     function call(
-        options: { now?: Date; offline?: boolean; network?: Record<string, Route> } = {}
+        options: {
+            now?: Date;
+            offline?: boolean;
+            network?: Record<string, Route>;
+            metadataTimeoutMs?: number;
+            networkTimeoutMs?: number;
+        } = {}
     ): Call {
         const fetch = mockFetch(options.network ?? routes());
         return {
@@ -95,7 +101,20 @@ function createEnv(env: Record<string, string> = {}) {
                 store,
                 paths,
                 config,
-                http: createHttp({ fetch, userAgent: "saltnet-cli/9.9.9", timeoutMs: 1000 }),
+                http: {
+                    metadata: createHttp({
+                        fetch,
+                        userAgent: "saltnet-cli/9.9.9",
+                        timeoutMs: options.metadataTimeoutMs ?? 1000,
+                        timeoutKey: "metadata.timeoutMs",
+                    }),
+                    network: createHttp({
+                        fetch,
+                        userAgent: "saltnet-cli/9.9.9",
+                        timeoutMs: options.networkTimeoutMs ?? 1000,
+                        timeoutKey: "network.timeoutMs",
+                    }),
+                },
                 now: () => options.now ?? NOW,
                 log: () => {},
                 offline: options.offline ?? false,
@@ -406,6 +425,10 @@ describe("while another process refreshes", () => {
 });
 
 describe("rows built by another version of the CLI", () => {
+    const SHORT_TIMEOUT_MS = 100;
+    const LONG_TIMEOUT_MS = 3000;
+    const DOWNLOAD_DELAY_MS = 400;
+
     /** What an older CLI would have left: another builder, and rows that are not to be trusted. */
     function spoil(env: ReturnType<typeof createEnv>): void {
         env.store.db.exec(
@@ -416,6 +439,19 @@ describe("rows built by another version of the CLI", () => {
         env.store.db.exec(
             "DELETE FROM collections WHERE kind IN ('title', 'icon', 'plate', 'frame')"
         );
+    }
+
+    function slowCatalogCall(env: ReturnType<typeof createEnv>): Call {
+        return env.call({
+            network: routes({
+                [META_URL]: delayedRoute(
+                    jsonResponse(getFixtureSaltMetaCompacted()),
+                    DOWNLOAD_DELAY_MS
+                ),
+            }),
+            metadataTimeoutMs: SHORT_TIMEOUT_MS,
+            networkTimeoutMs: LONG_TIMEOUT_MS,
+        });
     }
 
     it("are rebuilt from the snapshots without the network, keeping the time of the download", async () => {
@@ -470,6 +506,24 @@ describe("rows built by another version of the CLI", () => {
         expect(result.dataAsOf.catalog).toBe(formatLocalTime(NOW));
     });
 
+    it("use the short deadline after a stale snapshot rebuild", async () => {
+        const env = createEnv();
+        await env.prime(ago(30));
+        spoil(env);
+        const { deps, requests } = slowCatalogCall(env);
+
+        const result = await ensureMetadata(deps, ["catalog"]);
+
+        expect(urls(requests)).toEqual([META_URL]);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toMatchObject({ code: "STALE_METADATA" });
+        expect(result.dataAsOf.catalog).toBe(formatLocalTime(ago(30)));
+        expect(readMetaState(env.store, "saltmeta")).toMatchObject({
+            builder: CATALOG_BUILDER,
+            fetchedAt: ago(30).getTime(),
+        });
+    });
+
     it("are left to the download when the snapshot is missing", async () => {
         const env = createEnv();
         await env.prime(ago(2));
@@ -481,6 +535,42 @@ describe("rows built by another version of the CLI", () => {
 
         expect(urls(requests)).toEqual([META_URL]);
         expect(result.dataAsOf.catalog).toBe(formatLocalTime(NOW));
+    });
+
+    it("use the long deadline when the snapshot is missing", async () => {
+        const env = createEnv();
+        await env.prime(ago(2));
+        spoil(env);
+        rmSync(snapshotPath(env.paths, "saltmeta"));
+        const { deps, requests } = slowCatalogCall(env);
+
+        const result = await ensureMetadata(deps, ["catalog"]);
+
+        expect(urls(requests)).toEqual([META_URL]);
+        expect(result.warnings).toEqual([]);
+        expect(result.dataAsOf.catalog).toBe(formatLocalTime(NOW));
+        expect(readMetaState(env.store, "saltmeta")).toMatchObject({
+            builder: CATALOG_BUILDER,
+            fetchedAt: NOW.getTime(),
+        });
+    });
+
+    it("use the long deadline when the snapshot is broken", async () => {
+        const env = createEnv();
+        await env.prime(ago(2));
+        spoil(env);
+        writeFileSync(snapshotPath(env.paths, "saltmeta"), "not json at all");
+        const { deps, requests } = slowCatalogCall(env);
+
+        const result = await ensureMetadata(deps, ["catalog"]);
+
+        expect(urls(requests)).toEqual([META_URL]);
+        expect(result.warnings).toEqual([]);
+        expect(result.dataAsOf.catalog).toBe(formatLocalTime(NOW));
+        expect(readMetaState(env.store, "saltmeta")).toMatchObject({
+            builder: CATALOG_BUILDER,
+            fetchedAt: NOW.getTime(),
+        });
     });
 
     const document = (musics: unknown[]): string =>

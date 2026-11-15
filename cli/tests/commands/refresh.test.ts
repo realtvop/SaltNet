@@ -11,7 +11,7 @@ import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { formatLocalTime } from "../../src/util/time";
 import { createHarness, run } from "../harness";
-import { jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { delayedRoute, jsonResponse, mockFetch, textResponse } from "../mockHttp";
 import { useTempHome } from "../tempHome";
 
 const META_URL = "https://meta.test/saltmeta.json";
@@ -272,20 +272,47 @@ describe("when one source fails", () => {
         expect(json.error.message).not.toContain("saltmeta.json");
     });
 
-    it("gives up on a request that outlasts metadata.timeoutMs", async () => {
+    it("uses network.timeoutMs even when stored rows could be kept", async () => {
         const paths = makeHome();
-        const hang: Route = request =>
-            new Promise((_resolve, reject) => {
-                request.init?.signal?.addEventListener("abort", () =>
-                    reject(request.init?.signal?.reason)
-                );
-            });
-        const { code, json } = await refresh(paths, routes({ [META_URL]: hang }), {
-            env: { SALTNET_METADATA_TIMEOUT_MS: "100" },
-        });
+        await refresh(paths, routes(), { now: EARLIER });
+
+        const { code, json, requests } = await refresh(
+            paths,
+            routes({
+                [META_URL]: delayedRoute(jsonResponse(getFixtureSaltMetaCompacted()), 400),
+            }),
+            {
+                env: {
+                    SALTNET_METADATA_TIMEOUT_MS: "100",
+                    SALTNET_NETWORK_TIMEOUT_MS: "3000",
+                },
+            }
+        );
+
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+        expect(new Date(sourceOf(json, "saltmeta").fetchedAt).getTime()).toBe(NOW.getTime());
+        expect(requests.map(request => request.url)).toContain(META_URL);
+    });
+
+    it("names network.timeoutMs when its explicit refresh deadline expires", async () => {
+        const paths = makeHome();
+        const { code, json } = await refresh(
+            paths,
+            routes({
+                [META_URL]: delayedRoute(jsonResponse(getFixtureSaltMetaCompacted()), 400),
+            }),
+            {
+                env: { SALTNET_NETWORK_TIMEOUT_MS: "100" },
+            }
+        );
 
         expect(code).toBe(5);
-        expect(json.error).toMatchObject({ code: "NETWORK", retryable: true });
+        expect(json.error).toMatchObject({
+            code: "NETWORK",
+            retryable: true,
+            fix: expect.stringContaining("network.timeoutMs"),
+        });
         expect(json.error.message).toContain("meta.test 超时（超过 100 毫秒 没有完成）");
         expect(sourceOf(json, "lxns-collections")).toMatchObject({ ok: true });
     });

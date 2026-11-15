@@ -15,6 +15,7 @@
  *   with `OFFLINE_NO_CACHE` when `--offline` forbids it and `SYNC_IN_PROGRESS` when another
  *   process is downloading (nothing waits for it).
  */
+import type { FetchLike } from "@core/http";
 import type { SaltMetaMusicMetadataNextCompacted } from "@core/music/saltmeta";
 import type { Warning } from "../output/warning";
 import type { LoadedCollections, LoadedMusic } from "./load";
@@ -41,7 +42,9 @@ export const SOURCE_OF_KIND: Readonly<Record<MetadataKind, DownloadedSource>> = 
 
 export const HOUR_MS = 3_600_000;
 
-export interface EnsureDeps extends Omit<RefreshDeps, "sources"> {
+export interface EnsureDeps extends Omit<RefreshDeps, "http" | "sources"> {
+    /** The short fallback deadline and the normal deadline, selected per source after inspection. */
+    http: { readonly metadata: FetchLike; readonly network: FetchLike };
     /** `--offline`: nothing is downloaded, whatever the age of what is stored. */
     offline: boolean;
 }
@@ -168,7 +171,13 @@ async function refreshDue(
     now: Date
 ): Promise<Warning[]> {
     deps.log(`${labelsOf(due)}需要更新`);
-    const result = await refreshCatalog({ ...deps, sources: due.map(standing => standing.source) });
+    const standings = new Map(due.map(standing => [standing.source, standing]));
+    const result = await refreshCatalog({
+        ...deps,
+        sources: due.map(standing => standing.source),
+        http: source =>
+            standings.get(source)?.fetchedAt === undefined ? deps.http.network : deps.http.metadata,
+    });
 
     if (!result.refreshed) {
         const missing = due.filter(standing => standing.fetchedAt === undefined);

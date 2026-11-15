@@ -10,7 +10,12 @@ import { jsonResponse, mockFetch, textResponse } from "../mockHttp";
 const URL_WITH_TOKEN = "https://meta.example.com/data/v1.json?token=secret";
 
 function http(fetch: HttpFetch, timeoutMs = 5000) {
-    return createHttp({ fetch, userAgent: "saltnet-cli/1.2.3", timeoutMs });
+    return createHttp({
+        fetch,
+        userAgent: "saltnet-cli/1.2.3",
+        timeoutMs,
+        timeoutKey: "network.timeoutMs",
+    });
 }
 
 /** An error the way Node's `fetch` reports a connection that failed. */
@@ -18,10 +23,6 @@ function fetchFailed(code: string): Error {
     return Object.assign(new TypeError("fetch failed"), {
         cause: Object.assign(new Error(`connect ${code} 127.0.0.1:443`), { code }),
     });
-}
-
-function named(name: string, message: string): Error {
-    return Object.assign(new Error(message), { name });
 }
 
 /** Resolves with what `work` rejects with, so a test can inspect the error. */
@@ -105,6 +106,7 @@ describe("network failures", () => {
         expect(error.code).toBe("NETWORK");
         expect(error.exitCode).toBe(5);
         expect(error.retryable).toBe(true);
+        expect(error.fix).toBeUndefined();
         expect(error.message).toBe("无法连接到 meta.example.com（ECONNREFUSED）");
     });
 
@@ -132,6 +134,7 @@ describe("network failures", () => {
         const error = await failureOf(http(hung, 20)(URL_WITH_TOKEN));
         expect(error.code).toBe("NETWORK");
         expect(error.message).toBe("请求 meta.example.com 超时（超过 20 毫秒 没有完成）");
+        expect(error.fix).toContain("network.timeoutMs");
     });
 
     it("counts the timeouts of undici as the deadline too", async () => {
@@ -144,19 +147,36 @@ describe("network failures", () => {
         expect(error.message).toBe("请求 meta.example.com 超时（超过 8 秒 没有完成）");
     });
 
-    it("reports a body that times out while it is read", async () => {
-        const response: FetchResponse = {
+    it("reports the configured deadline when the body waits for the request signal", async () => {
+        const fetch: HttpFetch = async (_url, init) => ({
             ok: true,
             status: 200,
-            text: async () =>
-                Promise.reject(named("TimeoutError", "The operation was aborted due to timeout")),
-            json: async () => Promise.reject(named("TimeoutError", "unused")),
-        };
-        const read = (await http(async () => response, 1500)(URL_WITH_TOKEN)).json();
+            text: () =>
+                new Promise((_resolve, reject) => {
+                    const { signal } = init ?? {};
+                    const onAbort = () => reject(signal?.reason);
+                    if (signal?.aborted) onAbort();
+                    else signal?.addEventListener("abort", onAbort, { once: true });
+                }),
+            json: async () => {
+                throw new Error("unused");
+            },
+        });
+        const request = createHttp({
+            fetch,
+            userAgent: "saltnet-cli/1.2.3",
+            timeoutMs: 20,
+            timeoutKey: "metadata.timeoutMs",
+        });
+        const read = (await request(URL_WITH_TOKEN)).json();
 
         const error = await failureOf(read);
         expect(error.code).toBe("NETWORK");
-        expect(error.message).toBe("请求 meta.example.com 超时（超过 1.5 秒 没有完成）");
+        expect(error.retryable).toBe(true);
+        expect(error.message).toBe("请求 meta.example.com 超时（超过 20 毫秒 没有完成）");
+        expect(error.fix).toBe(
+            "网络较慢时可以调大 metadata.timeoutMs，例如 saltnet config set metadata.timeoutMs 60000"
+        );
     });
 
     it("reports a body that breaks off while it is read", async () => {
@@ -215,9 +235,9 @@ describe("a command's http", () => {
             options: { slow: { kind: "boolean", description: "把超时设得很短" } },
         },
         async (args, ctx) => {
-            const response = await ctx.http(args.options.slow ? { timeoutMs: 15 } : undefined)(
-                "https://example.com/ping"
-            );
+            const response = await ctx.http(
+                args.options.slow ? { timeoutMs: 15, timeoutKey: "metadata.timeoutMs" } : undefined
+            )("https://example.com/ping");
             return { data: await response.json() };
         }
     );
@@ -261,7 +281,10 @@ describe("a command's http", () => {
         const harness = createHarness({ fetch: hung });
 
         expect(await run(registry, harness, "ping", "--slow")).toBe(5);
-        expect(JSON.parse(harness.stdout()).error.message).toContain("超时");
+        expect(JSON.parse(harness.stdout()).error).toMatchObject({
+            message: expect.stringContaining("超时"),
+            fix: expect.stringContaining("metadata.timeoutMs"),
+        });
     });
 
     it("has no network at all unless the test brings one", async () => {

@@ -173,7 +173,7 @@ export const CONFIG_DEFINITIONS: readonly ConfigDefinition[] = [
     {
         key: "metadata.timeoutMs",
         kind: { type: "integer", min: 100, max: 600000 },
-        description: "刷新曲库和收藏品时每个请求的超时（毫秒）",
+        description: "自动刷新已有缓存可回退的过期曲库和收藏品时，每个请求的超时（毫秒）",
         defaultValue: fixed(8000),
     },
     {
@@ -185,7 +185,8 @@ export const CONFIG_DEFINITIONS: readonly ConfigDefinition[] = [
     {
         key: "network.timeoutMs",
         kind: { type: "integer", min: 100, max: 600000 },
-        description: "普通请求的超时（毫秒）",
+        description:
+            "普通请求、没有可用缓存的元数据下载和 refresh 强制下载时，每个请求的超时（毫秒）",
         defaultValue: fixed(15000),
     },
     {

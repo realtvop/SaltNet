@@ -25,6 +25,32 @@ export type Route =
     | FetchResponse
     | ((request: RecordedRequest) => FetchResponse | Promise<FetchResponse>);
 
+/** Answers after a delay, rejecting like fetch when the request's deadline aborts first. */
+export function delayedRoute(response: FetchResponse, delayMs: number): Route {
+    return request =>
+        new Promise((resolve, reject) => {
+            const { signal } = request.init ?? {};
+            const aborted = () =>
+                reject(
+                    signal?.reason ?? Object.assign(new Error("aborted"), { name: "AbortError" })
+                );
+            if (signal?.aborted) {
+                aborted();
+                return;
+            }
+            let timer: ReturnType<typeof setTimeout>;
+            const onAbort = () => {
+                clearTimeout(timer);
+                aborted();
+            };
+            timer = setTimeout(() => {
+                signal?.removeEventListener("abort", onAbort);
+                resolve(response);
+            }, delayMs);
+            signal?.addEventListener("abort", onAbort, { once: true });
+        });
+}
+
 export interface MockFetch extends HttpFetch {
     /** Every request made so far, in order. */
     readonly requests: RecordedRequest[];

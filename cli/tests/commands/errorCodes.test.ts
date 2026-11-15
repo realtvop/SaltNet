@@ -108,8 +108,10 @@ async function withBusyUnmigratedDatabase(line: string): Promise<RunResult> {
 }
 
 describe("published command error codes", () => {
-    it("cover failures from every example in offline, network, upstream, fixture, and lock states", async () => {
-        for (const command of registry.commands) {
+    // One test per command: all of them together run hundreds of commands, too many for one
+    // test's deadline on a busy machine.
+    for (const command of registry.commands) {
+        it(`${command.spec.name}: every failure of its examples in offline, network, upstream, fixture, and lock states is published`, async () => {
             const examples = command.spec.examples ?? [];
             expect(examples.length, `${command.spec.name} needs an example`).toBeGreaterThan(0);
             const allowed = commandErrorCodes(command.spec);
@@ -162,8 +164,8 @@ describe("published command error codes", () => {
                     ).toBe(true);
                 }
             }
-        }
-    });
+        });
+    }
 
     it("actually reaches the offline, network, and lock errors", async () => {
         const offline = await runLine(makeHome(), "charts --level 13+ --diff mas", {

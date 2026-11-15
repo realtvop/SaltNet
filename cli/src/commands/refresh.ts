@@ -102,7 +102,11 @@ export const refresh = defineCommand(
             store: ctx.store(),
             paths: ctx.paths,
             config: ctx.config.values,
-            http: ctx.http({ timeoutMs: ctx.config.values.metadata.timeoutMs }),
+            http: () =>
+                ctx.http({
+                    timeoutMs: ctx.config.values.network.timeoutMs,
+                    timeoutKey: "network.timeoutMs",
+                }),
             now: () => ctx.io.now(),
             log: ctx.log,
         });
@@ -119,6 +123,7 @@ export const refresh = defineCommand(
             );
             throw new CliError(first.error.code, `刷新失败，${lines.join("；")}`, {
                 retryable: first.error.retryable,
+                fix: first.error.fix,
                 cause: first.error,
                 extra: { sources },
             });
