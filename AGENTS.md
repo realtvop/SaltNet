@@ -88,10 +88,14 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   `cli/tests/output/` only, so a new source directory of that name must be added there too.
 - `pnpm build` type-checks, builds the frontend, and generates build metadata.
 - `pnpm preview` serves the production frontend build locally.
-- `pnpm build:cli` bundles the CLI into `cli/dist/saltnet.mjs`; `pnpm test:cli` runs its fast unit
-  suite. `pnpm test:cli-e2e` builds its own bundle into a temporary directory and runs every guide
-  example against fixed data without network access. When developing or testing the CLI, point
-  `SALTNET_HOME` at a temporary directory so the real `~/.saltnet` is never read or written.
+- `pnpm build:cli` bundles the CLI into `cli/dist/saltnet.mjs` (run it with
+  `node cli/dist/saltnet.mjs <command>`; `saltnet guide` prints the rules, commands, error codes and
+  views an agent needs, and `saltnet schema` describes the same machine-readably); `pnpm test:cli`
+  runs its fast unit suite. `pnpm test:cli-e2e` builds its own bundle into a temporary directory and
+  runs every guide example against fixed data without network access. When developing or testing
+  the CLI, point `SALTNET_HOME` at a temporary directory so the real `~/.saltnet` is never read or
+  written. The bundle bakes in the web app's `.env` defaults, so do not paste the output of
+  `config list` or `config get` anywhere public.
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.

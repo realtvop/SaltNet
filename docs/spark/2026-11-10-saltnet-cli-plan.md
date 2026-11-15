@@ -153,7 +153,7 @@
 - [x] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
 - [x] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
 - [x] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
-- [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
+- [x] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
 
 ### P2 本地成绩
 
@@ -190,7 +190,7 @@
 - [ ] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
 - [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
-- [ ] P2-27 `docs: update agents guide for cli phase 2`；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
+- [ ] P2-27 `docs: update agents guide for cli phase 2`；把 `AGENTS.md` 里 `cli/` 那一大段拆成分条（第 50 条）；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
 
 ### P3 同步和绑定
 
@@ -674,3 +674,10 @@
     - **委托的经过**：
         - Codex（GPT 5.6 Sol）写的，对 brief 没有异议。审查（GPT 6.1 Sol）没有意见；它的沙盒跑不了测试，测试和真实数据的对照是我跑的。
         - 破坏检查：难度改成 INNER JOIN、歌和难度的排序对调、`fc` 读成 `fs`、条件序号加一，4 处都被发现。去掉 `MATERIALIZED` 结果不变、只影响速度，测试不管速度，这一处没被发现是预期的。
+50. **P1-19：第一阶段在真实数据上的验证（2026-11-16）**：
+    - **真实刷新**：在临时 `SALTNET_HOME` 里用默认设置跑 `saltnet refresh`，整条命令 4.6 秒，stderr 没有输出。SaltMeta 有 1440 首歌、5702 张谱、20 个版本，合并了上游重复列出的 2 首宴谱；落雪收藏品有称号 3032、头像 1059、名牌板 400、背景 353。之后 `status` 两个来源都是 fresh。P1-18b 以前，同样的下载在 8 秒处超时过一次（那次 curl 用了 7 秒）。
+    - **`v_charts` 与命令的输出对照**（第 41 条要留意的 (b)）：在真实数据上，`charts` 的 5702 张谱与 `v_charts` 逐列一致；抽查的 91 张谱和 4 张宴谱，`chart` 与 `v_charts` 也一致。SQLite 的 `round`、`trim` 和 JavaScript 在这些数据上没有差别。宴谱在 `v_charts` 里写成大写的 `UTAGE`。
+    - **复制视图的耗时**（第 41 条 (a)）：整条 `sql` 命令（含启动 Node）的中位数，`v_charts` 约 0.11 秒，`v_course_tracks` 约 0.06 秒，`v_collection_targets` 原来 1.85 秒，P1-19a 以后 0.33 秒。
+    - **留下的文件**（第 41 条 (c)）：每条命令结束后，数据目录里只有 `saltnet.db` 和 `cache/` 里的两个原始文件，没有 `-wal`、`-shm`。只读 `ATTACH` 不留文件，也不改数据库文件的修改时间。
+    - **没法在这里验证的**（第 41 条 (d)）：Windows 路径的 `file:` 地址。写进最终报告。
+    - **`AGENTS.md`**：写明怎么运行打包产物、代理从 `saltnet guide` 和 `saltnet schema` 开始，以及 `config list`/`config get` 的输出带着 `.env` 的默认值、不要贴到公开的地方。`cli/` 那一段已经很长，拆成分条留到 P2-27：P2-1、P2-2 的补丁还没提交，它们改的正是这一段前面几行，现在拆会让补丁对不上。
