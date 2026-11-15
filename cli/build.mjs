@@ -1,4 +1,5 @@
-// Bundles the CLI and the parts of shared/core it uses into one file, cli/dist/saltnet.mjs.
+// Bundles the CLI and the parts of shared/core it uses into one file, cli/dist/saltnet.mjs by
+// default, or the path passed to --outfile.
 //
 // Every invocation of the CLI is a new process, so startup cost matters: one file means one read
 // and no module resolution at run time. The repository uses enums and the `@core/*` alias, which
@@ -7,7 +8,7 @@
 // Defaults for the backend, render service and LXNS client are read from the same `.env` files the
 // web app is built from (see build-defaults.mjs) and compiled into the bundle. They can be
 // overridden at run time (see src/runtime/config.ts). Their values are never printed.
-import { chmodSync, readFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -20,7 +21,15 @@ const repoRoot = path.resolve(cliDir, "..");
 const buildDefaults = readBuildDefaults(repoRoot, process.env);
 
 const pkg = JSON.parse(readFileSync(path.join(cliDir, "package.json"), "utf8"));
-const outfile = path.join(cliDir, "dist", "saltnet.mjs");
+const outfileIndex = process.argv.indexOf("--outfile");
+if (outfileIndex !== -1 && process.argv[outfileIndex + 1] === undefined) {
+    throw new Error("--outfile needs a path");
+}
+const outfile =
+    outfileIndex === -1
+        ? path.join(cliDir, "dist", "saltnet.mjs")
+        : path.resolve(process.cwd(), process.argv[outfileIndex + 1]);
+mkdirSync(path.dirname(outfile), { recursive: true });
 
 await build({
     entryPoints: [path.join(cliDir, "src", "main.ts")],

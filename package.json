@@ -20,6 +20,7 @@
         "test:recent": "vitest run shared/core/chart/recent.test.ts",
         "test:build-info": "node --test script/generateBuildInfo.test.cjs",
         "test:cli": "pnpm --filter saltnet-cli test",
+        "test:cli-e2e": "pnpm --filter saltnet-cli test:e2e",
         "test:music-search": "vitest run shared/core/music/search.test.ts",
         "test:music-data": "vitest run shared/core/music/fetch.test.ts shared/core/music/cache.test.ts shared/core/music/duplicates.test.ts shared/core/fixtures/saltmeta.test.ts shared/core/fixtures/lxns.test.ts",
         "test:query": "vitest run shared/core/query/songs.test.ts shared/core/query/search.test.ts",

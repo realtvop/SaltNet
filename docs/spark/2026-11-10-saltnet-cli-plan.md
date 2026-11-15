@@ -150,7 +150,7 @@
 - [x] P1-16b `feat(cli): describe command data with JSON Schemas`：每条命令的 `data` 都有 JSON Schema（`CommandSpec.dataSchema`），用 `src/output/schema.ts` 的构造函数拼，共用的形状在 `src/catalog/schemas.ts`；测试用 Ajv 检查每条命令真实输出是否符合，注册表测试要求每条命令都有（设计 4.7 的「`data` 的 JSON Schema」，原计划放在 P1-17 里一起做，见第 42 条）
 - [x] P1-16c `build(lint): lint the cli output directories`：antfu 的默认忽略名单里有 `**/output`，所以 `pnpm lint` 一直没看过 `cli/src/output/` 和 `cli/tests/output/`（用 `eslint --no-ignore` 看是干净的）；改配置让它们进来，并删掉 `AGENTS.md` 里 `pnpm lint` 一条后面的提醒（见第 42 条）〔简单〕
 - [x] P1-17 `feat(cli): add schema and guide commands`：从注册表生成；`schema <命令>` 的 `data` 部分直接用每条命令的 `dataSchema`（第 42 条）；`schema --views` 列出 `PUBLIC_VIEWS` 里每个视图的说明、依赖的来源和各列，并给出 `VIEWS_VERSION`（`sql` 的说明和错误的 `fix` 已经指向它，见第 41 条）〔新〕
-- [ ] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
+- [x] P1-18 `test(cli): add offline end-to-end test on the bundled artifact`：灌入固定数据，不联网跑一遍指南里的示例；接进 CI〔新〕
 - [ ] P1-18b `fix(cli): give metadata downloads time when there is nothing to fall back on`：8 秒的 `metadata.timeoutMs` 只用在有缓存可以退回的自动刷新；第一次下载、存的数据用不了、显式的 `refresh` 改用 `network.timeoutMs`；超时的 `NETWORK` 错误在 `fix` 里写明该调大哪个设置（第一次真实刷新 2 MB 的 SaltMeta 用了 7 秒，8 秒就报错）〔新〕
 - [ ] P1-19a `perf(cli): parse each collection condition once in v_collection_targets`：这个视图每一行都把整条条件（含几千首歌）的 JSON 重新解析一遍，真实数据上一次 `sql` 要 1.9 秒；改成每条条件只解析一次，行、列和顺序都不变，`VIEWS_VERSION` 不变〔新〕
 - [ ] P1-19 `docs: update agents guide for cli phase 1`；用真实的公开接口做一次真实刷新来验证（临时 `SALTNET_HOME`）；顺带在真实数据上对照 `v_charts` 与 `chart` 的结果、量一下 `sql` 复制视图的耗时、看一下只读 `ATTACH` 有没有留下多余文件（见第 41 条）〔协调〕
@@ -619,3 +619,27 @@
         - 破坏检查：16 处改动起初发现了 15 处，漏掉的 `command: null` 我补了测试。补测试以后又试了 3 处，`status` 去掉 `DB_LOCKED` 没被发现：WAL 模式下另一个连接的写锁不挡读。我加了「还要迁移时被写锁住」这种情形，最后全部被发现。
     - **协调方式改了**：做这一步时用户指出，协调者不该通读工具写的补丁，太浪费。流程改成只看汇报和文件列表、自己跑检查、读代码交给审查（`b7c2c48`）。这一步的主体补丁是改流程之前通读的；补测试的补丁没有通读，只看了汇报，跑了测试和破坏检查。
     - **并行**：这一步收尾时，P1-18、P1-18b、P1-19a 已经各自在 Codex 的快照里开工，快照里带着这一步未提交的改动。
+46. **P1-18 的实现（打包产物的离线端到端测试）（2026-11-16）**：
+    - **怎么隔离**：`cli/e2e/bundle.test.ts` 用 `build.mjs --outfile` 把产物写进临时目录，不碰 `cli/dist/`。构建时五个 `VITE_*` 变量都填编造的 `.invalid` 值；进程变量优先于 `.env` 文件，空值也算，所以开发者机器上的真实值进不了这个产物。子进程只继承 `PATH`、`TMPDIR` 等少数变量，`HOME` 和 `SALTNET_HOME` 都是临时目录，`TZ=Asia/Shanghai`。每个子进程最多跑 60 秒：`spawnSync` 会卡住事件循环，Vitest 自己的超时管不了。
+    - **网络**：`--import` 预加载 `e2e/fetch-preload.mjs`，把 `fetch` 换掉，不开端口。`serve` 模式用固定数据回答两个公开元数据地址；`deny` 模式拒绝一切请求并记日志，测试结束时日志必须是空的。
+    - **步骤**：
+        - 先读 `schema` 公开的外层结构 schema 和每条命令的 `data` schema。之后每个成功的 JSON 输出，都整体对照外层结构的 schema。
+        - 用 `config list` 确认五个构建默认值编进了产物：五项的 `default` 都是编造的值；没被环境变量覆盖的两项，`source` 是 `build`。
+        - 用产物自己的 `refresh` 灌数据。
+        - 查第一阶段的验收标准：`status` 两个来源都是 fresh；`charts --level 13+ --diff mas` 离线可用，结果都是 13+ 的 MASTER；`search 39` 离线可用，第一个是曲目 146「39」，按标题找到。三者的 `data` 都要合 schema。
+        - 把 `guide` 里的每条示例放在种子数据的一份副本上跑一遍。示例从 bash 代码块里解析，条数要和注册表对得上。`refresh` 的示例联网（`serve`），其余都加 `--offline`。
+    - **每条示例的要求**：
+        - 退出码都是 0。
+        - JSON 输出：`command` 对，`data` 合这条命令的 schema。
+        - TSV 输出：和同一条命令的 JSON 结果逐格对比，表头等于 `--fields`。投影过的 `data` 不完整，所以这时只对照外层结构的 schema。stderr 只允许 `# ` 开头的注释行，因为 TSV 把 `meta` 和警告写到 stderr（设计 4.2）。
+        - 其他格式的 stderr 必须是空的，所以 Node 的实验警告之类会被发现。
+    - **改了一条示例**：`charts --plate 熊華極 --diff mas` 改成 `charts --plate 真極 --diff mas`，因为固定数据里没有熊華極。
+    - **接线**：
+        - `cli` 加了 `test:e2e`，根目录加了 `test:cli-e2e`；`verify.sh` 跑根目录的每个 `test:*`，自然包括它。
+        - CI 加了两步，`pnpm test:cli` 和 `pnpm test:cli-e2e`。
+        - `eslint-suppressions.json` 多了 5 条：工作流的 `yaml/indent` 21→25，根 `package.json` 的 `jsonc/indent` 57→58。这两个文件原来就有这条规则的遗留问题，新行沿用文件原来的缩进。
+        - 整个测试约 5.5 秒。
+    - **委托的经过**：
+        - Codex（GPT 5.6 Sol）写的。`tsc` 干净，1420 个单元测试和端到端测试都通过。它指出 brief 有两处做不到：TSV 的 stderr 不可能是空的；CI 加步骤必然增加工作流的 suppression。都照它说的办。
+        - 审查（GPT 6.1 Sol）提了 5 条，都核实过，由我改：子进程没有超时；没验证构建默认值编进了产物；成功的外层结构只查了 `v` 和 `ok`；`search 39` 没查 `data`；TSV 输出是什么都能通过。
+        - 破坏检查：把一条示例改成不存在的牌子、TSV 输出换成 `broken`、去掉构建默认值的 `define`、`search` 返回空列表、外层结构去掉 `warnings`，五处都被发现。

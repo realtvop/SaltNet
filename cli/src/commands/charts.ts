@@ -145,7 +145,7 @@ export const charts = defineCommand(
                 description: "紫谱按版本分组，每个版本看三张",
             },
             { command: "charts --course 十段", description: "十段的四首曲目，按出场顺序" },
-            { command: "charts --plate 熊華極 --diff mas", description: "熊華極要求的紫谱" },
+            { command: "charts --plate 真極 --diff mas", description: "真極要求的紫谱" },
             { command: "charts --gate 蓝门 --diff mas", description: "蓝门曲池里歌的紫谱" },
         ],
         errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],

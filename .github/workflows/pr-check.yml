@@ -29,3 +29,9 @@ jobs:
 
             - name: Run type check and prettier check
               run: pnpm run check
+
+            - name: Run CLI unit tests
+              run: pnpm test:cli
+
+            - name: Run CLI end-to-end tests
+              run: pnpm test:cli-e2e

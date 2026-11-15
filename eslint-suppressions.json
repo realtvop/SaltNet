@@ -14,7 +14,7 @@
   },
   ".github/workflows/pr-check.yml": {
     "yaml/indent": {
-      "count": 21
+      "count": 25
     }
   },
   ".vscode/extensions.json": {
@@ -58,7 +58,7 @@
   },
   "package.json": {
     "jsonc/indent": {
-      "count": 57
+      "count": 58
     },
     "jsonc/sort-keys": {
       "count": 2
