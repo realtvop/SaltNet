@@ -35,8 +35,12 @@ _snapshot_init() {
 # Snapshot of the project as it is on disk right now: every file git knows (tracked, or untracked
 # and not ignored), uncommitted work included, `.env*` left out. `base` is that state. Used to hand
 # a task to a tool that writes code: whatever it changes shows up as the difference from `base`.
+#
+# SNAPSHOT_PATCHES (absolute paths, separated by colons) are applied on top before `base` is made:
+# patches that are reviewed but not committed yet, so a task can start from the state an earlier
+# step will leave (P2-2 on top of P2-1's move) while the real tree still waits for other commits.
 snapshot_worktree() {   # $1 = destination, wiped first
-    local dest=$1
+    local dest=$1 p
     rm -rf "$dest"; mkdir -p "$dest"
     (
         cd "$REPO" || exit 2
@@ -44,6 +48,10 @@ snapshot_worktree() {   # $1 = destination, wiped first
             if [ -e "$f" ]; then printf '%s\0' "$f"; fi
         done | _not_env | rsync -a --from0 --files-from=- "$REPO/" "$dest/"
     ) || return 2
+    for p in ${(s.:.)${SNAPSHOT_PATCHES:-}}; do
+        ( cd "$dest" && git apply --whitespace=nowarn "$p" ) || { echo "cannot apply $p" >&2; return 2; }
+        echo "applied $p"
+    done
     _snapshot_init "$dest"
 }
 
