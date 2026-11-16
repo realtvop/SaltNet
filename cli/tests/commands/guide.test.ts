@@ -71,7 +71,7 @@ describe("guide command", () => {
     it("omits empty categories", async () => {
         const { stdout } = await commandIn(makeHome(), "guide", []);
         expect(stdout).not.toContain("### 成绩");
-        expect(stdout).not.toContain("### 用户、同步、账号");
+        expect(stdout).toContain("### 用户、同步、账号");
     });
 
     it("formats a made-up command and escapes Markdown table cells", () => {

@@ -13,6 +13,7 @@ import { search } from "./search";
 import { song } from "./song";
 import { sql } from "./sql";
 import { status } from "./status";
+import { userAdd, userDefault, userEdit, userList, userRemove, userShow } from "./user";
 
 /** Every command, in the order `--help` lists them within a category. */
 export const COMMANDS: readonly CommandDefinition[] = [
@@ -25,6 +26,12 @@ export const COMMANDS: readonly CommandDefinition[] = [
     courseList,
     courseShow,
     kaleidxscope,
+    userList,
+    userShow,
+    userAdd,
+    userEdit,
+    userRemove,
+    userDefault,
     refresh,
     status,
     configList,
@@ -41,6 +48,7 @@ export const COMMAND_GROUPS: Readonly<Record<string, string>> = {
     collection: "收藏品：列表和详情",
     config: "设置：查看和修改 config.json",
     course: "段位：列表和详情",
+    user: "用户：查看和管理本地用户",
 };
 
 export function createRegistry(): Registry {

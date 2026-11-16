@@ -262,6 +262,18 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 | `sync`                                    | 更新成绩。`--all` 和网页端的「全部更新」一样，跳过开了「手动更新」的用户（见 5.1） | 更新按钮 |
 | `ingame check-login/clear-tickets/backup` | 查登录状态、清理非法倍券、导出游戏格式的备份                                       | 用户菜单 |
 
+`user list` 的用户行也是 `show`、`add`、`edit`、`remove` 和 `default` 复用的基础结构：
+
+- `index`、`uid`、`name`（显示名）、`remark`
+- `playerName`、`rating`、`scoresUpdatedAt`（从上次更新的数据取得，没有时是 null）
+- `manualUpdate`
+- `inGame: {id, name, enabled, fastUpdate}`、`lxns: {id, name} | null`、
+  `divingFish: {name}`
+
+这些绑定结构只说明非凭据状态，不输出 token。`user show` 再加 `counts`，分别统计详细成绩、
+B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remove` 的预览使用同一个详情结构；
+确认成功后再加 `remainingUsers`。`user default` 再加 `previousIndex`。
+
 网页端把倍券查询注释掉了，CLI 也不做。
 
 **收藏夹、数据管理、自描述**
@@ -276,6 +288,11 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 | `sql <查询>`                               | 在只读视图上执行 SQL                                                                                                                       |
 | `schema [命令]`                            | 以机器可读的格式说明命令、参数、错误码和视图（见 4.7）                                                                                     |
 | `guide`                                    | 给 agent 的使用指南（见 6.1）                                                                                                              |
+
+`status.users` 包含 `staleDays`（设置 `scores.staleDays`）和按当前用户顺序排列的 `items`。
+每项有 `index`、`uid`、`name`、`scoresUpdatedAt` 和 `scoresState`；从未更新是 `missing`，
+未达到 `staleDays` 是 `fresh`，达到或超过它是 `stale`。数据库不存在时 `items` 为空，且
+`status` 仍然不创建数据目录或数据库。
 
 ### 3.3 `charts` 的参数
 
@@ -616,6 +633,11 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 - 确认码不对或已失效时，和没带确认码一样，返回退出码 6 和新的预览。
 - `CONFIRMATION_REQUIRED` 的 error 包含 `preview`、`confirmationCode`、`codeRejected`，以及在 `fix` 里的完整确认命令；`codeRejected` 说明这次是否传了错误或已失效的码。
 - 预览不读 stdin，所以不会白白消耗二维码。唯一的例外是 `user bind <用户> ingame --qr -`：它得先查出游戏 id 才知道要不要确认，而查 id 不登录账号（见 5.2）。
+
+`user remove` 的确认状态包含 uid、当时的 index、显示名、成绩更新时间、各子表行数，以及
+所有待删除数据库行的内部摘要；同步、编辑、重排或任何待删除内容变化后都要重新预览。
+`error.fix` 总是用稳定的 uid 再指向这个用户；uid 以 `-` 开头时写成
+`user remove -- <uid>`，确认码仍插在 `--` 前面。
 
 **写文件**：`export`、`ingame backup`、`b50 --image` 遇到同名文件时返回 `FILE_EXISTS`，加 `--overwrite` 才会覆盖。
 

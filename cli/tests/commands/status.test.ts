@@ -31,6 +31,16 @@ interface StatusData {
         catalog: StatusCatalog;
         collections: StatusCatalog;
     };
+    users: {
+        staleDays: number;
+        items: {
+            index: number;
+            uid: string;
+            name: string;
+            scoresUpdatedAt: string | null;
+            scoresState: string;
+        }[];
+    };
     mergedDuplicates: { id: number; title: string; mergedTitles: string[] }[];
 }
 
@@ -91,6 +101,7 @@ describe("status command", () => {
                     counts: null,
                 },
             },
+            users: { staleDays: 3, items: [] },
             mergedDuplicates: [],
         });
         expect(res.json.meta).toEqual({ dataAsOf: {} });
@@ -100,6 +111,7 @@ describe("status command", () => {
             "home",
             "database",
             "metadata",
+            "users",
             "mergedDuplicates",
         ]);
         expect(Object.keys(res.json.data.metadata)).toEqual([

@@ -179,7 +179,7 @@
 - [x] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 4（原写迁移 2，见第 62 条）；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`、`v_user_characters`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）〔新〕
 - [x] P2-13 `feat(cli): add user repository on top of the store`〔新〕
 - [x] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
-- [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
+- [x] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
 - [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
 - [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
 - [ ] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
@@ -793,3 +793,8 @@
     - 一处行为上的差别，保留：没设 `VITE_API_URL` 时，原来的模板字符串写出 `undefined/getQRInfo`，现在 `resolveCoreConfig` 把它当成空字符串，写出 `/getQRInfo`。只有配错的构建会遇到，两种请求都会失败，然后换备用地址。
     - 测试：我补了一个用例：`postAPIJSON` 成功时只请求一次主地址，请求体照原样。改动检查 34 处，33 处被发现；没被发现的一处等价：判断上游错误时去掉「是对象」的检查，JSON 读出来的非 null 原始值没有 `error` 属性，结果一样。
     - 按决定 66 不单独送审，并入 P3 的整体审查。网页端的请求和日志由 `test:integrations` 里的包装测试比对；没有在浏览器里对真实后端试（绑定和更新要账号凭据）。
+69. **P2-15 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：`user list/show/add/edit/remove/default`（`cli/src/commands/user.ts`）；用户行和详情的形状（`cli/src/users/view.ts`）；`status` 加 `users`，给出每个用户的成绩更新时间和 `fresh`、`stale`、`missing`（到 `scores.staleDays` 那一刻就算 `stale`，和曲库的边界一样）；`repository.ts` 加各表行数（`readUserCounts`）和删除确认用的内容摘要（`readUserRemovalFingerprint`：`users` 这一行和六张子表里这个用户的全部行一起做 SHA-256）。
+    - 它自己定下的，我都同意：布尔选项加了可选的三态（`optional: true` 时没给就是 `undefined`，描述里的默认值是 `null`，帮助里写成 `--[no-]manual-update`），只有 `user edit --[no-]manual-update` 用，别的开关不变；纯数字的引用照旧先当序号，但带 `--yes` 的确认命令里 uid 精确相等优先，因为确认命令写的是 uid，纯数字的 uid 会和序号撞上；确认码除了计划写的几项还绑定内容摘要，所以只改了 `manualUpdate`，或者成绩改了而行数没变，旧码也失效；新用户的形状照网页端的 `handleUserSave`，所以 `lxns` 是 `{ id: null, name: null }` 而不是 `null`；字段名 `status.users.items`、`remainingUsers`、`previousIndex` 写进了设计文档；删除成功时返回预览里的详情加上 `remainingUsers`；备注保留首尾空格，空字符串或全是空白报 `USAGE`。
+    - 测试：改动检查 39 处，第一次 24 处被发现。没被发现的 15 处由 Gemini 补测试（只改 `cli/tests/`）：`user edit` 保留 `settings` 里不认识的键；`inGame.fastUpdate` 是每个用户自己的值；每张表行数都不同的用户，`user show` 和删除预览的 `counts` 逐项相等；六张子表各原地改一行（行数不变）后旧码被拒、用户还在，什么都不改时旧码能删；可选开关的描述和帮助文字。补完再跑这 15 处，13 处被发现；剩下 2 处等价：确认状态去掉 `counts`（内容摘要已经覆盖各表的行），`target` 去掉 uid（状态里有 `uid`）。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。只动了 CLI，网页端没有变化。

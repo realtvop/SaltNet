@@ -3,6 +3,7 @@ import type { ComboStatus, SyncStatus } from "@core/mai/types";
 import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
 import type { User } from "@core/user/type";
 import type { Store } from "../store/store";
+import { createHash } from "node:crypto";
 import { getUserDisplayName } from "@core/user/type";
 import { loadMusic } from "../catalog/load";
 import { buildUserRows } from "./rows";
@@ -54,6 +55,15 @@ export interface UserListRow {
     hasItems: boolean;
     hasCharacters: boolean;
     hasRatingHistory: boolean;
+}
+
+export interface UserCounts {
+    scores: number;
+    b50: number;
+    items: number;
+    characters: number;
+    ratingHistory: number;
+    scoreEvents: number;
 }
 
 /** Lists typed copies and derives the displayed name from the source-of-truth raw user. */
@@ -112,6 +122,57 @@ export function readUsers(store: Store): User[] {
             }[]
     );
     return rows.map(row => JSON.parse(row.raw) as User);
+}
+
+/** Counts every query-oriented row and score-history event owned by one user. */
+export function readUserCounts(store: Store, uid: string): UserCounts {
+    return store.read(
+        () =>
+            store.db
+                .prepare(
+                    `SELECT
+                        (SELECT count(*) FROM scores WHERE user_uid = ?) AS scores,
+                        (SELECT count(*) FROM b50_snapshot WHERE user_uid = ?) AS b50,
+                        (SELECT count(*) FROM user_items WHERE user_uid = ?) AS items,
+                        (SELECT count(*) FROM user_characters WHERE user_uid = ?) AS characters,
+                        (SELECT count(*) FROM rating_history WHERE user_uid = ?) AS ratingHistory,
+                        (SELECT count(*) FROM score_events WHERE user_uid = ?) AS scoreEvents`
+                )
+                .get(uid, uid, uid, uid, uid, uid) as unknown as UserCounts
+    );
+}
+
+/** A stable digest of every database row `removeUser` deletes for this uid. */
+export function readUserRemovalFingerprint(store: Store, uid: string): string {
+    return store.read(() => {
+        const rows = {
+            user: store.db.prepare("SELECT * FROM users WHERE uid = ?").get(uid),
+            scores: store.db
+                .prepare("SELECT * FROM scores WHERE user_uid = ? ORDER BY record_key")
+                .all(uid),
+            b50: store.db
+                .prepare("SELECT * FROM b50_snapshot WHERE user_uid = ? ORDER BY section, position")
+                .all(uid),
+            items: store.db
+                .prepare(
+                    "SELECT * FROM user_items WHERE user_uid = ? ORDER BY list_index, position"
+                )
+                .all(uid),
+            characters: store.db
+                .prepare("SELECT * FROM user_characters WHERE user_uid = ? ORDER BY position")
+                .all(uid),
+            ratingHistory: store.db
+                .prepare("SELECT * FROM rating_history WHERE user_uid = ? ORDER BY position")
+                .all(uid),
+            scoreEvents: store.db
+                .prepare(
+                    `SELECT * FROM score_events WHERE user_uid = ?
+                     ORDER BY observed_at, sequence, id`
+                )
+                .all(uid),
+        };
+        return createHash("sha256").update(JSON.stringify(rows)).digest("hex");
+    });
 }
 
 interface ScoreEventDbRow {

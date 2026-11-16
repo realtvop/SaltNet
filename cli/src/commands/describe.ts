@@ -49,7 +49,9 @@ export function describeOption(entry: OptionEntry): DescribedOption {
     const { spec } = entry;
     const defaultValue =
         spec.kind === "boolean"
-            ? (spec.default ?? false)
+            ? spec.optional
+                ? null
+                : (spec.default ?? false)
             : "default" in spec && spec.default !== undefined
               ? Array.isArray(spec.default)
                   ? [...spec.default]
@@ -166,7 +168,9 @@ export function optionValueLabel(entry: OptionEntry): string {
 /** The flag and its value placeholder, exactly as help and guide show it. */
 export function optionLabel(entry: OptionEntry): string {
     if (entry.spec.kind === "boolean") {
-        return entry.spec.default ? `--[no-]${entry.flag}` : `--${entry.flag}`;
+        return entry.spec.default || entry.spec.optional
+            ? `--[no-]${entry.flag}`
+            : `--${entry.flag}`;
     }
     return `--${entry.flag} ${optionValueLabel(entry)}`;
 }

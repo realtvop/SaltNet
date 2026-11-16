@@ -56,7 +56,7 @@ interface FoundOption {
 
 function defaultOf(entry: OptionEntry): unknown {
     const { spec } = entry;
-    if (spec.kind === "boolean") return spec.default ?? false;
+    if (spec.kind === "boolean") return spec.optional ? undefined : (spec.default ?? false);
     return "default" in spec ? spec.default : undefined;
 }
 

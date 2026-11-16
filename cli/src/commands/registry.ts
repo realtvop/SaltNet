@@ -107,6 +107,8 @@ export interface NumberOption extends OptionCommon {
 export interface BooleanOption extends OptionCommon {
     readonly kind: "boolean";
     readonly default?: boolean;
+    /** Leave the parsed value undefined when neither --x nor --no-x was written. */
+    readonly optional?: boolean;
 }
 
 export interface EnumOption extends OptionCommon {
@@ -227,15 +229,17 @@ export type OptionValueType<O> = O extends { readonly kind: "boolean" }
               : string;
 
 /** Whether a command always gets a value: it is required, has a default, or is a switch. */
-type AlwaysPresent<O> = O extends { readonly kind: "boolean" }
-    ? true
-    : O extends { readonly required: true }
+type AlwaysPresent<O> = O extends { readonly kind: "boolean"; readonly optional: true }
+    ? false
+    : O extends { readonly kind: "boolean" }
       ? true
-      : O extends { readonly default: infer D }
-        ? undefined extends D
-            ? false
-            : true
-        : false;
+      : O extends { readonly required: true }
+        ? true
+        : O extends { readonly default: infer D }
+          ? undefined extends D
+              ? false
+              : true
+          : false;
 
 export type ParsedOptions<Os> = {
     readonly [K in keyof Os]: AlwaysPresent<Os[K]> extends true

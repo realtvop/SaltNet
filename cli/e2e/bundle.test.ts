@@ -121,7 +121,14 @@ function processHome(seed?: string): { env: NodeJS.ProcessEnv; saltnetHome: stri
 }
 
 function runBundle(args: readonly string[], mode: "serve" | "deny", seed?: string): RunResult {
-    const home = processHome(seed);
+    return runBundleAt(args, mode, processHome(seed));
+}
+
+function runBundleAt(
+    args: readonly string[],
+    mode: "serve" | "deny",
+    home: { env: NodeJS.ProcessEnv; saltnetHome: string }
+): RunResult {
     const result = spawnSync(process.execPath, ["--import", preload, bundle, ...args], {
         cwd: repoRoot,
         env: {
@@ -141,6 +148,30 @@ function runBundle(args: readonly string[], mode: "serve" | "deny", seed?: strin
         stderr: result.stderr,
         saltnetHome: home.saltnetHome,
     };
+}
+
+/** Runs a confirmation fix against the exact preview copy, without copying its database again. */
+function runBundleInPlace(
+    args: readonly string[],
+    mode: "serve" | "deny",
+    saltnetHome: string
+): RunResult {
+    const root = path.dirname(saltnetHome);
+    return runBundleAt(args, mode, {
+        saltnetHome,
+        env: {
+            ...baseEnvironment(),
+            HOME: path.join(root, "user-home"),
+            USERPROFILE: path.join(root, "user-home"),
+            SALTNET_HOME: saltnetHome,
+            SALTNET_SALTMETA_URL: SALTMETA_URL,
+            SALTNET_LXNS_BASE_URL: LXNS_URL,
+            SALTNET_API_URL: RUNTIME_SETTINGS["api.url"],
+            SALTNET_API_FALLBACK_URL: RUNTIME_SETTINGS["api.fallbackUrl"],
+            SALTNET_RENDER_URL: RUNTIME_SETTINGS["render.url"],
+            TZ: "Asia/Shanghai",
+        },
+    });
 }
 
 /** The envelope schema the bundle publishes; read before any other command runs. */
@@ -297,7 +328,15 @@ it("runs every bundled guide example from seeded fixtures without network", () =
 
     const refresh = runBundle(["refresh"], "serve");
     expect(success(refresh, "refresh").command).toBe("refresh");
-    const seed = refresh.saltnetHome;
+    const firstUser = runBundle(["user", "add", "--remark", "主玩家"], "deny", refresh.saltnetHome);
+    expect(success(firstUser, "seed first user").command).toBe("user add");
+    const secondUser = runBundle(
+        ["user", "add", "--remark", "副玩家"],
+        "deny",
+        firstUser.saltnetHome
+    );
+    expect(success(secondUser, "seed second user").command).toBe("user add");
+    const seed = secondUser.saltnetHome;
 
     const status = success(runBundle(["status", "--offline"], "deny", seed), "offline status");
     expectConforms(schemaOf("status"), status.data);
@@ -342,8 +381,23 @@ it("runs every bundled guide example from seeded fixtures without network", () =
         const line = `saltnet ${example}`;
         const isRefresh = name === "refresh";
         const runArgs = isRefresh ? args : [...args, "--offline"];
-        const result = runBundle(runArgs, isRefresh ? "serve" : "deny", seed);
+        let result = runBundle(runArgs, isRefresh ? "serve" : "deny", seed);
         const format = requestedFormat(args);
+        if (result.status === 6) {
+            const command = registry.find(name);
+            expect(command?.spec.errors, line).toContain("CONFIRMATION_REQUIRED");
+            expect(result.stderr, line).toBe("");
+            const failed = JSON.parse(result.stdout) as {
+                ok: boolean;
+                error: { code: string; fix: string };
+            };
+            expect(failed.ok, line).toBe(false);
+            expect(failed.error.code, line).toBe("CONFIRMATION_REQUIRED");
+            expectConforms(envelopeSchema, failed);
+            const fixArgs = splitCommandLine(failed.error.fix);
+            expect(fixArgs.shift(), line).toBe("saltnet");
+            result = runBundleInPlace(fixArgs, "deny", result.saltnetHome);
+        }
         expect(result.status, line).toBe(0);
         if (format === "tsv") {
             expect(

@@ -13,6 +13,8 @@ import type { KaleidxscopeDifficulty, KaleidxscopePhaseStatus } from "@core/kale
 import type { MergedDuplicateMusic } from "@core/music/duplicates";
 import type { ConfigSource } from "../runtime/config";
 import type { SettingRow } from "../runtime/configRows";
+import type { UserCounts } from "../users/repository";
+import type { ScoresState, StatusUserRow, UserRow } from "../users/view";
 import type { ChartRow } from "./chartRow";
 import type { CollectionChartRow, CollectionRow, RequirementRow } from "./collectionView";
 import type { CourseInfo, CourseTrackRow } from "./courseView";
@@ -355,6 +357,76 @@ export const settingRowSchema = object<SettingRow>(
         description: str("这个设置是干什么的"),
     },
     { description: "一项设置" }
+);
+
+/** One local user (`user list` and every user mutation). */
+export const userRowSchema = object<UserRow>(
+    {
+        index: int("用户当前序号；0 是默认用户"),
+        uid: str("稳定的用户 uid；序号改变时 uid 不变"),
+        name: str("显示名，按网页端的备注名、游戏名和绑定名规则选出"),
+        remark: nullable(str("用户自己写的备注名；没有时是 null")),
+        playerName: nullable(str("上次更新得到的游戏内名称；从未更新时是 null")),
+        rating: nullable(int("上次更新得到的 rating；从未更新时是 null")),
+        scoresUpdatedAt: nullable(str("成绩上次更新时间，用本机时区的偏移写；从未更新时是 null")),
+        manualUpdate: bool("是否只手动更新；打开时 sync --all 会跳过这个用户"),
+        inGame: object<UserRow["inGame"]>(
+            {
+                id: nullable(int("舞萌游戏 id；没有绑定时是 null")),
+                name: nullable(str("舞萌账号名称；不知道时是 null")),
+                enabled: bool("是否启用舞萌账号更新"),
+                fastUpdate: bool("网页端保存的快速更新开关"),
+            },
+            { description: "舞萌账号绑定的非凭据部分" }
+        ),
+        lxns: nullable(
+            object<NonNullable<UserRow["lxns"]>>(
+                {
+                    id: nullable(int("落雪账号 id；不知道时是 null")),
+                    name: nullable(str("落雪账号名称；不知道时是 null")),
+                },
+                { description: "落雪绑定的非凭据部分" }
+            ),
+            "落雪绑定的非凭据部分；用户没有 lxns 对象时是 null"
+        ),
+        divingFish: object<UserRow["divingFish"]>(
+            {
+                name: nullable(str("水鱼用户名；没有绑定时是 null")),
+            },
+            { description: "水鱼绑定的非凭据部分" }
+        ),
+    },
+    { description: "一个本地用户；不包含任何 token 或其他凭据" }
+);
+
+export const userCountsSchema = object<UserCounts>(
+    {
+        scores: int("详细成绩行数"),
+        b50: int("B50 快照行数"),
+        items: int("收藏品行数"),
+        characters: int("旅行伙伴行数"),
+        ratingHistory: int("rating 历史行数"),
+        scoreEvents: int("成绩变化事件行数"),
+    },
+    { description: "这个用户拥有的各类本地数据行数" }
+);
+
+export const statusUserRowSchema = object<StatusUserRow>(
+    {
+        index: int("用户当前序号；0 是默认用户"),
+        uid: str("稳定的用户 uid"),
+        name: str("显示名"),
+        scoresUpdatedAt: nullable(str("成绩上次更新时间，用本机时区的偏移写；从未更新时是 null")),
+        scoresState: strEnumOf<ScoresState>(
+            {
+                fresh: "上次更新时间还在 scores.staleDays 以内",
+                stale: "上次更新时间已经达到或超过 scores.staleDays",
+                missing: "从未更新",
+            },
+            "成绩的新鲜度"
+        ),
+    },
+    { description: "status 里的一个用户" }
 );
 
 /** One song that upstream lists twice folded into one entry (`status` and `refresh`). */

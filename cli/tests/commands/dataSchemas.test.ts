@@ -16,6 +16,7 @@ import { gateDetail } from "../../src/catalog/gateView";
 import { courseInfoSchema } from "../../src/catalog/schemas";
 import { createRegistry } from "../../src/commands";
 import { openStore } from "../../src/store/store";
+import { splitCommandLine } from "../../src/util/shell";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms, expectValidSchema } from "../dataSchema";
@@ -534,6 +535,36 @@ describe("status", () => {
             ],
         };
         expectConforms(schemaOf("status"), sampleStatus);
+    });
+});
+
+describe("user commands", () => {
+    it("describes list, show, add, edit, remove and default results", async () => {
+        const home = makeHome();
+        const first = await commandIn(home, "user", ["add", "--remark", "First"]);
+        expectConforms(schemaOf("user add"), first.json.data);
+        const second = await commandIn(home, "user", ["add", "--remark", "Second"]);
+        expectConforms(schemaOf("user add"), second.json.data);
+
+        const listResult = await commandIn(home, "user", ["list"]);
+        expectConforms(schemaOf("user list"), listResult.json.data);
+        const shown = await commandIn(home, "user", ["show", first.json.data.uid]);
+        expectConforms(schemaOf("user show"), shown.json.data);
+        const edited = await commandIn(home, "user", [
+            "edit",
+            first.json.data.uid,
+            "--manual-update",
+        ]);
+        expectConforms(schemaOf("user edit"), edited.json.data);
+        const defaulted = await commandIn(home, "user", ["default", second.json.data.uid]);
+        expectConforms(schemaOf("user default"), defaulted.json.data);
+
+        const preview = await commandIn(home, "user", ["remove", first.json.data.uid]);
+        expect(preview.code).toBe(6);
+        const fix = (preview.json.error as unknown as { fix: string }).fix;
+        const args = splitCommandLine(fix).slice(1);
+        const removed = await commandIn(home, args[0], args.slice(1));
+        expectConforms(schemaOf("user remove"), removed.json.data);
     });
 });
 

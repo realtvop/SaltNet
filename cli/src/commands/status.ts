@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
-import { mergedDuplicateSchema, sourceStatusSchema } from "../catalog/schemas";
+import { mergedDuplicateSchema, sourceStatusSchema, statusUserRowSchema } from "../catalog/schemas";
 import { mergedDuplicatesOf, sourceStatus } from "../catalog/statusView";
 import { readMetaState } from "../catalog/store";
 import { bool, int, list, nullable, num, object, str } from "../output/schema";
+import { listUsers } from "../users/repository";
+import { statusUserRow } from "../users/view";
 import { formatLocalTime } from "../util/time";
 import { defineCommand } from "./registry";
 
@@ -11,7 +13,7 @@ export const status = defineCommand(
         name: "status",
         summary: "各项数据的更新时间和本地状态",
         description:
-            "汇总本机上 saltnet 的状态，用其他命令之前先看一眼。不联网，也不会创建数据目录：数据库还不存在时，各项数据都是 missing。结果有 version（saltnet 的版本）、home（数据目录，可以用环境变量 SALTNET_HOME 换）、database（exists 是数据库文件在不在，schemaVersion 是它的结构版本，不在时是 null）、metadata（maxAgeHours 是过期时间，catalog 是曲库、collections 是收藏品落雪的列表；每项有 source、label、state、fetchedAt、ageHours、upstreamVersion 和 counts）、mergedDuplicates（上游列了两遍、被合并成一首的歌，每首有 id、title 和 mergedTitles）。state 是 fresh（新的），stale（超过 maxAgeHours，下次用到时自动刷新），other-version（别的版本的 saltnet 存的，下次用到时重建）或 missing（还没有，下次用到时下载，也可以运行 refresh）。",
+            "汇总本机上 saltnet 的状态，用其他命令之前先看一眼。不联网，也不会创建数据目录：数据库还不存在时，各项元数据都是 missing，users.items 是空数组。结果有 version（saltnet 的版本）、home（数据目录，可以用环境变量 SALTNET_HOME 换）、database（exists 是数据库文件在不在，schemaVersion 是它的结构版本，不在时是 null）、metadata（maxAgeHours 是过期时间，catalog 是曲库、collections 是收藏品落雪的列表；每项有 source、label、state、fetchedAt、ageHours、upstreamVersion 和 counts）、users（scores.staleDays 和每个用户的成绩更新时间及 fresh、stale、missing 状态）、mergedDuplicates（上游列了两遍、被合并成一首的歌，每首有 id、title 和 mergedTitles）。元数据 state 的 fresh、stale、other-version、missing 分别表示新鲜、过期、由另一个 CLI 版本构建和尚未下载。",
         category: "data",
         effect: "none",
         output: "object",
@@ -38,6 +40,13 @@ export const status = defineCommand(
                     },
                     { description: "元数据状态" }
                 ),
+                users: object(
+                    {
+                        staleDays: num("成绩多少天没有更新后算 stale（设置 scores.staleDays）"),
+                        items: list(statusUserRowSchema, "按当前顺序排列的用户状态"),
+                    },
+                    { description: "用户成绩的新鲜度" }
+                ),
                 mergedDuplicates: list(mergedDuplicateSchema, "上游重名合并的曲目列表"),
             },
             { description: "本地数据与缓存状态" }
@@ -51,12 +60,14 @@ export const status = defineCommand(
         let schemaVersion: number | null = null;
         let saltmeta;
         let collections;
+        let users: ReturnType<typeof listUsers> = [];
         if (existsSync(ctx.paths.database)) {
             const store = ctx.store();
             schemaVersion = store.migration.to;
-            ({ saltmeta, collections } = store.read(() => ({
+            ({ saltmeta, collections, users } = store.read(() => ({
                 saltmeta: readMetaState(store, "saltmeta"),
                 collections: readMetaState(store, "lxns-collections"),
+                users: listUsers(store),
             })));
         }
 
@@ -72,6 +83,12 @@ export const status = defineCommand(
                 home: ctx.paths.home,
                 database: { exists: schemaVersion !== null, schemaVersion },
                 metadata: { maxAgeHours, catalog, collections: lists },
+                users: {
+                    staleDays: ctx.config.values.scores.staleDays,
+                    items: users.map(user =>
+                        statusUserRow(user, now, ctx.config.values.scores.staleDays)
+                    ),
+                },
                 mergedDuplicates: mergedDuplicatesOf(saltmeta),
             },
             meta: { dataAsOf },
