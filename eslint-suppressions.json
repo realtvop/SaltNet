@@ -334,6 +334,11 @@
       "count": 1
     }
   },
+  "shared/core/user/migrateData.test.ts": {
+    "perfectionist/sort-imports": {
+      "count": 2
+    }
+  },
   "shared/core/user/scoreHistory/candidates.ts": {
     "perfectionist/sort-named-imports": {
       "count": 1
@@ -1072,29 +1077,11 @@
     }
   },
   "src/components/data/user/scoreHistory/backup.ts": {
-    "perfectionist/sort-imports": {
-      "count": 3
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 3
-    },
-    "style/member-delimiter-style": {
-      "count": 11
-    },
     "antfu/if-newline": {
-      "count": 11
-    },
-    "style/operator-linebreak": {
-      "count": 45
-    },
-    "style/indent-binary-ops": {
-      "count": 2
-    },
-    "style/arrow-parens": {
-      "count": 2
+      "count": 1
     },
     "style/comma-dangle": {
-      "count": 3
+      "count": 1
     }
   },
   "src/components/data/user/scoreHistory/index.test.ts": {
@@ -1173,39 +1160,12 @@
       "count": 3
     }
   },
-  "src/components/data/user/scoreHistory/userIdentity.ts": {
-    "antfu/if-newline": {
-      "count": 3
-    },
-    "style/arrow-parens": {
-      "count": 1
-    }
-  },
   "src/components/data/user/update/index.ts": {
     "perfectionist/sort-named-exports": {
       "count": 1
     },
     "perfectionist/sort-named-imports": {
       "count": 3
-    }
-  },
-  "src/components/data/user/update/migrateData.test.ts": {
-    "perfectionist/sort-imports": {
-      "count": 2
-    }
-  },
-  "src/components/data/user/update/migrateData.ts": {
-    "style/comma-dangle": {
-      "count": 5
-    },
-    "antfu/if-newline": {
-      "count": 3
-    },
-    "style/operator-linebreak": {
-      "count": 1
-    },
-    "style/arrow-parens": {
-      "count": 1
     }
   },
   "src/components/data/user/update/updateUser.ts": {

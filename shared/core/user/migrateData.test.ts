@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import { convertDetailed } from "..";
+import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
+import type { DivingFishFullRecord } from "../integrations/diving-fish/type";
+import { convertDetailed } from "./type";
 import { migrateRecordList } from "./migrateData";
 
 function createRecord(overrides: Partial<DivingFishFullRecord> = {}): DivingFishFullRecord {

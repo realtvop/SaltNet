@@ -1,6 +1,6 @@
-import type { DivingFishB50, DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { DetailedData } from "..";
-import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
+import type { DivingFishB50, DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { DetailedData } from "./type";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 
 function getRecordKey(record: DivingFishFullRecord): string {
     const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);

@@ -1,4 +1,4 @@
-import type { User } from "@core/user/type";
+import type { User } from "../type";
 
 export function createUserUid(): string {
     return (

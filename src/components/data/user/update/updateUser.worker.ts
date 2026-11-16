@@ -6,12 +6,17 @@ import {
 } from "@/components/integrations/diving-fish/player";
 import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
+import {
+    migrateB50,
+    migrateRecordList,
+    supplementRecordList,
+    supplementB50,
+} from "@core/user/migrateData";
 import { convertDetailed, getUserDisplayName, type User } from "@core/user/type";
 import { postAPI, postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
 import { toHalfWidth } from "@/utils/toHalfWidth";
-import { migrateB50, migrateRecordList, supplementRecordList, supplementB50 } from "./migrateData";
 
 self.onmessage = event => {
     const { type, user, qrCode, requestId } = event.data;

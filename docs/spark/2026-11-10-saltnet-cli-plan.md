@@ -163,7 +163,7 @@
 
 - [x] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
 - [x] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
-- [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
+- [x] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
 - [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
 - [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
 - [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
@@ -689,3 +689,7 @@
     - Gemini 搬的，纯移动：`type.ts`、`candidates.ts`、`estimate.ts`、`presentation.ts` 进了 `shared/core/user/scoreHistory/`。文件夹外的代码都经由 `scoreHistory/index.ts` 拿这些名字，它改成从 `@core/…` 转出，所以文件夹外一行没改。留在网页端的 `repository.ts`、`queue.ts`、`backup.ts` 和 `queue.test.ts` 只改了 import 路径。
     - 这个补丁是叠在 P2-1 的原始补丁上做的。P2-1 提交前改过豁免文件（第 51 条），补丁里豁免文件那一段就对不上了，所以这一段由我重做：删掉四个旧路径的条目；三个新路径各记下 ESLint 仍报的非格式规则（`candidates.ts` 的 `import/consistent-type-specifier-style` 2、`perfectionist/sort-named-imports` 1，`estimate.ts` 和 `presentation.ts` 的 `import/consistent-type-specifier-style` 1 和 2），数目都和旧条目一样；`type.ts` 没有剩下的违规，不记。改了 import 的网页文件，计数都没变。
     - 审查没有发现问题。
+53. **P2-3 的实现（2026-11-16）**：
+    - Gemini 搬的：`userIdentity.ts` 进了 `shared/core/user/scoreHistory/`，`migrateData.ts` 和它的测试进了 `shared/core/user/`，都是纯移动，导入它们的文件只改了路径，`test:score-history` 指向搬过去的测试。`scoreHistory/backup.ts` 拆成两半：纯编解码搬进新的 `shared/core/user/backup.ts`（`UserDataBackupV1` 加了 `export`，`decodeUserDataBackup` 和它用的私有函数原样），另加 `encodeUserDataBackup(users, events, exportedAt)`，返回的对象字面量和原来 `createUserDataBackup` 里的一字不差。网页端的 `createUserDataBackup` 先等成绩历史导出完，再用 `Date.now()` 调它；`replaceImportedUserData` 和 `recoverPendingUserDataImport` 留在网页端；`decodeUserDataBackup` 和类型 `DecodedUserDataBackup` 由网页端的 `backup.ts` 转出，文件夹的 barrel 导出的名字不变。
+    - Gemini 碰到一条被拒绝的命令就停了，没写报告。所以另外核对了：搬走的编解码代码在新文件里逐字出现（只多了 `export`），ESLint、`shared/core` 的类型检查和 `test:score-history` 都过，豁免条目没有调高；审查的说明里也请它找没做完的地方。
+    - 审查没有找到行为上的问题，只指出现有测试不比较备份的字节，也不检查 `exportedAt` 是在导出成绩历史之后取的。前一条补了 `shared/core/user/backup.test.ts`（放进 `test:score-history`）：固定的用户、成绩历史和导出时间要编码成一字不差的 JSON（两段 base64 用 Node 的 Buffer 另算，不经过被测的编码函数），解码要还原出同样的内容，超过一个编码分块（0x8000 字节）的成绩历史也要能来回。后一条没补：`createUserDataBackup` 只有两行，`Date.now()` 在 `await` 之后一眼可见，要测它得把 IndexedDB 的导出挂起来。

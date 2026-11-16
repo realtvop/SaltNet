@@ -35,9 +35,12 @@ SaltNet is a three-package pnpm workspace:
       builder.
     - `user/`: `inGame.ts` (in-game user types), `type.ts` (the stored user profile, detailed score
       map, favorites and their helpers), `ratingHistory.ts` (normalizing and appending rating
-      history) and `scoreHistory/`: the score history types (`type.ts`), detecting score changes
-      between two score maps (`candidates.ts`), the play-count estimate (`estimate.ts`) and the
-      display helpers (`presentation.ts`).
+      history), `backup.ts` (the user data backup file: building a v1 backup and reading v0 and v1
+      backups, including their score history), `migrateData.ts` (migrating and timestamping updated
+      score records and B50 lists, and supplementing record data) and `scoreHistory/`: the score
+      history types (`type.ts`), detecting score changes between two score maps (`candidates.ts`), the
+      play-count estimate (`estimate.ts`), the display helpers (`presentation.ts`) and
+      `userIdentity.ts` (stable user UIDs and detecting a changed account identity).
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
       indexes, grouping and statistics as pure functions), which re-exports the web search in
       `search.ts`: existing matches ranked by exact ID, whole title/alias, name prefix, name
