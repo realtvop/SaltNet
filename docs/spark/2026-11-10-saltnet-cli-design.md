@@ -127,9 +127,9 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 
 **用户数据**（丢了就找不回来）
 
-- `users`：顺序和网页端一样，第 0 位是默认用户。绑定信息里不含任何 token。
+- `users`：顺序和网页端一样，第 0 位是默认用户。绑定信息里不含任何 token。`raw` 列存网页端这个用户的完整 JSON（去掉水鱼 Import-Token 和落雪授权：写入时拒绝带 token 的用户，库表的约束再挡一道），导出备份时照它写回，所以网页端以后新加的字段、`null` 和缺省的区别、类型不寻常的值都不会丢。其余各列和下面 `scores` 到 `rating_history` 这几张表都是从它拆出来、给查询用的副本，放不进列类型的值在副本里是 `NULL`。
 - `scores`：对应网页端的 `data.detailed`，主键是 `(user_uid, record_key)`。`record_key` 沿用网页端的「曲目id-level_index」格式，另存一列由 core 匹配出的 `chart_key`（宴谱的这两个值不一样）。
-- `b50_snapshot`：只给只能拿到水鱼公开 B50 的用户用。
+- `b50_snapshot`：保存每个有 `data.b50` 的用户所存的 B50，保留 SD/DX 分区和原顺序。
 - `user_items`、`user_characters`、`rating_history`。
 - `score_events`：字段和 `ScoreHistoryEventV1` 一一对应，保证备份导出再导入不丢信息。
 - `favorites`：网页端的备份不含收藏夹，所以只存本地。
@@ -143,7 +143,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 
 - `v_charts`：一张谱面一行，含曲目信息和默认用户的成绩
 - `v_scores`、`v_score_events`、`v_rating_history`
-- `v_collections`、`v_collection_targets`、`v_user_items`
+- `v_collections`、`v_collection_targets`、`v_user_items`、`v_user_characters`
 - `v_course_tracks`、`v_favorites`
 
 `sql` 在一个临时的内存数据库里执行：先以只读方式打开真正的数据库，在同一个事务里把查询里写到的视图复制进去，然后断开真正的数据库，再用 SQLite 的 authorizer（`node:sqlite` 的 `setAuthorizer`，默认拒绝）、`query_only` 和 defensive 模式把查询限制成只能 `SELECT` 这些副本，所以查询运行时够不到任何基础表。（不在真实连接的视图上装 authorizer：SQLite 报告对视图的读取时，给的是底层表的读取，不带「是通过哪个视图读的」，`count(*)` 这类查询没法和直接读基础表区分，CTE 也能冒充视图的上下文。）
@@ -165,7 +165,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 
 ### 2.4 和网页端互通
 
-- `saltnet import <文件>`：用 core 里同一套解码（v0/v1），整体替换用户和成绩历史。语义和网页端一样是全部覆盖，所以需要确认（见 5.4）。凭据拆出来存进 `credentials.json`。收藏夹不受影响。
+- `saltnet import <文件>`：用 core 里同一套解码（v0/v1），整体替换用户和成绩历史。语义和网页端一样是全部覆盖，所以需要确认（见 5.4）。凭据拆出来存进 `credentials.json`。收藏夹不受影响。和网页端的导入一样，成绩历史的每个事件换上这次导入新起的 generation 和 id。成绩历史里的 `sequence`、`dxScore`、`playCount` 超出 ±(2^53−1) 时拒绝导入：网页端不会写出这样的值，SQLite 的整数列存进去也读不回来。
 - `saltnet export <文件>`：生成 v1 文件，网页端可以直接导入。文件里有水鱼 Import-Token，所以权限设为 0600。
 - 落雪 token 默认不跟着导入，也不跟着导出。落雪每次刷新都会换发新的 refresh token，网页端也是整份替换保存；两边共用同一份授权时，一边刷新后另一边会收到 `invalid_grant`，授权就被清掉了。所以默认让 CLI 自己单独授权一次，两边互不影响。落雪 id 和名字照常导入导出，用于身份判断。确实想沿用对方的授权，导入或导出时加 `--keep-lxns`。
 
@@ -457,7 +457,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 
 ### 4.5 写法约定
 
-- 键名用 camelCase。时间用 ISO 8601，带本机时区。
+- 键名用 camelCase。时间用 ISO 8601，带本机时区。`sql` 的视图例外：列名是 snake_case，时间是 UTC（带毫秒，以 `Z` 结尾），这样同一条查询在哪台机器上结果都一样，按文本排序就是按时间排序。
 - 评级、combo、sync 和难度都用游戏里的写法，比如 `SSS+`、`AP+`、`FDX+`、`Re:MASTER`。没有的值为 null。
 - 达成率是数字，例如 `100.1234`；rating 是整数。
 - 同一种对象的键总是齐全的，不知道的值填 null。只有 `--fields` 会去掉字段。

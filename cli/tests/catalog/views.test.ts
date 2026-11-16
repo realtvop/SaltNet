@@ -106,6 +106,70 @@ describe("views contract", () => {
                 { name: "stat_std_dev_achievements", type: "REAL" },
                 { name: "stat_rank_dist", type: "TEXT" },
                 { name: "stat_combo_dist", type: "TEXT" },
+                { name: "score_achievements", type: "REAL" },
+                { name: "score_rank", type: "TEXT" },
+                { name: "score_combo", type: "TEXT" },
+                { name: "score_sync", type: "TEXT" },
+                { name: "score_dx_score", type: "INTEGER" },
+                { name: "score_rating", type: "INTEGER" },
+                { name: "score_play_count", type: "INTEGER" },
+                { name: "score_changed_at", type: "TEXT" },
+            ],
+        },
+        {
+            name: "v_scores",
+            needs: [],
+            columns: [
+                { name: "user_index", type: "INTEGER" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "chart_key", type: "TEXT" },
+                { name: "record_key", type: "TEXT" },
+                { name: "music_id", type: "INTEGER" },
+                { name: "title", type: "TEXT" },
+                { name: "type", type: "TEXT" },
+                { name: "difficulty", type: "TEXT" },
+                { name: "level", type: "TEXT" },
+                { name: "constant", type: "REAL" },
+                { name: "achievements", type: "REAL" },
+                { name: "rank", type: "TEXT" },
+                { name: "combo", type: "TEXT" },
+                { name: "sync", type: "TEXT" },
+                { name: "dx_score", type: "INTEGER" },
+                { name: "rating", type: "INTEGER" },
+                { name: "play_count", type: "INTEGER" },
+                { name: "changed_at", type: "TEXT" },
+            ],
+        },
+        {
+            name: "v_score_events",
+            needs: [],
+            columns: [
+                { name: "user_index", type: "INTEGER" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "event_id", type: "TEXT" },
+                { name: "record_key", type: "TEXT" },
+                { name: "chart_key", type: "TEXT" },
+                { name: "observed_at", type: "TEXT" },
+                { name: "sequence", type: "INTEGER" },
+                { name: "source", type: "TEXT" },
+                { name: "kind", type: "TEXT" },
+                { name: "changed_mask", type: "INTEGER" },
+                { name: "batch_id", type: "TEXT" },
+                { name: "achievements", type: "REAL" },
+                { name: "dx_score", type: "INTEGER" },
+                { name: "combo", type: "TEXT" },
+                { name: "sync", type: "TEXT" },
+                { name: "play_count", type: "INTEGER" },
+            ],
+        },
+        {
+            name: "v_rating_history",
+            needs: [],
+            columns: [
+                { name: "user_index", type: "INTEGER" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "time", type: "TEXT" },
+                { name: "rating", type: "INTEGER" },
             ],
         },
         {
@@ -139,6 +203,35 @@ describe("views contract", () => {
             ],
         },
         {
+            name: "v_user_items",
+            needs: [],
+            columns: [
+                { name: "user_index", type: "INTEGER" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "kind", type: "TEXT" },
+                { name: "item_id", type: "INTEGER" },
+                { name: "ref", type: "TEXT" },
+                { name: "stock", type: "INTEGER" },
+                { name: "is_valid", type: "INTEGER" },
+            ],
+        },
+        {
+            name: "v_user_characters",
+            needs: [],
+            columns: [
+                { name: "user_index", type: "INTEGER" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "character_id", type: "INTEGER" },
+                { name: "ref", type: "TEXT" },
+                { name: "level", type: "INTEGER" },
+                { name: "awakening", type: "INTEGER" },
+                { name: "point", type: "INTEGER" },
+                { name: "use_count", type: "INTEGER" },
+                { name: "next_awake", type: "INTEGER" },
+                { name: "next_awake_percent", type: "REAL" },
+            ],
+        },
+        {
             name: "v_course_tracks",
             needs: [],
             columns: [
@@ -165,17 +258,27 @@ describe("views contract", () => {
     it("matches the declared names, versions, and dependencies", () => {
         expect(PUBLIC_VIEWS.map(v => v.name)).toEqual([
             "v_charts",
+            "v_scores",
+            "v_score_events",
+            "v_rating_history",
             "v_collections",
             "v_collection_targets",
+            "v_user_items",
+            "v_user_characters",
             "v_course_tracks",
         ]);
         expect(PUBLIC_VIEW_NAMES).toEqual([
             "v_charts",
+            "v_scores",
+            "v_score_events",
+            "v_rating_history",
             "v_collections",
             "v_collection_targets",
+            "v_user_items",
+            "v_user_characters",
             "v_course_tracks",
         ]);
-        expect(VIEWS_VERSION).toBe(1);
+        expect(VIEWS_VERSION).toBe(2);
 
         for (let i = 0; i < EXPECTED_VIEWS.length; i++) {
             const exp = EXPECTED_VIEWS[i];
@@ -217,6 +320,11 @@ describe("viewsMentionedIn", () => {
         ["/* v_charts */", ["v_charts"]],
         ["V_cHaRtS", ["v_charts"]],
         ["SELECT * FROM v_course_tracks, v_charts", ["v_charts", "v_course_tracks"]],
+        ["SELECT * FROM v_scores, v_score_events", ["v_scores", "v_score_events"]],
+        [
+            "SELECT * FROM v_rating_history, v_user_items, v_user_characters",
+            ["v_rating_history", "v_user_items", "v_user_characters"],
+        ],
         ["SELECT * FROM v_collections", ["v_collections"]],
         ["SELECT * FROM v_collection_targets", ["v_collection_targets"]],
         [
@@ -274,6 +382,17 @@ describe("fetchedAtOf", () => {
     });
 });
 
+const NO_SCORE = {
+    score_achievements: null,
+    score_rank: null,
+    score_combo: null,
+    score_sync: null,
+    score_dx_score: null,
+    score_rating: null,
+    score_play_count: null,
+    score_changed_at: null,
+} as const;
+
 describe("v_charts", () => {
     it("matches chartRow and chartDetails row builders for all 183 charts", () => {
         const paths = makeHome();
@@ -314,6 +433,7 @@ describe("v_charts", () => {
                 stat_std_dev_achievements: details.stats?.stdDevAchievements ?? null,
                 stat_rank_dist: details.stats ? JSON.stringify(details.stats.rankDist) : null,
                 stat_combo_dist: details.stats ? JSON.stringify(details.stats.comboDist) : null,
+                ...NO_SCORE,
             };
         });
 
@@ -393,6 +513,7 @@ describe("v_charts", () => {
             stat_rank_dist:
                 '{"D":21,"C":2,"B":3,"BB":0,"BBB":2,"A":47,"AA":45,"AAA":25,"S":25,"S+":28,"SS":27,"SS+":27,"SSS":1263,"SSS+":3941}',
             stat_combo_dist: '{"none":228,"FC":1241,"FC+":846,"AP":1375,"AP+":1766}',
+            ...NO_SCORE,
         };
 
         const expected12025_3 = {
@@ -424,6 +545,7 @@ describe("v_charts", () => {
             stat_std_dev_achievements: null,
             stat_rank_dist: null,
             stat_combo_dist: null,
+            ...NO_SCORE,
         };
 
         const expected110018_10 = {
@@ -455,6 +577,7 @@ describe("v_charts", () => {
             stat_std_dev_achievements: null,
             stat_rank_dist: null,
             stat_combo_dist: null,
+            ...NO_SCORE,
         };
 
         const expected10070_3 = {
@@ -486,6 +609,7 @@ describe("v_charts", () => {
             stat_std_dev_achievements: null,
             stat_rank_dist: null,
             stat_combo_dist: null,
+            ...NO_SCORE,
         };
 
         const [r8_0] = runQuery(sb.db, "SELECT * FROM v_charts WHERE chart_key = '8-0'", 10).rows;

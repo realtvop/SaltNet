@@ -318,10 +318,10 @@ describe("schema command", () => {
     });
 
     it("lists versioned views without their SELECT text", async () => {
-        expect(VIEWS_CHANGES.at(-1)?.version).toBe(1);
+        expect(VIEWS_CHANGES.at(-1)?.version).toBe(2);
         const { code, json } = await commandIn(makeHome(), "schema", ["--views"]);
         expect(code).toBe(0);
-        expect(json.data).toMatchObject({ kind: "views", version: 1, changes: VIEWS_CHANGES });
+        expect(json.data).toMatchObject({ kind: "views", version: 2, changes: VIEWS_CHANGES });
         expect(
             json.data.views.map(
                 (view: { name: string; columns: unknown[]; needs: string[]; select?: string }) => ({
@@ -332,7 +332,10 @@ describe("schema command", () => {
                 })
             )
         ).toEqual([
-            { name: "v_charts", columns: 28, needs: ["catalog"], select: undefined },
+            { name: "v_charts", columns: 36, needs: ["catalog"], select: undefined },
+            { name: "v_scores", columns: 18, needs: [], select: undefined },
+            { name: "v_score_events", columns: 16, needs: [], select: undefined },
+            { name: "v_rating_history", columns: 4, needs: [], select: undefined },
             { name: "v_collections", columns: 8, needs: ["collections"], select: undefined },
             {
                 name: "v_collection_targets",
@@ -340,6 +343,8 @@ describe("schema command", () => {
                 needs: ["collections"],
                 select: undefined,
             },
+            { name: "v_user_items", columns: 7, needs: [], select: undefined },
+            { name: "v_user_characters", columns: 10, needs: [], select: undefined },
             { name: "v_course_tracks", columns: 16, needs: [], select: undefined },
         ]);
         for (const view of json.data.views) {

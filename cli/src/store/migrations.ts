@@ -156,6 +156,182 @@ export const MIGRATIONS: readonly Migration[] = [
             `);
         },
     },
+    {
+        version: 4,
+        name: "user data",
+        up: db => {
+            // User data cannot be downloaded again. The columns keep the web backup's optional
+            // members distinct from members that are present but empty; credentials never enter
+            // this database (they belong in credentials.json).
+            db.exec(`
+                -- The web profiles in their displayed order. position 0 is the default user.
+                -- raw is the whole web user object without its tokens; a backup is exported
+                -- from it, so nothing the web app keeps (fields it adds later, null as opposed
+                -- to a missing field, values of an unexpected type) is lost. The other columns
+                -- here and the rows of scores, b50_snapshot, user_items, user_characters and
+                -- rating_history are copies of parts of it for queries; a value that does not
+                -- fit its column is NULL there (an INTEGER column takes only safe integers,
+                -- because node:sqlite cannot read a larger one back). has_lxns records whether
+                -- the optional lxns object exists at all; the other has_* columns do the same
+                -- for members of data. The writer rejects a user that still has a token; the
+                -- check on raw stops one that slips through. raw is always JSON.stringify
+                -- output, so no key appears twice, and the members SQLite reads here are the
+                -- ones JSON.parse reads back.
+                CREATE TABLE users (
+                    uid TEXT PRIMARY KEY,
+                    position INTEGER NOT NULL UNIQUE CHECK (position >= 0),
+                    raw TEXT NOT NULL CHECK (
+                        json_valid(raw)
+                        AND json_type(raw) = 'object'
+                        AND json_type(raw, '$.uid') = 'text'
+                        AND json_extract(raw, '$.uid') IS uid
+                        AND json_extract(raw, '$.divingFish.importToken') IS NULL
+                        AND json_extract(raw, '$.lxns.auth') IS NULL
+                    ),
+                    remark TEXT,
+                    diving_fish_name TEXT,
+                    has_lxns INTEGER NOT NULL CHECK (has_lxns IN (0, 1)),
+                    lxns_id INTEGER,
+                    lxns_name TEXT,
+                    in_game_id INTEGER,
+                    in_game_name TEXT,
+                    in_game_enabled INTEGER NOT NULL CHECK (in_game_enabled IN (0, 1)),
+                    in_game_fast_update INTEGER NOT NULL CHECK (in_game_fast_update IN (0, 1)),
+                    manually_update INTEGER NOT NULL CHECK (manually_update IN (0, 1)),
+                    updated_at INTEGER,
+                    data_name TEXT,
+                    rating INTEGER,
+                    info TEXT CHECK (info IS NULL OR json_valid(info)),
+                    has_detailed INTEGER NOT NULL CHECK (has_detailed IN (0, 1)),
+                    has_b50 INTEGER NOT NULL CHECK (has_b50 IN (0, 1)),
+                    has_items INTEGER NOT NULL CHECK (has_items IN (0, 1)),
+                    has_characters INTEGER NOT NULL CHECK (has_characters IN (0, 1)),
+                    has_rating_history INTEGER NOT NULL CHECK (has_rating_history IN (0, 1))
+                ) STRICT;
+
+                -- data.detailed, keyed exactly as the web app stores it. chart_key is the catalog
+                -- chart matched by core (different from record_key for banquet charts), or NULL
+                -- when no current catalog chart matches. It deliberately is not a foreign key.
+                CREATE TABLE scores (
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    record_key TEXT NOT NULL,
+                    chart_key TEXT,
+                    song_id INTEGER,
+                    type TEXT,
+                    title TEXT,
+                    level TEXT,
+                    level_index INTEGER,
+                    level_label TEXT,
+                    ds REAL,
+                    achievements REAL,
+                    dx_score INTEGER,
+                    fc TEXT,
+                    fs TEXT,
+                    rate TEXT,
+                    ra INTEGER,
+                    play_count INTEGER,
+                    last_changed_at INTEGER,
+                    PRIMARY KEY (user_uid, record_key)
+                ) STRICT;
+                -- A chart can contribute at most one score row to a user's chart join.
+                CREATE UNIQUE INDEX scores_user_chart
+                    ON scores (user_uid, chart_key) WHERE chart_key IS NOT NULL;
+
+                -- data.b50 as stored, including its section and order, for every user whose data
+                -- has that member. record_key is the web key; chart_key is its current core match.
+                CREATE TABLE b50_snapshot (
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    section TEXT NOT NULL CHECK (section IN ('sd', 'dx')),
+                    position INTEGER NOT NULL CHECK (position >= 0),
+                    record_key TEXT NOT NULL,
+                    chart_key TEXT,
+                    song_id INTEGER,
+                    type TEXT,
+                    title TEXT,
+                    level TEXT,
+                    level_index INTEGER,
+                    level_label TEXT,
+                    ds REAL,
+                    achievements REAL,
+                    dx_score INTEGER,
+                    fc TEXT,
+                    fs TEXT,
+                    rate TEXT,
+                    ra INTEGER,
+                    play_count INTEGER,
+                    last_changed_at INTEGER,
+                    PRIMARY KEY (user_uid, section, position)
+                ) STRICT;
+
+                -- data.items is a list of lists. list_index is the outer index (the collection
+                -- kind the web app uses), and position preserves the order of its inner list.
+                CREATE TABLE user_items (
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    list_index INTEGER NOT NULL CHECK (list_index >= 0),
+                    position INTEGER NOT NULL CHECK (position >= 0),
+                    item_kind INTEGER,
+                    item_id INTEGER,
+                    stock INTEGER,
+                    is_valid INTEGER CHECK (is_valid IS NULL OR is_valid IN (0, 1)),
+                    PRIMARY KEY (user_uid, list_index, position)
+                ) STRICT;
+
+                -- data.characters in its original order. These rows, rather than data.items,
+                -- decide whether the web app regards a travel partner as owned.
+                CREATE TABLE user_characters (
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    position INTEGER NOT NULL,
+                    character_id INTEGER,
+                    point INTEGER,
+                    use_count INTEGER,
+                    level INTEGER,
+                    next_awake INTEGER,
+                    next_awake_percent REAL,
+                    awakening INTEGER,
+                    PRIMARY KEY (user_uid, position)
+                ) STRICT;
+
+                -- data.ratingHistory in its original order; time is epoch milliseconds.
+                CREATE TABLE rating_history (
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    position INTEGER NOT NULL,
+                    time INTEGER,
+                    rating INTEGER,
+                    PRIMARY KEY (user_uid, position)
+                ) STRICT;
+
+                -- ScoreHistoryEventV1 field for field. record_key is the event's chartKey, which
+                -- is the web record key rather than the matched catalog chart key. observed_at
+                -- is REAL because the web app accepts any finite time that is not negative. The
+                -- INTEGER columns take only safe integers (node:sqlite cannot read a larger one
+                -- back); the writer rejects an event with a larger sequence, dxScore or
+                -- playCount, which the web app never writes. An import gives every event a new
+                -- generation and id, as the web app's import does.
+                CREATE TABLE score_events (
+                    id TEXT PRIMARY KEY,
+                    schema_version INTEGER NOT NULL,
+                    generation_id TEXT NOT NULL,
+                    batch_id TEXT NOT NULL,
+                    user_uid TEXT NOT NULL REFERENCES users (uid) ON DELETE CASCADE,
+                    record_key TEXT NOT NULL,
+                    observed_at REAL NOT NULL,
+                    sequence INTEGER NOT NULL,
+                    source TEXT NOT NULL CHECK (
+                        source IN ('inGame', 'lxns', 'divingFishImport', 'divingFishPublic')
+                    ),
+                    kind TEXT NOT NULL CHECK (kind IN ('initial', 'change')),
+                    changed_mask INTEGER NOT NULL,
+                    achievements REAL NOT NULL,
+                    dx_score INTEGER NOT NULL,
+                    fc TEXT NOT NULL,
+                    fs TEXT NOT NULL,
+                    play_count INTEGER
+                ) STRICT;
+                CREATE INDEX score_events_timeline
+                    ON score_events (user_uid, record_key, observed_at, sequence);
+            `);
+        },
+    },
 ];
 
 export interface MigrationResult {

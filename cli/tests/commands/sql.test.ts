@@ -63,7 +63,7 @@ describe("sql command", () => {
         ]);
         expect(res.json.meta).toEqual({
             dataAsOf: {},
-            viewsVersion: 1,
+            viewsVersion: 2,
             columns: ["two"],
             limit: 1000,
             truncated: false,
@@ -198,6 +198,27 @@ describe("sql command", () => {
         expect(res.json.warnings).toEqual([]);
         expect(res.requests).toEqual([]);
         expect(existsSync(paths.home)).toBe(false);
+    });
+
+    it("reads empty user views on a fresh database offline without metadata", async () => {
+        const paths = makeHome();
+        const res = await runSql(
+            paths,
+            [
+                "--offline",
+                "SELECT (SELECT count(*) FROM v_scores) AS scores, (SELECT count(*) FROM v_score_events) AS events, (SELECT count(*) FROM v_rating_history) AS ratings, (SELECT count(*) FROM v_user_items) AS items, (SELECT count(*) FROM v_user_characters) AS characters",
+            ],
+            { network: {} }
+        );
+
+        expect(res.code).toBe(0);
+        expect(res.json.data.items).toEqual([
+            { scores: 0, events: 0, ratings: 0, items: 0, characters: 0 },
+        ]);
+        expect(res.json.meta.dataAsOf).toEqual({});
+        expect(res.json.warnings).toEqual([]);
+        expect(res.requests).toEqual([]);
+        expect(existsSync(paths.database)).toBe(true);
     });
 
     it("fails with NETWORK error when network is unreachable and nothing is cached", async () => {
@@ -383,6 +404,28 @@ describe("sql command", () => {
         expect(readFileSync(paths.database).equals(before)).toBe(true);
     });
 
+    it("never exposes user base tables, even beside a copied user view", async () => {
+        const paths = makeHome();
+        const tables = [
+            "users",
+            "scores",
+            "b50_snapshot",
+            "user_items",
+            "user_characters",
+            "rating_history",
+            "score_events",
+        ];
+
+        for (const table of tables) {
+            for (const query of [`SELECT * FROM ${table}`, `SELECT * FROM ${table}, v_scores`]) {
+                const res = await runSql(paths, [query]);
+                expect(res.code, query).toBe(2);
+                expect(res.json.error.code, query).toBe("SQL_ERROR");
+                expect(res.json.error.message, query).toContain(`no such table: ${table}`);
+            }
+        }
+    });
+
     it("formats output correctly as TSV", async () => {
         const paths = makeHome();
         const res = await runSql(paths, [
@@ -406,7 +449,7 @@ describe("sql command", () => {
         expect(res.code).toBe(0);
         const expectedTable =
             "chart_key  level\n8-0        5\n8-1        7\n8-2        10\n8-3        12\n\n";
-        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 1\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
+        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 2\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
         expect(res.stdout.startsWith(expectedTable)).toBe(true);
         expect(res.stdout).toContain(expectedMeta);
     });
