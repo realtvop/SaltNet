@@ -3,7 +3,7 @@ import {
     calculatePlayCountEstimate,
     calculateUserPlayCountEstimates,
     type PlayCountEstimate,
-} from "./estimate";
+} from "@core/user/scoreHistory/estimate";
 import {
     SCORE_HISTORY_PAGE_SIZE,
     SCORE_HISTORY_SCHEMA_VERSION,
@@ -13,7 +13,7 @@ import {
     type ScoreHistoryEventV1,
     type ScoreHistoryPage,
     type ScoreHistoryTimelineEntry,
-} from "./type";
+} from "@core/user/scoreHistory/type";
 
 const DATABASE_NAME = "saltnet-score-history";
 const DATABASE_VERSION = 1;

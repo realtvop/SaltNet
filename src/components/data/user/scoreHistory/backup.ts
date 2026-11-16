@@ -14,7 +14,7 @@ import {
     type ScoreHistoryEventV1,
     type ScoreHistorySource,
     type ScoreHistoryStateV1,
-} from "./type";
+} from "@core/user/scoreHistory/type";
 
 interface UserDataBackupV1 {
     version: 1;

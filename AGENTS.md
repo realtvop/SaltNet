@@ -34,8 +34,10 @@ SaltNet is a three-package pnpm workspace:
       partners, version-plate requirement/progress evaluation, the music-to-collection reverse index
       builder.
     - `user/`: `inGame.ts` (in-game user types), `type.ts` (the stored user profile, detailed score
-      map, favorites and their helpers) and `ratingHistory.ts` (normalizing and appending rating
-      history).
+      map, favorites and their helpers), `ratingHistory.ts` (normalizing and appending rating
+      history) and `scoreHistory/`: the score history types (`type.ts`), detecting score changes
+      between two score maps (`candidates.ts`), the play-count estimate (`estimate.ts`) and the
+      display helpers (`presentation.ts`).
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
       indexes, grouping and statistics as pure functions), which re-exports the web search in
       `search.ts`: existing matches ranked by exact ID, whole title/alias, name prefix, name

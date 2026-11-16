@@ -334,6 +334,24 @@
       "count": 1
     }
   },
+  "shared/core/user/scoreHistory/candidates.ts": {
+    "perfectionist/sort-named-imports": {
+      "count": 1
+    },
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    }
+  },
+  "shared/core/user/scoreHistory/estimate.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    }
+  },
+  "shared/core/user/scoreHistory/presentation.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 2
+    }
+  },
   "shared/core/user/type.ts": {
     "perfectionist/sort-named-imports": {
       "count": 2
@@ -1079,49 +1097,6 @@
       "count": 3
     }
   },
-  "src/components/data/user/scoreHistory/candidates.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 1
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 2
-    },
-    "style/comma-dangle": {
-      "count": 3
-    },
-    "antfu/if-newline": {
-      "count": 9
-    },
-    "style/operator-linebreak": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 1
-    }
-  },
-  "src/components/data/user/scoreHistory/estimate.ts": {
-    "antfu/if-newline": {
-      "count": 1
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 1
-    },
-    "style/brace-style": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 4
-    },
-    "style/indent-binary-ops": {
-      "count": 3
-    },
-    "style/member-delimiter-style": {
-      "count": 5
-    },
-    "style/operator-linebreak": {
-      "count": 7
-    }
-  },
   "src/components/data/user/scoreHistory/index.test.ts": {
     "perfectionist/sort-imports": {
       "count": 4
@@ -1145,20 +1120,6 @@
   "src/components/data/user/scoreHistory/index.ts": {
     "perfectionist/sort-exports": {
       "count": 5
-    }
-  },
-  "src/components/data/user/scoreHistory/presentation.ts": {
-    "antfu/if-newline": {
-      "count": 3
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 2
-    },
-    "style/comma-dangle": {
-      "count": 3
-    },
-    "style/member-delimiter-style": {
-      "count": 3
     }
   },
   "src/components/data/user/scoreHistory/queue.test.ts": {
@@ -1210,11 +1171,6 @@
     },
     "style/operator-linebreak": {
       "count": 3
-    }
-  },
-  "src/components/data/user/scoreHistory/type.ts": {
-    "style/member-delimiter-style": {
-      "count": 35
     }
   },
   "src/components/data/user/scoreHistory/userIdentity.ts": {

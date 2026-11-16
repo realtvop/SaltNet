@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
-import type { ScoreHistoryBatch } from "./type";
+import type { ScoreHistoryBatch } from "@core/user/scoreHistory/type";
 
 const mocks = vi.hoisted(() => ({
     appendScoreHistoryBatch: vi.fn(),

@@ -1,5 +1,5 @@
 import { appendScoreHistoryBatch } from "./repository";
-import type { ScoreHistoryBatch } from "./type";
+import type { ScoreHistoryBatch } from "@core/user/scoreHistory/type";
 
 interface UserQueue {
     batches: ScoreHistoryBatch[];

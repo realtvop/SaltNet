@@ -162,7 +162,7 @@
 **P2-0 先抽这一期要用的模块**
 
 - [x] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
-- [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
+- [x] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
 - [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
 - [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
 - [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
@@ -685,3 +685,7 @@
     - Gemini 搬的，纯移动：`user/type.ts`、`user/ratingHistory.ts`、`chart/scoreLookup.ts` 和 `chart/rating/` 的三个文件进了 `shared/core`。搬过去的文件只改了 import 行，别的文件只改了 import 路径。`user/type.ts` 的 `LXNSAuth` 原来从网页的 `@/components/integrations/lxns` 拿，现在直接从 `shared/core/integrations/lxns/type.ts` 拿。网页那个模块本来就是转出这个类型，所以还是同一个。
     - 审查只找到一处：补丁把搬过去的 `scoreLookup.ts`、`user/type.ts` 的 `perfectionist/sort-imports` 豁免调高了（前者从没有到 1，后者从 1 到 2），等于藏住了 import 顺序带来的新违规。改成按 ESLint 要的顺序排这几行 import（先类型，按路径排，再值）。两个文件都不再违反这条规则，两条豁免都删掉。
     - 搬模块的补丁，验证时只看审查和检查指到的地方（不通读补丁），检查包括 `pnpm build`。
+52. **P2-2 的实现（2026-11-16）**：
+    - Gemini 搬的，纯移动：`type.ts`、`candidates.ts`、`estimate.ts`、`presentation.ts` 进了 `shared/core/user/scoreHistory/`。文件夹外的代码都经由 `scoreHistory/index.ts` 拿这些名字，它改成从 `@core/…` 转出，所以文件夹外一行没改。留在网页端的 `repository.ts`、`queue.ts`、`backup.ts` 和 `queue.test.ts` 只改了 import 路径。
+    - 这个补丁是叠在 P2-1 的原始补丁上做的。P2-1 提交前改过豁免文件（第 51 条），补丁里豁免文件那一段就对不上了，所以这一段由我重做：删掉四个旧路径的条目；三个新路径各记下 ESLint 仍报的非格式规则（`candidates.ts` 的 `import/consistent-type-specifier-style` 2、`perfectionist/sort-named-imports` 1，`estimate.ts` 和 `presentation.ts` 的 `import/consistent-type-specifier-style` 1 和 2），数目都和旧条目一样；`type.ts` 没有剩下的违规，不记。改了 import 的网页文件，计数都没变。
+    - 审查没有发现问题。

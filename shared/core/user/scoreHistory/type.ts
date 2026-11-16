@@ -1,4 +1,4 @@
-import type { ComboStatus, SyncStatus } from "@core/mai/types";
+import type { ComboStatus, SyncStatus } from "../../mai/types";
 
 export const SCORE_HISTORY_SCHEMA_VERSION = 1 as const;
 export const SCORE_HISTORY_PAGE_SIZE = 30;
