@@ -128,8 +128,8 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 **用户数据**（丢了就找不回来）
 
 - `users`：顺序和网页端一样，第 0 位是默认用户。绑定信息里不含任何 token。`raw` 列存网页端这个用户的完整 JSON（去掉水鱼 Import-Token 和落雪授权：写入时拒绝带 token 的用户，库表的约束再挡一道），导出备份时照它写回，所以网页端以后新加的字段、`null` 和缺省的区别、类型不寻常的值都不会丢。其余各列和下面 `scores` 到 `rating_history` 这几张表都是从它拆出来、给查询用的副本，放不进列类型的值在副本里是 `NULL`。
-- `scores`：对应网页端的 `data.detailed`，主键是 `(user_uid, record_key)`。`record_key` 沿用网页端的「曲目id-level_index」格式，另存一列由 core 匹配出的 `chart_key`（宴谱的这两个值不一样）。
-- `b50_snapshot`：保存每个有 `data.b50` 的用户所存的 B50，保留 SD/DX 分区和原顺序。
+- `scores`：对应网页端的 `data.detailed`，主键是 `(user_uid, record_key)`。`record_key` 沿用网页端的「曲目id-level_index」格式，另存一列由 core 匹配出的 `chart_key`（宴谱的这两个值不一样）。匹配时先给全部精确记录分配谱面；一首歌的宴谱共用一个 `chart_key`，它拿 core 在这首歌第一张宴谱上显示的、还没分配的那条记录。同一记录和同一 `chart_key` 都只分配一次，所以不会把一条记录兜底显示在宴谱兄弟上。几条记录争同一张谱面时照 core 的规则：精确匹配取键顺序里的第一条，宴谱先比 `level_index`、再比 `ds`、再按键顺序。`song_id`、`level_index`、`ds` 转不成文字或数字（core 遇到会出错）的记录不参与匹配。各列都从存下的 JSON 读出，曲库整体替换时在同一事务里重算这些 key，结果和保存时一样。
+- `b50_snapshot`：保存每个有 `data.b50` 的用户所存的 B50，保留 SD/DX 分区和原顺序。每个是普通对象的条目存一行（`song_id` 或 `level_index` 转不成文字的除外），`record_key` 照网页端 `convertDetailed` 的写法生成；`chart_key` 用该快照自己的记录按同一规则匹配，键顺序就是快照顺序（SD 在前，同区按位置）。
 - `user_items`、`user_characters`、`rating_history`。
 - `score_events`：字段和 `ScoreHistoryEventV1` 一一对应，保证备份导出再导入不丢信息。
 - `favorites`：网页端的备份不含收藏夹，所以只存本地。

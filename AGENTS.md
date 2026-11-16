@@ -64,6 +64,12 @@ SaltNet is a three-package pnpm workspace:
   such a bundle in a temporary directory, preloads a fixture-only `fetch`, seeds it with one
   refresh, and runs every generated guide example offline on its own copy of the seed data.
 
+`cli/src/users/` is the only writer of the user tables: it validates token-free raw users and score
+events, projects their typed copies, assigns catalog chart keys, preserves user order, and provides
+raw-user and event reads. Replacing music recomputes every stored user chart key in the catalog
+transaction. `cli/src/refs/user.ts` resolves the default position, a numeric index, an exact uid or
+display name, then a folded display name.
+
 Static assets belong in `public/`; structured source assets belong in `src/assets/`. Utility and generated-data scripts live in `script/`. Do not edit generated `dist/` files or local `.wrangler/` state.
 
 ## Architecture & Navigation Index

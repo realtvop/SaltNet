@@ -176,7 +176,7 @@
 **P2 的 CLI 部分**
 
 - [x] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 4（原写迁移 2，见第 62 条）；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`、`v_user_characters`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）〔新〕
-- [ ] P2-13 `feat(cli): add user repository on top of the store`〔新〕
+- [x] P2-13 `feat(cli): add user repository on top of the store`〔新〕
 - [x] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
 - [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
 - [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
@@ -763,3 +763,15 @@
     - 测试：审查指出的空白由 Gemini 补（它在最后跑了一条不允许的命令，运行被中止，没有报告；补丁是完整的，我修了一处 `init` 没定义的错误和一处 `vue-tsc` 报的类型错误）：每个请求只发一次；隐去 token 的各种情况（重复出现、替换后重新拼出、短 token 和空 token 不动、10 和 11 个字符的边界、无关信息不变）；`fetch` 抛的错原样往外抛；新曲同分保持原顺序、15 和 35 的上限；转换后谱面的顺序、谱面指回所属乐曲、`notes` 和 `level`；新的 `src/components/integrations/diving-fish/player.test.ts`（加进 `test:integrations`）测网页端包装抛的是普通 `Error`、`String(error)`、`console.error` 的参数、网络错误原样往外抛。worker 里「上传无论状态码都报成功」没有测试，是对照改动读过的。
     - 改动检查：49 处，全部被发现。
     - 浏览器里没有验证：要用到水鱼账号的凭据，按要求只用模拟 HTTP 测试；网页端的包装由上面的测试覆盖。
+65. **P2-13 的实现（2026-11-16）**：
+    - Codex 写的（第一次运行在 2026-11-16 的重启里丢了，重跑了一次）：`cli/src/users/` 是用户表唯一的写入方，`repository.ts` 有 `listUsers`、`readUser`、`readUsers`、`readScoreEvents`、`saveUser`、`removeUser`、`makeDefaultUser`、`appendScoreEvents`、`replaceUsers`，`rows.ts` 从用户对象算出各张副本表的行，`storage.ts` 负责写入和换曲库时重算谱面键；`cli/src/refs/user.ts` 的 `resolveUser`；`replaceMusic` 在同一个事务里重算所有用户的谱面键。它自己定下的：收藏（`favorites`）和同步记录（`sync_runs`）留给 P2-25 和 P3-7；校验比 core 的 `User` 类型严，网页端不会写出的用户在写入之前就拒绝；成绩事件只认 `schemaVersion` 1；一个谱面键在一个用户的成绩里只给一条记录。
+    - 我改的：`divingFish.importToken` 只能是 `null` 或者没有（网页端给没有 token 的用户写的就是 `null`），有值（空字符串也算）就拒绝，库里从不存 token。
+    - 第一轮审查（GPT 6.1 Sol，带内置审查）找出 4 个错误和 2 处测试空白，由 Codex 再跑一次改掉：记录的形状检查太严（现在只要是普通对象就参加对谱面，形状检查只留在 core 的查找会抛错的地方）；同一个谱面键在一个用户的 B50 快照里会给好几行（现在只给一行）；对谱面的结果取决于是不是同一个对象（同一个对象和内容相同的两个对象结果不同，现在只看数据和键的顺序）；显示名要用 core 的 `getUserDisplayName`（网页端的函数）对从 `raw` 解析出来的用户算，再 `String()`。补的测试：重新保存一个用户（副本表整个换掉，成绩事件和别的用户不动）；`replaceMusic` 加歌和删歌时两个用户的重算。
+    - 第二轮审查找出 3 处，我改的：B50 条目不再因为别的字段类型不对被丢掉；键为 `__proto__` 和空字符串的记录照常参加；core 的查找会抛错的值（转不成文字或数字的 `song_id`、`level_index`、`ds`，不是字符串的 `type`）不参加对谱面，也不让保存失败。
+    - 简化：去掉了宴会谱那一遍「把同曲的兄弟谱面截到当前谱面」的副本，以及第一版给 core 的 `createDetailedScoreLookup` 加的选项 `fallbackToFirstUtageCandidate`（`shared/core/chart/scoreLookup.ts` 的改动撤回，P2-13 不再改 core）。理由：宴会谱的等级都是 10，同一首歌的宴会谱共用谱面键 `<乐曲 id>-10`，目录顺序里第一张宴会谱先拿到 core 的第一个候选，键随即被占，后面几张不起作用。改动检查证实两种写法结果一样。
+    - 所有副本都从 `JSON.parse(JSON.stringify(user))` 读，所以保存时写的行和换曲库时从 `users.raw` 重算的行一样（`Date`、带 `toJSON` 的对象都按写进 JSON 的值算）。
+    - 决定：几行 B50 争同一个宴会谱的键时，按 core 的候选顺序（`level_index` 小的先，再看 `ds`，再看快照顺序），不是先看快照顺序，因为网页端就是按这个顺序把记录对到宴会谱上的；只有 core 分不出先后的几行才按快照顺序（SD 在 DX 前，再按位置）。网页端的 B50 页面本来就不收宴会谱，没有显示出来的顺序可以对照（第三轮审查确认）。设计文档 2.2 节照最终规则改写。
+    - 校验的测试改成检查仓库自己的报错（`invalid stored user`、`invalid stored score event`、`duplicate user uid`）：之前的改动检查里有 18 处没被发现，因为表上的 CHECK 约束反正会抛错，测试只看「抛了错」。缺的情况也补上了。
+    - 第三轮审查（GPT 6.1 Sol）：没有错误，指出 3 处测试空白，我补了：`type` 是数字或 `ds` 转不成数字的 B50 条目保留一行、谱面键为空；每张副本表都对照「保存从 JSON 解析回来的副本」的结果；宴会谱的竞争经过 `buildUserRows` 测，不只测 `chartKeysForRecords`。
+    - 改动检查：90 处，85 处被发现。没被发现的 5 处是等价的：`Infinity` 和 symbol 经过 JSON 就不会出现（2 处）；重算前先把谱面键清空是多余的，每一行的键（包括空）都会重写；第二遍只看宴会谱只是省事；第二遍不记「这条记录已经用过」也一样，因为一条记录只属于一首歌，而那首歌的宴会谱键已经被占了。
+    - 只动了 CLI，网页端没有变化，不用在浏览器里验证。

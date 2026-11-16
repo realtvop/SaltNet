@@ -8,6 +8,7 @@ import type { LXNSCollectionLists } from "@core/integrations/lxns/type";
 import type { SaltMetaBuildResult } from "@core/music/fetch";
 import type { Store } from "../store/store";
 import { MUSIC_SEARCH_INDEX_VERSION } from "@core/music/search";
+import { recomputeUserChartKeys } from "../users/storage";
 import { chartKey } from "./songs";
 
 /**
@@ -169,6 +170,7 @@ export function replaceMusic(
             builder: CATALOG_BUILDER,
             detail: { ...counts, mergedDuplicates: build.merged },
         });
+        recomputeUserChartKeys(store, build.music);
         return counts;
     });
 }
