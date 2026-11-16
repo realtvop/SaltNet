@@ -6,7 +6,7 @@ import {
 } from "@/components/integrations/diving-fish/player";
 import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
-import { convertDetailed, getUserDisplayName, type User } from "@/components/data/user/type";
+import { convertDetailed, getUserDisplayName, type User } from "@core/user/type";
 import { postAPI, postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";

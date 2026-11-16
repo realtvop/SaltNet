@@ -5,7 +5,7 @@
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
     import type { Chart } from "@core/music/type";
-    import { getUserDisplayName } from "@/components/data/user/type";
+    import { getUserDisplayName } from "@core/user/type";
     import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
     import { ComboStatus } from "@core/mai/types";
     import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";
@@ -14,8 +14,8 @@
     import { renderB50WithTakumi } from "@/components/rendering/takumiB50";
     import { dialog, snackbar, type Dialog } from "mdui";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-    import { ScoreCoefficient } from "@/components/data/chart/rating/ScoreCoefficient";
     import { isUtageGrade } from "@core/chart/difficulty";
+    import { ScoreCoefficient } from "@core/chart/rating/ScoreCoefficient";
     import {
         type B50RenderChart as B50RenderChartPayload,
         type B50RenderPayload,

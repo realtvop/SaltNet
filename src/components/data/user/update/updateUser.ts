@@ -1,5 +1,5 @@
-import { type User } from "@/components/data/user/type";
-import { appendRatingHistory } from "@/components/data/user/ratingHistory";
+import { appendRatingHistory } from "@core/user/ratingHistory";
+import { type User } from "@core/user/type";
 import { alert, snackbar, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
 import {

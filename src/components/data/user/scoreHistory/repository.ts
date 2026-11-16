@@ -1,4 +1,4 @@
-import type { DetailedData } from "../type";
+import type { DetailedData } from "@core/user/type";
 import {
     calculatePlayCountEstimate,
     calculateUserPlayCountEstimates,

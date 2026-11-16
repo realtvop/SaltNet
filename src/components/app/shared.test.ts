@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
-import type { User } from "@/components/data/user/type";
+import type { User } from "@core/user/type";
 
 const mocks = vi.hoisted(() => ({ getItem: vi.fn(), setItem: vi.fn() }));
 vi.mock("localforage", () => ({

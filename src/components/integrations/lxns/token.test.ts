@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { User } from "@/components/data/user/type";
+import type { User } from "@core/user/type";
 import { refreshLXNSOAuthToken, requestLXNSToken } from "./token";
 
 function token(id = 123): string {

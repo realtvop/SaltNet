@@ -1,8 +1,8 @@
 import type { Chart } from "@core/music/type";
-import type { User, ChartsSortCached } from "@/components/data/user/type";
-import { MusicSort } from "@/components/data/music";
+import type { User, ChartsSortCached } from "@core/user/type";
+import { findDetailedScoreForChart } from "@core/chart/scoreLookup";
 import localForage from "localforage";
-import { findDetailedScoreForChart } from "./scoreLookup";
+import { MusicSort } from "@/components/data/music";
 
 const CHARTS_SORT_CACHE_KEY = "chartsSortCachedV2";
 

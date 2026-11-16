@@ -240,8 +240,30 @@
       "count": 1
     }
   },
+  "shared/core/chart/rating/index.ts": {
+    "import/consistent-type-specifier-style": {
+      "count": 1
+    },
+    "object-shorthand": {
+      "count": 1
+    },
+    "one-var": {
+      "count": 1
+    },
+    "perfectionist/sort-imports": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
   "shared/core/chart/recent.test.ts": {
     "perfectionist/sort-imports": {
+      "count": 1
+    }
+  },
+  "shared/core/chart/scoreLookup.ts": {
+    "ts/consistent-type-definitions": {
       "count": 1
     }
   },
@@ -310,6 +332,11 @@
   "shared/core/user/inGame.ts": {
     "ts/consistent-type-imports": {
       "count": 1
+    }
+  },
+  "shared/core/user/type.ts": {
+    "perfectionist/sort-named-imports": {
+      "count": 2
     }
   },
   "shared/rendering/b50-filename.ts": {
@@ -519,7 +546,7 @@
       "count": 621
     },
     "perfectionist/sort-imports": {
-      "count": 10
+      "count": 9
     },
     "perfectionist/sort-named-imports": {
       "count": 6
@@ -715,9 +742,6 @@
     "perfectionist/sort-named-imports": {
       "count": 1
     },
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
     "style/comma-dangle": {
       "count": 4
     },
@@ -749,66 +773,6 @@
     },
     "style/quotes": {
       "count": 3
-    }
-  },
-  "src/components/data/chart/rating/ScoreCoefficient.ts": {
-    "antfu/if-newline": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 1
-    },
-    "style/indent-binary-ops": {
-      "count": 14
-    },
-    "style/operator-linebreak": {
-      "count": 1
-    }
-  },
-  "src/components/data/chart/rating/index.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 5
-    },
-    "style/comma-dangle": {
-      "count": 1
-    },
-    "one-var": {
-      "count": 1
-    },
-    "prefer-const": {
-      "count": 1
-    },
-    "style/brace-style": {
-      "count": 2
-    },
-    "object-shorthand": {
-      "count": 1
-    },
-    "style/operator-linebreak": {
-      "count": 2
-    }
-  },
-  "src/components/data/chart/scoreLookup.ts": {
-    "ts/consistent-type-definitions": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 5
-    },
-    "antfu/if-newline": {
-      "count": 8
-    },
-    "style/operator-linebreak": {
-      "count": 4
     }
   },
   "src/components/data/collection/CollectionInfo.vue": {
@@ -1069,7 +1033,7 @@
       "count": 1
     },
     "perfectionist/sort-imports": {
-      "count": 2
+      "count": 1
     },
     "style/member-delimiter-style": {
       "count": 19
@@ -1087,20 +1051,6 @@
   "src/components/data/user/index.ts": {
     "perfectionist/sort-exports": {
       "count": 1
-    }
-  },
-  "src/components/data/user/ratingHistory.ts": {
-    "antfu/if-newline": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 1
-    },
-    "style/indent": {
-      "count": 8
-    },
-    "style/operator-linebreak": {
-      "count": 3
     }
   },
   "src/components/data/user/scoreHistory/backup.ts": {
@@ -1174,7 +1124,7 @@
   },
   "src/components/data/user/scoreHistory/index.test.ts": {
     "perfectionist/sort-imports": {
-      "count": 5
+      "count": 4
     },
     "import/consistent-type-specifier-style": {
       "count": 3
@@ -1275,23 +1225,6 @@
       "count": 1
     }
   },
-  "src/components/data/user/type.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "perfectionist/sort-named-imports": {
-      "count": 2
-    },
-    "style/member-delimiter-style": {
-      "count": 37
-    },
-    "antfu/if-newline": {
-      "count": 1
-    },
-    "style/operator-linebreak": {
-      "count": 4
-    }
-  },
   "src/components/data/user/update/index.ts": {
     "perfectionist/sort-named-exports": {
       "count": 1
@@ -1327,9 +1260,6 @@
       "count": 7
     },
     "import/consistent-type-specifier-style": {
-      "count": 2
-    },
-    "perfectionist/sort-imports": {
       "count": 2
     },
     "perfectionist/sort-named-imports": {
@@ -1899,9 +1829,6 @@
     "import/consistent-type-specifier-style": {
       "count": 1
     },
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
     "prefer-template": {
       "count": 1
     },
@@ -1973,7 +1900,7 @@
       "count": 8
     },
     "perfectionist/sort-imports": {
-      "count": 11
+      "count": 10
     },
     "import/no-duplicates": {
       "count": 2

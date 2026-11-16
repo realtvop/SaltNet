@@ -681,7 +681,7 @@
 
 <script setup lang="ts">
     import type { Chart } from "@core/music/type";
-    import { getDetailedRatingsByConstant } from "@/components/data/chart/rating";
+    import { getDetailedRatingsByConstant } from "@core/chart/rating";
     import { RANK_RATE_DISPLAY_NAMES } from "@core/mai/types";
     import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
@@ -689,10 +689,10 @@
     import { prompt, dialog } from "mdui";
     import { copyTextToClipboard } from "@/components/app/utils";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
-    import type { FavoriteList, FavoriteChart } from "@/components/data/user/type";
+    import type { FavoriteList, FavoriteChart } from "@core/user/type";
     import type { ChartStats } from "@core/integrations/diving-fish/type";
     import { chartScoreFromDF } from "@/components/integrations/diving-fish";
-    import { type User, getUserDisplayName } from "@/components/data/user/type";
+    import { type User, getUserDisplayName } from "@core/user/type";
     import { getCollectionImageURL, getCoverURL } from "@/components/integrations/assets";
     import CollectionInfoDialog from "@/components/data/collection/CollectionInfo.vue";
     import CollectionTitle from "@/components/data/collection/CollectionTitle.vue";
@@ -700,7 +700,7 @@
     import { formatScoreChangedAt } from "@core/chart/recent";
     import { getChartSearchUrls } from "./getSearchUrls";
     import ScoreCalculatorDialog from "./ScoreCalculatorDialog.vue";
-    import { findDetailedScoreForChart } from "./scoreLookup";
+    import { findDetailedScoreForChart } from "@core/chart/scoreLookup";
     import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
     import {
         collectionDataError,

@@ -1,5 +1,5 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import { getUserDisplayName, type User } from "./type";
+import { getUserDisplayName, type User } from "@core/user/type";
 import { snackbar } from "mdui";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 

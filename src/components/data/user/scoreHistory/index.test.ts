@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import localForage from "localforage";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import { convertDetailed, type User } from "../type";
+import { convertDetailed, type User } from "@core/user/type";
 import {
     ScoreHistoryChange,
     activateStagedScoreHistoryImport,

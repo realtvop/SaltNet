@@ -1,6 +1,6 @@
 import { isRatingCoefficientBoundary, ScoreCoefficient } from "./ScoreCoefficient";
 import { get_min_ach } from "./utils";
-import { getRankRateByAchievement, type RankRate } from "@core/mai/types";
+import { getRankRateByAchievement, type RankRate } from "../../mai/types";
 
 interface DetailedRating {
     ds: number;

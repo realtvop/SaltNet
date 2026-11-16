@@ -132,7 +132,7 @@
 <script setup lang="ts">
     import { ref, watch, nextTick, toRaw, computed } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-    import type { User } from "@/components/data/user/type";
+    import type { User } from "@core/user/type";
     import { confirm, prompt, snackbar } from "mdui";
     import { postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
     import { initLXNSOAuth } from "@/components/integrations/lxns";

@@ -25,13 +25,17 @@ SaltNet is a three-package pnpm workspace:
     - `music/`: types, SaltMeta conversion and fetching, cached-data restoration, `MusicSort` order,
       and the precomputed simplified/traditional, pinyin and romaji search index (`music/search.ts`; `createMusicSearchVariants` also reports which of the three a normalized text was reached by, and `createMusicSearchIndex` is built from it). `music/duplicates.ts` folds the banquet songs that upstream lists twice into one entry (only the CLI asks for it; the web app keeps both) and `music/fetch.ts` offers the SaltMeta download and the conversion separately as well as together.
     - `config.ts` and `http.ts`: `CoreConfig` and the injectable `FetchLike`.
-    - `chart/`: difficulty, chart identity, recent-change ordering.
+    - `chart/`: difficulty, chart identity, recent-change ordering, score lookup
+      (`chart/scoreLookup.ts`: finding a chart's score in the per-chart score map and turning it into a
+      chart score) and the rating calculation (`chart/rating/`).
     - `course/`: dan-course definitions and ordered chart matching.
     - `kaleidxscope/`: CN gate conditions, life calendars, draw pools.
     - `collection/`: collection types, LXNS data mapping and validation, static characters and
       partners, version-plate requirement/progress evaluation, the music-to-collection reverse index
       builder.
-    - `user/inGame.ts`: in-game user types.
+    - `user/`: `inGame.ts` (in-game user types), `type.ts` (the stored user profile, detailed score
+      map, favorites and their helpers) and `ratingHistory.ts` (normalizing and appending rating
+      history).
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
       indexes, grouping and statistics as pure functions), which re-exports the web search in
       `search.ts`: existing matches ranked by exact ID, whole title/alias, name prefix, name

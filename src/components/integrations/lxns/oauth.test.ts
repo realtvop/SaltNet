@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { User } from "@/components/data/user/type";
+import type { User } from "@core/user/type";
 
 const mocks = vi.hoisted(() => ({
     shared: { users: [] as User[], usersLoaded: Promise.resolve(), persistUsers: vi.fn() },

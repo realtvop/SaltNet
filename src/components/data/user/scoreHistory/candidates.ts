@@ -1,5 +1,5 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { DetailedData } from "../type";
+import type { DetailedData } from "@core/user/type";
 import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
 import { ScoreHistoryChange, type ScoreHistoryCandidate, type ScoreHistoryStateV1 } from "./type";
 

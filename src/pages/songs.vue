@@ -1,8 +1,8 @@
 <script setup lang="ts">
     import { ref, onMounted, computed, watch, onUnmounted, nextTick } from "vue";
     import { useRoute } from "vue-router";
-    import type { User } from "@/components/data/user/type";
     import type { Chart } from "@core/music/type";
+    import type { User } from "@core/user/type";
     import { MusicSort } from "@/components/data/music";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
@@ -34,6 +34,7 @@
         UTAGE_GRADE,
     } from "@core/chart/difficulty";
     import { getDifficultyTabs, hasAnyScoreChangedTime } from "@core/chart/recent";
+    import { createDetailedScoreLookup, toChartScore } from "@core/chart/scoreLookup";
     import {
         addChartPositionIndexes,
         addQueriedPositionIndexes,
@@ -45,7 +46,6 @@
         groupCharts,
         searchCharts,
     } from "@core/query/songs";
-    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import {
         formatPlayCount,
         getScoreHistoryChartKey,

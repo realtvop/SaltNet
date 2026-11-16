@@ -1,10 +1,10 @@
 <script setup lang="ts">
+    import { createDetailedScoreLookup, toChartScore } from "@core/chart/scoreLookup";
     import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
-    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { getMusicInfoAsync } from "@/components/data/music";
     import type { Chart } from "@core/music/type";
-    import type { User } from "@/components/data/user/type";
+    import type { User } from "@core/user/type";
     import { RankRate } from "@core/mai/types";
     import type { Collection } from "@core/collection/type";
     import {

@@ -1,6 +1,6 @@
 import localForage from "localforage";
-import type { User } from "../type";
-import { normalizeRatingHistory } from "../ratingHistory";
+import type { User } from "@core/user/type";
+import { normalizeRatingHistory } from "@core/user/ratingHistory";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
 import {
     activateStagedScoreHistoryImport,

@@ -1,10 +1,10 @@
 <script setup lang="ts">
+    import { type User, getUserDisplayName } from "@core/user/type";
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
-    import { type User, getUserDisplayName } from "@/components/data/user/type";
     import {
         updateUser,
         checkLogin,

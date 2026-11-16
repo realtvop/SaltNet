@@ -1,4 +1,4 @@
-import { convertDetailed, type User } from "@/components/data/user/type";
+import { convertDetailed, type User } from "@core/user/type";
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { LXNSScore, LXNSUser } from "@core/integrations/lxns/type";
 import { calculateB50FromRecords } from "../diving-fish/player";

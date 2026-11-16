@@ -1,9 +1,9 @@
 // src/types/user.ts
-import type { DivingFishB50, DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { Chart } from "@core/music/type";
-import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
-import type { Level, UserItem, UserInfo, UserCharacter } from "@core/user/inGame";
-import type { LXNSAuth } from "@/components/integrations/lxns";
+import type { DivingFishB50, DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { LXNSAuth } from "../integrations/lxns/type";
+import type { Chart } from "../music/type";
+import type { Level, UserItem, UserInfo, UserCharacter } from "./inGame";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 
 export interface User {
     uid?: string;

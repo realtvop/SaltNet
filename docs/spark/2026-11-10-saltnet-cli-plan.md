@@ -161,7 +161,7 @@
 
 **P2-0 先抽这一期要用的模块**
 
-- [ ] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
+- [x] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
 - [ ] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
 - [ ] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
 - [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
@@ -681,3 +681,7 @@
     - **留下的文件**（第 41 条 (c)）：每条命令结束后，数据目录里只有 `saltnet.db` 和 `cache/` 里的两个原始文件，没有 `-wal`、`-shm`。只读 `ATTACH` 不留文件，也不改数据库文件的修改时间。
     - **没法在这里验证的**（第 41 条 (d)）：Windows 路径的 `file:` 地址。写进最终报告。
     - **`AGENTS.md`**：写明怎么运行打包产物、代理从 `saltnet guide` 和 `saltnet schema` 开始，以及 `config list`/`config get` 的输出带着 `.env` 的默认值、不要贴到公开的地方。`cli/` 那一段已经很长，拆成分条留到 P2-27：P2-1、P2-2 的补丁还没提交，它们改的正是这一段前面几行，现在拆会让补丁对不上。
+51. **P2-1 的实现（2026-11-16）**：
+    - Gemini 搬的，纯移动：`user/type.ts`、`user/ratingHistory.ts`、`chart/scoreLookup.ts` 和 `chart/rating/` 的三个文件进了 `shared/core`。搬过去的文件只改了 import 行，别的文件只改了 import 路径。`user/type.ts` 的 `LXNSAuth` 原来从网页的 `@/components/integrations/lxns` 拿，现在直接从 `shared/core/integrations/lxns/type.ts` 拿。网页那个模块本来就是转出这个类型，所以还是同一个。
+    - 审查只找到一处：补丁把搬过去的 `scoreLookup.ts`、`user/type.ts` 的 `perfectionist/sort-imports` 豁免调高了（前者从没有到 1，后者从 1 到 2），等于藏住了 import 顺序带来的新违规。改成按 ESLint 要的顺序排这几行 import（先类型，按路径排，再值）。两个文件都不再违反这条规则，两条豁免都删掉。
+    - 搬模块的补丁，验证时只看审查和检查指到的地方（不通读补丁），检查包括 `pnpm build`。

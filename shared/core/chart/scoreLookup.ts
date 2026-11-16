@@ -1,8 +1,8 @@
-import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { Chart, ChartScore } from "@core/music/type";
-import type { DetailedData } from "@/components/data/user/type";
-import { isUtageGrade } from "@core/chart/difficulty";
-import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
+import type { DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { Chart, ChartScore } from "../music/type";
+import type { DetailedData } from "../user/type";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
+import { isUtageGrade } from "./difficulty";
 
 function isSameConstant(a: number, b: number): boolean {
     return Math.abs(a - b) < 0.05;

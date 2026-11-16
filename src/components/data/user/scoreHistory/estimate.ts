@@ -1,4 +1,4 @@
-import type { DetailedData } from "../type";
+import type { DetailedData } from "@core/user/type";
 import { ScoreHistoryChange, type ScoreHistoryEventV1 } from "./type";
 
 export interface PlayCountEstimate {
