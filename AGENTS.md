@@ -121,9 +121,10 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
 - `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, the duplicate-song merge, and the shared SaltMeta and LXNS test fixtures.
 - `pnpm test:query` compares the songs-page query helpers (ordering, category filtering, position
-  indexes, search, grouping and statistics) and the B50 page's record selection, sorting and rating
-  sums with committed snapshots on the fixed fixture data, and validates web search relevance,
-  stable ties and compatibility with the existing match set.
+  indexes, search, grouping and statistics), the B50 page's record selection, sorting and rating
+  sums, and the chart info dialog's rating stage tables, display modes and B50 floor with committed
+  snapshots on the fixed fixture data, and validates web search relevance, stable ties and
+  compatibility with the existing match set.
   Regenerate the snapshots only for an intentional behavior change.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.

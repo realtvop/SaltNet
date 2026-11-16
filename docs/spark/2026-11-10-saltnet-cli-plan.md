@@ -168,7 +168,7 @@
 - [x] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
 - [x] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
 - [x] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
-- [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
+- [x] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
 - [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
 - [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
 - [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断〔新〕
@@ -712,3 +712,8 @@
     - Gemini 这次跑完 `pnpm lint` 就停了，没有报告，也没更新豁免文件，补丁里还夹着两个临时文件。我去掉临时文件后应用补丁，和 P2-6 改过的 `eslint.config.js`、`AGENTS.md` 用三方合并解决冲突，豁免由我自己更新：`ChartInfo.vue` 的计数只降不升，`antfu/curly` 一条删掉；新模块里不带花括号的 `if (!chart) return {…}` 是从页面带过来的，记一条 `antfu/curly`，P2-9 随文件搬走。Gemini 写的包装让 `style/comma-dangle` 多了 4 处（Prettier 的 `trailingComma: "es5"` 不许在调用参数末尾加逗号，两边没法同时满足）。我把包装改成块体，每个调用写在一行里；类型单独用 `import type` 导入，放在第一条 import 后面。这样各项计数都不再上升。
     - 验证：一次性的差异测试把旧页面的代码（按行切出来，配上假的 `computed` 和 ref，并统计 `currentUser` 被读了几次）和新的包装加模块放在一起跑。8 个种子 × 600 组输入，共 4800 个场景，逐个比对阶段表、可选模式、三种首选模式的回退、显示的行、是否读了底分、分类底分和最终底分（值或抛出的错误），全部一致，其中 512 个场景抛错，937 个场景读了底分。24 处故意的单行改动抓到 23 处；没抓到的是 `resolveRatingDisplayMode` 最后的 `available[0]`：页面上的可选模式总包含简洁，这一行走不到，P2-8 的明确用例会覆盖它。
     - 审查没有发现问题。
+58. **P2-8 的实现（2026-11-16）**：
+    - Gemini 写的快照测试 `src/components/data/chart/chartInfoQuery.test.ts`（P2-9 随模块一起搬走）。第一次运行碰上 DNS 解析失败就退出了（agy 退出码 3），原样重跑了一次。固定曲目表里每个不同的定数各取一张谱面（共 61 张），每张先存一份完整的阶段表，再对没有成绩、达成率为 0 或 null 以及几档达成率的成绩存可选模式和吃分表，对每个模式存当前显示的是哪张表。另一个场景把四种谱面（旧版本 SD、旧版本 DX、新版本 DX、没有谱面）、五种用户（B50 满的、不满的、末尾是 0 的、没有 B50 的、没有用户）和六种成绩组合起来，存底分和简洁模式下显示的行。明确的用例覆盖三行的界限、补进奖励阶段的位置、`resolveRatingDisplayMode` 的各种回退、`getBaseRa` 只在需要时调用、底分里的 0 和缺失值，以及不改动传入的数据。
+    - Gemini 的版本在每种成绩和模式下都把三张表完整打印，快照有 1 MB。我改成只在和完整表不同时才展开（165 KB），并用脚本从两份快照还原出每个场景的三张表逐一比对，915 个场景全部相同。
+    - 审查找出五种抓不到的改动：成绩只写了达成率或只写了 rating，所以底分在有达成率时忽略谱面 rating 的改动测不出来；快照里没有阶段的 `ds`；底分场景里旧谱面恰好都是 SD、新谱面都是 DX，按谱面类型而不是按新旧选 B50 分类的改动测不出来；没有达成率为 0 或 null 的成绩；没有末尾是 0 的 B50 列表。我又用 P2-7 的 24 处单行改动直接测这份测试，另找出一处：`resolveRatingDisplayMode` 往回找时跳过第一个模式（测试里的可选模式总按 `ratingModeOrder` 的顺序排）。这些都由我补上：成绩按页面的 `ChartScore` 写全字段，阶段表每行加上 `ds`，加入旧版本的 DX 谱面、末尾是 0 的 B50 和达成率为 0、null 的成绩，再加三个顺序打乱的可选模式用例（P2-7 走不到的 `available[0]` 也由它们覆盖）。之后 29 处改动（P2-7 的 24 处加上针对审查的 5 处）抓到 27 处。没抓到的两处结果相同：定数从 1.0 到 15.0 的每一张阶段表里，rating 从上到下严格递减，最后一行大于 0，所以底分为 0 时要补的阶段就是总会显示的最后一行，判断阶段是否已显示时少比较达成率也一样。
+    - 审查更正了一条观察：谱面没有 rating、B50 也没有底分时，`getLowestRaInChartOrSection` 返回 `null`，不是 `undefined`（只有传进 `undefined` 的分类底分才会得到 `undefined`，这超出了它的输入约定）。测试记下的其余页面原有行为，这一步不改：B50 的相关分类是空数组时算底分会抛 `TypeError`；达成率为 0 或 null 的成绩当作没有成绩，吃分表就是完整表；两边都是 0 时底分是 0。固定曲目表里没有新版本的 SD 谱面。
