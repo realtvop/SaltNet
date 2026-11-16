@@ -561,5 +561,9 @@ export function loadConfig(
 
 /** The part of the settings that `shared/core` takes as its configuration. */
 export function toCoreConfig(values: ConfigValues): CoreConfig {
-    return { saltMetaUrl: values.saltmeta.url, lxnsBaseUrl: values.lxns.baseUrl };
+    return {
+        saltMetaUrl: values.saltmeta.url,
+        lxnsBaseUrl: values.lxns.baseUrl,
+        divingFishBaseUrl: DEFAULT_CORE_CONFIG.divingFishBaseUrl,
+    };
 }

@@ -6,6 +6,7 @@ import {
 } from "@/components/integrations/diving-fish/player";
 import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
 import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
+import { uploadDivingFishRecords } from "@core/integrations/diving-fish/client";
 import {
     migrateB50,
     migrateRecordList,
@@ -382,14 +383,7 @@ function previewStockedTickets(user: User) {
 }
 
 function uploadToDivingFish(data: DivingFishFullRecord[], importToken: string) {
-    return fetch("https://www.diving-fish.com/api/maimaidxprober/player/update_records", {
-        method: "POST",
-        headers: {
-            "Import-Token": importToken,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-    })
+    return uploadDivingFishRecords(importToken, data)
         .then(() => {
             info(`上传到水鱼成功`);
         })

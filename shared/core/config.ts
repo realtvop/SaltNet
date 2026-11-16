@@ -10,11 +10,14 @@ export interface CoreConfig {
     saltMetaUrl: string;
     /** Origin of the LXNS (落雪) service, for example `https://maimai.lxns.net`. */
     lxnsBaseUrl: string;
+    /** Diving Fish prober API base, for example `https://www.diving-fish.com/api/maimaidxprober`. */
+    divingFishBaseUrl: string;
 }
 
 export const DEFAULT_CORE_CONFIG: Readonly<CoreConfig> = {
     saltMetaUrl: SALTMETA_NEXT_COMPACTED_URL,
     lxnsBaseUrl: "https://maimai.lxns.net",
+    divingFishBaseUrl: "https://www.diving-fish.com/api/maimaidxprober",
 };
 
 /** Fills every field the caller left out with its default. */
@@ -22,5 +25,6 @@ export function resolveCoreConfig(overrides: Partial<CoreConfig> = {}): CoreConf
     return {
         saltMetaUrl: overrides.saltMetaUrl ?? DEFAULT_CORE_CONFIG.saltMetaUrl,
         lxnsBaseUrl: overrides.lxnsBaseUrl ?? DEFAULT_CORE_CONFIG.lxnsBaseUrl,
+        divingFishBaseUrl: overrides.divingFishBaseUrl ?? DEFAULT_CORE_CONFIG.divingFishBaseUrl,
     };
 }

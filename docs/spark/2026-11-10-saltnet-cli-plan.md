@@ -198,7 +198,7 @@
 
 **P3-0 先抽这一期要用的模块**
 
-- [ ] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
+- [x] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
 - [ ] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
 - [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
 - [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
@@ -754,3 +754,12 @@
     - 测试：我补了这两处的用例，以及审查和改动检查指出的空白：shell 元字符（`$`、`*`、`?`、`~`、反引号、`!`、`;`、`&`、`|`、重定向、括号、`#` 等）一定加引号；其他错误在 text 格式下仍是 JSON；终端设成 text 时打印预览，输出到管道时是 JSON；`retryable: false`；null 原型的对象和被引用两次（不是循环）的对象；孤立的代理项和替换字符得到不同的码；真实的确认失败符合公开的外层 schema，确认码写成数字之类的会被拒绝。tsv 不用测：不是列表的命令在运行之前就拒绝 `--format tsv`。
     - 改动检查：35 处，34 处被发现。没被发现的那处（不检查数组里的 `undefined`）是等价改动：紧接着的非 JSON 检查照样抛错。
     - 留给用到确认的命令（P2-15 起）：引用以 `-` 开头时，`confirmArgs` 要在它前面写 `--`；`state` 要包含操作改动或依赖的全部数据；预览要在改动之前生成，并且不读 stdin（`user bind … ingame --qr -` 除外，见 `confirm.ts` 开头）。
+64. **P3-1 的实现（2026-11-16）**：
+    - Gemini 搬的：水鱼的玩家查询、Import-Token 取成绩、上传成绩、由成绩算 B50 搬进 `shared/core/integrations/diving-fish/client.ts`，两个纯转换搬进 `convert.ts`；地址来自新的 `CoreConfig.divingFishBaseUrl`，`fetch` 可注入，错误是带 HTTP 状态的 `DivingFishError`。网页端的 `player.ts`、`index.ts` 和 worker 里的 `uploadToDivingFish` 只剩薄包装，CLI 的 `toCoreConfig` 只多传这个地址。上传照旧不看状态码（网页端无论成败都报成功），由调用方自己看 `ok`。
+    - 我改的：Gemini 把上游的 `message` 改成只认去掉空白后非空的字符串，网页端的提示会变；改回网页端原来的规则（`message` 为真就用 `String(message)`），补了测试。
+    - 审查（GPT 6.1 Sol，带内置审查；内置审查没找到问题）找出的，我都改了：网页端抛出的错误从 `Error` 变成了 `DivingFishError`，提示条里 `toString()` 的前缀会变，所以网页端的包装把它换回同样文字的普通 `Error`，别的错误原样往外抛，`console.error` 记的是抛出去的那个对象；隐去 Import-Token 时，很短的 token（如 `e`、`500`）会把无关的字弄乱，一次替换还可能拼出新的 token，所以改成不长于 `[REDACTED]`（10 个字符）的 token 不找，并且反复替换到一处都不剩（每替换一次文字都变短，所以一定会停）。
+    - 网页端唯一看得见的变化（有意的）：水鱼的错误信息里要是带着长于 10 个字符的 Import-Token，显示成 `[REDACTED]`。
+    - `fetch` 自己抛的错原样往外抛。浏览器的这类错误里从来没有请求头的值，但 Node 的 `fetch` 遇到不能放进请求头的值（比如带换行的 token）时，会把整个值写进错误信息（`Headers.append: "…" is an invalid header value.`）。留给 P3-6：`ctx.http()` 的错误信息和 cause 里不能出现凭据请求头的值（`cli/src/runtime/http.ts` 现在会把 cause 的信息抄进 `NETWORK` 错误），发出请求之前要先检查这些值。
+    - 测试：审查指出的空白由 Gemini 补（它在最后跑了一条不允许的命令，运行被中止，没有报告；补丁是完整的，我修了一处 `init` 没定义的错误和一处 `vue-tsc` 报的类型错误）：每个请求只发一次；隐去 token 的各种情况（重复出现、替换后重新拼出、短 token 和空 token 不动、10 和 11 个字符的边界、无关信息不变）；`fetch` 抛的错原样往外抛；新曲同分保持原顺序、15 和 35 的上限；转换后谱面的顺序、谱面指回所属乐曲、`notes` 和 `level`；新的 `src/components/integrations/diving-fish/player.test.ts`（加进 `test:integrations`）测网页端包装抛的是普通 `Error`、`String(error)`、`console.error` 的参数、网络错误原样往外抛。worker 里「上传无论状态码都报成功」没有测试，是对照改动读过的。
+    - 改动检查：49 处，全部被发现。
+    - 浏览器里没有验证：要用到水鱼账号的凭据，按要求只用模拟 HTTP 测试；网页端的包装由上面的测试覆盖。

@@ -58,7 +58,7 @@
   },
   "package.json": {
     "jsonc/indent": {
-      "count": 58
+      "count": 59
     },
     "jsonc/sort-keys": {
       "count": 2
@@ -1262,20 +1262,6 @@
       "count": 89
     }
   },
-  "src/components/integrations/diving-fish/index.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 1
-    },
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "import/newline-after-import": {
-      "count": 1
-    },
-    "object-shorthand": {
-      "count": 1
-    }
-  },
   "src/components/integrations/diving-fish/player.ts": {
     "import/consistent-type-specifier-style": {
       "count": 1
@@ -1287,12 +1273,6 @@
       "count": 3
     },
     "style/arrow-parens": {
-      "count": 1
-    },
-    "object-shorthand": {
-      "count": 1
-    },
-    "antfu/if-newline": {
       "count": 1
     },
     "style/brace-style": {

@@ -1,20 +1,23 @@
 import {
-    convertSaltMetaNextCompactedToNormal,
-    convertSaltMetaNextToSavedMusicList,
-    getSaltNetMusicIdForChartType,
-    SALTMETA_NEXT_COMPACTED_URL,
-    SALTMETA_NEXT_COMPACTED_VERSION,
-    type SaltMetaMusicMetadataNextCompacted,
-} from "@core/music/saltmeta";
-import type { SavedMusicList } from "@core/music/type";
+    buildDivingFishB50,
+    DivingFishError,
+    fetchDivingFishRecords,
+    queryDivingFishPlayer,
+} from "@core/integrations/diving-fish/client";
 import type {
     DivingFishB50,
     DivingFishFullRecord,
     DivingFishRecordsResponse,
     DivingFishResponse,
 } from "@core/integrations/diving-fish/type";
-
-const API_BASE_URL = "https://www.diving-fish.com/api/maimaidxprober";
+import {
+    convertSaltMetaNextCompactedToNormal,
+    convertSaltMetaNextToSavedMusicList,
+    SALTMETA_NEXT_COMPACTED_URL,
+    SALTMETA_NEXT_COMPACTED_VERSION,
+    type SaltMetaMusicMetadataNextCompacted,
+} from "@core/music/saltmeta";
+import type { SavedMusicList } from "@core/music/type";
 
 let musicDataPromise: Promise<SavedMusicList | null> | null = null;
 
@@ -51,81 +54,34 @@ async function getWorkerSafeMusicData(): Promise<SavedMusicList | null> {
     return musicDataPromise;
 }
 
+/** The web app has always thrown a plain `Error` here; users see it through `toString()`. */
+function plainError(error: unknown): unknown {
+    return error instanceof DivingFishError ? new Error(error.message) : error;
+}
+
 export async function fetchPlayerData(username: string): Promise<DivingFishResponse> {
-    const requestBody = {
-        username: username,
-        b50: "1",
-    };
-
     try {
-        const response = await fetch(`${API_BASE_URL}/query/player`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("user not exists");
-            }
-            // 400: user not found, 403: privacy/consent
-            const err = await response.json().catch(() => ({}));
-            if (err && err.message) throw new Error(err.message);
-            throw new Error(`Request failed with status code ${response.status}`);
-        }
-        const data: DivingFishResponse = await response.json();
-        return data;
+        return await queryDivingFishPlayer(username);
     } catch (error) {
-        console.error("Error fetching player data:", error);
-        throw error;
+        const thrown = plainError(error);
+        console.error("Error fetching player data:", thrown);
+        throw thrown;
     }
 }
 
 export async function fetchPlayerRecordsByImportToken(
     importToken: string
 ): Promise<DivingFishRecordsResponse> {
-    const response = await fetch(`${API_BASE_URL}/player/records`, {
-        method: "GET",
-        headers: {
-            "Import-Token": importToken,
-        },
-    });
-
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        if (err && err.message) {
-            throw new Error(err.message);
-        }
-        throw new Error(`Request failed with status code ${response.status}`);
+    try {
+        return await fetchDivingFishRecords(importToken);
+    } catch (error) {
+        throw plainError(error);
     }
-
-    return response.json();
 }
 
 export async function calculateB50FromRecords(
     records: DivingFishFullRecord[]
 ): Promise<DivingFishB50> {
     const musicInfo = await getWorkerSafeMusicData();
-    const newScores: DivingFishFullRecord[] = [];
-    const oldScores: DivingFishFullRecord[] = [];
-
-    for (const record of records) {
-        const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
-        const music = musicInfo?.musicList[musicId];
-        if (music?.info?.isNew) {
-            newScores.push(record);
-        } else {
-            oldScores.push(record);
-        }
-    }
-
-    newScores.sort((a, b) => b.ra - a.ra);
-    oldScores.sort((a, b) => b.ra - a.ra);
-
-    return {
-        dx: newScores.slice(0, 15),
-        sd: oldScores.slice(0, 35),
-    };
+    return buildDivingFishB50(records, musicInfo?.musicList);
 }
