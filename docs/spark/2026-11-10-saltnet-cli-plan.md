@@ -202,7 +202,7 @@
 - [x] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
 - [x] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
 - [x] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
-- [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
+- [x] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
 - [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
 
 **P3 的 CLI 部分**
@@ -803,3 +803,9 @@
     - 它自己定下的，我都同意：计划里这一步的标题只点了 `song`、`chart`、`charts`，但设计 4.4 说凡是输出谱面的地方都用同一个谱面行，所以六个命令一起接；一个用户都没有却写了 `--user` 时是 `NO_USER` 而不是 `NOT_FOUND`；有成绩但更新时间未知时也报 `STALE_SCORES`，文字是「成绩的更新时间未知」，设计文档跟着补了这一句；`NO_SCORES`、`PARTIAL_SCORES` 和 `STALE_SCORES` 三者只出一个；曲库的警告排在成绩警告前面。固定的 SaltMeta 夹具里只有 8 张新版本的非宴谱，B15 最多 15 张只在 core 的测试里测。
     - 测试：改动检查 CLI 65 处、core 7 处，第一次 CLI 47 处、core 7 处被发现。没被发现的 18 处由 Gemini 补测试（只改 `cli/tests/`）：`deluxeScoreMax` 为 0 或缺失、超出 `Date` 范围的变化时间和更新时间、只有一条详细成绩、记录里的游玩次数优先于估算、正好 3 天的边界、`carryScoreContext` 的合并顺序和保留的字段、出错时带上成绩警告，以及 `course show`、`collection show` 每一行的成绩和警告。补完再跑这 18 处，17 处被发现；剩下的一处是 `kaleidxscope` 把成绩传给门的详情：夹具里没有任何一个门用到的曲目，命令测试里门下面一行谱面都没有，看不出成绩有没有传进去（成绩警告那一处被发现了）。
     - 按决定 66 不单独送审，并入 P2 的整体审查。网页端只有 `deluxeScoreTier.ts` 改成再导出，`pnpm build` 通过。
+71. **P3-4 的实现（2026-11-17）**：
+    - 这一步在 Codex 暂停的那段时间交给了 Gemini（Gemini 3.8 Flash）。它把更新 worker 里拉取和合并成绩的逻辑搬进 `shared/core/sync/`：`sync.ts`（`chooseSyncSource`、`existingScoresForSync`、舞萌、落雪、水鱼公开 B50、水鱼用户名和 Import-Token 五种拉取），`qrCode.ts`（`normalizeQrCodeFromInput`），`type.ts`（`UpdateUserResponse` 和要注入的客户端、选项）；进度和上传通过注入的回调报告，core 里不再调提示条。`toHalfWidth` 搬到 `shared/core/util/`。worker 只剩消息收发和把网页端的客户端、提示条接到这些回调上；`src/utils/toHalfWidth.ts` 和 `updateUser.type.ts` 改成从 core 再导出。三个新测试文件进 `test:integrations`。
+    - 它自己定下的，我都同意：注入的接口写成函数属性而不是方法签名（新文件要过 `ts/method-signature-style`）；水鱼公开 B50 失败时照旧得到 `undefined` 而不是 `null`；worker 的 import 按 lint 的顺序重排。worker 里原有违规的豁免计数按实际剩下的手工调低了（`eslint-suppressions.json`，只降不升），没用 `--prune-suppressions`。
+    - 我核对过行为：把搬走的函数和原来的 worker 逐段做文本比较，差别只有改名和改成注入的选项。一处可以接受的边界：`qrCode` 不是字符串时，现在在 worker 的 `try` 里面抛错，worker 发回 `updateUserError`；网页端只会传字符串，所以没有实际影响。worker 把二维码打到控制台的那一行照原样保留，网页端行为不变（写进最终报告）。
+    - 测试：改动检查 56 处，第一次 49 处被发现。没被发现的 7 处由 Gemini 补测试（只改两个测试文件）：链接里编码后面还有文字时的截取、`http` 和 `https` 两种链接、落雪没给成绩时不报「从落雪补充数据成功」、游戏返回的收藏品和旅行伙伴原样带出、快速更新的请求体里没有 `qrCode` 这个键（原来的测试用 `toEqual`，值为 `undefined` 的键看不出来）。补完再跑，6 处被发现；剩下的一处等价：长度正好 64 的 `SGWCMAID` 输入走到普通分支，结果相同。
+    - 按决定 66 不单独送审，并入 P2 的整体审查（这一步在 P2 的审查范围之内提交）。

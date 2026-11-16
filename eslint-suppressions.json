@@ -1202,40 +1202,28 @@
     }
   },
   "src/components/data/user/update/updateUser.type.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 3
-    },
     "style/member-delimiter-style": {
-      "count": 13
+      "count": 2
     }
   },
   "src/components/data/user/update/updateUser.worker.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 2
-    },
-    "perfectionist/sort-imports": {
-      "count": 2
-    },
-    "import/consistent-type-specifier-style": {
-      "count": 1
-    },
     "no-restricted-globals": {
       "count": 8
     },
     "style/arrow-parens": {
-      "count": 10
+      "count": 8
     },
     "style/brace-style": {
-      "count": 18
+      "count": 13
     },
     "style/comma-dangle": {
-      "count": 6
+      "count": 2
     },
     "antfu/if-newline": {
-      "count": 9
+      "count": 2
     },
     "style/quotes": {
-      "count": 4
+      "count": 2
     },
     "style/indent-binary-ops": {
       "count": 2
@@ -1939,11 +1927,6 @@
     },
     "perfectionist/sort-named-exports": {
       "count": 2
-    }
-  },
-  "src/utils/toHalfWidth.ts": {
-    "style/arrow-parens": {
-      "count": 1
     }
   },
   "src/utils/useSelectValue.ts": {

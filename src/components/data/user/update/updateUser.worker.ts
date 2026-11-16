@@ -1,36 +1,53 @@
 // src/utils/updateUserWorker.ts
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
+import type { SyncOptions } from "@core/sync/type";
+import type { User } from "@core/user/type";
+import { uploadDivingFishRecords } from "@core/integrations/diving-fish/client";
+import { normalizeQrCodeFromInput } from "@core/sync/qrCode";
 import {
+    chooseSyncSource,
+    syncFromDivingFishImportToken,
+    syncFromDivingFishName,
+    syncFromInGame,
+    syncFromLXNS,
+} from "@core/sync/sync";
+import { getUserDisplayName } from "@core/user/type";
+import {
+    calculateB50FromRecords,
     fetchPlayerData,
     fetchPlayerRecordsByImportToken,
-    calculateB50FromRecords,
 } from "@/components/integrations/diving-fish/player";
-import type { DivingFishFullRecord, DivingFishResponse } from "@core/integrations/diving-fish/type";
-import type { UpdateUserResponse } from "@/components/data/user/update/updateUser.type";
-import { uploadDivingFishRecords } from "@core/integrations/diving-fish/client";
-import {
-    migrateB50,
-    migrateRecordList,
-    supplementRecordList,
-    supplementB50,
-} from "@core/user/migrateData";
-import { convertDetailed, getUserDisplayName, type User } from "@core/user/type";
-import { postAPI, postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
 import { fetchLXNSScore } from "@/components/integrations/lxns/fetchScore";
 import { uploadScoresToLXNS } from "@/components/integrations/lxns/uploadScore";
-import { toHalfWidth } from "@/utils/toHalfWidth";
+import { postAPI, postAPIJSON, SaltAPIEndpoints } from "@/components/integrations/SaltNet";
+
+const syncOptions: SyncOptions = {
+    clients: {
+        calculateB50FromRecords,
+        fetchDivingFishPlayer: fetchPlayerData,
+        fetchDivingFishRecords: fetchPlayerRecordsByImportToken,
+        fetchLXNSScore,
+        postGameAPIJSON: postAPIJSON,
+    },
+    report: info,
+    uploadToDivingFish,
+    uploadToLXNS,
+};
 
 self.onmessage = event => {
     const { type, user, qrCode, requestId } = event.data;
     if (type === "updateUser") {
         try {
-            if (user.inGame.enabled) {
-                runUserUpdate(fromInGame(user, qrCode), requestId);
-            } else if (user.lxns?.auth?.accessToken) {
-                runUserUpdate(fromLXNS(user), requestId);
-            } else if (user.divingFish.importToken) {
-                runUserUpdate(fromDivingFishByImportToken(user), requestId);
-            } else if (user.divingFish.name) {
-                runUserUpdate(fromDFLikeInGame(user), requestId);
+            const source = chooseSyncSource(user);
+            if (source === "inGame") {
+                console.log(qrCode ? normalizeQrCodeFromInput(qrCode) : null);
+                runUserUpdate(syncFromInGame(user, qrCode, syncOptions), requestId);
+            } else if (source === "lxns") {
+                runUserUpdate(syncFromLXNS(user, syncOptions), requestId);
+            } else if (source === "divingFishImportToken") {
+                runUserUpdate(syncFromDivingFishImportToken(user, syncOptions), requestId);
+            } else if (source === "divingFishName") {
+                runUserUpdate(syncFromDivingFishName(user, syncOptions), requestId);
             } else {
                 self.postMessage({
                     type: "updateUserResult",
@@ -91,200 +108,6 @@ function runUserUpdate(update: Promise<unknown>, requestId: string): void {
         });
 }
 
-async function fromLXNS(user: User) {
-    info(`正在从落雪获取用户信息：${getUserDisplayName(user)}`);
-    try {
-        const data = await fetchLXNSScore(user);
-        const existingScores = getExistingScoreData(user);
-        const detailedRecords = migrateRecordList(
-            existingScores,
-            Object.values(data.scores),
-            data.updateTime
-        );
-        info(`从落雪获取用户信息成功：${getUserDisplayName(user)}`);
-        return {
-            rating: data.rating,
-            name: data.name,
-            b50: migrateB50(existingScores, data.b50, data.updateTime),
-            detailed: convertDetailed(detailedRecords),
-            updateTime: data.updateTime,
-            lxns: user.lxns,
-            scoreHistorySource: "lxns",
-        };
-    } catch (e) {
-        const errorMsg = e?.toString?.() || "Unknown error";
-        info(`从落雪获取 ${getUserDisplayName(user)} 信息失败：${errorMsg}`, errorMsg);
-        return null;
-    }
-}
-
-async function fromDivingFish(user: User) {
-    info(`正在从水鱼获取用户信息：${user.divingFish.name}`);
-    return fetchPlayerData(user.divingFish.name as string)
-        .then((data: DivingFishResponse) => {
-            const updateTime = Date.now();
-            info(`从水鱼获取用户信息成功：${user.divingFish.name}`);
-            return {
-                rating: data.rating,
-                b50: migrateB50(getExistingScoreData(user), data.charts, updateTime),
-                updateTime,
-                name: data.nickname,
-                scoreHistorySource: "divingFishPublic",
-            };
-        })
-        .catch(e => {
-            info(`从水鱼获取 ${user.divingFish.name} 信息失败：${e.toString()}`, e.toString());
-        });
-}
-
-async function fromInGame(user: User, qrCodeInput?: string) {
-    info(`正在从 InGame 获取用户信息：${getUserDisplayName(user)}`);
-    const qrCode = qrCodeInput ? normalizeQrCodeFromInput(qrCodeInput) : null;
-    console.log(qrCode);
-    if ((qrCodeInput || !user.inGame?.id) && !qrCode) {
-        info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败，二维码无效`);
-        return null;
-    }
-    const isFastUpdate = !qrCode;
-    const data: UpdateUserResponse | null = await fetchInGameData(
-        user.inGame.id as number,
-        "",
-        qrCode ?? undefined
-    );
-    if (!data) {
-        info(`从 InGame 获取 ${getUserDisplayName(user)} 信息失败`);
-        return null;
-    }
-    info(`从 InGame 获取用户信息成功：${getUserDisplayName(user)}`);
-
-    let supplementRecords: DivingFishFullRecord[] | null = null;
-    if (isFastUpdate) {
-        if (user.lxns?.auth?.accessToken) {
-            info(`正在从落雪补充 ${getUserDisplayName(user)} 的数据`);
-            try {
-                const lxnsResult = await fetchLXNSScore(user);
-                supplementRecords = lxnsResult.scores ? Object.values(lxnsResult.scores) : null;
-                if (supplementRecords) info(`从落雪补充数据成功`);
-            } catch (e) {
-                const errorMsg = e?.toString?.() || "Unknown error";
-                info(`从落雪补充数据失败：${errorMsg}`, errorMsg);
-            }
-        }
-        if (!supplementRecords && user.divingFish?.importToken) {
-            info(`正在从水鱼补充 ${getUserDisplayName(user)} 的数据`);
-            try {
-                const dfResult = await fetchPlayerRecordsByImportToken(user.divingFish.importToken);
-                supplementRecords = dfResult.records;
-                info(`从水鱼补充数据成功`);
-            } catch (e) {
-                const errorMsg = e?.toString?.() || "Unknown error";
-                info(`从水鱼补充数据失败：${errorMsg}`, errorMsg);
-            }
-        }
-    }
-
-    const mergedData = supplementRecords
-        ? supplementRecordList(data.divingFishData, supplementRecords)
-        : data.divingFishData;
-    const updateTime = Date.now();
-    const existingScores = getExistingScoreData(user);
-    const divingFishData = migrateRecordList(existingScores, mergedData, updateTime);
-
-    if (user.divingFish.importToken) {
-        info(`正在上传 ${getUserDisplayName(user)} 的数据到水鱼`);
-        uploadToDivingFish(data.divingFishData, user.divingFish.importToken);
-    }
-    if (user.lxns?.auth?.accessToken) {
-        info(`正在同步 ${getUserDisplayName(user)} 的数据到落雪`);
-        uploadToLXNS(data.divingFishData, user);
-    }
-
-    const mergedB50 = supplementRecords ? supplementB50(data.b50, supplementRecords) : data.b50;
-
-    return {
-        userId: data.userId || user.inGame.id,
-        rating: data.rating,
-        name: toHalfWidth(data.userName),
-        b50: migrateB50(existingScores, mergedB50, updateTime),
-        detailed: convertDetailed(divingFishData),
-        updateTime,
-        items: data.items || [],
-        characters: data.characters || [],
-        info: data.info,
-        scoreHistorySource: "inGame",
-    };
-}
-async function fromDFLikeInGame(user: User) {
-    info(`正在从水鱼获取用户详细信息：${getUserDisplayName(user)}`);
-    const data: UpdateUserResponse | null = await fetchDFDataLikeInGame(
-        user.divingFish.name as string
-    );
-    if (data) {
-        const updateTime = Date.now();
-        const existingScores = getExistingScoreData(user);
-        const divingFishData = migrateRecordList(existingScores, data.divingFishData, updateTime);
-        info(`从水鱼获取用户详细信息成功：${getUserDisplayName(user)}`);
-        return {
-            rating: data.rating,
-            name: toHalfWidth(data.userName),
-            b50: migrateB50(existingScores, data.b50, updateTime),
-            detailed: convertDetailed(divingFishData),
-            updateTime,
-            scoreHistorySource: "divingFishPublic",
-        };
-    } else {
-        return await fromDivingFish(user);
-    }
-}
-
-async function fromDivingFishByImportToken(user: User) {
-    info(`正在从水鱼获取用户信息（Import-Token）：${getUserDisplayName(user)}`);
-    try {
-        const data = await fetchPlayerRecordsByImportToken(user.divingFish.importToken as string);
-        const b50 = await calculateB50FromRecords(data.records);
-        const updateTime = Date.now();
-        const existingScores = getExistingScoreData(user);
-        const detailedRecords = migrateRecordList(existingScores, data.records, updateTime);
-        info(`从水鱼获取用户信息成功：${getUserDisplayName(user)}`);
-        return {
-            rating: data.rating,
-            name: toHalfWidth(data.nickname),
-            b50: migrateB50(existingScores, b50, updateTime),
-            detailed: convertDetailed(detailedRecords),
-            updateTime,
-            scoreHistorySource: "divingFishImport",
-        };
-    } catch (e) {
-        const errorMsg = e?.toString?.() || "Unknown error";
-        info(`从水鱼获取用户信息失败：${errorMsg}`, errorMsg);
-        return null;
-    }
-}
-
-function getExistingScoreData(user: User) {
-    if (user.data.detailed) return user.data.detailed;
-    if (!user.data.b50) return undefined;
-    return convertDetailed([...user.data.b50.sd, ...user.data.b50.dx]);
-}
-
-function fetchInGameData(
-    userId: number,
-    importToken?: string,
-    qrCode?: string
-): Promise<UpdateUserResponse | null> {
-    return postAPIJSON(SaltAPIEndpoints.UpdateUser, {
-        userId,
-        importToken,
-        ...(qrCode ? { qrCode } : {}),
-    });
-}
-function fetchDFDataLikeInGame(userName: string): Promise<UpdateUserResponse | null> {
-    return postAPIJSON(SaltAPIEndpoints.UpdateUserFromDivingFish, { userName }).catch(e => {
-        info(`获取 InGame 数据失败：${e.toString()}`, e.toString());
-        return null;
-    });
-}
-
 function checkLogin(user: User, qrCodeInput?: string) {
     const userName = user.data.name ?? user.inGame?.name ?? user.inGame?.id ?? "未知";
     const qrCode = normalizeQrCodeFromInput(qrCodeInput);
@@ -312,18 +135,7 @@ function checkLogin(user: User, qrCodeInput?: string) {
             info(e instanceof Error ? e.message : "请求游戏API失败，请稍候重试");
         });
 }
-function normalizeQrCodeFromInput(raw?: string): string | null {
-    const value = raw?.trim();
-    if (!value) return null;
-    if (value.startsWith("SGWCMAID") && value.length >= 64) return value.slice(-64);
-    if (value.startsWith("http")) {
-        const matches = value.match(/MAID.{0,76}/g);
-        if (matches?.[0]) return matches[0].slice(-64);
-        return null;
-    }
-    if (value.length >= 64) return value.slice(-64);
-    return null;
-}
+
 function clearIllegalTickets(user: User, qrCodeInput?: string) {
     const userName = getUserDisplayName(user);
     const qrCode = normalizeQrCodeFromInput(qrCodeInput);
@@ -338,6 +150,7 @@ function clearIllegalTickets(user: User, qrCodeInput?: string) {
             info(e instanceof Error ? e.message : "请求游戏API失败，请稍候重试");
         });
 }
+
 function previewStockedTickets(user: User) {
     const userName = getUserDisplayName(user);
     info(`正在获取 ${userName} 的倍券`);
