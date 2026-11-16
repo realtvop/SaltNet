@@ -1,6 +1,14 @@
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
-import { comboLabel, COMBOS, rankLabel, RANKS, syncLabel } from "../../src/refs/status";
+import {
+    comboLabel,
+    COMBOS,
+    parseScoreCondition,
+    rankLabel,
+    RANKS,
+    scoreReachesCondition,
+    syncLabel,
+} from "../../src/refs/status";
 
 const EXPECTED_RANKS = [
     "d",
@@ -98,5 +106,88 @@ describe("the sync labels", () => {
         expect(syncLabel(SyncStatus.FullSyncPlus)).toBe("FS+");
         expect(syncLabel(SyncStatus.FullSyncDX)).toBe("FDX");
         expect(syncLabel(SyncStatus.FullSyncDXPlus)).toBe("FDX+");
+    });
+});
+
+describe("score conditions", () => {
+    const score = (overrides: Partial<Parameters<typeof scoreReachesCondition>[0]> = {}) => ({
+        achievements: 100,
+        rate: RankRate.sss,
+        fc: ComboStatus.FullComboPlus,
+        fs: SyncStatus.FullSyncDX,
+        ...overrides,
+    });
+
+    it("parses every game spelling without regard to case", () => {
+        for (const rank of RANKS) {
+            expect(parseScoreCondition(rankLabel(rank).toUpperCase())).toEqual({
+                kind: "rank",
+                value: rank,
+            });
+        }
+        expect(parseScoreCondition("ClEaR")).toEqual({ kind: "clear" });
+        expect(parseScoreCondition("fC+")).toEqual({
+            kind: "combo",
+            value: ComboStatus.FullComboPlus,
+        });
+        expect(parseScoreCondition("FdX+")).toEqual({
+            kind: "sync",
+            value: SyncStatus.FullSyncDXPlus,
+        });
+    });
+
+    it("uses at-least ordering and rejects unknown stored values", () => {
+        expect(scoreReachesCondition(score(), parseScoreCondition("sss"))).toBe(true);
+        expect(scoreReachesCondition(score(), parseScoreCondition("sss+"))).toBe(false);
+        expect(scoreReachesCondition(score(), parseScoreCondition("fc"))).toBe(true);
+        expect(scoreReachesCondition(score(), parseScoreCondition("ap"))).toBe(false);
+        expect(scoreReachesCondition(score(), parseScoreCondition("fs"))).toBe(true);
+        expect(scoreReachesCondition(score(), parseScoreCondition("fdx+"))).toBe(false);
+        expect(scoreReachesCondition(score({ rate: "unknown" }), parseScoreCondition("d"))).toBe(
+            false
+        );
+        expect(scoreReachesCondition(score({ fc: "unknown" }), parseScoreCondition("fc"))).toBe(
+            false
+        );
+        expect(scoreReachesCondition(score({ fs: "unknown" }), parseScoreCondition("sync"))).toBe(
+            false
+        );
+    });
+
+    it("checks every rank, combo and sync threshold at its exact and one-below boundary", () => {
+        for (let index = 0; index < RANKS.length; index++) {
+            const condition = parseScoreCondition(rankLabel(RANKS[index]));
+            expect(scoreReachesCondition(score({ rate: RANKS[index] }), condition)).toBe(true);
+            const below = index === 0 ? "unknown" : RANKS[index - 1];
+            expect(scoreReachesCondition(score({ rate: below }), condition)).toBe(false);
+        }
+        for (let index = 1; index < COMBOS.length; index++) {
+            const condition = parseScoreCondition(comboLabel(COMBOS[index])!);
+            expect(scoreReachesCondition(score({ fc: COMBOS[index] }), condition)).toBe(true);
+            expect(scoreReachesCondition(score({ fc: COMBOS[index - 1] }), condition)).toBe(false);
+        }
+        const syncs = Object.values(SyncStatus);
+        for (let index = 1; index < syncs.length; index++) {
+            const condition = parseScoreCondition(syncLabel(syncs[index])!);
+            expect(scoreReachesCondition(score({ fs: syncs[index] }), condition)).toBe(true);
+            expect(scoreReachesCondition(score({ fs: syncs[index - 1] }), condition)).toBe(false);
+        }
+    });
+
+    it("checks clear at exactly 80 and requires a numeric achievement", () => {
+        expect(
+            scoreReachesCondition(score({ achievements: 79.9999 }), parseScoreCondition("clear"))
+        ).toBe(false);
+        expect(
+            scoreReachesCondition(score({ achievements: 80 }), parseScoreCondition("clear"))
+        ).toBe(true);
+        expect(scoreReachesCondition(score({ achievements: null }), parseScoreCondition("d"))).toBe(
+            false
+        );
+        expect(scoreReachesCondition(undefined, parseScoreCondition("d"))).toBe(false);
+    });
+
+    it("lists every valid condition in an invalid-value USAGE error", () => {
+        expect(() => parseScoreCondition("rainbow")).toThrow(/d、c、b.*sss\+、clear.*fdx\+/);
     });
 });

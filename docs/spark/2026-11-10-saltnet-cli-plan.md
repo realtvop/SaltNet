@@ -183,7 +183,7 @@
 - [x] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
 - [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
 - [x] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
-- [ ] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
+- [x] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
 - [ ] P2-20 `feat(cli): add b50 and rating commands`〔新〕
 - [ ] P2-21 `feat(cli): add history command`〔新〕
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
@@ -825,3 +825,15 @@
     - 和网页端的一处差别：网页端用 `file.text()` 读文件，坏的 UTF-8 字节会被换成替换字符；CLI 严格解码，直接报 `INVALID_BACKUP`。
     - 测试：改动检查 40 处，第一次 28 处被发现；1 处等价（查凭据时的 `Object.hasOwn`：`JSON.parse` 读出的 `__proto__` 是自有属性，继承来的值里也没有凭据字段）。另外 11 处由 Gemini 补测试（新文件 `cli/tests/runtime/credentials.test.ts`，`backup.test.ts` 新增 11 个用例，都只改测试）：版本不是 1、用户条目不是对象、`null` 不算凭据、凭据文件只列有凭据的用户、预览里的 Import-Token 数、两个用户各自保留自己的落雪授权、解码器给的原因写进消息、字符串里坏的 UTF-8、事务失败时（用 SQLite 触发器让插入失败）不留暂存文件、`byteSize` 按 UTF-8 字节计、`--keep-lxns` 的回退。补完全部被发现。我的三处修正另做 6 处改动检查，5 处被发现，剩下的就是上面说的事件检查（等价）。
     - 按决定 66 不单独送审，并入 P2 的整体审查。
+74. **P2-19 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：`charts` 的成绩筛选 `--achieved` 和 `--missing`（各接一个条件：最低评级、`clear`、连击状态或同步状态；`--missing` 也留下没有成绩的谱面）、`--recent`（成绩有变化时间的谱面）、`--stats`，按成绩排序（`--sort achievements|rating|playcount|recent`）和分组（`--group-by rank|combo|sync`）。条件的解析和判断在 `cli/src/refs/status.ts`（`parseScoreCondition`、`scoreReachesCondition`），统计在新文件 `cli/src/catalog/chartStats.ts`（`countChartResultStats`）。这些都要用户：`requireUserForScores` 在拉取任何东西之前就报 `NO_USER`；不带它们的 `charts` 照旧不要用户。
+    - 它自己定下的，我都同意：
+        - `--missing` 现在必须带条件；设计 3.3 里跟 `--plate`、`--collection` 一起用时省略条件的写法要用到收藏品的完成判断，留给 P2-24。`--sort gain` 仍是 `USAGE`，留给 P2-23。
+        - 统计里的 `sss` 含 SSS+，另给一个 `sssPlus`：网页端曲目页的 SSS 显示的就是 sss 加 sssp。`played` 要求达成率是数字；`fc`、`ap`、`fdx` 只看状态，不看有没有达成率。
+        - 评级条件看存下来的 `rate`（和网页端显示的评级一致），`clear` 是达成率不低于 80。存的状态认不出来时，这张谱面进键为 null 的组，也不满足任何条件。
+        - 有成绩时 `--sort default` 是网页端曲目页的顺序：玩过的在前，按达成率从高到低，相同时按游戏里的顺序；没玩过的按游戏里的顺序。`--asc` 只反转达成率和没玩过那部分的顺序；玩过的仍在前，达成率相同时的游戏顺序也不反转。
+        - `--sort recent` 遇到相同的变化时间，依次比达成率、rating、定数（都是高的在前，`--asc` 不反转这一串），最后比谱面键；`--recent` 让默认排序变成 `recent`。
+        - 分组时 tsv 每组写一行 `# stats`；text 输出把统计写成一行放在表格前面。
+    - `AGENTS.md` 里 `charts.ts`、`chartSort.ts`、`chartGroups.ts` 和 `refs/status.ts` 这几句是我改的（brief 不让 Codex 动 `AGENTS.md`）。
+    - 测试：改动检查 74 处，第一次 66 处被发现。没被发现的 8 处由 Gemini 补测试（只改 `cli/tests/commands/chartsScores.test.ts`）：普通 FC 和普通 FDX 计入统计、条件两边的空格和大小写、`--sort recent` 按变化时间而不是达成率排、相同变化时间时的比较链（升序和降序各一次）、达成率不是数字的记录（存成 null，谱面行里有成绩但不算玩过）。补完再跑，8 处全部被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。只动了 CLI，网页端没有变化。

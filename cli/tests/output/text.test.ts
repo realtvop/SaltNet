@@ -94,15 +94,27 @@ describe("a list as text", () => {
         ).toEqual(["14（2 条）", "title", "A", "", "13+（1 条）", "title", "B"]);
     });
 
-    it("prints the rest of data, such as statistics, as an outline after the table", () => {
+    it("prints statistics as a short line above the table", () => {
         expect(list({ items: [{ a: 1 }], stats: { sss: 3, fc: 1 } })).toEqual([
+            "统计：SSS 3，FC 1",
             "a",
             "1",
-            "",
-            "stats:",
-            "  sss: 3",
-            "  fc: 1",
         ]);
+    });
+
+    it("prints each group's statistics below its heading", () => {
+        expect(
+            list({
+                groups: [
+                    {
+                        key: "SSS+",
+                        count: 2,
+                        stats: { total: 2, played: 2, sss: 2, sssPlus: 2 },
+                        items: [{ title: "A" }],
+                    },
+                ],
+            })
+        ).toEqual(["SSS+（2 条）", "统计：总数 2，游玩 2，SSS 2，SSS+ 2", "title", "A"]);
     });
 
     it("lists warnings with the command that fixes them", () => {

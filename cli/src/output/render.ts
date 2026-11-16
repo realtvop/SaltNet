@@ -85,6 +85,11 @@ function renderTsvResult(
         stderr += commentLines("meta", result.meta);
     }
     for (const warning of result.warnings ?? []) stderr += commentLines("warning", warning);
+    for (const group of groupsOf(data)) {
+        if (isPlainObject(group.stats)) {
+            stderr += commentLines("stats", { group: group.key ?? null, ...group.stats });
+        }
+    }
     for (const [key, value] of Object.entries(data)) {
         if (key !== "items" && key !== "groups") stderr += commentLines(key, value);
     }

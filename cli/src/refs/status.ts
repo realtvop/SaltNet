@@ -1,8 +1,10 @@
 /**
  * The game's spellings of ranks, combo statuses and sync statuses (design 4.5): `SSS+`, `AP+`,
- * `FDX+`. Commands print these; the score filters of later steps accept them as well.
+ * `FDX+`. Commands print these, and the score filters accept the same spellings without regard
+ * to case.
  */
 import { ComboStatus, RANK_RATE_DISPLAY_NAMES, RankRate, SyncStatus } from "@core/mai/types";
+import { usageError } from "../errors";
 
 /** Every rank, from the lowest to the highest (the order of the enum). */
 export const RANKS: readonly RankRate[] = Object.values(RankRate);
@@ -43,4 +45,71 @@ const SYNC_LABELS: Readonly<Record<SyncStatus, string | null>> = {
 /** `SYNC`, `FS`, `FS+`, `FDX` or `FDX+`; null for no sync. */
 export function syncLabel(sync: SyncStatus): string | null {
     return SYNC_LABELS[sync];
+}
+
+export type ScoreCondition =
+    | { readonly kind: "rank"; readonly value: RankRate }
+    | { readonly kind: "clear" }
+    | { readonly kind: "combo"; readonly value: ComboStatus }
+    | { readonly kind: "sync"; readonly value: SyncStatus };
+
+export const SCORE_CONDITIONS = [
+    ...RANKS.map(rankLabel).map(value => value.toLowerCase()),
+    "clear",
+    ...COMBOS.map(comboLabel)
+        .filter((value): value is string => value !== null)
+        .map(value => value.toLowerCase()),
+    ...SYNCS.map(syncLabel)
+        .filter((value): value is string => value !== null)
+        .map(value => value.toLowerCase()),
+] as const;
+
+/** One `--achieved` or `--missing` threshold, in the game's spelling. */
+export function parseScoreCondition(text: string): ScoreCondition {
+    const folded = text.trim().toLowerCase();
+    if (folded === "clear") return { kind: "clear" };
+
+    const rank = RANKS.find(value => rankLabel(value).toLowerCase() === folded);
+    if (rank !== undefined) return { kind: "rank", value: rank };
+    const combo = COMBOS.find(value => comboLabel(value)?.toLowerCase() === folded);
+    if (combo !== undefined) return { kind: "combo", value: combo };
+    const sync = SYNCS.find(value => syncLabel(value)?.toLowerCase() === folded);
+    if (sync !== undefined) return { kind: "sync", value: sync };
+
+    throw usageError(`成绩条件「${text}」无效；可用：${SCORE_CONDITIONS.join("、")}`);
+}
+
+function reaches<T extends string>(
+    current: string | null,
+    required: T,
+    order: readonly T[]
+): boolean {
+    const currentIndex = order.indexOf(current as T);
+    const requiredIndex = order.indexOf(required);
+    return currentIndex >= 0 && requiredIndex >= 0 && currentIndex >= requiredIndex;
+}
+
+/** Whether a stored score reaches a parsed threshold, using the version-plate ordering. */
+export function scoreReachesCondition(
+    score:
+        | {
+              readonly achievements: number | null;
+              readonly rate: string | null;
+              readonly fc: string | null;
+              readonly fs: string | null;
+          }
+        | undefined,
+    condition: ScoreCondition
+): boolean {
+    if (!score || typeof score.achievements !== "number") return false;
+    switch (condition.kind) {
+        case "clear":
+            return score.achievements >= 80;
+        case "rank":
+            return reaches(score.rate, condition.value, RANKS);
+        case "combo":
+            return reaches(score.fc, condition.value, COMBOS);
+        case "sync":
+            return reaches(score.fs, condition.value, SYNCS);
+    }
 }

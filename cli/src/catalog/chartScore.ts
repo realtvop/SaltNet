@@ -61,6 +61,20 @@ function scoreRow(chart: Chart, row: StoredChartScore, scores: UserScores): Char
     };
 }
 
+/** The score exactly as a chart row exposes it, or null when the user has no stored row. */
+export function chartScoreOf(chart: Chart, scores?: UserScores): ChartScoreRow | null {
+    if (!scores) return null;
+    const row = scores.byChartKey.get(chartKeyOf(chart));
+    return row ? scoreRow(chart, row, scores) : null;
+}
+
+/** The usable numeric change time behind `changedAt`, or null when the row prints null. */
+export function chartChangedAt(chart: Chart, scores?: UserScores): number | null {
+    if (!scores) return null;
+    const value = scores.byChartKey.get(chartKeyOf(chart))?.lastChangedAt ?? null;
+    return changedAt(value) === null ? null : value;
+}
+
 export interface ChartUserParts {
     readonly score: ChartScoreRow | null;
     readonly b50: B50Place | null;
@@ -70,9 +84,8 @@ export interface ChartUserParts {
 export function chartUserParts(chart: Chart, scores?: UserScores): ChartUserParts {
     if (!scores) return { score: null, b50: null };
     const key = chartKeyOf(chart);
-    const stored = scores.byChartKey.get(key);
     return {
-        score: stored ? scoreRow(chart, stored, scores) : null,
+        score: chartScoreOf(chart, scores),
         b50: scores.b50ByChartKey.get(key) ?? null,
     };
 }

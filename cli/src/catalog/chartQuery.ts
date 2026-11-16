@@ -6,10 +6,14 @@
  * and `chartGroups.ts`.
  */
 import type { LevelRange } from "../refs/level";
+import type { ScoreCondition } from "../refs/status";
+import type { UserScores } from "../users/scores";
 import type { ChartEntry, SongCatalog } from "./songs";
 import { UTAGE_GRADE } from "@core/chart/difficulty";
 import { levelInRange } from "../refs/level";
+import { scoreReachesCondition } from "../refs/status";
 import { constantOf } from "./chartRow";
+import { chartChangedAt } from "./chartScore";
 import { compareByGameOrder } from "./chartSort";
 import { searchChartEntries } from "./search";
 import { chartKeyOf, songCharts } from "./songs";
@@ -27,6 +31,13 @@ export interface ChartFilters {
     readonly search?: string;
     /** Only these charts, by chart key: what a gate, course, plate or collection stands for. */
     readonly within?: ReadonlySet<string>;
+    /** Keeps charts whose stored score reaches this threshold. */
+    readonly achieved?: ScoreCondition;
+    /** Keeps charts whose stored score does not reach this threshold, including unplayed charts. */
+    readonly missing?: ScoreCondition;
+    /** Keeps charts whose score has a usable change time. */
+    readonly recent?: boolean;
+    readonly scores?: UserScores;
 }
 
 /** Every chart of the catalog in the game's order. */
@@ -51,7 +62,18 @@ export function filterCharts(
     entries: readonly ChartEntry[],
     filters: ChartFilters
 ): ChartEntry[] {
-    const { levels, constants, grades, versions, search, within } = filters;
+    const {
+        levels,
+        constants,
+        grades,
+        versions,
+        search,
+        within,
+        achieved,
+        missing,
+        recent,
+        scores,
+    } = filters;
     const found = search === undefined ? undefined : searchChartEntries(catalog, search);
     const foundKeys = found && new Set(found.map(entry => chartKeyOf(entry.chart)));
     const gradeSet = grades && new Set(grades);
@@ -65,6 +87,10 @@ export function filterCharts(
         if (versionSet && !versionSet.has(String(music.info.from))) return false;
         const key = chartKeyOf(chart);
         if (within && !within.has(key)) return false;
+        const score = scores?.byChartKey.get(key);
+        if (achieved && !scoreReachesCondition(score, achieved)) return false;
+        if (missing && scoreReachesCondition(score, missing)) return false;
+        if (recent && chartChangedAt(chart, scores) === null) return false;
         return !foundKeys || foundKeys.has(key);
     });
 }

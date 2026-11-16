@@ -87,6 +87,14 @@ export function useUserScores(
     };
 }
 
+/** Fails before metadata work when an operation cannot mean anything without a selected user. */
+export function requireUserForScores(
+    args: { readonly options: { readonly user?: string } },
+    ctx: CommandContext
+): void {
+    resolveUser(listUsers(ctx.store()), args.options.user);
+}
+
 function record(value: unknown): Readonly<Record<string, unknown>> {
     return value !== null && typeof value === "object"
         ? (value as Readonly<Record<string, unknown>>)

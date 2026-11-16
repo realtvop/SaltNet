@@ -5,13 +5,23 @@
  * BASIC. A chart goes into the group of its own value, so the banquet charts, which have no
  * constant, make a group of their own whose key is null; it comes last.
  */
+import type { UserScores } from "../users/scores";
 import type { ChartEntry } from "./songs";
 import { difficultyLabel } from "../refs/difficulty";
 import { levelValue } from "../refs/level";
+import { comboLabel, COMBOS, rankLabel, RANKS, syncLabel, SYNCS } from "../refs/status";
 import { constantOf } from "./chartRow";
+import { chartScoreOf } from "./chartScore";
 
-/** What is on offer until the user data arrives: scores bring `rank`, `combo` and `sync`. */
-export const GROUP_KEYS = ["constant", "version", "level", "difficulty"] as const;
+export const GROUP_KEYS = [
+    "constant",
+    "version",
+    "level",
+    "difficulty",
+    "rank",
+    "combo",
+    "sync",
+] as const;
 export type GroupKey = (typeof GROUP_KEYS)[number];
 
 export interface ChartGroup {
@@ -24,7 +34,8 @@ export interface ChartGroup {
 function placeOf(
     { chart }: ChartEntry,
     by: GroupKey,
-    versionIndex: ReadonlyMap<string, number>
+    versionIndex: ReadonlyMap<string, number>,
+    scores?: UserScores
 ): { key: string | null; rank: number } {
     switch (by) {
         case "constant": {
@@ -40,9 +51,21 @@ function placeOf(
         }
         case "level":
             return { key: chart.info.level, rank: levelValue(chart.info.level) ?? -1 };
-        default:
+        case "difficulty":
             // BASIC first, so the grade counts backwards.
             return { key: difficultyLabel(chart.info.grade), rank: -chart.info.grade };
+        case "rank": {
+            const key = chartScoreOf(chart, scores)?.rank ?? null;
+            return { key, rank: key === null ? -1 : RANKS.map(rankLabel).indexOf(key) };
+        }
+        case "combo": {
+            const key = chartScoreOf(chart, scores)?.combo ?? null;
+            return { key, rank: key === null ? -1 : COMBOS.map(comboLabel).indexOf(key) };
+        }
+        case "sync": {
+            const key = chartScoreOf(chart, scores)?.sync ?? null;
+            return { key, rank: key === null ? -1 : SYNCS.map(syncLabel).indexOf(key) };
+        }
     }
 }
 
@@ -53,12 +76,13 @@ function placeOf(
 export function groupCharts(
     entries: readonly ChartEntry[],
     by: GroupKey,
-    versions: readonly string[]
+    versions: readonly string[],
+    scores?: UserScores
 ): ChartGroup[] {
     const versionIndex = new Map(versions.map((name, index) => [name, index]));
     const found = new Map<string | null, { rank: number; entries: ChartEntry[] }>();
     for (const entry of entries) {
-        const { key, rank } = placeOf(entry, by, versionIndex);
+        const { key, rank } = placeOf(entry, by, versionIndex, scores);
         const group = found.get(key);
         if (group) group.entries.push(entry);
         else found.set(key, { rank, entries: [entry] });

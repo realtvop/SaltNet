@@ -655,7 +655,7 @@ describe("saltnet charts sorting and grouping", () => {
         ]);
     });
 
-    it("rejects contradictory sort directions and unsupported sort/group options with USAGE error", async () => {
+    it("rejects contradictory sort directions and the later gain sort with USAGE error", async () => {
         const paths = makeHome();
 
         const { code, json, requests } = await chartsIn(paths, ["--asc", "--desc"]);
@@ -665,17 +665,14 @@ describe("saltnet charts sorting and grouping", () => {
         expect(json.error.message).toContain("--asc");
         expect(requests).toHaveLength(0);
 
-        const { code: codeRating, json: jsonRating } = await chartsIn(paths, ["--sort", "rating"]);
-        expect(codeRating).toBe(2);
-        expect(jsonRating.error.code).toBe("USAGE");
-
-        const { code: codeAch, json: jsonAch } = await chartsIn(paths, ["--sort", "achievements"]);
-        expect(codeAch).toBe(2);
-        expect(jsonAch.error.code).toBe("USAGE");
-
-        const { code: codeRank, json: jsonRank } = await chartsIn(paths, ["--group-by", "rank"]);
-        expect(codeRank).toBe(2);
-        expect(jsonRank.error.code).toBe("USAGE");
+        const {
+            code: codeGain,
+            json: jsonGain,
+            requests: gainRequests,
+        } = await chartsIn(paths, ["--sort", "gain"]);
+        expect(codeGain).toBe(2);
+        expect(jsonGain.error.code).toBe("USAGE");
+        expect(gainRequests).toHaveLength(0);
     });
 
     it("groups by difficulty with standard options and envelope", async () => {

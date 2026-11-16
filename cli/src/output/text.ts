@@ -61,6 +61,23 @@ function renderTable(rows: readonly unknown[], columns: readonly string[]): stri
     return [line(columns), ...cells.map(line)];
 }
 
+function statsLine(value: unknown): string | undefined {
+    if (!isPlainObject(value)) return undefined;
+    const names: Readonly<Record<string, string>> = {
+        total: "总数",
+        played: "游玩",
+        sss: "SSS",
+        sssPlus: "SSS+",
+        fc: "FC",
+        ap: "AP",
+        fdx: "FDX",
+    };
+    const parts = Object.entries(names)
+        .filter(([key]) => typeof value[key] === "number")
+        .map(([key, label]) => `${label} ${value[key]}`);
+    return parts.length === 0 ? undefined : `统计：${parts.join("，")}`;
+}
+
 function hasStructure(value: unknown): boolean {
     return (
         (isPlainObject(value) && Object.keys(value).length > 0) ||
@@ -97,6 +114,8 @@ function outline(object: PlainObject, indent: string): string[] {
 function listBody(data: PlainObject): string[] {
     const lines: string[] = [];
     if (Array.isArray(data.items)) {
+        const summary = statsLine(data.stats);
+        if (summary) lines.push(summary);
         lines.push(...renderTable(data.items, columnsOf(data.items)));
     }
     if (Array.isArray(data.groups)) {
@@ -104,12 +123,15 @@ function listBody(data: PlainObject): string[] {
             const items = Array.isArray(group.items) ? group.items : [];
             if (lines.length > 0) lines.push("");
             lines.push(`${inline(group.key)}（${inline(group.count ?? items.length)} 条）`);
+            const summary = statsLine(group.stats);
+            if (summary) lines.push(summary);
             lines.push(...renderTable(items, columnsOf(items)));
         }
     }
     const rest: PlainObject = { ...data };
     delete rest.items;
     delete rest.groups;
+    if (statsLine(data.stats)) delete rest.stats;
     if (Object.keys(rest).length > 0) lines.push("", ...outline(rest, ""));
     return lines;
 }

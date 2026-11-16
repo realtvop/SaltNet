@@ -22,7 +22,7 @@ export const GUIDE_RULES: readonly string[] = [
     "1. **先运行 `saltnet status`**：看数据目录在哪、曲库和收藏品是什么时候下载的、是不是已经过期。",
     "2. **找歌**：拿不准时先用 `saltnet search <文本>`，之后的调用都用输出里的曲目 id（`musicId`）和谱面 key（`chartKey`，例如 `834-4`）。遇到 `AMBIGUOUS_REF` 时，能从上下文判断就从 `error.candidates` 里选一个 `ref` 重试；判断不了就问用户（比如有两首「Link」）。标题是纯数字的歌（比如「39」）会被当成曲目 id，要先用 `search` 找。",
     '3. **读结果**：成功时是 `{"v":1,"ok":true,"command":…,"data":…,"meta":…,"warnings":[…]}`，失败时是 `{"v":1,"ok":false,"command":…,"error":{"code":…,"message":…,"retryable":…}}`。按退出码和 `error.code` 决定下一步，不要靠 `message` 的文字判断；带成绩的结果会在 `meta.user` 说明成绩属于谁，朋友的成绩要用 `--user` 指定；`warnings` 里的 `STALE_METADATA`、`STALE_SCORES`、`NO_SCORES` 和 `PARTIAL_SCORES` 等提醒都要转告用户。',
-    "4. **省 token**：列表很长时用 `--fields` 只要需要的字段（点号表示嵌套，例如 `chartKey,title,constant`），或者用 `--format tsv`；用 `--limit`、`--offset` 翻页，`meta.page.nextOffset` 为 null 表示没有下一页；问数量时用 `charts --group-by`，不要拉完整列表再自己数；复杂的问题用 `sql`，视图的列用 `saltnet schema --views` 看。",
+    "4. **省 token**：列表很长时用 `--fields` 只要需要的字段（点号表示嵌套，例如 `chartKey,title,constant`），或者用 `--format tsv`；用 `--limit`、`--offset` 翻页，`meta.page.nextOffset` 为 null 表示没有下一页；问数量时用 `charts --stats` 或 `charts --group-by`，不要拉完整列表再自己数；复杂的问题用 `sql`，视图的列用 `saltnet schema --views` 看。",
     "5. **数据新旧**：`meta.dataAsOf` 是用到的数据各自的下载时间。曲库和收藏品过期时会自动重新下载，下载失败就用缓存并带 `STALE_METADATA` 警告；`--offline` 不联网、只用缓存，没有缓存时报 `OFFLINE_NO_CACHE`；要马上更新就运行 `saltnet refresh`。",
 ];
 

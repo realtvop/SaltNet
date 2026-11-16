@@ -177,7 +177,7 @@ describe("describeOption", () => {
             min: null,
             max: null,
         });
-        expect(byFlag.get("sort")?.default).toBe("default");
+        expect(byFlag.get("sort")?.default).toBeNull();
         expect(byFlag.get("asc")?.default).toBe(false);
         expect(byFlag.get("limit")).toMatchObject({
             type: "integer",

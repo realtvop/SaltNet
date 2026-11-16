@@ -1,5 +1,6 @@
 import type { Collection } from "@core/collection/type";
 import type { ChartSet } from "../catalog/chartSets";
+import type { ChartResultStats } from "../catalog/chartStats";
 import type { ChartEntry } from "../catalog/songs";
 import { GROUP_KEYS, groupCharts } from "../catalog/chartGroups";
 import { allChartEntries, filterCharts } from "../catalog/chartQuery";
@@ -12,6 +13,7 @@ import {
     intersectChartSets,
 } from "../catalog/chartSets";
 import { SORT_KEYS, sortCharts } from "../catalog/chartSort";
+import { countChartResultStats } from "../catalog/chartStats";
 import { chartRowSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { usageError } from "../errors";
@@ -23,12 +25,13 @@ import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
 import { resolveGate } from "../refs/gate";
 import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
+import { parseScoreCondition } from "../refs/status";
 import { resolveVersions } from "../refs/version";
 import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
-import { carryScoreContext, scoreMeta, useUserScores } from "./userScores";
+import { carryScoreContext, requireUserForScores, scoreMeta, useUserScores } from "./userScores";
 
 /** The charts a collection or plate asks for, or `USAGE` when its conditions name no song. */
 function songsOf(label: string, collection: Collection, entries: readonly ChartEntry[]): ChartSet {
@@ -38,12 +41,41 @@ function songsOf(label: string, collection: Collection, entries: readonly ChartE
     return collectionCharts(collection, entries);
 }
 
+const statsSchema = object<ChartResultStats>(
+    {
+        total: int("通过筛选、参与统计的谱面总数，不受分页影响"),
+        played: int("有数值达成率的谱面数"),
+        sss: int("达成率至少 100 的谱面数，包含 SSS+"),
+        sssPlus: int("达成率至少 100.5 的谱面数"),
+        fc: int("连击状态至少 FC 的谱面数"),
+        ap: int("连击状态至少 AP 的谱面数"),
+        fdx: int("同步状态至少 FDX 的谱面数"),
+    },
+    { description: "谱面成绩统计；各项都按分页前的完整筛选结果计算" }
+);
+
+const groupKeySchema = nullable(
+    str("分组依据的值，例如定数 14.0、版本名、难度、SSS+、AP+ 或 FDX+"),
+    "分组依据的值；没有定数或没有对应成绩状态的组是 null"
+);
+
+function groupSchema(withStats: boolean) {
+    const common = {
+        key: groupKeySchema,
+        count: int("该组在分页前包含的谱面总数"),
+        items: list(chartRowSchema, "该组分页后的谱面列表"),
+    };
+    return withStats
+        ? object({ ...common, stats: statsSchema }, { description: "一个带成绩统计的谱面分组" })
+        : object(common, { description: "一个谱面分组" });
+}
+
 export const charts = defineCommand(
     {
         name: "charts",
-        summary: "按等级、定数、版本、难度或文本筛选谱面，可以排序和分组",
+        summary: "筛选谱面，并按曲目或成绩排序、分组和统计",
         description:
-            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次，本地没有用户时两项都是 null。不写任何条件就是全部谱面（宴谱除外）。顺序和网页端的默认顺序一致：难度高的在前，同一难度里新曲在前。--level 的等级写成 13 或 13+，区间两端都包含，13..14 含 13、13+、14，不含 14+，要含 14+ 就写 13..14+。--constant 是定数区间，没有定数的谱（宴谱）不会通过。--diff 不写时不含宴谱，宴谱只有写了 --diff utage 才会出现，它的等级照常写，末尾的 ? 可以省略。--version 写版本名（舞萌DX 2024、maimai PLUS）、省略 maimai 或舞萌的写法（murasaki plus）、能唯一确定一个版本的一部分（2024），或牌子字（熊），牌子字对应的版本都会算；多个值用逗号隔开。--search 的匹配规则和 search 一样，曲师和谱师只找到谱师做的那几张谱。--gate、--course、--plate、--collection 各对应曲目页的一个分类，只要它们包含的谱面：--gate 是万花筒的门（id blue、名称 蓝色之门、简称 蓝门，或只有一个门有的一部分），要这个门的钥匙曲目和各个曲池里每首歌的所有难度的谱面，难度用 --diff 选；--course 是段位（id、名称 十段，或只有一个段位有的一部分），要它的曲目；--plate 是版本牌子，合并的写法（熊華極）和单个牌子（熊極）都行，要牌子的条件里点名的谱面；--collection 是任何收藏品，写 类型:id（title:5108）或名称，名称重复时是 AMBIGUOUS_REF，候选的 ref 就是 类型:id，获取条件里没有曲目的收藏品（多数头像和背景、约一半的称号、旅行伙伴和搭档）没有谱面可选，会报 USAGE。这些条件和别的条件一起写时结果须同时满足。--sort 选排序的依据：default 是上面说的网页端顺序（写了 --course 时是段位的出场顺序），constant 按定数，version 按版本；默认从大到小（定数高的、版本新的在前，default 则是难度高的、新曲在前），写 --asc 反过来，--asc 和 --desc 不能一起写；没有定数的谱（宴谱）和不认识的版本排在最后，依据相同的按谱面 key（曲目 id，再难度）排，所以同样的数据和参数永远给出同样的顺序。--group-by 按 constant（定数，从高到低）、version（版本，从新到旧）、level（等级，从难到易）或 difficulty（难度，从 BASIC 起）分组，结果放在 groups 里，每组是 {key, count, items}，组的顺序固定，--sort 排的是组内的顺序，没有定数的宴谱谱面自成一组（key 是 null）排在最后；这时 --limit 和 --offset 对每一组分别生效，count 是这一组一共有几张。成绩相关的筛选、统计和按成绩排序、分组之后加入。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 各接受一个评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；本步条件不能省略。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -104,17 +136,35 @@ export const charts = defineCommand(
                 valueName: "收藏品",
                 description: "只要这个收藏品要求的谱面：类型:id 或名称，例如 title:5108",
             },
+            achieved: {
+                kind: "string",
+                valueName: "条件",
+                description:
+                    "只要至少达到条件的谱：评级、clear、fc/fc+/ap/ap+ 或 sync/fs/fs+/fdx/fdx+",
+            },
+            missing: {
+                kind: "string",
+                valueName: "条件",
+                description: "只要没有达到条件的谱，包含没有成绩的谱；条件写法同 --achieved",
+            },
+            recent: {
+                kind: "boolean",
+                description: "只要成绩有变化时间的谱；不写 --sort 时按最近变化排序",
+            },
+            stats: {
+                kind: "boolean",
+                description: "统计分页前的 total、played、SSS、SSS+、FC、AP 和 FDX 数量",
+            },
             sort: {
                 kind: "enum",
                 values: SORT_KEYS,
-                default: "default",
                 valueName: "依据",
                 description:
-                    "排序的依据：default（网页端的默认顺序，--course 时是出场顺序）、constant（定数）、version（版本）",
+                    "排序依据：default、constant、achievements、rating、playcount、version 或 recent；不写时是 default，--recent 时是 recent",
             },
             asc: {
                 kind: "boolean",
-                description: "从小到大排：定数低的、版本旧的在前，default 则整个反过来",
+                description: "反转排序依据；没有值的谱仍排在最后",
             },
             desc: {
                 kind: "boolean",
@@ -125,7 +175,7 @@ export const charts = defineCommand(
                 values: GROUP_KEYS,
                 valueName: "分组依据",
                 description:
-                    "按 constant、version、level 或 difficulty 分组，--limit 对每组分别生效",
+                    "按 constant、version、level、difficulty、rank、combo 或 sync 分组，--limit 对每组分别生效",
             },
             ...USER_OPTION,
             ...listOptions(),
@@ -153,40 +203,64 @@ export const charts = defineCommand(
         ],
         errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: anyOf(
-            "谱面筛选结果：普通列表或分组列表",
+            "谱面筛选结果：普通或分组列表，各自可以带分页前的成绩统计",
             object(
                 { items: list(chartRowSchema, "符合条件的谱面列表") },
-                { description: "谱面列表" }
+                { description: "不带统计的谱面列表" }
             ),
             object(
                 {
-                    groups: list(
-                        object(
-                            {
-                                key: nullable(
-                                    str("分组依据的值，例如定数 14.0、版本名、等级或难度"),
-                                    "分组依据的值，例如定数 14.0、版本名、等级或难度；没有定数的组是 null"
-                                ),
-                                count: int("该组包含的谱面总数"),
-                                items: list(chartRowSchema, "该组内的谱面列表"),
-                            },
-                            { description: "一个谱面分组" }
-                        ),
-                        "按指定依据分组的谱面列表"
-                    ),
+                    items: list(chartRowSchema, "符合条件并分页后的谱面列表"),
+                    stats: statsSchema,
                 },
-                { description: "谱面分组列表" }
+                { description: "带分页前成绩统计的谱面列表" }
+            ),
+            object(
+                { groups: list(groupSchema(false), "按指定依据分组的谱面列表") },
+                { description: "不带统计的谱面分组列表" }
+            ),
+            object(
+                { groups: list(groupSchema(true), "按指定依据分组且各组带统计的谱面列表") },
+                { description: "带分页前成绩统计的谱面分组列表" }
             )
         ),
     },
     async (args, ctx) => {
-        const { level, constant, diff, version, search, gate, course, plate, collection } =
-            args.options;
-        const { sort, asc, desc, groupBy } = args.options;
+        const {
+            level,
+            constant,
+            diff,
+            version,
+            search,
+            gate,
+            course,
+            plate,
+            collection,
+            achieved,
+            missing,
+            recent,
+            stats,
+            sort,
+            asc,
+            desc,
+            groupBy,
+        } = args.options;
         if (asc && desc) throw usageError("--asc 和 --desc 不能同时写；默认就是 --desc");
+        const achievedCondition =
+            achieved === undefined ? undefined : parseScoreCondition(achieved);
+        const missingCondition = missing === undefined ? undefined : parseScoreCondition(missing);
         // The gates and the courses ship with the CLI, so a wrong one fails before any fetching.
         const gateFound = gate === undefined ? undefined : resolveGate(gate);
         const courseFound = course === undefined ? undefined : resolveCourse(course);
+        const scoreSort =
+            sort === "achievements" ||
+            sort === "rating" ||
+            sort === "playcount" ||
+            sort === "recent";
+        const scoreGroup = groupBy === "rank" || groupBy === "combo" || groupBy === "sync";
+        if (achievedCondition || missingCondition || recent || stats || scoreSort || scoreGroup) {
+            requireUserForScores(args, ctx);
+        }
 
         const metadata = await useMetadata(args, ctx, ["catalog"]);
         // The collections are only fetched, and only reported on, when a plate or a collection asks.
@@ -229,24 +303,34 @@ export const charts = defineCommand(
                 versions: version?.flatMap(text => resolveVersions(cnVersions, text)),
                 search,
                 within: intersectChartSets(sets),
+                achieved: achievedCondition,
+                missing: missingCondition,
+                recent,
+                scores: userScores.scores,
             });
             const versionNames = cnVersions.map(({ name }) => name);
             const sorted = sortCharts(matching, {
-                key: sort,
+                key: sort ?? (recent ? "recent" : "default"),
                 ascending: asc,
                 versions: versionNames,
                 order: courseSet?.order,
+                scores: userScores.scores,
             });
             const warnings = [...metadataWarnings, ...userScores.warnings];
 
             if (groupBy) {
-                const groups = groupCharts(sorted, groupBy, versionNames).map(group => ({
-                    key: group.key,
-                    count: group.entries.length,
-                    items: paginate(group.entries, args.options).items.map(entry =>
-                        chartRow(entry, userScores.scores)
-                    ),
-                }));
+                const groups = groupCharts(sorted, groupBy, versionNames, userScores.scores).map(
+                    group => ({
+                        key: group.key,
+                        count: group.entries.length,
+                        ...(stats
+                            ? { stats: countChartResultStats(group.entries, userScores.scores) }
+                            : {}),
+                        items: paginate(group.entries, args.options).items.map(entry =>
+                            chartRow(entry, userScores.scores)
+                        ),
+                    })
+                );
                 return {
                     data: { groups },
                     meta: scoreMeta(userScores, dataAsOf),
@@ -256,7 +340,10 @@ export const charts = defineCommand(
 
             const { items, page } = paginate(sorted, args.options);
             return {
-                data: { items: items.map(entry => chartRow(entry, userScores.scores)) },
+                data: {
+                    items: items.map(entry => chartRow(entry, userScores.scores)),
+                    ...(stats ? { stats: countChartResultStats(matching, userScores.scores) } : {}),
+                },
                 meta: scoreMeta(userScores, dataAsOf, { page }),
                 warnings,
             };

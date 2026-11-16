@@ -343,6 +343,26 @@ describe("charts", () => {
         expectConforms(schemaOf("charts"), json.data);
     });
 
+    it("describes charts with score stats, with and without grouping", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("made-schema-user", "Made Schema User")]);
+
+        const plain = await commandIn(paths, "charts", ["--stats", "--limit", "1"]);
+        expect(plain.json.data.stats.total).toBe(175);
+        expectConforms(schemaOf("charts"), plain.json.data);
+
+        const grouped = await commandIn(paths, "charts", [
+            "--stats",
+            "--group-by",
+            "rank",
+            "--limit",
+            "1",
+        ]);
+        expect(grouped.json.data.groups.length).toBeGreaterThan(0);
+        expect(grouped.json.data.groups[0].stats.total).toBeGreaterThan(0);
+        expectConforms(schemaOf("charts"), grouped.json.data);
+    });
+
     it("rejects an extra key, a missing key, or a wrong type in a chart row", async () => {
         const { json } = await commandIn(makeHome(), "charts", ["--limit", "1"]);
         const [first] = json.data.items;
