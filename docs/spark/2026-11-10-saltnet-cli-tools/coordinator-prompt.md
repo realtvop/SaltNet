@@ -21,7 +21,7 @@
 
 - **简单活**（搬模块、给已有代码补测试、写文档）：Gemini 3.8 Flash (Medium)，经 antigravity 的 `agy`，`delegate-agy.sh`。
 - **新东西**（新命令、新逻辑、数据库迁移、同步和绑定流程）：Codex GPT 5.6 Sol (high)，经 `codex` CLI，`delegate-codex.sh`。
-- **Code review**（每个有代码的步骤提交前）：Codex GPT 6.1 Sol (high)，经 `codex` CLI，`review-codex.sh`（新功能和涉及凭据、账号、数据库的步骤加 `REVIEW_BUILTIN=1`）。
+- **Code review**（每完成一个 part 整体审一遍，不再每一步审，见计划「分工与流程」第 6 条）：Codex GPT 6.1 Sol (high)，经 `codex` CLI，`REVIEW_BASE=<上次审过的提交> review-codex.sh`（范围里有新功能或涉及凭据、账号、数据库的步骤时加 `REVIEW_BUILTIN=1`）。开新的 Codex 任务（写代码或审查）之前先用 `codex-quota.py` 查剩余额度。
 
 两个 Codex 模型的 id 是 `gpt-5.6-sol` 和 `gpt-6.1-sol`（2026-11-15 从 `codex debug models` 查到并试通）。每个新会话第一次用之前仍先试一次：`codex exec -m <id> -s read-only --ephemeral "reply ok"`；试不通就问用户一次，这是唯一可以中途问用户的事。然后 `export CODEX_MODEL_WRITE=<5.6 Sol 的 id> CODEX_MODEL_REVIEW=<6.1 Sol 的 id> SALTNET_WORK=<你的草稿目录>`。
 

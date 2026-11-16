@@ -58,17 +58,20 @@ snapshot_worktree() {   # $1 = destination, wiped first
 # Snapshot for a review: `base` is the last commit (HEAD, `.env*` left out) and the uncommitted work
 # of the real tree is laid over it uncommitted, so `git diff base` is exactly the change under
 # review (new files show in `git status`).
+# REVIEW_BASE (a commit) makes `base` that commit instead: the tree on disk (the commits after it
+# plus the uncommitted work) is laid over it, so a whole part of the plan is reviewed at once.
 snapshot_candidate() {   # $1 = destination, wiped first
-    local dest=$1 f
+    local dest=$1 f from=${REVIEW_BASE:-HEAD}
     rm -rf "$dest"; mkdir -p "$dest"
-    ( cd "$REPO" && git archive HEAD | tar -x -C "$dest" ) || return 2
+    ( cd "$REPO" && git rev-parse -q --verify "$from^{commit}" > /dev/null ) || { echo "no commit $from" >&2; return 2; }
+    ( cd "$REPO" && git archive "$from" | tar -x -C "$dest" ) || return 2
     find "$dest" \( -name '.env' -o -name '.env.*' \) -type f -delete
     _snapshot_init "$dest" || return 2
     (
         cd "$REPO" || exit 2
-        { git diff HEAD --no-renames --name-only -z --diff-filter=ACMRT
+        { git diff "$from" --no-renames --name-only -z --diff-filter=ACMRT
           git ls-files -z --others --exclude-standard; } | _not_env | rsync -a --from0 --files-from=- "$REPO/" "$dest/"
-        git diff HEAD --no-renames --name-only -z --diff-filter=D | while IFS= read -r -d '' f; do
+        git diff "$from" --no-renames --name-only -z --diff-filter=D | while IFS= read -r -d '' f; do
             rm -f "$dest/$f"
         done
     )

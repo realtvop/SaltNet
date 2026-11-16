@@ -4,6 +4,8 @@
 # Asks Codex (GPT 6.1 Sol, reasoning effort high) to review what is uncommitted in the real tree.
 # The reviewer works in a snapshot whose `base` is the last commit with the uncommitted work laid
 # over it (lib.sh, snapshot_candidate; `.env*` left out), so `git diff base` is exactly the change.
+# REVIEW_BASE=<commit> reviews everything after that commit instead (a whole part of the plan: the
+# commits since the last review plus anything uncommitted); the brief names the steps in the range.
 # The sandbox is read-only. The prompt file says what the change is meant to do (the step, the
 # design sections, what to look at hardest); the standard instructions below are appended to it.
 #
