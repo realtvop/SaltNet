@@ -145,6 +145,12 @@ export default antfu(
         rules: prettierOwnedFormattingRules,
     },
     {
+        // 谱面信息的计算先在网页端成形，随后整体搬进 shared/core/query（那里本来就由 Prettier 管）
+        name: "saltnet/prettier-owned-chart-info-query",
+        files: ["src/components/data/chart/chartInfoQuery*.ts"],
+        rules: prettierOwnedFormattingRules,
+    },
+    {
         // 新包里的 JSON（tsconfig、package.json 等）同样由 Prettier 格式化，缩进是 4 空格
         name: "saltnet/prettier-owned-json",
         files: ["shared/core/**/*.json", "cli/**/*.json"],

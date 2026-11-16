@@ -566,7 +566,7 @@
       "count": 1
     },
     "style/indent": {
-      "count": 621
+      "count": 562
     },
     "perfectionist/sort-imports": {
       "count": 9
@@ -587,30 +587,27 @@
       "count": 22
     },
     "style/comma-dangle": {
-      "count": 16
+      "count": 14
     },
     "style/arrow-parens": {
       "count": 6
     },
     "antfu/if-newline": {
-      "count": 37
+      "count": 31
     },
     "unicorn/prefer-number-properties": {
       "count": 1
     },
     "style/brace-style": {
-      "count": 12
+      "count": 11
     },
     "style/operator-linebreak": {
-      "count": 9
+      "count": 7
     },
     "style/indent-binary-ops": {
       "count": 1
     },
     "no-undef-init": {
-      "count": 1
-    },
-    "antfu/curly": {
       "count": 1
     },
     "ts/no-use-before-define": {
@@ -759,6 +756,11 @@
     },
     "format/prettier": {
       "count": 159
+    }
+  },
+  "src/components/data/chart/chartInfoQuery.ts": {
+    "antfu/curly": {
+      "count": 1
     }
   },
   "src/components/data/chart/chartPosition.ts": {

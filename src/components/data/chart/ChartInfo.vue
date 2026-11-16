@@ -681,13 +681,21 @@
 
 <script setup lang="ts">
     import type { Chart } from "@core/music/type";
-    import { getDetailedRatingsByConstant } from "@core/chart/rating";
+    import type { RatingDisplayMode } from "@/components/data/chart/chartInfoQuery";
     import { RANK_RATE_DISPLAY_NAMES } from "@core/mai/types";
     import { computed, nextTick, ref, watch } from "vue";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import { useShared } from "@/components/app/shared";
     import { prompt, dialog } from "mdui";
     import { copyTextToClipboard } from "@/components/app/utils";
+    import {
+        getAvailableRatingDisplayModes,
+        getChartRatingTables,
+        getLowestRaInChartOrSection,
+        getLowestRaInSection,
+        resolveRatingDisplayMode,
+        selectDisplayedRaTable,
+    } from "@/components/data/chart/chartInfoQuery";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@core/user/type";
     import type { ChartStats } from "@core/integrations/diving-fish/type";
@@ -750,8 +758,6 @@
         }[]
     >([]);
     const currentUser = ref<User | null>(null);
-    type RatingDisplayMode = "简洁" | "吃分" | "完整";
-    const ratingModeOrder: RatingDisplayMode[] = ["简洁", "吃分", "完整"];
     const ratingDisplayMode = ref<RatingDisplayMode>(
         shared.appSettings.defaultChartRatingDisplayMode
     );
@@ -1135,111 +1141,32 @@
         }
     }
 
-    // 指定难度的 Rating 阶段表
     const chartRatingTables = computed(() => {
-        if (!currentChart.value)
-            return {
-                all: [],
-                filtered: [],
-                current: [],
-            };
-
-        const all = getDetailedRatingsByConstant(currentChart.value.info.constant);
-        // 当前的和能吃分的
-        const filtered =
-            currentChartScore.value && currentChartScore.value.achievements
-                ? getDetailedRatingsByConstant(
-                      currentChart.value.info.constant,
-                      currentChartScore.value.achievements
-                  )
-                : all;
-
-        return {
-            all,
-            filtered,
-            current: ratingDisplayMode.value === "完整" ? all : filtered,
-        };
+        const mode = ratingDisplayMode.value;
+        return getChartRatingTables(currentChart.value, currentChartScore.value, mode);
     });
 
     const availableRatingDisplayModes = computed<RatingDisplayMode[]>(() => {
-        const modes: RatingDisplayMode[] = ["简洁"];
-        if (chartRatingTables.value.filtered.length > 3) {
-            modes.push("吃分");
-        }
-        modes.push("完整");
-        return modes;
+        return getAvailableRatingDisplayModes(chartRatingTables.value);
     });
 
     function resolveAvailableRatingDisplayMode(preferred: RatingDisplayMode): RatingDisplayMode {
-        const available = availableRatingDisplayModes.value;
-        if (available.includes(preferred)) return preferred;
-
-        const preferredIndex = ratingModeOrder.indexOf(preferred);
-        for (let i = preferredIndex - 1; i >= 0; i--) {
-            const fallback = ratingModeOrder[i];
-            if (available.includes(fallback)) return fallback;
-        }
-
-        return available[0] ?? "简洁";
+        return resolveRatingDisplayMode(preferred, availableRatingDisplayModes.value);
     }
 
-    // 获取指定难度的显示 Rating 阶段表
     function getDisplayedChartRaTable() {
         const raTable = chartRatingTables.value.current;
-
-        if (ratingDisplayMode.value === "简洁") {
-            // 简洁模式：显示第一个、最后两个，以及最后一个加分项
-            if (raTable.length <= 3) {
-                return raTable;
-            }
-
-            const displayItems = [raTable[0], ...raTable.slice(-2)];
-            const baseRa = currentUserLowestRaInChartOrSection.value;
-
-            if (typeof baseRa !== "number") {
-                return displayItems;
-            }
-
-            const lastBonusItem = [...raTable].reverse().find(item => item.rating > baseRa);
-            if (!lastBonusItem) {
-                return displayItems;
-            }
-
-            const existed = displayItems.some(
-                item =>
-                    item.achievements === lastBonusItem.achievements &&
-                    item.rating === lastBonusItem.rating
-            );
-
-            if (!existed) {
-                displayItems.splice(1, 0, lastBonusItem);
-            }
-
-            return displayItems;
-        } else {
-            // 吃分和完整模式：显示全部
-            return raTable;
-        }
+        const getBaseRa = () => currentUserLowestRaInChartOrSection.value;
+        return selectDisplayedRaTable(raTable, ratingDisplayMode.value, getBaseRa);
     }
 
-    // 当前用户在指定类别的最低rating
     const currentUserLowestRaInSection = computed(() => {
-        if (!currentUser.value || !props.chart) return null;
-        const section = props.chart.music.info.isNew
-            ? currentUser.value.data.b50?.dx
-            : currentUser.value.data.b50?.sd;
-        if (!section) return null;
-        return section[section.length - 1].ra;
+        return getLowestRaInSection(currentUser.value, props.chart);
     });
 
     const currentUserLowestRaInChartOrSection = computed(() => {
-        if (!props.chart) return null;
-
-        const chart = currentChartScore.value ? currentChartScore.value.deluxeRating : null;
-        const section = currentUserLowestRaInSection.value;
-
-        if (!chart || !section) return chart || section;
-        return Math.max(chart, section);
+        const sectionLowest = currentUserLowestRaInSection.value;
+        return getLowestRaInChartOrSection(props.chart, currentChartScore.value, sectionLowest);
     });
 
     // 指定难度的好友成绩

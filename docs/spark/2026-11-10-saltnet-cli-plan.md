@@ -167,7 +167,7 @@
 - [x] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
 - [x] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
 - [x] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
-- [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
+- [x] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
 - [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
 - [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
 - [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
@@ -706,3 +706,9 @@
 56. **P2-6 的实现（2026-11-16）**：
     - Gemini 搬的：`b50Query.ts`、它的测试和快照文件用 `git mv` 搬成 `shared/core/query/b50.ts`、`b50.test.ts` 和 `__snapshots__/b50.test.ts.snap`，只改了 import（`@core/…` 改成相对路径）。快照文件逐字节相同，测试不带 `-u` 也通过。`b50.vue` 改从 `@core/query/b50` 导入，导入行的位置没动，豁免计数不变；`saltnet/prettier-owned-b50-query` 删掉了。
     - `AGENTS.md` 里 `pnpm test:query` 那一条补上了 B50 页的快照（P2-5 漏了）；P2-8 的 brief 也要求补上谱面信息的部分。
+57. **P2-7 的实现（2026-11-16）**：
+    - Gemini 抽的：`ChartInfo.vue` 里吃分表、显示模式和 B50 底分的计算原样搬进 `src/components/data/chart/chartInfoQuery.ts`（P2-9 再搬进 `shared/core/query/chartInfo.ts`）：`RatingDisplayMode`、`ratingModeOrder`、`getChartRatingTables`、`getAvailableRatingDisplayModes`、`resolveRatingDisplayMode`、`selectDisplayedRaTable`、`getLowestRaInSection`、`getLowestRaInChartOrSection`。页面保留原来的名字做薄包装，模板一字未改。
+    - B50 某一类是空数组时，算底分会抛 `TypeError`（`section[section.length - 1]` 是 `undefined`），旧代码只在简洁模式、表长于三行时才读它。所以 `selectDisplayedRaTable` 收一个取值函数（`getBaseRa`），只在原来读的地方调用；抛错本身原样保留，最终报告里会提。包装会提前读出 `currentChartScore` 等值：没有谱面时这些计算都先返回 null，不会抛错，只是多了几个响应式依赖。
+    - Gemini 这次跑完 `pnpm lint` 就停了，没有报告，也没更新豁免文件，补丁里还夹着两个临时文件。我去掉临时文件后应用补丁，和 P2-6 改过的 `eslint.config.js`、`AGENTS.md` 用三方合并解决冲突，豁免由我自己更新：`ChartInfo.vue` 的计数只降不升，`antfu/curly` 一条删掉；新模块里不带花括号的 `if (!chart) return {…}` 是从页面带过来的，记一条 `antfu/curly`，P2-9 随文件搬走。Gemini 写的包装让 `style/comma-dangle` 多了 4 处（Prettier 的 `trailingComma: "es5"` 不许在调用参数末尾加逗号，两边没法同时满足）。我把包装改成块体，每个调用写在一行里；类型单独用 `import type` 导入，放在第一条 import 后面。这样各项计数都不再上升。
+    - 验证：一次性的差异测试把旧页面的代码（按行切出来，配上假的 `computed` 和 ref，并统计 `currentUser` 被读了几次）和新的包装加模块放在一起跑。8 个种子 × 600 组输入，共 4800 个场景，逐个比对阶段表、可选模式、三种首选模式的回退、显示的行、是否读了底分、分类底分和最终底分（值或抛出的错误），全部一致，其中 512 个场景抛错，937 个场景读了底分。24 处故意的单行改动抓到 23 处；没抓到的是 `resolveRatingDisplayMode` 最后的 `available[0]`：页面上的可选模式总包含简洁，这一行走不到，P2-8 的明确用例会覆盖它。
+    - 审查没有发现问题。
