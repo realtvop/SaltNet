@@ -321,6 +321,11 @@
       "count": 1
     }
   },
+  "shared/core/query/chartInfo.ts": {
+    "antfu/curly": {
+      "count": 1
+    }
+  },
   "shared/core/query/songs.ts": {
     "one-var": {
       "count": 4
@@ -756,11 +761,6 @@
     },
     "format/prettier": {
       "count": 159
-    }
-  },
-  "src/components/data/chart/chartInfoQuery.ts": {
-    "antfu/curly": {
-      "count": 1
     }
   },
   "src/components/data/chart/chartPosition.ts": {

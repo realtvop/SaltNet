@@ -681,13 +681,8 @@
 
 <script setup lang="ts">
     import type { Chart } from "@core/music/type";
-    import type { RatingDisplayMode } from "@/components/data/chart/chartInfoQuery";
+    import type { RatingDisplayMode } from "@core/query/chartInfo";
     import { RANK_RATE_DISPLAY_NAMES } from "@core/mai/types";
-    import { computed, nextTick, ref, watch } from "vue";
-    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-    import { useShared } from "@/components/app/shared";
-    import { prompt, dialog } from "mdui";
-    import { copyTextToClipboard } from "@/components/app/utils";
     import {
         getAvailableRatingDisplayModes,
         getChartRatingTables,
@@ -695,7 +690,12 @@
         getLowestRaInSection,
         resolveRatingDisplayMode,
         selectDisplayedRaTable,
-    } from "@/components/data/chart/chartInfoQuery";
+    } from "@core/query/chartInfo";
+    import { computed, nextTick, ref, watch } from "vue";
+    import { markDialogOpen, markDialogClosed } from "@/components/app/router";
+    import { useShared } from "@/components/app/shared";
+    import { prompt, dialog } from "mdui";
+    import { copyTextToClipboard } from "@/components/app/utils";
     import { getChartPositionFromCache } from "@/components/data/chart/chartPosition";
     import type { FavoriteList, FavoriteChart } from "@core/user/type";
     import type { ChartStats } from "@core/integrations/diving-fish/type";

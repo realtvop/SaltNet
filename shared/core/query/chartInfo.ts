@@ -1,6 +1,6 @@
-import type { Chart, ChartScore } from "@core/music/type";
-import type { User } from "@core/user/type";
-import { getDetailedRatingsByConstant } from "@core/chart/rating";
+import type { Chart, ChartScore } from "../music/type";
+import type { User } from "../user/type";
+import { getDetailedRatingsByConstant } from "../chart/rating";
 
 export type RatingDisplayMode = "简洁" | "吃分" | "完整";
 

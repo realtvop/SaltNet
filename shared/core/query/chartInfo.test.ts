@@ -8,13 +8,13 @@
  * dialog showed when the calculations were extracted from it.
  */
 
-import type { DivingFishB50, DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { Chart, ChartScore } from "@core/music/type";
-import type { User } from "@core/user/type";
-import type { ChartRatingTables, RatingDisplayMode, RatingTableEntry } from "./chartInfoQuery";
-import { createFixtureMusicList } from "@core/fixtures/saltmeta";
-import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+import type { DivingFishB50, DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { Chart, ChartScore } from "../music/type";
+import type { User } from "../user/type";
+import type { ChartRatingTables, RatingDisplayMode, RatingTableEntry } from "./chartInfo";
 import { describe, expect, it } from "vitest";
+import { createFixtureMusicList } from "../fixtures/saltmeta";
+import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
 import {
     getAvailableRatingDisplayModes,
     getChartRatingTables,
@@ -23,7 +23,7 @@ import {
     ratingModeOrder,
     resolveRatingDisplayMode,
     selectDisplayedRaTable,
-} from "./chartInfoQuery";
+} from "./chartInfo";
 
 // MARK: seeded generator and fixed test data
 
