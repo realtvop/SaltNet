@@ -123,14 +123,27 @@ describe("resolveConfig defaults", () => {
     });
 
     it("hands shared/core the settings it takes", () => {
+        const defaultValues = resolve().values;
+        expect(toCoreConfig(defaultValues)).toEqual({
+            saltMetaUrl: DEFAULT_CORE_CONFIG.saltMetaUrl,
+            lxnsBaseUrl: DEFAULT_CORE_CONFIG.lxnsBaseUrl,
+            lxnsClientId: "",
+            divingFishBaseUrl: DEFAULT_CORE_CONFIG.divingFishBaseUrl,
+            saltnetApiUrl: "",
+            saltnetApiFallbackUrl: "",
+        });
+
         const { values } = resolve({
+            buildDefaults: build,
             file: { saltmeta: { url: "https://meta.example.test/m.json" } },
         });
         expect(toCoreConfig(values)).toEqual({
             saltMetaUrl: "https://meta.example.test/m.json",
             lxnsBaseUrl: DEFAULT_CORE_CONFIG.lxnsBaseUrl,
-            lxnsClientId: "",
+            lxnsClientId: "build-client",
             divingFishBaseUrl: DEFAULT_CORE_CONFIG.divingFishBaseUrl,
+            saltnetApiUrl: "https://api.example.test",
+            saltnetApiFallbackUrl: "https://backup.example.test",
         });
     });
 });

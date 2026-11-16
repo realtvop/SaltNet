@@ -201,7 +201,7 @@
 
 - [x] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
 - [x] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
-- [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
+- [x] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
 - [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
 - [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
 
@@ -788,3 +788,8 @@
     - 我改的：孤立的代理项会让 `encodeURIComponent` 抛 `URIError`，`URLSearchParams` 则把它写成 U+FFFD（`%EF%BF%BD`），改成和后者一样；core 的错误类不设 `name`（网页端的提示条用 `toString()`，设了前缀就变）；玩家接口的端点照原样拼（Codex 去掉了开头的 `/`，网页端没有，`"/scores"` 写出的是 `player//scores`）；成功与否照网页端判断，`success` 是假值就算失败（Codex 写的是只有 `success === false` 才算，`{ data: [] }`、`success: 0` 和 `null` 都会被当成成功）；搬走的代码带走的 ESLint 豁免按实际数目调低（`token.ts` 那一条整条删掉）。
     - 测试：改动检查 37 处，第一次跑有 7 处没被发现，由 Gemini 补测试：token 端点 HTTP 200 而 `success: false` 时报「落雪授权失败：HTTP 200」；新的 `src/components/integrations/lxns/fetch.test.ts`（加进 `test:oauth`）测网页端包装抛出的错误；刷新 token 的请求体逐字节比对。补完后 37 处全被发现。
     - 按决定 66 不单独送审，并入 P3 的整体审查。没有用真实的落雪账号在浏览器里走一遍授权（要账号凭据，按规矩不做），请求的字节和提示文字由测试比对；最终报告列为没验证的项。
+68. **P3-3 的实现（2026-11-17）**：
+    - Gemini 写的：`shared/core/integrations/saltnet/client.ts`（`SaltAPIEndpoints`、`SALTNET_GAME_API_ERROR_MESSAGE`、错误类 `SaltNetError`（带 `kind` 和 `status`，不设 `name`）、`postSaltNetAPI`、`postSaltNetAPIJSON`）。主地址失败（网络错误或 HTTP 错误）时换备用地址，两个地址来自 `CoreConfig` 新加的 `saltnetApiUrl`、`saltnetApiFallbackUrl`；CLI 的 `toCoreConfig` 传 `api.url`、`api.fallbackUrl`。网页端的 `postAPI`、`postAPIJSON` 成了包装：从 `import.meta.env` 读两个地址，请求失败和 JSON 读不出来时照旧 `console.error`；`postAPIJSON` 的返回类型写成 `Awaited<ReturnType<Response["json"]>>`，就是原来推断出来的 `any`，不用显式写 `any`。
+    - 一处行为上的差别，保留：没设 `VITE_API_URL` 时，原来的模板字符串写出 `undefined/getQRInfo`，现在 `resolveCoreConfig` 把它当成空字符串，写出 `/getQRInfo`。只有配错的构建会遇到，两种请求都会失败，然后换备用地址。
+    - 测试：我补了一个用例：`postAPIJSON` 成功时只请求一次主地址，请求体照原样。改动检查 34 处，33 处被发现；没被发现的一处等价：判断上游错误时去掉「是对象」的检查，JSON 读出来的非 null 原始值没有 `error` 属性，结果一样。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。网页端的请求和日志由 `test:integrations` 里的包装测试比对；没有在浏览器里对真实后端试（绑定和更新要账号凭据）。

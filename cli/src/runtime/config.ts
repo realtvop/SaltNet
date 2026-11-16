@@ -566,5 +566,7 @@ export function toCoreConfig(values: ConfigValues): CoreConfig {
         lxnsBaseUrl: values.lxns.baseUrl,
         lxnsClientId: values.lxns.clientId,
         divingFishBaseUrl: DEFAULT_CORE_CONFIG.divingFishBaseUrl,
+        saltnetApiUrl: values.api.url,
+        saltnetApiFallbackUrl: values.api.fallbackUrl,
     };
 }
