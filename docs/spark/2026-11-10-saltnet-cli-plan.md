@@ -170,7 +170,7 @@
 - [x] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
 - [x] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
 - [x] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
-- [ ] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
+- [x] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
 - [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断〔新〕
 
 **P2 的 CLI 部分**
@@ -720,3 +720,9 @@
 59. **P2-9 的实现（2026-11-16）**：
     - Gemini 搬的：`chartInfoQuery.ts`、它的测试和快照文件搬成 `shared/core/query/chartInfo.ts`、`chartInfo.test.ts` 和 `__snapshots__/chartInfo.test.ts.snap`，只改了 import（`@core/…` 改成相对路径）。快照文件逐字节相同（用 `cmp` 对过 HEAD 里的旧文件），测试不带 `-u` 也通过。`ChartInfo.vue` 改从 `@core/query/chartInfo` 导入；为了不让 `perfectionist/sort-imports` 的计数上升，`vue`、`mdui` 和几条 `@/` 的值导入挪到了这条 `@core/` 导入后面。挪动的这几个模块在 `main.ts` 里早已加载过，新导入的模块也没有副作用，所以顺序不影响运行。`saltnet/prettier-owned-chart-info-query` 删掉了，模块那条 `antfu/curly` 豁免随文件搬到新路径，别的计数不变。
     - 审查没有发现问题。
+60. **P2-10 的实现（2026-11-16）**：
+    - Codex 拆的：`chartPosition.ts` 里的纯计算原样搬进 `shared/core/chart/position.ts`：`findChartPosition`（两个旧函数结尾相同的筛选、查找和格式化）、`sortChartsForPosition`（排序部分，返回排好的副本，不改传入的列表）、用这两个重写的 `getChartPositionByDifficulty`（空列表先返回 `"-"`）和原样的 `addPositionToCharts`。网页端只留 `getChartPositionFromCache` 和缓存的 key，在原来的 `try` 里调 `findChartPosition`，`catch`、日志和 `"-"` 都不变；网页里别处没有用到搬走的函数。一条 `prefer-const` 豁免随代码搬走，旧文件的计数只降不升。新测试 `shared/core/chart/position.test.ts` 和 `src/components/data/chart/chartPosition.test.ts`（localForage 跑在 `fake-indexeddb` 上）放进 `test:query`。
+    - 补丁是在 P2-7 之前的快照上做的，等 P2-9 提交后用三方合并应用；`package.json` 和 `AGENTS.md` 的冲突由我解决，两边加的测试文件和说明都留下。
+    - 验证：一次性的差异测试把上一提交的旧函数（按行切出来）和新函数放在一起跑，4 个种子共 2000 个场景（738 个找到了位置，528 个按用户成绩排序，46 个谱面不在列表里），外加读缓存的路径，结果全部一致。11 处故意的单行改动，差异测试抓到 10 处；没抓到的是把「谱面 id 相同，或曲目 id 和难度都相同」的「或」改成「且」：差异测试的数据里谱面 id 和曲目 id 加难度总是一一对应。提交的测试抓到了它。差异测试第一版是一个同步的长循环，碰上了 Vitest 的 5 秒用例超时和工作进程的 RPC 超时，基线没过，那一轮改动的结果作废；改成每 50 个场景让出一次、设了超时后重跑。这时发现 `mutate_root.py` 不检查不改动时测试是否通过，所以之后每次都先单独跑一遍基线。
+    - 审查找出三种测试抓不到的改动：有用户成绩时跳过基础排序（测试里成绩相同的谱面本来就按基础顺序传入）；`addPositionToCharts` 改成直接改传入的谱面；把查找挪到 `try` 外面（只有读缓存失败才进 `catch`）。三处都由我补了用例：成绩相同、传入顺序和基础顺序相反的谱面；传入的谱面不变，返回的是新对象；缓存里的 `charts` 不是列表时查找本身抛错，仍然返回 `"-"` 并写同样的日志。之后 14 处改动（原来 11 处加这 3 处）全被提交的测试抓到。
+    - 页面原有的行为照旧：位置的分母是总数加一；main 上的 bb2b1b77 之后没有人再写 `chartsSortCachedV2`，所以对话框里的位置总是 `"-"`。这一步不改，最终报告里会提。

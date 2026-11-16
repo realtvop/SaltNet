@@ -240,6 +240,11 @@
       "count": 1
     }
   },
+  "shared/core/chart/position.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
   "shared/core/chart/rating/index.ts": {
     "import/consistent-type-specifier-style": {
       "count": 1
@@ -764,23 +769,8 @@
     }
   },
   "src/components/data/chart/chartPosition.ts": {
-    "perfectionist/sort-named-imports": {
-      "count": 1
-    },
-    "style/comma-dangle": {
-      "count": 4
-    },
-    "antfu/if-newline": {
-      "count": 5
-    },
-    "prefer-const": {
-      "count": 1
-    },
-    "style/operator-linebreak": {
-      "count": 5
-    },
     "style/brace-style": {
-      "count": 3
+      "count": 1
     }
   },
   "src/components/data/chart/getSearchUrls.ts": {

@@ -11,7 +11,7 @@ SaltNet is a three-package pnpm workspace:
 - The root package is the Vue 3/Vite PWA. `src/main.ts` bootstraps Vue, Pinia, MDUI, and the router; `src/App.vue` is the application shell.
 - `src/pages/` contains route-level views. Route declarations and browser-history behavior live in `src/components/app/router.ts`.
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
-- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations, `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and the reactive wrapper (`relatedCollections.ts`) around the shared reverse-association index used by ChartInfo.
+- `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations (`chart/chartPosition.ts` only reads the songs page's old position cache), `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, reusable collection-progress evaluation, and the reactive wrapper (`relatedCollections.ts`) around the shared reverse-association index used by ChartInfo.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
   SaltNet's `postAPI` checks HTTP errors and switches to the fallback backend; `postAPIJSON`
   also parses JSON and propagates backend errors or a friendly message for invalid responses.
@@ -25,7 +25,8 @@ SaltNet is a three-package pnpm workspace:
     - `music/`: types, SaltMeta conversion and fetching, cached-data restoration, `MusicSort` order,
       and the precomputed simplified/traditional, pinyin and romaji search index (`music/search.ts`; `createMusicSearchVariants` also reports which of the three a normalized text was reached by, and `createMusicSearchIndex` is built from it). `music/duplicates.ts` folds the banquet songs that upstream lists twice into one entry (only the CLI asks for it; the web app keeps both) and `music/fetch.ts` offers the SaltMeta download and the conversion separately as well as together.
     - `config.ts` and `http.ts`: `CoreConfig` and the injectable `FetchLike`.
-    - `chart/`: difficulty, chart identity, recent-change ordering, score lookup
+    - `chart/`: difficulty, chart identity, recent-change ordering, chart position calculation
+      (`chart/position.ts`), score lookup
       (`chart/scoreLookup.ts`: finding a chart's score in the per-chart score map and turning it into a
       chart score) and the rating calculation (`chart/rating/`).
     - `course/`: dan-course definitions and ordered chart matching.
@@ -124,8 +125,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:query` compares the songs-page query helpers (ordering, category filtering, position
   indexes, search, grouping and statistics), the B50 page's record selection, sorting and rating
   sums, and the chart info dialog's rating stage tables, display modes and B50 floor with committed
-  snapshots on the fixed fixture data, and validates web search relevance, stable ties and
-  compatibility with the existing match set.
+  snapshots on the fixed fixture data, and validates web search relevance, stable ties,
+  compatibility with the existing match set and chart positions.
   Regenerate the snapshots only for an intentional behavior change.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
   formatting-only commits.
