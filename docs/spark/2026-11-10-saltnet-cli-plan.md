@@ -171,7 +171,7 @@
 - [x] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
 - [x] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
 - [x] P2-10 `refactor(core): split chart position calculation from its localforage cache`〔新〕
-- [ ] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断〔新〕
+- [x] P2-11 `refactor(core): move collection progress and ownership logic to shared/core`：`collections.vue`、`CollectionProgress.vue` 里的拥有状态和进度判断〔新〕
 
 **P2 的 CLI 部分**
 
@@ -726,3 +726,10 @@
     - 验证：一次性的差异测试把上一提交的旧函数（按行切出来）和新函数放在一起跑，4 个种子共 2000 个场景（738 个找到了位置，528 个按用户成绩排序，46 个谱面不在列表里），外加读缓存的路径，结果全部一致。11 处故意的单行改动，差异测试抓到 10 处；没抓到的是把「谱面 id 相同，或曲目 id 和难度都相同」的「或」改成「且」：差异测试的数据里谱面 id 和曲目 id 加难度总是一一对应。提交的测试抓到了它。差异测试第一版是一个同步的长循环，碰上了 Vitest 的 5 秒用例超时和工作进程的 RPC 超时，基线没过，那一轮改动的结果作废；改成每 50 个场景让出一次、设了超时后重跑。这时发现 `mutate_root.py` 不检查不改动时测试是否通过，所以之后每次都先单独跑一遍基线。
     - 审查找出三种测试抓不到的改动：有用户成绩时跳过基础排序（测试里成绩相同的谱面本来就按基础顺序传入）；`addPositionToCharts` 改成直接改传入的谱面；把查找挪到 `try` 外面（只有读缓存失败才进 `catch`）。三处都由我补了用例：成绩相同、传入顺序和基础顺序相反的谱面；传入的谱面不变，返回的是新对象；缓存里的 `charts` 不是列表时查找本身抛错，仍然返回 `"-"` 并写同样的日志。之后 14 处改动（原来 11 处加这 3 处）全被提交的测试抓到。
     - 页面原有的行为照旧：位置的分母是总数加一；main 上的 bb2b1b77 之后没有人再写 `chartsSortCachedV2`，所以对话框里的位置总是 `"-"`。这一步不改，最终报告里会提。
+61. **P2-11 的实现（2026-11-16）**：
+    - Codex 拆的：`collections.vue` 里算拥有的收藏品 id（`getOwnedCollectionIds`）、把旅行伙伴转成收藏品（`toCharacterCollection`）、判断是否拥有（`isCollectionOwned`），以及 `CollectionProgress.vue` 里给收藏品的谱面挂上成绩、按完成情况排序（`getScoredCollectionCharts`），分别搬进 `shared/core/collection/ownership.ts` 和 `progress.ts`；页面只把用户和谱面传进去。新测试放进 `test:collection-index`。页面上的 `(character as any).genre` 换成了有类型的 `character.genre`，值相同。
+    - 补丁是在 P2-10 之前的快照上做的，用三方合并应用；`AGENTS.md`、`package.json` 和 `eslint-suppressions.json` 的冲突由我解决。豁免只降不升：`CollectionProgress.vue` 的 `style/indent` 118→112；`collections.vue` 的 `style/indent` 223→191、`antfu/if-newline` 7→6、`style/arrow-parens` 3→2、`style/comma-dangle` 2→1；新文件没有违规。
+    - 验证：一次性的差异测试把上一提交的页面代码（按行切出来）和新的页面行加 core 模块放在一起跑。拥有状态跑了 1800 个随机用户场景（56506 次判为拥有，3600 次是 `undefined`，15137 个旅行伙伴已拥有）；进度跑了 3648 个场景，覆盖 24 个能按成绩判断的收藏品（1530 个有谱面，896 个挂上了成绩），没有 `data` 的用户在两边抛出同样的 228 个 TypeError。结果全部一致。18 处故意的单行改动（另有一处针对 `as any` 写法的改动在新代码里找不到），差异测试抓到 17 处，没抓到的是去掉 genre 的 `|| ""`：内置的旅行伙伴都有 genre。提交的测试原来漏了 3 处：搭档（第 10 类）id 的顺序、改写传入的谱面、没有 genre 的旅行伙伴。我补了用例后 18 处全被抓到。
+    - 审查找出一处行为变化：页面把 `ownedCollections.value` 直接当参数传给 core，于是默认 id 和旅行伙伴也要先算一遍拥有的 id 表，而原来这两种情况提前返回，根本不读它。这改变了计算属性何时求值、依赖哪些响应式数据，以及条目里有 `null` 时会不会抛错（审查举的例子：`data.items[1]` 是 `[null]` 的用户看旅行伙伴时会抛 TypeError）。改法：`isCollectionOwned` 的第二个参数改成取 id 表的函数，只在原来读表的那一行调用；页面传 `() => ownedCollections.value`。差异测试加了两项检查：每次判断时两边读计算属性的次数（1675800 次都不读，90000 次读一次，两边相同），以及审查举的那个用户在每个收藏品上是抛错还是返回（50 处抛错，931 处返回，两边相同）。把页面改回提前求值（`(owned => () => owned)(ownedCollections.value)`）后，这两项都失败。
+    - 审查还找出四种测试抓不到的改动，都由我补了用例：把普通收藏品一律判成未拥有（之前没有断言过普通收藏品判为拥有）；谱面原来带着别的成绩时保留它（现在谱面先带一份别的成绩，没有成绩数据时要清成 `undefined`，有时要换成新成绩）；返回旅行伙伴数据的副本（现在断言是同一个对象）；改写传入谱面里嵌套的数据（现在把谱面和成绩整个冻结后再调用）。另加了一条用例：默认 id 和旅行伙伴不调用取 id 表的函数。之后 24 处改动（原来的 18 处、这 4 处、两处提前读表）全被提交的测试抓到；差异测试抓到其中 20 处，没抓到的 4 处（genre、旧成绩、副本、改嵌套数据）是差异测试的数据碰不到或分辨不出的。修正后没有再送审，改动由上面的差异测试和改动检查确认。
+    - 已有的行为照旧：`isCollectionOwned` 碰到拥有表里没有的类别返回 `undefined`（差异测试里 3600 次），最终报告里会提。

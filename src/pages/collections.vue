@@ -13,6 +13,11 @@
         partners,
         refreshCollectionData,
     } from "@/components/data/collection";
+    import {
+        getOwnedCollectionIds,
+        isCollectionOwned as isCollectionOwnedBy,
+        toCharacterCollection,
+    } from "@core/collection/ownership";
     import { CollectionKind, type Collection, type Title } from "@core/collection/type";
     import { useShared } from "@/components/app/shared";
     // import { copyTextToClipboard } from "@/components/app/utils";
@@ -46,27 +51,7 @@
         category.value = target.value as CategoryType;
     }
 
-    const ownedCollections = computed<Record<number, number[]>>(() => {
-        const owned: Record<number, number[]> = { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] };
-        const items = users?.[0]?.data?.items;
-        const getItemsByKind = (kind: CollectionKind) =>
-            Array.isArray(items?.[kind]) ? items[kind] : [];
-
-        for (const collection of getItemsByKind(CollectionKind.Plate))
-            owned[CollectionKind.Plate].push(collection.itemId);
-        for (const collection of getItemsByKind(CollectionKind.Title))
-            owned[CollectionKind.Title].push(collection.itemId);
-        for (const collection of getItemsByKind(CollectionKind.Icon))
-            owned[CollectionKind.Icon].push(collection.itemId);
-        for (const collection of getItemsByKind(CollectionKind.Character))
-            owned[CollectionKind.Character].push(collection.itemId);
-        for (const collection of getItemsByKind(CollectionKind.Partner))
-            owned[CollectionKind.Partner].push(collection.itemId);
-        for (const collection of getItemsByKind(CollectionKind.Frame))
-            owned[CollectionKind.Frame].push(collection.itemId);
-
-        return owned;
-    });
+    const ownedCollections = computed(() => getOwnedCollectionIds(users?.[0]));
 
     // 获取当前分类下的可用类别
     const genreKeyMap: Record<CategoryType, keyof typeof genres | "partners"> = {
@@ -97,19 +82,7 @@
                 return frames;
             case Category.Character:
                 // 将characters转换为Collection格式，并添加用户数据
-                return characters.map(character => {
-                    const userCharacter = users?.[0]?.data?.characters?.find(
-                        uc => uc.characterId === character.id
-                    );
-                    return {
-                        type: CollectionKind.Character,
-                        id: character.id,
-                        name: character.name,
-                        genre: character.genre || "",
-                        description: (character as any).genre || "",
-                        userCharacter,
-                    };
-                });
+                return characters.map(character => toCharacterCollection(character, users?.[0]));
             case Category.Partner:
                 return partners;
             default:
@@ -231,17 +204,8 @@
     };
 
     // 检查收藏品是否已拥有
-    const isCollectionOwned = (collection: Collection) => {
-        if (collection.id <= 3) return true; // 默认和随机
-
-        // 对于旅行伙伴，检查用户是否拥有该角色
-        if (collection.type === CollectionKind.Character) {
-            return !!(collection as any).userCharacter;
-        }
-
-        const owned = ownedCollections.value;
-        return owned[collection.type] && owned[collection.type].includes(collection.id);
-    };
+    const isCollectionOwned = (collection: Collection) =>
+        isCollectionOwnedBy(collection, () => ownedCollections.value);
 
     function onFilterChange(event: Event) {
         handleSelectChange(event, filter);

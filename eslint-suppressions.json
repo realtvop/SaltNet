@@ -833,7 +833,7 @@
   },
   "src/components/data/collection/CollectionProgress.vue": {
     "style/indent": {
-      "count": 118
+      "count": 112
     },
     "perfectionist/sort-imports": {
       "count": 2
@@ -1644,7 +1644,7 @@
   },
   "src/pages/collections.vue": {
     "style/indent": {
-      "count": 223
+      "count": 191
     },
     "perfectionist/sort-named-imports": {
       "count": 5
@@ -1659,13 +1659,13 @@
       "count": 1
     },
     "antfu/if-newline": {
-      "count": 7
+      "count": 6
     },
     "style/arrow-parens": {
-      "count": 3
+      "count": 2
     },
     "style/comma-dangle": {
-      "count": 2
+      "count": 1
     },
     "style/operator-linebreak": {
       "count": 3

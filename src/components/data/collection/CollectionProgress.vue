@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { createDetailedScoreLookup, toChartScore } from "@core/chart/scoreLookup";
+    import { getScoredCollectionCharts } from "@core/collection/progress";
     import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
     import { getMusicInfoAsync } from "@/components/data/music";
@@ -8,10 +8,8 @@
     import { RankRate } from "@core/mai/types";
     import type { Collection } from "@core/collection/type";
     import {
-        getCollectionCharts,
         getCollectionProgress,
         isCollectionScoreEvaluable,
-        sortCollectionChartsByCompletion,
     } from "@core/collection/versionPlate";
 
     const props = defineProps<{
@@ -95,14 +93,10 @@
                 return;
             }
 
-            const scoreLookup = createDetailedScoreLookup(props.user?.data.detailed);
-            const withScores = Object.values(musicData.chartList).map(chart => ({
-                ...chart,
-                score: toChartScore(scoreLookup?.findScoreForChart(chart)),
-            }));
-            charts.value = sortCollectionChartsByCompletion(
+            charts.value = getScoredCollectionCharts(
                 props.collection,
-                getCollectionCharts(props.collection, withScores)
+                Object.values(musicData.chartList),
+                props.user?.data.detailed
             );
         } finally {
             loading.value = false;
