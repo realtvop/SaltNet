@@ -34,8 +34,8 @@ function notFound(users: readonly UserListRow[], text: string): never {
 
 /** No text selects position 0; text uses index, uid, exact name, then folded exact name. */
 export function resolveUser(users: readonly UserListRow[], text?: string): UserListRow {
+    if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户");
     if (text === undefined) {
-        if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户");
         return users.find(user => user.index === 0) ?? users[0];
     }
 

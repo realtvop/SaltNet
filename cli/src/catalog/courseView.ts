@@ -4,6 +4,7 @@
  * tracks need the catalog, and a track the catalog lacks is reported instead of dropped.
  */
 import type { Course, CourseDamage } from "@core/course";
+import type { UserScores } from "../users/scores";
 import type { ChartRow } from "./chartRow";
 import type { SongCatalog } from "./songs";
 import { courses as allCourses } from "@core/course";
@@ -73,14 +74,18 @@ export interface CourseTracks {
     readonly missing: readonly MissingCourseTrack[];
 }
 
-export function courseTracks(course: Course, catalog: SongCatalog): CourseTracks {
+export function courseTracks(
+    course: Course,
+    catalog: SongCatalog,
+    scores?: UserScores
+): CourseTracks {
     const tracks: CourseTrackRow[] = [];
     const missing: MissingCourseTrack[] = [];
     course.tracks.forEach((track, index) => {
         const key = chartKey(track.musicId, track.difficulty);
         const entry = catalog.chartByKey.get(key);
         if (entry) {
-            tracks.push({ track: index + 1, ...chartRow(entry) });
+            tracks.push({ track: index + 1, ...chartRow(entry, scores) });
         } else {
             missing.push({
                 track: index + 1,

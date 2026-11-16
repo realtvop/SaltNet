@@ -5,9 +5,12 @@
  */
 import type { ChartStats } from "@core/integrations/diving-fish/type";
 import type { Chart } from "@core/music/type";
+import type { B50Place, UserScores } from "../users/scores";
+import type { ChartScoreRow } from "./chartScore";
 import type { ChartEntry } from "./songs";
 import { difficultyLabel } from "../refs/difficulty";
 import { comboLabel, COMBOS, rankLabel, RANKS } from "../refs/status";
+import { chartUserParts } from "./chartScore";
 import { chartKeyOf, musicType } from "./songs";
 
 export interface ChartRow {
@@ -24,9 +27,9 @@ export interface ChartRow {
     /** The CN version the song was added in. */
     readonly version: string;
     /** Null for a chart nobody played; scores come with the user data. */
-    readonly score: null;
+    readonly score: ChartScoreRow | null;
     /** Null for a chart outside the user's B50; B50 comes with the user data. */
-    readonly b50: null;
+    readonly b50: B50Place | null;
 }
 
 function positive(value: number | undefined): number | null {
@@ -49,7 +52,7 @@ export function constantOf(chart: Pick<Chart, "info">): number | null {
     return positive(chart.info.constant);
 }
 
-export function chartRow({ chart }: ChartEntry): ChartRow {
+export function chartRow({ chart }: ChartEntry, scores?: UserScores): ChartRow {
     const { info, music } = chart;
     return {
         chartKey: chartKeyOf(chart),
@@ -61,8 +64,7 @@ export function chartRow({ chart }: ChartEntry): ChartRow {
         constant: constantOf(chart),
         fitConstant: fitConstantOf(info.stat),
         version: String(music.info.from),
-        score: null,
-        b50: null,
+        ...chartUserParts(chart, scores),
     };
 }
 

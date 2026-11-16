@@ -244,9 +244,10 @@ describe("user list and show", () => {
         const empty = await commandIn(makeHome(), "user", ["show"]);
         expect(empty.code).toBe(4);
         expect(empty.json.error.code).toBe("NO_USER");
+        // With no users at all, a named reference is NO_USER too: there is nobody to match.
         const namedEmpty = await commandIn(makeHome(), "user", ["show", "someone"]);
-        expect(namedEmpty.code).toBe(3);
-        expect(namedEmpty.json.error.code).toBe("NOT_FOUND");
+        expect(namedEmpty.code).toBe(4);
+        expect(namedEmpty.json.error.code).toBe("NO_USER");
     });
 
     it("prints each user's own inGame.enabled and inGame.fastUpdate flags", async () => {

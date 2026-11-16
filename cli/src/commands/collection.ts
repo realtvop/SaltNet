@@ -22,9 +22,11 @@ import { paginate } from "../output/paging";
 import { extend, int, list, object, str } from "../output/schema";
 import { COLLECTION_KINDS, listCollections, resolveCollection } from "../refs/collection";
 import { foldName } from "../util/fold";
+import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
+import { scoreMeta, useUserScores } from "./userScores";
 
 export const collectionList = defineCommand(
     {
@@ -94,7 +96,7 @@ export const collectionShow = defineCommand(
         name: "collection show",
         summary: "一个收藏品的获取条件和它点名的谱面",
         description:
-            "收藏品写成 类型:id（类型有 plate、title、icon、frame、character、partner，例如 title:5108）或完整的名称；名称重复时是 AMBIGUOUS_REF，候选的 ref 就是 类型:id；不做名称的一部分匹配。结果有三部分。collection 是 collection list 里的那一行，再加 requirements，也就是获取条件：每条有 difficulties（要求的难度，null 是任意难度都行）、rank、combo、sync（至少要达到什么，不要求的是 null；三个都是 null 表示打过就行）和 songCount（适用于几首歌）。items 是条件点名的谱面，每个是谱面行再加 done（用户的数据随后加入，现在恒为 null），顺序和 charts 一样（难度高的在前，同一难度里新曲在前），用 --limit 和 --offset 翻页，page.total 是一共几张。missing 是条件点名、曲库里没有的歌（国服没有的歌），每个有 musicId 和 title。没有曲目条件的收藏品（多数称号、头像和背景，旅行伙伴和搭档）items 是空的，获取条件只有 description 里的文字。要对这些谱面筛选、排序或分组，用 charts --collection。",
+            "收藏品写成 类型:id（类型有 plate、title、icon、frame、character、partner，例如 title:5108）或完整的名称；名称重复时是 AMBIGUOUS_REF，候选的 ref 就是 类型:id；不做名称的一部分匹配。结果有三部分。collection 是 collection list 里的那一行，再加 requirements，也就是获取条件：每条有 difficulties（要求的难度，null 是任意难度都行）、rank、combo、sync（至少要达到什么，不要求的是 null；三个都是 null 表示打过就行）和 songCount（适用于几首歌）。items 是条件点名的谱面，每个是谱面行再加 done（用户进度随后加入，现在恒为 null），并带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次；顺序和 charts 一样（难度高的在前，同一难度里新曲在前），用 --limit 和 --offset 翻页，page.total 是一共几张。本地没有用户时 score 和 b50 都是 null。missing 是条件点名、曲库里没有的歌（国服没有的歌），每个有 musicId 和 title。没有曲目条件的收藏品（多数称号、头像和背景，旅行伙伴和搭档）items 是空的，获取条件只有 description 里的文字。要对这些谱面筛选、排序或分组，用 charts --collection。",
         category: "collection",
         effect: "none",
         output: "list",
@@ -105,7 +107,7 @@ export const collectionShow = defineCommand(
                 description: "类型:id 或完整的名称，例如 plate:6148、title:5102",
             },
         ],
-        options: { ...listOptions() },
+        options: { ...USER_OPTION, ...listOptions() },
         examples: [
             { command: "collection show title:5102", description: "一个称号的条件和它要打的谱面" },
             {
@@ -113,7 +115,7 @@ export const collectionShow = defineCommand(
                 description: "一个牌子点名的谱面，看第二页",
             },
         ],
-        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: object(
             {
                 collection: extend<CollectionDetail, CollectionRow>(
@@ -146,6 +148,11 @@ export const collectionShow = defineCommand(
             args.positionals.collection
         );
         const metadata = await useMetadata(args, ctx, ["catalog"]);
+        const userScores = useUserScores(
+            args,
+            ctx,
+            Object.values(metadata.catalog.music.chartList)
+        );
 
         const catalog = buildSongCatalog(metadata.catalog.music);
         const { items, page } = paginate(
@@ -156,11 +163,15 @@ export const collectionShow = defineCommand(
             data: {
                 collection: collectionDetail(found),
                 missing: missingCollectionSongs(found.collection, catalog),
-                items: items.map(collectionChartRow),
+                items: items.map(item => collectionChartRow(item, userScores.scores)),
             },
             // The catalog is listed first in both, as `charts` does.
-            meta: { dataAsOf: { ...metadata.dataAsOf, ...collectionData.dataAsOf }, page },
-            warnings: [...metadata.warnings, ...collectionData.warnings],
+            meta: scoreMeta(
+                userScores,
+                { ...metadata.dataAsOf, ...collectionData.dataAsOf },
+                { page }
+            ),
+            warnings: [...metadata.warnings, ...collectionData.warnings, ...userScores.warnings],
         };
     }
 );

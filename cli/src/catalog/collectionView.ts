@@ -6,6 +6,7 @@
  */
 import type { Collection, CollectionRequired, Title } from "@core/collection/type";
 import type { CollectionEntry, CollectionKindName } from "../refs/collection";
+import type { UserScores } from "../users/scores";
 import type { ChartRow } from "./chartRow";
 import type { ChartEntry, SongCatalog } from "./songs";
 import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
@@ -120,8 +121,8 @@ export function collectionChartEntries(
     return entries.filter(({ chart }) => keys.has(chartKeyOf(chart)));
 }
 
-export function collectionChartRow(entry: ChartEntry): CollectionChartRow {
-    return { ...chartRow(entry), done: null };
+export function collectionChartRow(entry: ChartEntry, scores?: UserScores): CollectionChartRow {
+    return { ...chartRow(entry, scores), done: null };
 }
 
 /** The songs the conditions name that the catalog lacks, once each, in the order of the data. */

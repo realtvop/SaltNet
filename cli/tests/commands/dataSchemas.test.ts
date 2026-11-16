@@ -21,6 +21,7 @@ import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms, expectValidSchema } from "../dataSchema";
 import { fixtureSongCatalog } from "../fixtureCatalog";
+import { b50User, detailedUser, seedScoreUsers } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -478,6 +479,38 @@ describe("kaleidxscope", () => {
         expect(unlistedPool).toBeDefined();
         expect(unlistedPool.unlistedDescription).not.toBeNull();
         expectConforms(schemaOf("kaleidxscope"), json.data);
+    });
+});
+
+describe("chart-row schemas with users", () => {
+    const commands = [
+        { schema: "song", command: "song", args: ["146"] },
+        { schema: "chart", command: "chart", args: ["146-3"] },
+        { schema: "charts", command: "charts", args: ["--limit", "10000"] },
+        { schema: "course show", command: "course", args: ["show", "初段"] },
+        {
+            schema: "collection show",
+            command: "collection",
+            args: ["show", "plate:6101", "--limit", "10000"],
+        },
+        { schema: "kaleidxscope", command: "kaleidxscope", args: ["blue"] },
+    ] as const;
+
+    it.each([
+        ["detailed", detailedUser("schema-detailed", "Schema Detailed")],
+        ["B50 only", b50User("schema-b50", "Schema B50")],
+    ])("describes all six commands with a %s user", async (_label, madeUser) => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [madeUser]);
+        for (const sample of commands) {
+            const { json } = await commandIn(paths, sample.command, [...sample.args]);
+            expect(json.meta.user.uid).toBe(madeUser.uid);
+            expectConforms(schemaOf(sample.schema), json.data);
+        }
+        const charts = await commandIn(paths, "charts", ["--limit", "10000"]);
+        expect(charts.json.data.items.some((row: { score: unknown }) => row.score !== null)).toBe(
+            true
+        );
     });
 });
 

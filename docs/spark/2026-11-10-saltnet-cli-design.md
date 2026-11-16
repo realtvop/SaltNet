@@ -418,7 +418,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 - `meta.page`：只有列表命令才有。`nextOffset` 为 null 表示没有下一页了。
 - `warnings`：结果可以用，但有需要注意的地方。每条的格式是 `{code, message, fix?}`，其中 `fix` 是建议执行的命令。目前有：
     - `STALE_METADATA`：曲库或收藏品已过期又没能刷新（刷新失败或 `--offline`），用的是缓存
-    - `STALE_SCORES`：成绩超过 3 天没更新
+    - `STALE_SCORES`：成绩超过 3 天没更新，或有成绩但更新时间未知
     - `NO_SCORES`：这个用户还没同步过
     - `PARTIAL_SCORES`：只拿到了水鱼公开的 B50，其他谱面没有成绩
     - `TRUNCATED`：`sql` 的结果被截断了

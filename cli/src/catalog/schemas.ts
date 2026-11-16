@@ -14,8 +14,10 @@ import type { MergedDuplicateMusic } from "@core/music/duplicates";
 import type { ConfigSource } from "../runtime/config";
 import type { SettingRow } from "../runtime/configRows";
 import type { UserCounts } from "../users/repository";
+import type { B50Place } from "../users/scores";
 import type { ScoresState, StatusUserRow, UserRow } from "../users/view";
 import type { ChartRow } from "./chartRow";
+import type { ChartScoreRow } from "./chartScore";
 import type { CollectionChartRow, CollectionRow, RequirementRow } from "./collectionView";
 import type { CourseInfo, CourseTrackRow } from "./courseView";
 import type { PendingSong, PhaseRow } from "./gateView";
@@ -78,8 +80,62 @@ export const chartRowSchema = object<ChartRow>(
             "拟合定数：玩家的成绩反推出来的难度，保留四位小数；没有玩家成绩统计时是 null"
         ),
         version: str("加入游戏的国服版本名，例如 maimai PLUS"),
-        score: alwaysNull("这个用户在这张谱上的成绩；用户数据加入之前恒为 null"),
-        b50: alwaysNull("这张谱在不在用户的 B50 里；用户数据加入之前恒为 null"),
+        score: nullable(
+            object<ChartScoreRow>(
+                {
+                    achievements: nullable(num("达成率"), "达成率；副本里的值未知时是 null"),
+                    rank: nullable(
+                        strEnum(RANKS.map(rankLabel), "游戏里的评级写法，例如 SSS+"),
+                        "游戏里的评级写法，例如 SSS+；没有或不认识时是 null"
+                    ),
+                    combo: nullable(
+                        strEnum(labelsOf(COMBOS, comboLabel), "游戏里的连击状态写法"),
+                        "游戏里的连击状态写法，例如 AP+；没有或不认识时是 null"
+                    ),
+                    sync: nullable(
+                        strEnum(labelsOf(SYNCS, syncLabel), "游戏里的同步状态写法"),
+                        "游戏里的同步状态写法，例如 FDX+；没有或不认识时是 null"
+                    ),
+                    dxScore: nullable(int("DX 分数"), "DX 分数；副本里的值未知时是 null"),
+                    dxScoreMax: nullable(
+                        int("曲库给出的这张谱的 DX 满分"),
+                        "曲库给出的这张谱的 DX 满分；不是正数时是 null"
+                    ),
+                    dxStars: nullable(
+                        int("按 DX 分数比例算出的星数，0 到 5"),
+                        "按 DX 分数比例算出的星数，0 到 5；分数或满分未知时是 null"
+                    ),
+                    rating: nullable(
+                        int("这张谱贡献的 rating"),
+                        "这张谱贡献的 rating；副本里的值未知时是 null"
+                    ),
+                    playCount: nullable(
+                        int("游玩次数"),
+                        "记录的游玩次数，或成绩历史推算的下限；都没有时是 null"
+                    ),
+                    playCountEstimated: bool("playCount 是否来自成绩历史的估算"),
+                    changedAt: nullable(
+                        str("成绩最后变化的时间，用本机时区的偏移写"),
+                        "成绩最后变化的时间，用本机时区的偏移写；没有正数时间时是 null"
+                    ),
+                },
+                { description: "这个用户在这张谱上的成绩" }
+            ),
+            "这个用户在这张谱上的成绩；没有成绩时是 null"
+        ),
+        b50: nullable(
+            object<B50Place>(
+                {
+                    part: strEnumOf<B50Place["part"]>(
+                        { B35: "旧曲部分", B15: "新曲部分" },
+                        "B50 的部分"
+                    ),
+                    rank: int("在这个部分里的名次，从 1 开始"),
+                },
+                { description: "这张谱在用户 B50 里的位置" }
+            ),
+            "这张谱在用户 B50 里的位置；不在 B50 或是宴谱时是 null"
+        ),
     },
     { description: "一张谱面；所有列出谱面的命令都用这个结构，各自可以再加字段" }
 );

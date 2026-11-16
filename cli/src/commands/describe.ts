@@ -10,6 +10,15 @@ import type {
 import { ERROR_CODES, ERROR_DESCRIPTIONS, exitCodeOf, isRetryableByDefault } from "../errors";
 import { commandOptionEntries, enumMember } from "./registry";
 
+/** The user reference shared by every command that prints chart rows with scores. */
+export const USER_OPTION = {
+    user: {
+        kind: "string",
+        valueName: "用户",
+        description: "成绩所属的用户：从 0 开始的序号、uid 或显示名；不写时用默认用户",
+    },
+} as const;
+
 export interface DescribedEnumValue {
     readonly value: string;
     readonly aliases: readonly string[];

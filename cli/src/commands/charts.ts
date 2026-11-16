@@ -24,9 +24,11 @@ import { resolveGate } from "../refs/gate";
 import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
 import { resolveVersions } from "../refs/version";
+import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
+import { carryScoreContext, scoreMeta, useUserScores } from "./userScores";
 
 /** The charts a collection or plate asks for, or `USAGE` when its conditions name no song. */
 function songsOf(label: string, collection: Collection, entries: readonly ChartEntry[]): ChartSet {
@@ -41,7 +43,7 @@ export const charts = defineCommand(
         name: "charts",
         summary: "按等级、定数、版本、难度或文本筛选谱面，可以排序和分组",
         description:
-            "列出同时满足所有条件的谱面，一行一张。不写任何条件就是全部谱面（宴谱除外）。顺序和网页端的默认顺序一致：难度高的在前，同一难度里新曲在前。--level 的等级写成 13 或 13+，区间两端都包含，13..14 含 13、13+、14，不含 14+，要含 14+ 就写 13..14+。--constant 是定数区间，没有定数的谱（宴谱）不会通过。--diff 不写时不含宴谱，宴谱只有写了 --diff utage 才会出现，它的等级照常写，末尾的 ? 可以省略。--version 写版本名（舞萌DX 2024、maimai PLUS）、省略 maimai 或舞萌的写法（murasaki plus）、能唯一确定一个版本的一部分（2024），或牌子字（熊），牌子字对应的版本都会算；多个值用逗号隔开。--search 的匹配规则和 search 一样，曲师和谱师只找到谱师做的那几张谱。--gate、--course、--plate、--collection 各对应曲目页的一个分类，只要它们包含的谱面：--gate 是万花筒的门（id blue、名称 蓝色之门、简称 蓝门，或只有一个门有的一部分），要这个门的钥匙曲目和各个曲池里每首歌的所有难度的谱面，难度用 --diff 选；--course 是段位（id、名称 十段，或只有一个段位有的一部分），要它的曲目；--plate 是版本牌子，合并的写法（熊華極）和单个牌子（熊極）都行，要牌子的条件里点名的谱面；--collection 是任何收藏品，写 类型:id（title:5108）或名称，名称重复时是 AMBIGUOUS_REF，候选的 ref 就是 类型:id，获取条件里没有曲目的收藏品（多数头像和背景、约一半的称号、旅行伙伴和搭档）没有谱面可选，会报 USAGE。这些条件和别的条件一起写时结果须同时满足。--sort 选排序的依据：default 是上面说的网页端顺序（写了 --course 时是段位的出场顺序），constant 按定数，version 按版本；默认从大到小（定数高的、版本新的在前，default 则是难度高的、新曲在前），写 --asc 反过来，--asc 和 --desc 不能一起写；没有定数的谱（宴谱）和不认识的版本排在最后，依据相同的按谱面 key（曲目 id，再难度）排，所以同样的数据和参数永远给出同样的顺序。--group-by 按 constant（定数，从高到低）、version（版本，从新到旧）、level（等级，从难到易）或 difficulty（难度，从 BASIC 起）分组，结果放在 groups 里，每组是 {key, count, items}，组的顺序固定，--sort 排的是组内的顺序，没有定数的宴谱谱面自成一组（key 是 null）排在最后；这时 --limit 和 --offset 对每一组分别生效，count 是这一组一共有几张。成绩相关的条件、统计和按成绩排序、分组之后加入。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次，本地没有用户时两项都是 null。不写任何条件就是全部谱面（宴谱除外）。顺序和网页端的默认顺序一致：难度高的在前，同一难度里新曲在前。--level 的等级写成 13 或 13+，区间两端都包含，13..14 含 13、13+、14，不含 14+，要含 14+ 就写 13..14+。--constant 是定数区间，没有定数的谱（宴谱）不会通过。--diff 不写时不含宴谱，宴谱只有写了 --diff utage 才会出现，它的等级照常写，末尾的 ? 可以省略。--version 写版本名（舞萌DX 2024、maimai PLUS）、省略 maimai 或舞萌的写法（murasaki plus）、能唯一确定一个版本的一部分（2024），或牌子字（熊），牌子字对应的版本都会算；多个值用逗号隔开。--search 的匹配规则和 search 一样，曲师和谱师只找到谱师做的那几张谱。--gate、--course、--plate、--collection 各对应曲目页的一个分类，只要它们包含的谱面：--gate 是万花筒的门（id blue、名称 蓝色之门、简称 蓝门，或只有一个门有的一部分），要这个门的钥匙曲目和各个曲池里每首歌的所有难度的谱面，难度用 --diff 选；--course 是段位（id、名称 十段，或只有一个段位有的一部分），要它的曲目；--plate 是版本牌子，合并的写法（熊華極）和单个牌子（熊極）都行，要牌子的条件里点名的谱面；--collection 是任何收藏品，写 类型:id（title:5108）或名称，名称重复时是 AMBIGUOUS_REF，候选的 ref 就是 类型:id，获取条件里没有曲目的收藏品（多数头像和背景、约一半的称号、旅行伙伴和搭档）没有谱面可选，会报 USAGE。这些条件和别的条件一起写时结果须同时满足。--sort 选排序的依据：default 是上面说的网页端顺序（写了 --course 时是段位的出场顺序），constant 按定数，version 按版本；默认从大到小（定数高的、版本新的在前，default 则是难度高的、新曲在前），写 --asc 反过来，--asc 和 --desc 不能一起写；没有定数的谱（宴谱）和不认识的版本排在最后，依据相同的按谱面 key（曲目 id，再难度）排，所以同样的数据和参数永远给出同样的顺序。--group-by 按 constant（定数，从高到低）、version（版本，从新到旧）、level（等级，从难到易）或 difficulty（难度，从 BASIC 起）分组，结果放在 groups 里，每组是 {key, count, items}，组的顺序固定，--sort 排的是组内的顺序，没有定数的宴谱谱面自成一组（key 是 null）排在最后；这时 --limit 和 --offset 对每一组分别生效，count 是这一组一共有几张。成绩相关的筛选、统计和按成绩排序、分组之后加入。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -125,6 +127,7 @@ export const charts = defineCommand(
                 description:
                     "按 constant、version、level 或 difficulty 分组，--limit 对每组分别生效",
             },
+            ...USER_OPTION,
             ...listOptions(),
         },
         examples: [
@@ -148,7 +151,7 @@ export const charts = defineCommand(
             { command: "charts --plate 真極 --diff mas", description: "真極要求的紫谱" },
             { command: "charts --gate 蓝门 --diff mas", description: "蓝门曲池里歌的紫谱" },
         ],
-        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: anyOf(
             "谱面筛选结果：普通列表或分组列表",
             object(
@@ -192,62 +195,73 @@ export const charts = defineCommand(
                 ? undefined
                 : await useMetadata(args, ctx, ["collections"]);
         const catalog = buildSongCatalog(metadata.catalog.music);
+        const userScores = useUserScores(
+            args,
+            ctx,
+            Object.values(metadata.catalog.music.chartList)
+        );
         const { cnVersions } = metadata.catalog.metadata;
         const entries = allChartEntries(catalog);
-
-        const sets: ChartSet[] = [];
-        if (gateFound) sets.push(gateCharts(gateFound, entries));
-        const courseSet = courseFound && courseCharts(courseFound, entries);
-        if (courseSet) sets.push(courseSet);
-        if (collectionData) {
-            const { collections } = collectionData.collections;
-            if (plate !== undefined) {
-                const found = resolvePlate(collections.versionPlates, plate);
-                sets.push(songsOf(`牌子「${found.text}」`, found.plate, entries));
-            }
-            if (collection !== undefined) {
-                const found = resolveCollection(listCollections(collections), collection);
-                const label = `收藏品「${found.collection.name}」（${collectionRef(found)}）`;
-                sets.push(songsOf(label, found.collection, entries));
-            }
-        }
-
-        const matching = filterCharts(catalog, entries, {
-            levels: level ? parseLevelRange(level) : undefined,
-            constants: constant,
-            grades: diff?.map(value => parseDifficulty(value)!.grade),
-            versions: version?.flatMap(text => resolveVersions(cnVersions, text)),
-            search,
-            within: intersectChartSets(sets),
-        });
-        const versionNames = cnVersions.map(({ name }) => name);
-        const sorted = sortCharts(matching, {
-            key: sort,
-            ascending: asc,
-            versions: versionNames,
-            order: courseSet?.order,
-        });
         const dataAsOf = { ...metadata.dataAsOf, ...collectionData?.dataAsOf };
-        const warnings = [...metadata.warnings, ...(collectionData?.warnings ?? [])];
+        const metadataWarnings = [...metadata.warnings, ...(collectionData?.warnings ?? [])];
+        try {
+            const sets: ChartSet[] = [];
+            if (gateFound) sets.push(gateCharts(gateFound, entries));
+            const courseSet = courseFound && courseCharts(courseFound, entries);
+            if (courseSet) sets.push(courseSet);
+            if (collectionData) {
+                const { collections } = collectionData.collections;
+                if (plate !== undefined) {
+                    const found = resolvePlate(collections.versionPlates, plate);
+                    sets.push(songsOf(`牌子「${found.text}」`, found.plate, entries));
+                }
+                if (collection !== undefined) {
+                    const found = resolveCollection(listCollections(collections), collection);
+                    const label = `收藏品「${found.collection.name}」（${collectionRef(found)}）`;
+                    sets.push(songsOf(label, found.collection, entries));
+                }
+            }
 
-        if (groupBy) {
-            const groups = groupCharts(sorted, groupBy, versionNames).map(group => ({
-                key: group.key,
-                count: group.entries.length,
-                items: paginate(group.entries, args.options).items.map(chartRow),
-            }));
+            const matching = filterCharts(catalog, entries, {
+                levels: level ? parseLevelRange(level) : undefined,
+                constants: constant,
+                grades: diff?.map(value => parseDifficulty(value)!.grade),
+                versions: version?.flatMap(text => resolveVersions(cnVersions, text)),
+                search,
+                within: intersectChartSets(sets),
+            });
+            const versionNames = cnVersions.map(({ name }) => name);
+            const sorted = sortCharts(matching, {
+                key: sort,
+                ascending: asc,
+                versions: versionNames,
+                order: courseSet?.order,
+            });
+            const warnings = [...metadataWarnings, ...userScores.warnings];
+
+            if (groupBy) {
+                const groups = groupCharts(sorted, groupBy, versionNames).map(group => ({
+                    key: group.key,
+                    count: group.entries.length,
+                    items: paginate(group.entries, args.options).items.map(entry =>
+                        chartRow(entry, userScores.scores)
+                    ),
+                }));
+                return {
+                    data: { groups },
+                    meta: scoreMeta(userScores, dataAsOf),
+                    warnings,
+                };
+            }
+
+            const { items, page } = paginate(sorted, args.options);
             return {
-                data: { groups },
-                meta: { dataAsOf },
+                data: { items: items.map(entry => chartRow(entry, userScores.scores)) },
+                meta: scoreMeta(userScores, dataAsOf, { page }),
                 warnings,
             };
+        } catch (error) {
+            carryScoreContext(error, userScores, { dataAsOf }, metadataWarnings);
         }
-
-        const { items, page } = paginate(sorted, args.options);
-        return {
-            data: { items: items.map(chartRow) },
-            meta: { dataAsOf, page },
-            warnings,
-        };
     }
 );

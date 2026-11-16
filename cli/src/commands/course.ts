@@ -6,9 +6,11 @@ import { buildSongCatalog } from "../catalog/songs";
 import { paginate } from "../output/paging";
 import { extend, int, list, object, str, strEnum } from "../output/schema";
 import { resolveCourse } from "../refs/course";
+import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
+import { scoreMeta, useUserScores } from "./userScores";
 
 export const courseList = defineCommand(
     {
@@ -47,7 +49,7 @@ export const courseShow = defineCommand(
         name: "course show",
         summary: "一个段位的血量规则和曲目",
         description:
-            "段位可以写名称（十段、真皆伝）、id（551010），或者只有一个段位有的一部分名称（真九）；「九」这样几个段位都有的会报 AMBIGUOUS_REF，候选里的 ref 就是名称。结果是 course list 里那一行，再加 tracks 和 missing。tracks 是曲库里有的曲目，按出场顺序，每个是谱面行再加一个 track（第几首，从 1 起），谱面 key 可以直接传给 chart；missing 是曲库里没有的曲目（曲库还没收录的歌），每个有 track、chartKey、musicId、title、difficulty。成绩之后随用户数据加入，现在 score 和 b50 恒为 null。",
+            "段位可以写名称（十段、真皆伝）、id（551010），或者只有一个段位有的一部分名称（真九）；「九」这样几个段位都有的会报 AMBIGUOUS_REF，候选里的 ref 就是名称。结果是 course list 里那一行，再加 tracks 和 missing。tracks 是曲库里有的曲目，按出场顺序，每个是谱面行再加一个 track（第几首，从 1 起），并带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次；谱面 key 可以直接传给 chart。missing 是曲库里没有的曲目（曲库还没收录的歌），每个有 track、chartKey、musicId、title、difficulty。本地没有用户时 score 和 b50 都是 null。",
         category: "gameplay",
         effect: "none",
         output: "object",
@@ -58,6 +60,7 @@ export const courseShow = defineCommand(
                 description: "段位的名称或 id，例如 十段、真皆伝、551010",
             },
         ],
+        options: { ...USER_OPTION },
         examples: [
             { command: "course show 十段", description: "十段的血量规则和四首曲目" },
             {
@@ -65,7 +68,7 @@ export const courseShow = defineCommand(
                 description: "名字里有「真九」的只有真九段，所以不用写全",
             },
         ],
-        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", ...METADATA_ERRORS],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: extend<CourseInfo & CourseTracks, CourseInfo>(
             courseInfoSchema,
             {
@@ -91,11 +94,20 @@ export const courseShow = defineCommand(
         // The courses ship with the CLI, so a wrong name fails before anything is fetched.
         const course = resolveCourse(args.positionals.course);
         const metadata = await useMetadata(args, ctx, ["catalog"]);
-        const { tracks, missing } = courseTracks(course, buildSongCatalog(metadata.catalog.music));
+        const userScores = useUserScores(
+            args,
+            ctx,
+            Object.values(metadata.catalog.music.chartList)
+        );
+        const { tracks, missing } = courseTracks(
+            course,
+            buildSongCatalog(metadata.catalog.music),
+            userScores.scores
+        );
         return {
             data: { ...courseInfo(course), tracks, missing },
-            meta: { dataAsOf: metadata.dataAsOf },
-            warnings: metadata.warnings,
+            meta: scoreMeta(userScores, metadata.dataAsOf),
+            warnings: [...metadata.warnings, ...userScores.warnings],
         };
     }
 );

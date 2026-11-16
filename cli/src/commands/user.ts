@@ -28,7 +28,7 @@ const USER_POSITIONAL = {
 
 const OPTIONAL_USER_POSITIONAL = { ...USER_POSITIONAL, optional: true } as const;
 
-const USER_REFERENCE_ERRORS = ["NOT_FOUND", "AMBIGUOUS_REF", "DB_LOCKED"] as const;
+const USER_REFERENCE_ERRORS = ["NO_USER", "NOT_FOUND", "AMBIGUOUS_REF", "DB_LOCKED"] as const;
 
 const userDetailSchema = extend<UserDetail, UserRow>(
     userRowSchema,
@@ -120,7 +120,7 @@ export const userShow = defineCommand(
             { command: "user show", description: "默认用户及其数据量" },
             { command: "user show 1", description: "序号为 1 的用户" },
         ],
-        errors: ["USAGE", "NO_USER", ...USER_REFERENCE_ERRORS],
+        errors: ["USAGE", ...USER_REFERENCE_ERRORS],
         dataSchema: userDetailSchema,
     },
     (args, ctx) => {

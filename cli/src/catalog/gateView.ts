@@ -12,6 +12,7 @@ import type {
     KaleidxscopePhaseStatus,
     KaleidxscopeSong,
 } from "@core/kaleidxscope";
+import type { UserScores } from "../users/scores";
 import type { ChartRow } from "./chartRow";
 import type { ChartEntry } from "./songs";
 import {
@@ -173,7 +174,8 @@ function entriesByMusic(entries: readonly ChartEntry[]): Map<number, ChartEntry[
 function resolveSongs(
     songs: readonly KaleidxscopeSong[],
     byMusic: ReadonlyMap<number, readonly ChartEntry[]>,
-    grade: number
+    grade: number,
+    scores?: UserScores
 ): GateSongs {
     const rows: ChartRow[] = [];
     const pending: PendingSong[] = [];
@@ -185,7 +187,7 @@ function resolveSongs(
             grade
         );
         const entry = candidates.find(candidate => candidate.chart === chart);
-        if (entry) rows.push(chartRow(entry));
+        if (entry) rows.push(chartRow(entry, scores));
         else pending.push({ musicId: song.musicId, title: song.title });
     }
     return { songs: rows, pending };
@@ -195,14 +197,15 @@ function resolveSongs(
 export function gateDetail(
     gate: KaleidxscopeGate,
     entries: readonly ChartEntry[],
-    options: GateDetailOptions
+    options: GateDetailOptions,
+    scores?: UserScores
 ): GateDetail {
     const { now } = options;
     const base = gateBase(gate, now);
     const grade =
         options.grade ?? getKaleidxscopePreferredGrade(getKaleidxscopeCurrentPhase(gate, now));
     const byMusic = entriesByMusic(entries);
-    const key = resolveSongs(gate.keyCondition.songs, byMusic, grade);
+    const key = resolveSongs(gate.keyCondition.songs, byMusic, grade, scores);
 
     return {
         ...base,
@@ -225,7 +228,7 @@ export function gateDetail(
             // the ones that will be played, so none are listed.
             ...(pool.unlistedDescription
                 ? { songs: [], pending: [] }
-                : resolveSongs(pool.songs, byMusic, grade)),
+                : resolveSongs(pool.songs, byMusic, grade, scores)),
         })),
     };
 }

@@ -42,11 +42,11 @@ describe("resolveUser", () => {
         expect(resolveUser(users)).toBe(users[0]);
     });
 
-    it("reports NO_USER only for a missing default with no users", () => {
+    it("reports NO_USER for every reference when there are no users", () => {
         const error = caught(() => resolveUser([]));
         expect(error.code).toBe("NO_USER");
         expect(error.exitCode).toBe(4);
-        expect(caught(() => resolveUser([], "someone")).code).toBe("NOT_FOUND");
+        expect(caught(() => resolveUser([], "someone")).code).toBe("NO_USER");
     });
 
     it("reads digits only as an index, including an all-digit uid", () => {
