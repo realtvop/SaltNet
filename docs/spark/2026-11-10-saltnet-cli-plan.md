@@ -166,7 +166,7 @@
 - [x] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
 - [x] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
 - [x] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
-- [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
+- [x] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
 - [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
 - [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
 - [ ] P2-9 `refactor(core): move chart info calculations to shared/core/query`〔简单〕
@@ -703,3 +703,6 @@
     - 审查指出三种改动这份测试抓不到：摘要里没有转换后的连击、同步、评级、DX 分和更新时间；没有用例能区分稳定排序和多加一级按 ID 的比较；nb50 用例里成绩的 `ds` 总等于谱面定数。我又用 P2-4 的 26 处单行改动直接测这份测试（不接旧代码），找出第四处：拟合模式下 `fit_diff` 为 NaN 时回退到谱面定数。四处都由我补上：摘要每行加上这五个字段（重新生成的快照去掉这些字段后与原来逐字相同），另加三个用例。之后 26 处改动加上针对审查的 7 处，共 33 处全被抓到。
     - 测试记下了页面原有的这些行为，这一步不改：`recordsHaveLastChangedAt` 把空的 `detailed: {}` 当成有详细数据，`getSourceRecords` 在不要求详细数据时却会退回 B50 列表；nb50 拿没有取整的 `fit_diff` 和定数比较，而且不看成绩的 `ds`；`fit_diff` 为 NaN 或无穷时回退链停在这一步，不看 `ds`，直接用没有取整的谱面定数；`sortCharts` 最后没有按 ID 比较，各项都相同的谱面保持传入的顺序；`fitConstant` 不在 `ChartScore` 的类型里，测试要转型才能读到。
     - 没有再把旧页面代码接进这份测试对照一次：P2-4 的差异测试已经表明，新模块和旧代码在 5040 个场景里结果完全一致。
+56. **P2-6 的实现（2026-11-16）**：
+    - Gemini 搬的：`b50Query.ts`、它的测试和快照文件用 `git mv` 搬成 `shared/core/query/b50.ts`、`b50.test.ts` 和 `__snapshots__/b50.test.ts.snap`，只改了 import（`@core/…` 改成相对路径）。快照文件逐字节相同，测试不带 `-u` 也通过。`b50.vue` 改从 `@core/query/b50` 导入，导入行的位置没动，豁免计数不变；`saltnet/prettier-owned-b50-query` 删掉了。
+    - `AGENTS.md` 里 `pnpm test:query` 那一条补上了 B50 页的快照（P2-5 漏了）；P2-8 的 brief 也要求补上谱面信息的部分。

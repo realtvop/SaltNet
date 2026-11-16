@@ -4,13 +4,13 @@
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import ChartInfoDialog from "@/components/data/chart/ChartInfo.vue";
-    import type { ComboFilterMode } from "@/components/data/chart/b50Query";
+    import type { ComboFilterMode } from "@core/query/b50";
     import {
         createMusicChartMap,
         recordsHaveLastChangedAt,
         selectB50Charts,
         sumChartRatings,
-    } from "@/components/data/chart/b50Query";
+    } from "@core/query/b50";
     import type { Chart } from "@core/music/type";
     import { getUserDisplayName } from "@core/user/type";
     import { getMusicInfoAsync, isMusicDataLoading } from "@/components/data/music";

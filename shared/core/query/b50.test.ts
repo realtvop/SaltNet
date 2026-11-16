@@ -7,14 +7,14 @@
  * from a seeded generator.
  */
 
-import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { Chart } from "@core/music/type";
-import type { User } from "@core/user/type";
-import type { B50QueryOptions } from "./b50Query";
-import { isUtageGrade } from "@core/chart/difficulty";
-import { createFixtureMusicList } from "@core/fixtures/saltmeta";
-import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+import type { DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { Chart } from "../music/type";
+import type { User } from "../user/type";
+import type { B50QueryOptions } from "./b50";
 import { describe, expect, it } from "vitest";
+import { isUtageGrade } from "../chart/difficulty";
+import { createFixtureMusicList } from "../fixtures/saltmeta";
+import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
 import {
     calculateRating,
     convertDFRecordToChart,
@@ -26,7 +26,7 @@ import {
     selectB50Charts,
     sortCharts,
     sumChartRatings,
-} from "./b50Query";
+} from "./b50";
 
 // MARK: seeded generator and fixed test data
 

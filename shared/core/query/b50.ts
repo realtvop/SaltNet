@@ -1,10 +1,10 @@
-import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { Chart } from "@core/music/type";
-import type { User } from "@core/user/type";
-import { isUtageGrade } from "@core/chart/difficulty";
-import { ScoreCoefficient } from "@core/chart/rating/ScoreCoefficient";
-import { ComboStatus } from "@core/mai/types";
-import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
+import type { DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { Chart } from "../music/type";
+import type { User } from "../user/type";
+import { isUtageGrade } from "../chart/difficulty";
+import { ScoreCoefficient } from "../chart/rating/ScoreCoefficient";
+import { ComboStatus } from "../mai/types";
+import { getSaltNetMusicIdForChartType } from "../music/saltmeta";
 
 export type ComboFilterMode = "ap" | "fc" | null;
 
