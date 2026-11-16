@@ -4,6 +4,19 @@
  * `"`, `\`, `$` and a backtick, and a backslash elsewhere escapes the next character. It exists
  * so the examples written in the registry can be checked against the parser.
  */
+const UNQUOTED = /^[\p{L}\p{N}_./:=@%+,-]+$/u;
+
+/** Quotes one argument so a POSIX shell, and `splitCommandLine`, read it back unchanged. */
+export function quoteArg(word: string): string {
+    if (UNQUOTED.test(word)) return word;
+    return `'${word.replaceAll("'", "'\\''")}'`;
+}
+
+/** Joins arguments into a command line that `splitCommandLine` reads back unchanged. */
+export function joinCommandLine(words: readonly string[]): string {
+    return words.map(quoteArg).join(" ");
+}
+
 export function splitCommandLine(line: string): string[] {
     const words: string[] = [];
     let current = "";

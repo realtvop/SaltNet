@@ -141,7 +141,9 @@ export function convertOption(entry: OptionEntry, raw: string): unknown {
     const { flag, spec } = entry;
     switch (spec.kind) {
         case "string":
-            if (raw === "") throw new ValueError(`选项 --${flag} 的值不能为空`);
+            if (raw === "" && !spec.allowEmpty) {
+                throw new ValueError(`选项 --${flag} 的值不能为空`);
+            }
             return raw;
         case "credential":
             if (raw !== "-") {

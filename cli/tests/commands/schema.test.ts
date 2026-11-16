@@ -2,8 +2,11 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { VIEWS_CHANGES } from "../../src/catalog/views";
 import { createRegistry } from "../../src/commands";
+import { requireConfirmation } from "../../src/commands/confirm";
 import { ERROR_CODES } from "../../src/errors";
+import { failureEnvelope, serializeEnvelope } from "../../src/output/envelope";
 import { WARNING_CODES } from "../../src/output/warning";
+import { caught } from "../caught";
 import { commandIn } from "../commandRun";
 import { expectConforms, schemaErrors } from "../dataSchema";
 import { createHarness, run } from "../harness";
@@ -114,6 +117,10 @@ describe("schema command", () => {
     it("publishes an envelope schema that accepts real results and rejects malformed ones", async () => {
         const root = await commandIn(makeHome(), "schema", []);
         const envelopeSchema = root.json.data.envelope.schema;
+        const errorProperties = envelopeSchema.anyOf[1].properties.error.properties;
+        expect(errorProperties.preview.description).toContain("仅 CONFIRMATION_REQUIRED");
+        expect(errorProperties.confirmationCode.description).toContain("仅 CONFIRMATION_REQUIRED");
+        expect(errorProperties.codeRejected.description).toContain("仅 CONFIRMATION_REQUIRED");
         const success = await commandIn(makeHome(), "status", []);
 
         const projectedHome = makeHome();
@@ -144,6 +151,25 @@ describe("schema command", () => {
         expectConforms(envelopeSchema, missingCommand.json);
         expectConforms(envelopeSchema, brokenConfig.json);
         expectConforms(envelopeSchema, unknownCommand.json);
+        const confirmation = JSON.parse(
+            serializeEnvelope(
+                failureEnvelope(
+                    "demo remove",
+                    caught(() =>
+                        requireConfirmation(undefined, {
+                            operation: "demo.remove",
+                            target: "entry:a",
+                            state: { revision: 1 },
+                            preview: { name: "a", entries: ["a", "b"] },
+                            summary: "将删除 a",
+                            confirmArgs: ["demo", "remove", "a"],
+                        })
+                    )
+                ),
+                false
+            )
+        );
+        expectConforms(envelopeSchema, confirmation);
         expect(unknownCommand.json.command).toBeNull();
         expect(unknownOption.json.error.candidates).toBeDefined();
         expect((brokenConfig.json.error as { problems?: unknown }).problems).toBeDefined();
@@ -169,6 +195,14 @@ describe("schema command", () => {
             },
         ];
         for (const value of invalid) expect(schemaErrors(envelopeSchema, value)).not.toEqual([]);
+        for (const wrong of [
+            { confirmationCode: 1 },
+            { codeRejected: "yes" },
+            { preview: ["a"] },
+        ]) {
+            const value = { ...confirmation, error: { ...confirmation.error, ...wrong } };
+            expect(schemaErrors(envelopeSchema, value)).not.toEqual([]);
+        }
     });
 
     it("does not leak build defaults through schema or guide output", async () => {

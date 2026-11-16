@@ -4,6 +4,7 @@
  */
 import type { CommandDefinition, CommandSpec, RawCommandArgs, Registry } from "./commands/registry";
 import type { CliError } from "./errors";
+import type { OutputFormat } from "./output/format";
 import type { ResolvedConfig } from "./runtime/config";
 import type { Io } from "./runtime/io";
 import type { Store } from "./store/store";
@@ -13,6 +14,7 @@ import { usageError } from "./errors";
 import { failureEnvelope, serializeEnvelope } from "./output/envelope";
 import { chooseFormat } from "./output/format";
 import { renderSuccess } from "./output/render";
+import { renderConfirmationError } from "./output/text";
 import { loadConfig } from "./runtime/config";
 import { createHttp } from "./runtime/http";
 import { resolveRuntimePaths } from "./runtime/paths";
@@ -25,9 +27,19 @@ export interface CliRuntime {
     readonly version: string;
 }
 
-/** Failures are always JSON, whatever `--format` says, so a caller has one thing to parse. */
-function fail(io: Io, command: string | null, error: CliError, pretty: boolean): number {
-    io.stdout.write(serializeEnvelope(failureEnvelope(command, error), pretty));
+/** Failures are JSON except confirmation previews explicitly requested in the human text format. */
+function fail(
+    io: Io,
+    command: string | null,
+    error: CliError,
+    pretty: boolean,
+    format?: OutputFormat
+): number {
+    const output =
+        error.code === "CONFIRMATION_REQUIRED" && format === "text"
+            ? renderConfirmationError(error)
+            : serializeEnvelope(failureEnvelope(command, error), pretty);
+    io.stdout.write(output);
     return error.exitCode;
 }
 
@@ -69,13 +81,14 @@ async function run(
     const { io, registry, version } = runtime;
     const spec: CommandSpec = command.spec;
     let store: Store | undefined;
+    let format: OutputFormat | undefined;
     try {
         const paths = resolveRuntimePaths({ env: io.env, cwd: io.cwd });
         const config = loadConfig(paths, { env: io.env, version });
         const broken = spec.allowBadConfig ? undefined : configFailure(config);
         if (broken) throw broken;
 
-        const format = chooseFormat({
+        format = chooseFormat({
             command: spec.name,
             output: spec.output,
             requested: args.global.format,
@@ -117,7 +130,7 @@ async function run(
                 `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`
             );
         }
-        return fail(io, spec.name, cliError, args.global.pretty);
+        return fail(io, spec.name, cliError, args.global.pretty, format);
     } finally {
         try {
             store?.close();

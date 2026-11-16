@@ -74,6 +74,8 @@ export interface StringOption extends OptionCommon {
     readonly kind: "string";
     readonly required?: boolean;
     readonly default?: string;
+    /** An empty value is passed on instead of being a usage error (a confirmation code that is wrong). */
+    readonly allowEmpty?: boolean;
 }
 
 /**
@@ -513,6 +515,15 @@ function checkCommand(command: CommandDefinition): void {
         const flag = flagOf(key);
         if (flags.has(flag)) fail(`${where} option ${key}`, `--${flag} is already taken`);
         flags.add(flag);
+    }
+
+    const hasConfirmationOption = spec.options?.yes !== undefined;
+    const declaresConfirmationError = spec.errors?.includes("CONFIRMATION_REQUIRED") ?? false;
+    if (hasConfirmationOption && !declaresConfirmationError) {
+        fail(where, "an option named yes requires the CONFIRMATION_REQUIRED error");
+    }
+    if (declaresConfirmationError && !hasConfirmationOption) {
+        fail(where, "the CONFIRMATION_REQUIRED error requires an option named yes");
     }
 }
 

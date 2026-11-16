@@ -3,6 +3,7 @@
  * tables, single objects become an indented outline. The layout is free to change; nothing should
  * parse it.
  */
+import type { CliError } from "../errors";
 import type { PlainObject } from "./fields";
 import type { PageInfo } from "./paging";
 import type { Warning } from "./warning";
@@ -152,5 +153,26 @@ export function renderText(input: TextInput): string {
         const fix = warning.fix ? `（建议运行 ${warning.fix}）` : "";
         lines.push(`警告 ${warning.code}：${warning.message}${fix}`);
     }
+    return `${lines.join("\n")}\n`;
+}
+
+/** A destructive-operation preview for a person, with one line per top-level preview field. */
+export function renderConfirmationError(error: CliError): string {
+    const preview = error.extra?.preview;
+    const lines = [`错误 ${error.code}：${error.message}`, "预览："];
+    if (isPlainObject(preview)) {
+        const entries = Object.entries(preview);
+        if (entries.length === 0) lines.push("  （没有字段）");
+        for (const [key, value] of entries) {
+            const shown =
+                Array.isArray(value) || isPlainObject(value)
+                    ? JSON.stringify(value)
+                    : inline(value);
+            lines.push(`  ${key}: ${shown}`);
+        }
+    } else {
+        lines.push("  （没有预览）");
+    }
+    if (error.fix) lines.push(`确认命令：${error.fix}`);
     return `${lines.join("\n")}\n`;
 }

@@ -177,7 +177,7 @@
 
 - [x] P2-12 `feat(cli): add user and score tables with read-only views`：迁移 4（原写迁移 2，见第 62 条）；对外视图加上 `v_scores`、`v_score_events`、`v_rating_history`、`v_user_items`、`v_user_characters`，`v_charts` 加上默认用户的成绩列（只加列不改名，`VIEWS_VERSION` 加一；用户数据怎么进沙盒见第 41 条）〔新〕
 - [ ] P2-13 `feat(cli): add user repository on top of the store`〔新〕
-- [ ] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
+- [x] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
 - [ ] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
 - [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
 - [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
@@ -748,3 +748,9 @@
         - `v_charts` 的 `score_combo`、`score_sync` 换成 NULL 也能通过：审查用的快照比我最后加的两个用例早，`shows every score column of v_charts from the default user only` 已经覆盖（改动检查里 `score_combo reads fs` 就是被它发现的）。
     - 留给 P2-13：写入方要先像网页端的 `normalizeDecodedUsers` 那样规整用户（uid、`inGame.enabled`、`useFastUpdate`、`settings.manuallyUpdate` 这几列都是 NOT NULL），把 token 挪去 `credentials.json`，再在同一个事务里写 `raw` 和所有副本；`chart_key` 由 core 匹配，不用网页端那个会把已游玩的宴谱成绩挂到没玩过的兄弟谱上的兜底。
     - 留给 P2-16：网页端的 `validateEvents` 不检查 `generationId`，导入时 `stageScoreHistoryImport`（`src/components/data/user/scoreHistory/repository.ts`）给这次导入新起一个 `import-<随机 id>` 的 generation，并把每个事件的 id 改写成 `<generation>:<用户 uid>:<batchId>:<chartKey>:<sequence>:<kind>`。CLI 的导入照做，所以 `generation_id` 和 `id` 不会是备份里带来的任意文本，`generation_id TEXT NOT NULL` 够用。
+63. **P2-14 的实现（2026-11-16）**：
+    - Codex 写的（第一次运行在重启时丢了，重跑了一次）：`cli/src/commands/confirm.ts` 把 operation、target 和 state 写成规范的 JSON（键排序；拒绝非 JSON 的值、循环和稀疏数组），做 SHA-256，取前 40 位写成 8 个 Crockford base32 字符。码没有时限，传入时不分大小写、去掉首尾空白。`requireConfirmation` 在码不对时抛 `CONFIRMATION_REQUIRED`（退出码 6），带 `preview`、`confirmationCode`、`codeRejected`，`fix` 里是完整的确认命令（`joinCommandLine` 按 POSIX shell 的规则加引号，`splitCommandLine` 读回来不变）。注册表要求 `yes` 选项和 `CONFIRMATION_REQUIRED` 成对声明。`--format text`（或终端里设成 text）时预览是给人看的文本，其他错误照旧是 JSON；设计 4.2 补了这个例外，5.4 补了码的格式和字段。
+    - 审查（带内置审查）找出 2 处问题，都改了：确认参数里有 `--` 时，`--yes <码>` 拼在它后面会被当成位置参数，改成插在 `--` 前面；`--yes ''` 被通用的字符串检查当成 `USAGE`，没有预览，所以给字符串选项加了 `allowEmpty`，确认码用它，空码和错码一样得到新的预览（`codeRejected: true`）。
+    - 测试：我补了这两处的用例，以及审查和改动检查指出的空白：shell 元字符（`$`、`*`、`?`、`~`、反引号、`!`、`;`、`&`、`|`、重定向、括号、`#` 等）一定加引号；其他错误在 text 格式下仍是 JSON；终端设成 text 时打印预览，输出到管道时是 JSON；`retryable: false`；null 原型的对象和被引用两次（不是循环）的对象；孤立的代理项和替换字符得到不同的码；真实的确认失败符合公开的外层 schema，确认码写成数字之类的会被拒绝。tsv 不用测：不是列表的命令在运行之前就拒绝 `--format tsv`。
+    - 改动检查：35 处，34 处被发现。没被发现的那处（不检查数组里的 `undefined`）是等价改动：紧接着的非 JSON 检查照样抛错。
+    - 留给用到确认的命令（P2-15 起）：引用以 `-` 开头时，`confirmArgs` 要在它前面写 `--`；`state` 要包含操作改动或依赖的全部数据；预览要在改动之前生成，并且不读 stdin（`user bind … ingame --qr -` 除外，见 `confirm.ts` 开头）。

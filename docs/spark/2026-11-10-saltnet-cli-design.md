@@ -337,7 +337,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 - `--format tsv` 只用于列表命令：第一行是表头，嵌套字段的列名写成 `score.rank`。
 - `--format text` 输出给人看的表格，格式不保证稳定，agent 不要解析它。
 - config 里设的默认格式只在终端里直接运行时生效。如果 stdout 不是终端（被程序调用），一律输出 JSON，除非显式指定了 `--format`。
-- stdout 上只有一份结果，出错时也一样。出错时不管 `--format` 是什么，都输出 JSON 格式的失败结构。
+- stdout 上只有一份结果，出错时也一样。一般的错误不管 `--format` 是什么，都输出 JSON 格式的失败结构；唯一例外是 `CONFIRMATION_REQUIRED` 在 text 格式（显式 `--format text`，或终端采用 text 默认格式）下输出给人看的预览和完整确认命令。json 和 tsv 格式下仍输出 JSON 失败结构。
 - `--help` 和 `guide` 是例外：直接输出文本，不套外层结构。
 - stderr 平时只在终端里显示进度，被程序调用时什么都不输出，避免占用 agent 的上下文；加 `--verbose` 可以强制输出日志。tsv 模式也是例外：meta 和警告写到 stderr，每行以 `#` 开头。
 
@@ -612,7 +612,9 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 **确认码**：需要确认的命令统一用 `--yes <确认码>`。
 
 - 确认码由预览给出，和这次操作的内容绑定：哪个操作、哪个对象、当时的数据。数据一变，确认码就失效，需要重新预览。这样 agent 没法跳过预览直接确认，也不会确认一个内容已经变了的操作。
+- 确认码是 8 个 Crockford base32 字符；同一个操作、对象和数据总是得到同一个码，没有时限，传入时不区分大小写。
 - 确认码不对或已失效时，和没带确认码一样，返回退出码 6 和新的预览。
+- `CONFIRMATION_REQUIRED` 的 error 包含 `preview`、`confirmationCode`、`codeRejected`，以及在 `fix` 里的完整确认命令；`codeRejected` 说明这次是否传了错误或已失效的码。
 - 预览不读 stdin，所以不会白白消耗二维码。唯一的例外是 `user bind <用户> ingame --qr -`：它得先查出游戏 id 才知道要不要确认，而查 id 不登录账号（见 5.2）。
 
 **写文件**：`export`、`ingame backup`、`b50 --image` 遇到同名文件时返回 `FILE_EXISTS`，加 `--overwrite` 才会覆盖。

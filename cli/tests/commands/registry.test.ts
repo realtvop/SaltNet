@@ -171,6 +171,21 @@ describe("registry validation", () => {
         }
     });
 
+    it("keeps the confirmation option and error declaration together", () => {
+        expect(
+            registryError({ options: { yes: { kind: "string", description: "确认" } } })
+        ).toContain("option named yes requires the CONFIRMATION_REQUIRED error");
+        expect(registryError({ errors: ["CONFIRMATION_REQUIRED"] })).toContain(
+            "CONFIRMATION_REQUIRED error requires an option named yes"
+        );
+        expect(
+            registryError({
+                options: { yes: { kind: "string", description: "确认" } },
+                errors: ["CONFIRMATION_REQUIRED"],
+            })
+        ).toBe("");
+    });
+
     it("rejects enums that cannot be told apart", () => {
         const enumError = (values: readonly (string | { value: string; aliases?: string[] })[]) =>
             registryError({ options: { e: { kind: "enum", values, description: "x" } } });

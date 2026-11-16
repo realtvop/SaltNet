@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitCommandLine } from "../../src/util/shell";
+import { joinCommandLine, quoteArg, splitCommandLine } from "../../src/util/shell";
 
 describe("splitCommandLine", () => {
     it("splits on whitespace", () => {
@@ -51,5 +51,55 @@ describe("splitCommandLine", () => {
         expect(() => splitCommandLine("a 'b")).toThrow("unterminated quote");
         expect(() => splitCommandLine('a "b')).toThrow("unterminated quote");
         expect(() => splitCommandLine("a\\")).toThrow("backslash");
+    });
+});
+
+describe("command-line quoting", () => {
+    it("leaves the documented safe characters unquoted", () => {
+        expect(quoteArg("中文_Az09./:=@%+,-")).toBe("中文_Az09./:=@%+,-");
+        expect(quoteArg("-option")).toBe("-option");
+    });
+
+    it("round-trips awkward words through the splitter", () => {
+        const words = [
+            "two words",
+            `both 'single' and "double"`,
+            "back\\slash",
+            "$HOME",
+            "`command`",
+            "line one\nline two",
+            "",
+            "中文文字",
+            "-starts-with-dash",
+        ];
+        expect(splitCommandLine(joinCommandLine(words))).toEqual(words);
+    });
+
+    it.each([
+        "$HOME",
+        "a*",
+        "a?",
+        "~",
+        "~user",
+        "[ab]",
+        "{a,b}",
+        "`x`",
+        "!",
+        "a;b",
+        "a&b",
+        "a|b",
+        "a<b",
+        "a>b",
+        "(a)",
+        "#a",
+        "a b",
+        "a\tb",
+        "^a",
+        "a\\b",
+        '"a"',
+        "'a'",
+    ])("quotes %j, which a shell would read differently", word => {
+        expect(quoteArg(word)).toMatch(/^'.*'$/s);
+        expect(splitCommandLine(quoteArg(word))).toEqual([word]);
     });
 });

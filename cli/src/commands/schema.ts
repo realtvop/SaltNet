@@ -135,10 +135,16 @@ const errorObjectSchema: JsonSchema = {
             candidates: list(candidateSchema, "可以重试的候选项"),
             fix: str("可以修正问题的命令"),
             retryable: bool("这次错误是否适合原样重试"),
+            preview: dictionary(
+                anything("预览字段的值"),
+                "仅 CONFIRMATION_REQUIRED：用户确认前要查看的操作预览"
+            ),
+            confirmationCode: str("仅 CONFIRMATION_REQUIRED：与当前操作、对象和数据绑定的确认码"),
+            codeRejected: bool("仅 CONFIRMATION_REQUIRED：是否传入了错误或已过期的确认码"),
         },
         {
             description: "失败详情；不同错误还可以带预览、设置问题、数据源或锁持有者",
-            optional: ["candidates", "fix"],
+            optional: ["candidates", "fix", "preview", "confirmationCode", "codeRejected"],
         }
     ),
     additionalProperties: anything("这个错误码专有的额外信息"),
