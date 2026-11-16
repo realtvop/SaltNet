@@ -1324,9 +1324,6 @@
     "style/member-delimiter-style": {
       "count": 1
     },
-    "antfu/if-newline": {
-      "count": 1
-    },
     "style/comma-dangle": {
       "count": 2
     }
@@ -1336,7 +1333,7 @@
       "count": 1
     },
     "perfectionist/sort-imports": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/integrations/lxns/index.ts": {
@@ -1441,26 +1438,6 @@
       "count": 2
     },
     "test/prefer-lowercase-title": {
-      "count": 1
-    }
-  },
-  "src/components/integrations/lxns/token.ts": {
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 5
-    },
-    "style/comma-dangle": {
-      "count": 3
-    },
-    "style/operator-linebreak": {
-      "count": 8
-    },
-    "antfu/if-newline": {
-      "count": 2
-    },
-    "style/brace-style": {
       "count": 1
     }
   },

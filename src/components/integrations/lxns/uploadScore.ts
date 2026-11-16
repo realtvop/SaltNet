@@ -1,23 +1,8 @@
 import type { User } from "@core/user/type";
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { LXNSUploadScore, LXNSUploadScoreRequest } from "@core/integrations/lxns/type";
+import type { LXNSUploadScoreRequest } from "@core/integrations/lxns/type";
+import { convertToLXNSUploadScore } from "@core/integrations/lxns/client";
 import { fetchLXNSApi } from "./fetch";
-
-function DF2LXNS(score: DivingFishFullRecord): LXNSUploadScore {
-    const isDX = score.song_id > 1_0000 && score.song_id < 10_0000;
-    const isUtage = score.song_id > 10_0000;
-    const rawId = isDX ? score.song_id - 1_0000 : score.song_id;
-
-    return {
-        id: rawId,
-        type: isDX ? "dx" : isUtage ? "utage" : "standard",
-        level_index: isUtage ? 0 : score.level_index,
-        achievements: score.achievements,
-        fc: score.fc || null,
-        fs: score.fs || null,
-        dx_score: score.dxScore,
-    };
-}
 
 export async function uploadScoresToLXNS(
     user: User,
@@ -27,7 +12,7 @@ export async function uploadScoresToLXNS(
         throw new Error("User is not authenticated with LXNS");
     }
 
-    const uploadScores = scores.map(DF2LXNS);
+    const uploadScores = scores.map(convertToLXNSUploadScore);
 
     await fetchLXNSApi<unknown>(user, "scores", {
         method: "POST",

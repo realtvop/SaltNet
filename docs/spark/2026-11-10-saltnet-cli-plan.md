@@ -200,7 +200,7 @@
 **P3-0 先抽这一期要用的模块**
 
 - [x] P3-1 `refactor(core): move diving-fish client to shared/core with injected config`〔简单〕
-- [ ] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
+- [x] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
 - [ ] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
 - [ ] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
 - [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
@@ -782,3 +782,9 @@
     - 用户接着说：「不要频繁review，完成一整个part后再整体review」。之前是每个有代码的步骤提交前审一遍（「分工与流程」第 6 条）。现在一步做完、完整检查和破坏检查都过了就提交，不等审查；一个 part 的步骤全部提交以后，把上次审过的提交之后的全部提交整体审一遍，意见在后续提交里改，并记进决定。
     - 单独审过的是 P2-14 及以前的全部步骤、P3-1 和 P2-13（`91c0892`）。P2 和 P3 的提交在历史里是交错的，所以 P2 做完时审的范围是 `91c0892` 之后的全部提交，brief 写明里面有哪些步骤（包括已经提交的 P3 步骤）；P3 做完时审的是那以后的提交。
     - `review-codex.sh` 加了 `REVIEW_BASE`：设成一个提交时，快照的 `base` 是那个提交，工作区是磁盘上现在的样子（之后的提交加上未提交的改动），所以 `git diff base` 是整个范围，`codex review --uncommitted` 看到的也是它。
+67. **P3-2 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：`shared/core/integrations/lxns/token.ts`（token 端点的请求 `requestLXNSToken`、表单序列化 `serializeFormBody`、`applyLXNSAuth`、`refreshLXNSOAuthToken`）和 `client.ts`（玩家接口的请求 `requestLXNSPlayerApi` 和它的错误类 `LXNSPlayerApiError`，成绩转换 `convertLXNSScore`、`convertToLXNSUploadScore`）；`CoreConfig` 加 `lxnsClientId`，CLI 的 `toCoreConfig` 传 `lxns.clientId`。网页端留下薄包装：`fetch.ts` 把 core 的错误换回同样文字的普通 `Error`；同一个用户对象只刷新一次的 `WeakMap` 留在网页端。
+    - 网页端原来拿 `URLSearchParams` 当请求体，由浏览器加上 `Content-Type: application/x-www-form-urlencoded;charset=UTF-8`。core 里没有 DOM 类型，发的是字符串，所以自己写这个头，序列化和 `URLSearchParams.toString()` 逐字节一样（空格写成 `+`，`*-._` 不转义，其余按 UTF-8 百分号转义，十六进制大写）。`oauth.test.ts` 里读请求体的一处改成先 `new URLSearchParams(body)`。
+    - 我改的：孤立的代理项会让 `encodeURIComponent` 抛 `URIError`，`URLSearchParams` 则把它写成 U+FFFD（`%EF%BF%BD`），改成和后者一样；core 的错误类不设 `name`（网页端的提示条用 `toString()`，设了前缀就变）；玩家接口的端点照原样拼（Codex 去掉了开头的 `/`，网页端没有，`"/scores"` 写出的是 `player//scores`）；成功与否照网页端判断，`success` 是假值就算失败（Codex 写的是只有 `success === false` 才算，`{ data: [] }`、`success: 0` 和 `null` 都会被当成成功）；搬走的代码带走的 ESLint 豁免按实际数目调低（`token.ts` 那一条整条删掉）。
+    - 测试：改动检查 37 处，第一次跑有 7 处没被发现，由 Gemini 补测试：token 端点 HTTP 200 而 `success: false` 时报「落雪授权失败：HTTP 200」；新的 `src/components/integrations/lxns/fetch.test.ts`（加进 `test:oauth`）测网页端包装抛出的错误；刷新 token 的请求体逐字节比对。补完后 37 处全被发现。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。没有用真实的落雪账号在浏览器里走一遍授权（要账号凭据，按规矩不做），请求的字节和提示文字由测试比对；最终报告列为没验证的项。

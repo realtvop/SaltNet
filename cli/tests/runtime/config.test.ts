@@ -122,13 +122,14 @@ describe("resolveConfig defaults", () => {
         expect(sources["api.url"]).toBe("build");
     });
 
-    it("hands shared/core the three addresses it takes", () => {
+    it("hands shared/core the settings it takes", () => {
         const { values } = resolve({
             file: { saltmeta: { url: "https://meta.example.test/m.json" } },
         });
         expect(toCoreConfig(values)).toEqual({
             saltMetaUrl: "https://meta.example.test/m.json",
             lxnsBaseUrl: DEFAULT_CORE_CONFIG.lxnsBaseUrl,
+            lxnsClientId: "",
             divingFishBaseUrl: DEFAULT_CORE_CONFIG.divingFishBaseUrl,
         });
     });
