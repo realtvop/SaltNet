@@ -165,7 +165,7 @@
 - [x] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
 - [x] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
 - [x] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
-- [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
+- [x] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
 - [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
 - [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
 - [ ] P2-8 `test(query): snapshot chart info calculations with fixed data`〔简单〕
@@ -698,3 +698,8 @@
     - 临时加了 `saltnet/prettier-owned-b50-query`（P2-6 删掉）。新模块没有剩下的违规，不记豁免；`b50.vue` 的计数只降不升，`style/arrow-parens` 那一条删掉。
     - 包装在调用前就读出所有参数，所以 `chartsByNewness` 多依赖了几个响应式值（数据还没载入时也会读 `musicChartMap` 和模式开关）。这些读取没有副作用，也不会抛错，结果不变。
     - 验证：一次性的差异测试把上一提交里页面的旧代码（按行切出来，配上假的 `computed` 和 ref）和新模块放在一起跑：三份曲目表（两份带合成的 `fit_diff`）× 70 组成绩 × 四个开关的 24 种组合，共 5040 个场景逐个 `toStrictEqual`，另外比对边界值和 200 轮排序。26 处故意的单行改动全被它抓到。第一轮有两处没抓到（`fitDiff > constant` 改成 `>=`，`ds` 为 NaN 时不回退到定数），因为测试数据里没有恰好等于定数的 `fit_diff`，也没有两位小数的定数（一位小数的定数经过 `normalizeConstant` 不变，回退与否结果一样）；补上这两种数据后全部抓到。P2-5 的 brief 把这两种情况列成了明确的用例。审查没有发现问题。
+55. **P2-5 的实现（2026-11-16）**：
+    - Gemini 写的快照测试 `src/components/data/chart/b50Query.test.ts`（P2-6 随模块一起搬走）：固定的曲目表加上种子 20261116 生成的合成成绩和 `fit_diff`，六种用户数据（只有 detailed、只有 b50、两者都有、detailed 是空对象但有 b50、没有数据、没有 `lastChangedAt`）× 六个页面模式，外加原样曲目表上的六个模式，每个场景存一份紧凑的文本摘要，选项按页面的方式构造（`pc50` 只在 `recordsHaveLastChangedAt` 为真时打开）。明确的用例覆盖 35/15 的上限、排序的各级比较、`calculateRating`、`normalizeConstant`、映射不到的成绩和宴会场谱面、nb50 恰好相等的边界、拟合定数的回退链（13.75 → 13.8）、两种连击筛选、只有 B50 的数据、`recordsHaveLastChangedAt`，以及不改动传入的数据。原样的曲目表里只有 8 张新版本的非宴会谱面，所以 15 的上限只在合成谱面上测。
+    - 审查指出三种改动这份测试抓不到：摘要里没有转换后的连击、同步、评级、DX 分和更新时间；没有用例能区分稳定排序和多加一级按 ID 的比较；nb50 用例里成绩的 `ds` 总等于谱面定数。我又用 P2-4 的 26 处单行改动直接测这份测试（不接旧代码），找出第四处：拟合模式下 `fit_diff` 为 NaN 时回退到谱面定数。四处都由我补上：摘要每行加上这五个字段（重新生成的快照去掉这些字段后与原来逐字相同），另加三个用例。之后 26 处改动加上针对审查的 7 处，共 33 处全被抓到。
+    - 测试记下了页面原有的这些行为，这一步不改：`recordsHaveLastChangedAt` 把空的 `detailed: {}` 当成有详细数据，`getSourceRecords` 在不要求详细数据时却会退回 B50 列表；nb50 拿没有取整的 `fit_diff` 和定数比较，而且不看成绩的 `ds`；`fit_diff` 为 NaN 或无穷时回退链停在这一步，不看 `ds`，直接用没有取整的谱面定数；`sortCharts` 最后没有按 ID 比较，各项都相同的谱面保持传入的顺序；`fitConstant` 不在 `ChartScore` 的类型里，测试要转型才能读到。
+    - 没有再把旧页面代码接进这份测试对照一次：P2-4 的差异测试已经表明，新模块和旧代码在 5040 个场景里结果完全一致。

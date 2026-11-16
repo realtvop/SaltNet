@@ -1,0 +1,1437 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - ap mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - default mode 1`] = `
+"old (35):
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  58-3 rating 177 ach 90 pc 25 | fc "" fs "fsp" rate "ss" dx 697 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  17-1 rating 168 ach 100 pc 5 | fc "" fs "fsd" rate "sss" dx 920 at 1700000000000
+  8-1 rating 162 ach 100.5 pc 1 | fc "" fs "fsd" rate "sssp" dx 1387 at 1700086400000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  9-1 rating 153 ach 100 pc 5 | fc "" fs "" rate "sss" dx 282 at 1700086400000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  70-2 rating 149 ach 90 pc 1 | fc "fc" fs "" rate "ss" dx 1082 at 1700000000000
+  17-0 rating 144 ach 99 pc 10 | fc "fcp" fs "sync" rate "ss" dx 582 at 0
+  8-2 rating 139 ach 90 pc 1 | fc "" fs "fs" rate "ss" dx 820 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  70-0 rating 119 ach 98.5 pc 10 | fc "fcp" fs "fs" rate "ss" dx 1124 at 1700086400000
+  30-0 rating 116 ach 97 pc 10 | fc "" fs "fsp" rate "ss" dx 866 at 1700000000000
+  77-2 rating 115 ach 80 pc 10 | fc "" fs "fsp" rate "ss" dx 618 at 1700000000000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  58-0 rating 112 ach 100.5 pc 10 | fc "fc" fs "" rate "sssp" dx 532 at 1700172800000
+  44-0 rating 108 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 670 at 1700000000000
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+old sum: 6403
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 7686"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - fc mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - fit mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - nb mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - b50 only - pc mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - ap mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  10146-2 rating 185 ach 98.5 pc 25 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  10256-2 rating 177 ach 100 pc 10 | fc "app" fs "fsdp" rate "sss" dx 1375 at null
+  146-1 rating 177 ach 99 pc 10 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10070-1 rating 175 ach 101 pc - | fc "app" fs "" rate "sssp" dx 402 at 1700000000000
+  552-1 rating 169 ach 98 pc 1 | fc "ap" fs "fsd" rate "ss" dx 1214 at 1700000000000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  10185-1 rating 151 ach 100 pc 10 | fc "ap" fs "" rate "sss" dx 352 at 1700000000000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  188-2 rating 150 ach 90 pc - | fc "ap" fs "sync" rate "ss" dx 138 at 0
+  283-2 rating 146 ach 90 pc 25 | fc "ap" fs "fsdp" rate "ss" dx 929 at 1700172800000
+  10242-3 rating 144 ach 80 pc 1 | fc "app" fs "sync" rate "ss" dx 1454 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+old sum: 7145
+newer (5):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 691
+total sum: 7836"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - default mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  131-4 rating 291 ach 100 pc 1 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  131-2 rating 251 ach 98.5 pc 5 | fc "" fs "fsd" rate "ss" dx 1024 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+old sum: 9541
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 10824"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - fc mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  564-2 rating 231 ach 100 pc - | fc "fc" fs "fsp" rate "sss" dx 192 at 1700086400000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  10256-3 rating 222 ach 98 pc 10 | fc "fc" fs "" rate "ss" dx 442 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  10225-2 rating 216 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 904 at 1700086400000
+  10044-2 rating 213 ach 101 pc - | fc "fcp" fs "fsp" rate "sssp" dx 150 at 1700000000000
+  185-2 rating 207 ach 100 pc 1 | fc "fc" fs "fsd" rate "sss" dx 816 at 1700000000000
+  10044-3 rating 204 ach 95 pc 5 | fc "fc" fs "fsp" rate "ss" dx 279 at 1700086400000
+old sum: 8959
+newer (6):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 799
+total sum: 9758"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - fit mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 fit 14.4 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 fit 14.6 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  191-3 rating 298 ach 100 pc 10 fit 13.8 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  188-3 rating 290 ach 101 pc 1 fit 12.9 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  10191-3 rating 288 ach 101 pc 1 fit 12.8 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  185-3 rating 288 ach 100.5 pc 100 fit 12.8 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - fit 12.7 | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 fit 12.7 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  113-3 rating 282 ach 100 pc - fit 13.1 | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  146-4 rating 266 ach 99.5 pc 1 fit 12.7 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  113-2 rating 263 ach 99 pc 1 fit 12.8 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  283-3 rating 262 ach 98 pc - fit 13.2 | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  552-3 rating 262 ach 98 pc 100 fit 13.2 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  131-3 rating 261 ach 100 pc - fit 12.1 | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  256-4 rating 261 ach 99 pc 5 fit 12.7 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 fit 13.1 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  10552-3 rating 256 ach 97 pc 1 fit 13.2 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  58-2 rating 252 ach 101 pc 1 fit 11.2 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  115-2 rating 252 ach 100.5 pc 10 fit 11.2 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  10188-3 rating 251 ach 99 pc 1 fit 12.2 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  383-3 rating 248 ach 98 pc 10 fit 12.5 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  564-3 rating 243 ach 98.5 pc 100 fit 12.2 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+old sum: 9544
+newer (8):
+  12025-3 rating 315 ach 100.5 pc - fit 14 | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 fit 12.2 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 fit 8 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 27 ach 98 pc 5 fit 1.4 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1284
+total sum: 10828"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - nb mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  10552-2 rating 236 ach 100.5 pc - fit 10.5 | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  10191-2 rating 230 ach 98 pc 100 fit 11.6 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  540-2 rating 224 ach 100 pc 5 fit 10.4 | fc "" fs "" rate "sss" dx 78 at 1700000000000
+  11726-2 rating 224 ach 98 pc 10 fit 11.3 | fc "app" fs "" rate "ss" dx 317 at null
+  10044-2 rating 222 ach 101 pc - fit 9.9 | fc "fcp" fs "fsp" rate "sssp" dx 150 at 1700000000000
+  10225-2 rating 218 ach 100 pc 5 fit 10.1 | fc "fc" fs "" rate "sss" dx 904 at 1700086400000
+  70-4 rating 205 ach 90 pc 10 fit 15 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  30-2 rating 196 ach 100 pc 100 fit 9.1 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  564-1 rating 195 ach 100.5 pc 50 fit 8.7 | fc "" fs "" rate "sssp" dx 1309 at 1700000000000
+  10146-2 rating 191 ach 98.5 pc 25 fit 9.6 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  115-1 rating 186 ach 101 pc 50 fit 8.3 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  58-3 rating 186 ach 90 pc 25 fit 13.6 | fc "" fs "fsp" rate "ss" dx 697 at 1700172800000
+  188-1 rating 185 ach 99 pc 10 fit 9 | fc "fcp" fs "fsp" rate "ss" dx 558 at 1700000000000
+  146-1 rating 183 ach 99 pc 10 fit 8.9 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10242-1 rating 180 ach 100.5 pc 10 fit 8 | fc "" fs "" rate "sssp" dx 1322 at 0
+  225-2 rating 175 ach 95 pc 100 fit 11 | fc "fcp" fs "fsp" rate "ss" dx 281 at 1700086400000
+  256-1 rating 170 ach 100 pc 100 fit 7.9 | fc "fc" fs "" rate "sss" dx 726 at 1700086400000
+  58-1 rating 166 ach 100.5 pc 10 fit 7.4 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  10185-1 rating 164 ach 100 pc 10 fit 7.6 | fc "ap" fs "" rate "sss" dx 352 at 1700000000000
+  70-2 rating 154 ach 90 pc 1 fit 11.3 | fc "fc" fs "" rate "ss" dx 1082 at 1700000000000
+  17-0 rating 146 ach 99 pc 10 fit 7.1 | fc "fcp" fs "sync" rate "ss" dx 582 at 0
+  70-0 rating 127 ach 98.5 pc 10 fit 6.4 | fc "fcp" fs "fs" rate "ss" dx 1124 at 1700086400000
+old sum: 7752
+newer (4):
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+newer sum: 568
+total sum: 8320"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - both detailed and b50 - pc mode 1`] = `
+"old (35):
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  256-2 rating 180 ach 99.5 pc 100 | fc "" fs "fs" rate "ssp" dx 435 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  131-1 rating 175 ach 100.5 pc 100 | fc "" fs "fsp" rate "sssp" dx 1240 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  225-2 rating 170 ach 95 pc 100 | fc "fcp" fs "fsp" rate "ss" dx 281 at 1700086400000
+  256-1 rating 162 ach 100 pc 100 | fc "fc" fs "" rate "sss" dx 726 at 1700086400000
+  650-1 rating 155 ach 98 pc 100 | fc "" fs "fs" rate "ss" dx 1438 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  695-0 rating 119 ach 98 pc 100 | fc "fcp" fs "fs" rate "ss" dx 1278 at 1700172800000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  236-1 rating 109 ach 90 pc 100 | fc "fc" fs "fsp" rate "ss" dx 89 at 1700000000000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+  146-0 rating 102 ach 99 pc 100 | fc "" fs "fs" rate "ss" dx 505 at 1700000000000
+  283-0 rating 99 ach 98.5 pc 100 | fc "fcp" fs "sync" rate "ss" dx 55 at 1700000000000
+  188-0 rating 77 ach 97 pc 100 | fc "" fs "" rate "ss" dx 1034 at null
+  10191-1 rating 65 ach 80 pc 100 | fc "" fs "" rate "ss" dx 1296 at 0
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  564-1 rating 184 ach 100.5 pc 50 | fc "" fs "" rate "sssp" dx 1309 at 1700000000000
+  10225-3 rating 183 ach 90 pc 50 | fc "fc" fs "" rate "ss" dx 608 at 0
+  242-1 rating 175 ach 100.5 pc 50 | fc "fc" fs "fsp" rate "sssp" dx 928 at null
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+old sum: 6318
+newer (8):
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+newer sum: 1283
+total sum: 7601"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - ap mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  10146-2 rating 185 ach 98.5 pc 25 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  10256-2 rating 177 ach 100 pc 10 | fc "app" fs "fsdp" rate "sss" dx 1375 at null
+  146-1 rating 177 ach 99 pc 10 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10070-1 rating 175 ach 101 pc - | fc "app" fs "" rate "sssp" dx 402 at 1700000000000
+  552-1 rating 169 ach 98 pc 1 | fc "ap" fs "fsd" rate "ss" dx 1214 at 1700000000000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  10185-1 rating 151 ach 100 pc 10 | fc "ap" fs "" rate "sss" dx 352 at 1700000000000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  188-2 rating 150 ach 90 pc - | fc "ap" fs "sync" rate "ss" dx 138 at 0
+  283-2 rating 146 ach 90 pc 25 | fc "ap" fs "fsdp" rate "ss" dx 929 at 1700172800000
+  10242-3 rating 144 ach 80 pc 1 | fc "app" fs "sync" rate "ss" dx 1454 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+old sum: 7145
+newer (5):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 691
+total sum: 7836"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - default mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  131-4 rating 291 ach 100 pc 1 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  131-2 rating 251 ach 98.5 pc 5 | fc "" fs "fsd" rate "ss" dx 1024 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+old sum: 9541
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 10824"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - fc mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  564-2 rating 231 ach 100 pc - | fc "fc" fs "fsp" rate "sss" dx 192 at 1700086400000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  10256-3 rating 222 ach 98 pc 10 | fc "fc" fs "" rate "ss" dx 442 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  10225-2 rating 216 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 904 at 1700086400000
+  10044-2 rating 213 ach 101 pc - | fc "fcp" fs "fsp" rate "sssp" dx 150 at 1700000000000
+  185-2 rating 207 ach 100 pc 1 | fc "fc" fs "fsd" rate "sss" dx 816 at 1700000000000
+  10044-3 rating 204 ach 95 pc 5 | fc "fc" fs "fsp" rate "ss" dx 279 at 1700086400000
+old sum: 8959
+newer (6):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 799
+total sum: 9758"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - fit mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 fit 14.4 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 fit 14.6 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  191-3 rating 298 ach 100 pc 10 fit 13.8 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  188-3 rating 290 ach 101 pc 1 fit 12.9 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  10191-3 rating 288 ach 101 pc 1 fit 12.8 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  185-3 rating 288 ach 100.5 pc 100 fit 12.8 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - fit 12.7 | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 fit 12.7 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  113-3 rating 282 ach 100 pc - fit 13.1 | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  146-4 rating 266 ach 99.5 pc 1 fit 12.7 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  113-2 rating 263 ach 99 pc 1 fit 12.8 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  283-3 rating 262 ach 98 pc - fit 13.2 | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  552-3 rating 262 ach 98 pc 100 fit 13.2 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  131-3 rating 261 ach 100 pc - fit 12.1 | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  256-4 rating 261 ach 99 pc 5 fit 12.7 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 fit 13.1 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  10552-3 rating 256 ach 97 pc 1 fit 13.2 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  58-2 rating 252 ach 101 pc 1 fit 11.2 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  115-2 rating 252 ach 100.5 pc 10 fit 11.2 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  10188-3 rating 251 ach 99 pc 1 fit 12.2 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  383-3 rating 248 ach 98 pc 10 fit 12.5 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  564-3 rating 243 ach 98.5 pc 100 fit 12.2 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+old sum: 9544
+newer (8):
+  12025-3 rating 315 ach 100.5 pc - fit 14 | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 fit 12.2 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 fit 8 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 27 ach 98 pc 5 fit 1.4 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1284
+total sum: 10828"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - nb mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  10552-2 rating 236 ach 100.5 pc - fit 10.5 | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  10191-2 rating 230 ach 98 pc 100 fit 11.6 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  540-2 rating 224 ach 100 pc 5 fit 10.4 | fc "" fs "" rate "sss" dx 78 at 1700000000000
+  11726-2 rating 224 ach 98 pc 10 fit 11.3 | fc "app" fs "" rate "ss" dx 317 at null
+  10044-2 rating 222 ach 101 pc - fit 9.9 | fc "fcp" fs "fsp" rate "sssp" dx 150 at 1700000000000
+  10225-2 rating 218 ach 100 pc 5 fit 10.1 | fc "fc" fs "" rate "sss" dx 904 at 1700086400000
+  70-4 rating 205 ach 90 pc 10 fit 15 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  30-2 rating 196 ach 100 pc 100 fit 9.1 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  564-1 rating 195 ach 100.5 pc 50 fit 8.7 | fc "" fs "" rate "sssp" dx 1309 at 1700000000000
+  10146-2 rating 191 ach 98.5 pc 25 fit 9.6 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  115-1 rating 186 ach 101 pc 50 fit 8.3 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  58-3 rating 186 ach 90 pc 25 fit 13.6 | fc "" fs "fsp" rate "ss" dx 697 at 1700172800000
+  188-1 rating 185 ach 99 pc 10 fit 9 | fc "fcp" fs "fsp" rate "ss" dx 558 at 1700000000000
+  146-1 rating 183 ach 99 pc 10 fit 8.9 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10242-1 rating 180 ach 100.5 pc 10 fit 8 | fc "" fs "" rate "sssp" dx 1322 at 0
+  225-2 rating 175 ach 95 pc 100 fit 11 | fc "fcp" fs "fsp" rate "ss" dx 281 at 1700086400000
+  256-1 rating 170 ach 100 pc 100 fit 7.9 | fc "fc" fs "" rate "sss" dx 726 at 1700086400000
+  58-1 rating 166 ach 100.5 pc 10 fit 7.4 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  10185-1 rating 164 ach 100 pc 10 fit 7.6 | fc "ap" fs "" rate "sss" dx 352 at 1700000000000
+  70-2 rating 154 ach 90 pc 1 fit 11.3 | fc "fc" fs "" rate "ss" dx 1082 at 1700000000000
+  17-0 rating 146 ach 99 pc 10 fit 7.1 | fc "fcp" fs "sync" rate "ss" dx 582 at 0
+  70-0 rating 127 ach 98.5 pc 10 fit 6.4 | fc "fcp" fs "fs" rate "ss" dx 1124 at 1700086400000
+old sum: 7752
+newer (4):
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+newer sum: 568
+total sum: 8320"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - detailed only - pc mode 1`] = `
+"old (35):
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  256-2 rating 180 ach 99.5 pc 100 | fc "" fs "fs" rate "ssp" dx 435 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  131-1 rating 175 ach 100.5 pc 100 | fc "" fs "fsp" rate "sssp" dx 1240 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  225-2 rating 170 ach 95 pc 100 | fc "fcp" fs "fsp" rate "ss" dx 281 at 1700086400000
+  256-1 rating 162 ach 100 pc 100 | fc "fc" fs "" rate "sss" dx 726 at 1700086400000
+  650-1 rating 155 ach 98 pc 100 | fc "" fs "fs" rate "ss" dx 1438 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  695-0 rating 119 ach 98 pc 100 | fc "fcp" fs "fs" rate "ss" dx 1278 at 1700172800000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  236-1 rating 109 ach 90 pc 100 | fc "fc" fs "fsp" rate "ss" dx 89 at 1700000000000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+  146-0 rating 102 ach 99 pc 100 | fc "" fs "fs" rate "ss" dx 505 at 1700000000000
+  283-0 rating 99 ach 98.5 pc 100 | fc "fcp" fs "sync" rate "ss" dx 55 at 1700000000000
+  188-0 rating 77 ach 97 pc 100 | fc "" fs "" rate "ss" dx 1034 at null
+  10191-1 rating 65 ach 80 pc 100 | fc "" fs "" rate "ss" dx 1296 at 0
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  564-1 rating 184 ach 100.5 pc 50 | fc "" fs "" rate "sssp" dx 1309 at 1700000000000
+  10225-3 rating 183 ach 90 pc 50 | fc "fc" fs "" rate "ss" dx 608 at 0
+  242-1 rating 175 ach 100.5 pc 50 | fc "fc" fs "fsp" rate "sssp" dx 928 at null
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+old sum: 6318
+newer (8):
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+newer sum: 1283
+total sum: 7601"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - ap mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - default mode 1`] = `
+"old (35):
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  58-3 rating 177 ach 90 pc 25 | fc "" fs "fsp" rate "ss" dx 697 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  17-1 rating 168 ach 100 pc 5 | fc "" fs "fsd" rate "sss" dx 920 at 1700000000000
+  8-1 rating 162 ach 100.5 pc 1 | fc "" fs "fsd" rate "sssp" dx 1387 at 1700086400000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  9-1 rating 153 ach 100 pc 5 | fc "" fs "" rate "sss" dx 282 at 1700086400000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  70-2 rating 149 ach 90 pc 1 | fc "fc" fs "" rate "ss" dx 1082 at 1700000000000
+  17-0 rating 144 ach 99 pc 10 | fc "fcp" fs "sync" rate "ss" dx 582 at 0
+  8-2 rating 139 ach 90 pc 1 | fc "" fs "fs" rate "ss" dx 820 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  70-0 rating 119 ach 98.5 pc 10 | fc "fcp" fs "fs" rate "ss" dx 1124 at 1700086400000
+  30-0 rating 116 ach 97 pc 10 | fc "" fs "fsp" rate "ss" dx 866 at 1700000000000
+  77-2 rating 115 ach 80 pc 10 | fc "" fs "fsp" rate "ss" dx 618 at 1700000000000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  58-0 rating 112 ach 100.5 pc 10 | fc "fc" fs "" rate "sssp" dx 532 at 1700172800000
+  44-0 rating 108 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 670 at 1700000000000
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+old sum: 6403
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 7686"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - fc mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - fit mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - nb mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - empty detailed with b50 - pc mode 1`] = `
+"old (35):
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  58-3 rating 177 ach 90 pc 25 | fc "" fs "fsp" rate "ss" dx 697 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  17-1 rating 168 ach 100 pc 5 | fc "" fs "fsd" rate "sss" dx 920 at 1700000000000
+  8-1 rating 162 ach 100.5 pc 1 | fc "" fs "fsd" rate "sssp" dx 1387 at 1700086400000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  9-1 rating 153 ach 100 pc 5 | fc "" fs "" rate "sss" dx 282 at 1700086400000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  70-2 rating 149 ach 90 pc 1 | fc "fc" fs "" rate "ss" dx 1082 at 1700000000000
+  17-0 rating 144 ach 99 pc 10 | fc "fcp" fs "sync" rate "ss" dx 582 at 0
+  8-2 rating 139 ach 90 pc 1 | fc "" fs "fs" rate "ss" dx 820 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  70-0 rating 119 ach 98.5 pc 10 | fc "fcp" fs "fs" rate "ss" dx 1124 at 1700086400000
+  30-0 rating 116 ach 97 pc 10 | fc "" fs "fsp" rate "ss" dx 866 at 1700000000000
+  77-2 rating 115 ach 80 pc 10 | fc "" fs "fsp" rate "ss" dx 618 at 1700000000000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  58-0 rating 112 ach 100.5 pc 10 | fc "fc" fs "" rate "sssp" dx 532 at 1700172800000
+  44-0 rating 108 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 670 at 1700000000000
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+old sum: 6403
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 7686"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - ap mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - default mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - fc mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - fit mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - nb mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - no data - pc mode 1`] = `
+"old (0):
+old sum: 0
+newer (0):
+newer sum: 0
+total sum: 0"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - ap mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at null
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at null
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at null
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at null
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at null
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at null
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at null
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at null
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at null
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at null
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at null
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at null
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at null
+  10146-2 rating 185 ach 98.5 pc 25 | fc "ap" fs "fsp" rate "ss" dx 829 at null
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at null
+  10256-2 rating 177 ach 100 pc 10 | fc "app" fs "fsdp" rate "sss" dx 1375 at null
+  146-1 rating 177 ach 99 pc 10 | fc "app" fs "fsp" rate "ss" dx 133 at null
+  10070-1 rating 175 ach 101 pc - | fc "app" fs "" rate "sssp" dx 402 at null
+  552-1 rating 169 ach 98 pc 1 | fc "ap" fs "fsd" rate "ss" dx 1214 at null
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at null
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at null
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at null
+  10185-1 rating 151 ach 100 pc 10 | fc "ap" fs "" rate "sss" dx 352 at null
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at null
+  188-2 rating 150 ach 90 pc - | fc "ap" fs "sync" rate "ss" dx 138 at null
+  283-2 rating 146 ach 90 pc 25 | fc "ap" fs "fsdp" rate "ss" dx 929 at null
+  10242-3 rating 144 ach 80 pc 1 | fc "app" fs "sync" rate "ss" dx 1454 at null
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at null
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at null
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at null
+old sum: 7145
+newer (5):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at null
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at null
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at null
+newer sum: 691
+total sum: 7836"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - default mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at null
+  431-3 rating 302 ach 99.5 pc 25 | fc "" fs "" rate "ssp" dx 1370 at null
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at null
+  10070-3 rating 300 ach 99 pc 5 | fc "" fs "" rate "ss" dx 82 at null
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at null
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at null
+  131-4 rating 291 ach 100 pc 1 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at null
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at null
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at null
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at null
+  191-2 rating 285 ach 100.5 pc 1 | fc "" fs "" rate "sssp" dx 160 at null
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at null
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at null
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at null
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at null
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at null
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at null
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at null
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 | fc "" fs "" rate "ss" dx 217 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at null
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at null
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at null
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at null
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at null
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at null
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at null
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at null
+  131-2 rating 251 ach 98.5 pc 5 | fc "" fs "fsd" rate "ss" dx 1024 at null
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at null
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at null
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at null
+old sum: 9541
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at null
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at null
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at null
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at null
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at null
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at null
+newer sum: 1283
+total sum: 10824"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - fc mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at null
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at null
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at null
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at null
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at null
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at null
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at null
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at null
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at null
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at null
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at null
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at null
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at null
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at null
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at null
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at null
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at null
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at null
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at null
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at null
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at null
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at null
+  564-2 rating 231 ach 100 pc - | fc "fc" fs "fsp" rate "sss" dx 192 at null
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at null
+  10256-3 rating 222 ach 98 pc 10 | fc "fc" fs "" rate "ss" dx 442 at null
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at null
+  10225-2 rating 216 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 904 at null
+  10044-2 rating 213 ach 101 pc - | fc "fcp" fs "fsp" rate "sssp" dx 150 at null
+  185-2 rating 207 ach 100 pc 1 | fc "fc" fs "fsd" rate "sss" dx 816 at null
+  10044-3 rating 204 ach 95 pc 5 | fc "fc" fs "fsp" rate "ss" dx 279 at null
+old sum: 8959
+newer (6):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at null
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at null
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at null
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at null
+newer sum: 799
+total sum: 9758"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - fit mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at null
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at null
+  431-3 rating 302 ach 99.5 pc 25 fit 14.4 | fc "" fs "" rate "ssp" dx 1370 at null
+  10070-3 rating 300 ach 99 pc 5 fit 14.6 | fc "" fs "" rate "ss" dx 82 at null
+  191-3 rating 298 ach 100 pc 10 fit 13.8 | fc "app" fs "fs" rate "sss" dx 358 at null
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at null
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  188-3 rating 290 ach 101 pc 1 fit 12.9 | fc "fc" fs "sync" rate "sssp" dx 1383 at null
+  10191-3 rating 288 ach 101 pc 1 fit 12.8 | fc "ap" fs "fsp" rate "sssp" dx 517 at null
+  185-3 rating 288 ach 100.5 pc 100 fit 12.8 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at null
+  77-3 rating 285 ach 100.5 pc - fit 12.7 | fc "" fs "fsdp" rate "sssp" dx 1193 at null
+  191-2 rating 285 ach 100.5 pc 1 fit 12.7 | fc "" fs "" rate "sssp" dx 160 at null
+  113-3 rating 282 ach 100 pc - fit 13.1 | fc "" fs "fsdp" rate "sss" dx 346 at null
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at null
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at null
+  146-4 rating 266 ach 99.5 pc 1 fit 12.7 | fc "ap" fs "fsdp" rate "ssp" dx 321 at null
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at null
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at null
+  113-2 rating 263 ach 99 pc 1 fit 12.8 | fc "fcp" fs "sync" rate "ss" dx 763 at null
+  283-3 rating 262 ach 98 pc - fit 13.2 | fc "ap" fs "fs" rate "ss" dx 727 at null
+  552-3 rating 262 ach 98 pc 100 fit 13.2 | fc "ap" fs "sync" rate "ss" dx 1123 at null
+  131-3 rating 261 ach 100 pc - fit 12.1 | fc "fcp" fs "fs" rate "sss" dx 364 at null
+  256-4 rating 261 ach 99 pc 5 fit 12.7 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 fit 13.1 | fc "fcp" fs "" rate "ss" dx 501 at null
+  10552-3 rating 256 ach 97 pc 1 fit 13.2 | fc "ap" fs "fs" rate "ss" dx 826 at null
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at null
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at null
+  58-2 rating 252 ach 101 pc 1 fit 11.2 | fc "ap" fs "fsd" rate "sssp" dx 109 at null
+  115-2 rating 252 ach 100.5 pc 10 fit 11.2 | fc "fcp" fs "fsd" rate "sssp" dx 232 at null
+  10188-3 rating 251 ach 99 pc 1 fit 12.2 | fc "" fs "" rate "ss" dx 217 at null
+  383-3 rating 248 ach 98 pc 10 fit 12.5 | fc "app" fs "fsd" rate "ss" dx 264 at null
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at null
+  564-3 rating 243 ach 98.5 pc 100 fit 12.2 | fc "app" fs "fsp" rate "ss" dx 878 at null
+old sum: 9544
+newer (8):
+  12025-3 rating 315 ach 100.5 pc - fit 14 | fc "" fs "" rate "sssp" dx 982 at null
+  12025-2 rating 194 ach 95 pc 1 fit 12.2 | fc "ap" fs "" rate "ss" dx 1227 at null
+  12025-1 rating 180 ach 100.5 pc 100 fit 8 | fc "app" fs "sync" rate "sssp" dx 1111 at null
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at null
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at null
+  10030-0 rating 27 ach 98 pc 5 fit 1.4 | fc "ap" fs "sync" rate "ss" dx 991 at null
+newer sum: 1284
+total sum: 10828"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - nb mode 1`] = `
+"old (35):
+  58-4 rating 303 ach 100.5 pc 5 fit 13.5 | fc "fcp" fs "" rate "sssp" dx 798 at null
+  236-3 rating 303 ach 100.5 pc 10 fit 13.5 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at null
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  228-3 rating 293 ach 100 pc 100 fit 13.6 | fc "fcp" fs "fs" rate "sss" dx 967 at null
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  650-3 rating 280 ach 100 pc 100 fit 13 | fc "fc" fs "fsp" rate "sss" dx 312 at null
+  10185-3 rating 280 ach 99 pc 25 fit 13.6 | fc "app" fs "sync" rate "ss" dx 418 at null
+  9-3 rating 267 ach 99 pc 10 fit 13 | fc "" fs "fsdp" rate "ss" dx 620 at null
+  17-4 rating 266 ach 98 pc 1 fit 13.4 | fc "" fs "fs" rate "ss" dx 367 at null
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at null
+  383-2 rating 254 ach 101 pc 50 fit 11.3 | fc "ap" fs "fsp" rate "sssp" dx 393 at null
+  17-3 rating 252 ach 101 pc 100 fit 11.2 | fc "" fs "fsd" rate "sssp" dx 47 at null
+  650-2 rating 244 ach 100 pc 100 fit 11.3 | fc "app" fs "sync" rate "sss" dx 403 at null
+  10552-2 rating 236 ach 100.5 pc - fit 10.5 | fc "ap" fs "" rate "sssp" dx 81 at null
+  10191-2 rating 230 ach 98 pc 100 fit 11.6 | fc "fc" fs "sync" rate "ss" dx 256 at null
+  540-2 rating 224 ach 100 pc 5 fit 10.4 | fc "" fs "" rate "sss" dx 78 at null
+  11726-2 rating 224 ach 98 pc 10 fit 11.3 | fc "app" fs "" rate "ss" dx 317 at null
+  10044-2 rating 222 ach 101 pc - fit 9.9 | fc "fcp" fs "fsp" rate "sssp" dx 150 at null
+  10225-2 rating 218 ach 100 pc 5 fit 10.1 | fc "fc" fs "" rate "sss" dx 904 at null
+  70-4 rating 205 ach 90 pc 10 fit 15 | fc "app" fs "fsd" rate "ss" dx 721 at null
+  30-2 rating 196 ach 100 pc 100 fit 9.1 | fc "" fs "sync" rate "sss" dx 1208 at null
+  564-1 rating 195 ach 100.5 pc 50 fit 8.7 | fc "" fs "" rate "sssp" dx 1309 at null
+  10146-2 rating 191 ach 98.5 pc 25 fit 9.6 | fc "ap" fs "fsp" rate "ss" dx 829 at null
+  115-1 rating 186 ach 101 pc 50 fit 8.3 | fc "" fs "" rate "sssp" dx 1225 at null
+  58-3 rating 186 ach 90 pc 25 fit 13.6 | fc "" fs "fsp" rate "ss" dx 697 at null
+  188-1 rating 185 ach 99 pc 10 fit 9 | fc "fcp" fs "fsp" rate "ss" dx 558 at null
+  146-1 rating 183 ach 99 pc 10 fit 8.9 | fc "app" fs "fsp" rate "ss" dx 133 at null
+  10242-1 rating 180 ach 100.5 pc 10 fit 8 | fc "" fs "" rate "sssp" dx 1322 at null
+  225-2 rating 175 ach 95 pc 100 fit 11 | fc "fcp" fs "fsp" rate "ss" dx 281 at null
+  256-1 rating 170 ach 100 pc 100 fit 7.9 | fc "fc" fs "" rate "sss" dx 726 at null
+  58-1 rating 166 ach 100.5 pc 10 fit 7.4 | fc "app" fs "sync" rate "sssp" dx 682 at null
+  10185-1 rating 164 ach 100 pc 10 fit 7.6 | fc "ap" fs "" rate "sss" dx 352 at null
+  70-2 rating 154 ach 90 pc 1 fit 11.3 | fc "fc" fs "" rate "ss" dx 1082 at null
+  17-0 rating 146 ach 99 pc 10 fit 7.1 | fc "fcp" fs "sync" rate "ss" dx 582 at null
+  70-0 rating 127 ach 98.5 pc 10 fit 6.4 | fc "fcp" fs "fs" rate "ss" dx 1124 at null
+old sum: 7752
+newer (4):
+  10030-2 rating 162 ach 95 pc 10 fit 10.2 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 153 ach 80 pc 50 fit 14.1 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 137 ach 98.5 pc 10 fit 6.9 | fc "ap" fs "" rate "ss" dx 733 at null
+  12025-0 rating 116 ach 100 pc 100 fit 5.4 | fc "fcp" fs "" rate "sss" dx 107 at null
+newer sum: 568
+total sum: 8320"
+`;
+
+exports[`b50Query snapshots > synthetic fixture across data variants and modes > synthetic fixture - without lastChangedAt - pc mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at null
+  431-3 rating 302 ach 99.5 pc 25 | fc "" fs "" rate "ssp" dx 1370 at null
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at null
+  10070-3 rating 300 ach 99 pc 5 | fc "" fs "" rate "ss" dx 82 at null
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at null
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at null
+  131-4 rating 291 ach 100 pc 1 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at null
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at null
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at null
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at null
+  191-2 rating 285 ach 100.5 pc 1 | fc "" fs "" rate "sssp" dx 160 at null
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at null
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at null
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at null
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at null
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at null
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at null
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at null
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at null
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 | fc "" fs "" rate "ss" dx 217 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at null
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at null
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at null
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at null
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at null
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at null
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at null
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at null
+  131-2 rating 251 ach 98.5 pc 5 | fc "" fs "fsd" rate "ss" dx 1024 at null
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at null
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at null
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at null
+old sum: 9541
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at null
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at null
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at null
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at null
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at null
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at null
+newer sum: 1283
+total sum: 10824"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - ap mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  70-3 rating 196 ach 90 pc 1 | fc "app" fs "fsdp" rate "ss" dx 921 at null
+  70-4 rating 194 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 721 at 1700172800000
+  10146-2 rating 185 ach 98.5 pc 25 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  113-1 rating 179 ach 99 pc 10 | fc "ap" fs "" rate "ss" dx 131 at 1700086400000
+  10256-2 rating 177 ach 100 pc 10 | fc "app" fs "fsdp" rate "sss" dx 1375 at null
+  146-1 rating 177 ach 99 pc 10 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10070-1 rating 175 ach 101 pc - | fc "app" fs "" rate "sssp" dx 402 at 1700000000000
+  552-1 rating 169 ach 98 pc 1 | fc "ap" fs "fsd" rate "ss" dx 1214 at 1700000000000
+  58-1 rating 157 ach 100.5 pc 10 | fc "app" fs "sync" rate "sssp" dx 682 at 1700172800000
+  30-1 rating 157 ach 98.5 pc 5 | fc "ap" fs "" rate "ss" dx 1002 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  10185-1 rating 151 ach 100 pc 10 | fc "ap" fs "" rate "sss" dx 352 at 1700000000000
+  17-2 rating 151 ach 95 pc 25 | fc "app" fs "fsdp" rate "ss" dx 750 at 1700000000000
+  188-2 rating 150 ach 90 pc - | fc "ap" fs "sync" rate "ss" dx 138 at 0
+  283-2 rating 146 ach 90 pc 25 | fc "ap" fs "fsdp" rate "ss" dx 929 at 1700172800000
+  10242-3 rating 144 ach 80 pc 1 | fc "app" fs "sync" rate "ss" dx 1454 at 0
+  9-2 rating 134 ach 90 pc 10 | fc "app" fs "fsd" rate "ss" dx 112 at 0
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+old sum: 7145
+newer (5):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 691
+total sum: 7836"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - default mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  131-4 rating 291 ach 100 pc 1 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  113-3 rating 289 ach 100 pc - | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  17-4 rating 252 ach 98 pc 1 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  131-2 rating 251 ach 98.5 pc 5 | fc "" fs "fsd" rate "ss" dx 1024 at 1700172800000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+old sum: 9541
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 10824"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - fc mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  10191-3 rating 290 ach 101 pc 1 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-4 rating 281 ach 99.5 pc 1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  283-3 rating 272 ach 98 pc - | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 | fc "app" fs "sync" rate "ss" dx 418 at null
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 | fc "fc" fs "" rate "ss" dx 918 at null
+  695-3 rating 260 ach 98 pc 25 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  146-2 rating 252 ach 101 pc 10 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  383-3 rating 248 ach 98 pc 10 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  564-2 rating 231 ach 100 pc - | fc "fc" fs "fsp" rate "sss" dx 192 at 1700086400000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  10256-3 rating 222 ach 98 pc 10 | fc "fc" fs "" rate "ss" dx 442 at 1700000000000
+  11726-2 rating 222 ach 98 pc 10 | fc "app" fs "" rate "ss" dx 317 at null
+  10552-2 rating 220 ach 100.5 pc - | fc "ap" fs "" rate "sssp" dx 81 at 1700000000000
+  10225-2 rating 216 ach 100 pc 5 | fc "fc" fs "" rate "sss" dx 904 at 1700086400000
+  10044-2 rating 213 ach 101 pc - | fc "fcp" fs "fsp" rate "sssp" dx 150 at 1700000000000
+  185-2 rating 207 ach 100 pc 1 | fc "fc" fs "fsd" rate "sss" dx 816 at 1700000000000
+  10044-3 rating 204 ach 95 pc 5 | fc "fc" fs "fsp" rate "ss" dx 279 at 1700086400000
+old sum: 8959
+newer (6):
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 799
+total sum: 9758"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - fit mode 1`] = `
+"old (35):
+  191-3 rating 304 ach 100 pc 10 fit 14.1 | fc "app" fs "fs" rate "sss" dx 358 at 1700000000000
+  431-3 rating 302 ach 99.5 pc 25 fit 14.4 | fc "" fs "" rate "ssp" dx 1370 at 1700000000000
+  58-4 rating 301 ach 100.5 pc 5 fit 13.4 | fc "fcp" fs "" rate "sssp" dx 798 at 1700000000000
+  10070-3 rating 300 ach 99 pc 5 fit 14.6 | fc "" fs "" rate "ss" dx 82 at 1700000000000
+  188-3 rating 299 ach 101 pc 1 fit 13.3 | fc "fc" fs "sync" rate "sssp" dx 1383 at 1700086400000
+  236-3 rating 299 ach 100.5 pc 10 fit 13.3 | fc "fcp" fs "fsd" rate "sssp" dx 1227 at 1700000000000
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  10191-3 rating 290 ach 101 pc 1 fit 12.9 | fc "ap" fs "fsp" rate "sssp" dx 517 at 1700086400000
+  113-3 rating 289 ach 100 pc - fit 13.4 | fc "" fs "fsdp" rate "sss" dx 346 at 1700172800000
+  185-3 rating 288 ach 100.5 pc 100 fit 12.8 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  77-3 rating 285 ach 100.5 pc - fit 12.7 | fc "" fs "fsdp" rate "sssp" dx 1193 at 0
+  191-2 rating 285 ach 100.5 pc 1 fit 12.7 | fc "" fs "" rate "sssp" dx 160 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 fit 12.9 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 fit 12.8 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  146-4 rating 275 ach 99.5 pc 1 fit 13.1 | fc "ap" fs "fsdp" rate "ssp" dx 321 at 1700172800000
+  283-3 rating 272 ach 98 pc - fit 13.7 | fc "ap" fs "fs" rate "ss" dx 727 at 0
+  115-2 rating 270 ach 100.5 pc 10 fit 12 | fc "fcp" fs "fsd" rate "sssp" dx 232 at 1700000000000
+  131-3 rating 270 ach 100 pc - fit 12.5 | fc "fcp" fs "fs" rate "sss" dx 364 at 1700000000000
+  113-2 rating 267 ach 99 pc 1 fit 13 | fc "fcp" fs "sync" rate "ss" dx 763 at 1700000000000
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  10185-3 rating 263 ach 99 pc 25 fit 12.8 | fc "app" fs "sync" rate "ss" dx 418 at null
+  10188-3 rating 263 ach 99 pc 1 fit 12.8 | fc "" fs "" rate "ss" dx 217 at 1700000000000
+  552-3 rating 262 ach 98 pc 100 fit 13.2 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  256-4 rating 261 ach 99 pc 5 fit 12.7 | fc "fc" fs "" rate "ss" dx 918 at null
+  131-2 rating 261 ach 98.5 pc 5 fit 13.1 | fc "" fs "fsd" rate "ss" dx 1024 at 1700172800000
+  695-3 rating 260 ach 98 pc 25 fit 13.1 | fc "fcp" fs "" rate "ss" dx 501 at 1700000000000
+  564-3 rating 257 ach 98.5 pc 100 fit 12.9 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  10552-3 rating 256 ach 97 pc 1 fit 13.2 | fc "ap" fs "fs" rate "ss" dx 826 at 1700000000000
+  9-3 rating 255 ach 99 pc 10 fit 12.4 | fc "" fs "fsdp" rate "ss" dx 620 at 1700000000000
+  58-2 rating 252 ach 101 pc 1 fit 11.2 | fc "ap" fs "fsd" rate "sssp" dx 109 at 1700172800000
+  17-4 rating 252 ach 98 pc 1 fit 12.7 | fc "" fs "fs" rate "ss" dx 367 at 1700086400000
+  383-3 rating 248 ach 98 pc 10 fit 12.5 | fc "app" fs "fsd" rate "ss" dx 264 at 1700000000000
+  44-3 rating 242 ach 97 pc 100 fit 12.5 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 fit 10.7 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+old sum: 9569
+newer (8):
+  12025-3 rating 333 ach 100.5 pc - fit 14.8 | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 fit 12.2 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-1 rating 180 ach 100.5 pc 100 fit 8 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  10030-2 rating 151 ach 95 pc 10 fit 9.5 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-3 rating 149 ach 80 pc 50 fit 13.7 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-1 rating 129 ach 98.5 pc 10 fit 6.5 | fc "ap" fs "" rate "ss" dx 733 at 0
+  12025-0 rating 108 ach 100 pc 100 fit 5 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-0 rating 39 ach 98 pc 5 fit 2 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+newer sum: 1283
+total sum: 10852"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - nb mode 1`] = `
+"old (14):
+  146-3 rating 293 ach 100 pc 100 fit 13.6 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  131-4 rating 291 ach 100 pc 1 fit 13.5 | fc "" fs "fsdp" rate "sss" dx 1149 at null
+  146-2 rating 263 ach 101 pc 10 fit 11.7 | fc "fcp" fs "fsdp" rate "sssp" dx 1481 at 1700000000000
+  131-2 rating 261 ach 98.5 pc 5 fit 13.1 | fc "" fs "fsd" rate "ss" dx 1024 at 1700172800000
+  11726-2 rating 224 ach 98 pc 10 fit 11.3 | fc "app" fs "" rate "ss" dx 317 at null
+  10146-2 rating 189 ach 98.5 pc 25 fit 9.5 | fc "ap" fs "fsp" rate "ss" dx 829 at 1700086400000
+  146-1 rating 187 ach 99 pc 10 fit 9.1 | fc "app" fs "fsp" rate "ss" dx 133 at 1700000000000
+  10146-1 rating 141 ach 97 pc 1 fit 7.3 | fc "fcp" fs "fs" rate "ss" dx 432 at 1700000000000
+  8-2 rating 139 ach 90 pc 1 fit 10.2 | fc "" fs "fs" rate "ss" dx 820 at 0
+  11726-1 rating 137 ach 97 pc 10 fit 7.1 | fc "" fs "" rate "ss" dx 1158 at 1700172800000
+  146-0 rating 107 ach 99 pc 100 fit 5.2 | fc "" fs "fs" rate "ss" dx 505 at 1700000000000
+  8-0 rating 99 ach 98.5 pc 25 fit 5 | fc "app" fs "" rate "ss" dx 61 at 0
+  131-0 rating 82 ach 90 pc 10 fit 6 | fc "app" fs "fsp" rate "ss" dx 192 at null
+  11726-0 rating 67 ach 99.5 pc - fit 3.2 | fc "ap" fs "" rate "ssp" dx 1266 at null
+old sum: 2480
+newer (0):
+newer sum: 0
+total sum: 2480"
+`;
+
+exports[`b50Query snapshots > untouched fixture across modes > untouched fixture - both data - pc mode 1`] = `
+"old (35):
+  185-3 rating 288 ach 100.5 pc 100 | fc "fcp" fs "fsd" rate "sssp" dx 1053 at 1700000000000
+  146-3 rating 280 ach 100 pc 100 | fc "app" fs "fsd" rate "sss" dx 188 at 1700000000000
+  228-3 rating 278 ach 100 pc 100 | fc "fcp" fs "fs" rate "sss" dx 967 at 1700172800000
+  650-3 rating 276 ach 100 pc 100 | fc "fc" fs "fsp" rate "sss" dx 312 at 1700086400000
+  552-3 rating 262 ach 98 pc 100 | fc "ap" fs "sync" rate "ss" dx 1123 at 1700086400000
+  564-3 rating 257 ach 98.5 pc 100 | fc "app" fs "fsp" rate "ss" dx 878 at 1700172800000
+  44-3 rating 242 ach 97 pc 100 | fc "" fs "sync" rate "ss" dx 903 at 1700000000000
+  17-3 rating 240 ach 101 pc 100 | fc "" fs "fsd" rate "sssp" dx 47 at 1700086400000
+  650-2 rating 235 ach 100 pc 100 | fc "app" fs "sync" rate "sss" dx 403 at 1700000000000
+  10191-2 rating 224 ach 98 pc 100 | fc "fc" fs "sync" rate "ss" dx 256 at 1700000000000
+  30-2 rating 190 ach 100 pc 100 | fc "" fs "sync" rate "sss" dx 1208 at 1700000000000
+  256-2 rating 180 ach 99.5 pc 100 | fc "" fs "fs" rate "ssp" dx 435 at 1700172800000
+  77-1 rating 175 ach 100.5 pc 100 | fc "" fs "fs" rate "sssp" dx 1254 at 1700172800000
+  131-1 rating 175 ach 100.5 pc 100 | fc "" fs "fsp" rate "sssp" dx 1240 at 1700172800000
+  44-1 rating 171 ach 100.5 pc 100 | fc "" fs "fsdp" rate "sssp" dx 1004 at 1700000000000
+  225-2 rating 170 ach 95 pc 100 | fc "fcp" fs "fsp" rate "ss" dx 281 at 1700086400000
+  256-1 rating 162 ach 100 pc 100 | fc "fc" fs "" rate "sss" dx 726 at 1700086400000
+  650-1 rating 155 ach 98 pc 100 | fc "" fs "fs" rate "ss" dx 1438 at 0
+  185-1 rating 153 ach 100.5 pc 100 | fc "ap" fs "fsd" rate "sssp" dx 168 at 1700086400000
+  695-0 rating 119 ach 98 pc 100 | fc "fcp" fs "fs" rate "ss" dx 1278 at 1700172800000
+  77-0 rating 112 ach 101 pc 100 | fc "fc" fs "fsdp" rate "sssp" dx 965 at null
+  236-1 rating 109 ach 90 pc 100 | fc "fc" fs "fsp" rate "ss" dx 89 at 1700000000000
+  695-1 rating 106 ach 90 pc 100 | fc "ap" fs "fs" rate "ss" dx 87 at 0
+  44-2 rating 104 ach 80 pc 100 | fc "fcp" fs "" rate "ss" dx 885 at 1700000000000
+  146-0 rating 102 ach 99 pc 100 | fc "" fs "fs" rate "ss" dx 505 at 1700000000000
+  283-0 rating 99 ach 98.5 pc 100 | fc "fcp" fs "sync" rate "ss" dx 55 at 1700000000000
+  188-0 rating 77 ach 97 pc 100 | fc "" fs "" rate "ss" dx 1034 at null
+  10191-1 rating 65 ach 80 pc 100 | fc "" fs "" rate "ss" dx 1296 at 0
+  383-2 rating 240 ach 101 pc 50 | fc "ap" fs "fsp" rate "sssp" dx 393 at 1700172800000
+  228-2 rating 239 ach 100 pc 50 | fc "ap" fs "" rate "sss" dx 1250 at 1700086400000
+  564-1 rating 184 ach 100.5 pc 50 | fc "" fs "" rate "sssp" dx 1309 at 1700000000000
+  10225-3 rating 183 ach 90 pc 50 | fc "fc" fs "" rate "ss" dx 608 at 0
+  242-1 rating 175 ach 100.5 pc 50 | fc "fc" fs "fsp" rate "sssp" dx 928 at null
+  115-1 rating 168 ach 101 pc 50 | fc "" fs "" rate "sssp" dx 1225 at 1700000000000
+  383-0 rating 123 ach 99 pc 50 | fc "app" fs "sync" rate "ss" dx 593 at 1700086400000
+old sum: 6318
+newer (8):
+  12025-1 rating 180 ach 100.5 pc 100 | fc "app" fs "sync" rate "sssp" dx 1111 at 1700086400000
+  12025-0 rating 108 ach 100 pc 100 | fc "fcp" fs "" rate "sss" dx 107 at 1700086400000
+  10030-3 rating 149 ach 80 pc 50 | fc "ap" fs "fsd" rate "ss" dx 1342 at 1700172800000
+  10030-2 rating 151 ach 95 pc 10 | fc "" fs "fs" rate "ss" dx 800 at null
+  10030-1 rating 129 ach 98.5 pc 10 | fc "ap" fs "" rate "ss" dx 733 at 0
+  10030-0 rating 39 ach 98 pc 5 | fc "ap" fs "sync" rate "ss" dx 991 at 1700000000000
+  12025-2 rating 194 ach 95 pc 1 | fc "ap" fs "" rate "ss" dx 1227 at 1700000000000
+  12025-3 rating 333 ach 100.5 pc - | fc "" fs "" rate "sssp" dx 982 at 1700000000000
+newer sum: 1283
+total sum: 7601"
+`;
