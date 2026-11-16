@@ -1602,13 +1602,13 @@
   },
   "src/pages/b50.vue": {
     "style/indent": {
-      "count": 530
+      "count": 398
     },
     "perfectionist/sort-named-imports": {
       "count": 3
     },
     "perfectionist/sort-imports": {
-      "count": 7
+      "count": 6
     },
     "import/consistent-type-specifier-style": {
       "count": 2
@@ -1623,19 +1623,16 @@
       "count": 9
     },
     "antfu/if-newline": {
-      "count": 29
+      "count": 16
     },
     "style/brace-style": {
       "count": 9
     },
     "style/comma-dangle": {
-      "count": 8
+      "count": 5
     },
     "style/operator-linebreak": {
-      "count": 13
-    },
-    "style/arrow-parens": {
-      "count": 1
+      "count": 8
     },
     "style/spaced-comment": {
       "count": 1

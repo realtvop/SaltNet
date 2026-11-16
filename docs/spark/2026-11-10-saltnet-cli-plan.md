@@ -164,7 +164,7 @@
 - [x] P2-1 `refactor(core): move user types, rating history and score lookup to shared/core`：`chart/scoreLookup.ts` 依赖 `user/type.ts`，所以和它一起搬；`chart/rating/` 也在这一步搬〔简单〕
 - [x] P2-2 `refactor(core): move score history diff, estimate and presentation to shared/core`（`test:score-history`）〔简单〕
 - [x] P2-3 `refactor(core): move backup codec, user identity and data migration to shared/core`〔简单〕
-- [ ] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
+- [x] P2-4 `refactor(b50): extract page query helpers into a module without behavior changes`〔简单〕
 - [ ] P2-5 `test(query): snapshot b50 query helpers with fixed data`〔简单〕
 - [ ] P2-6 `refactor(core): move b50 query helpers to shared/core/query`〔简单〕
 - [ ] P2-7 `refactor(chart): extract chart info calculations into a module without behavior changes`：吃分表、B50 底分、涨分所需的计算〔简单〕
@@ -693,3 +693,8 @@
     - Gemini 搬的：`userIdentity.ts` 进了 `shared/core/user/scoreHistory/`，`migrateData.ts` 和它的测试进了 `shared/core/user/`，都是纯移动，导入它们的文件只改了路径，`test:score-history` 指向搬过去的测试。`scoreHistory/backup.ts` 拆成两半：纯编解码搬进新的 `shared/core/user/backup.ts`（`UserDataBackupV1` 加了 `export`，`decodeUserDataBackup` 和它用的私有函数原样），另加 `encodeUserDataBackup(users, events, exportedAt)`，返回的对象字面量和原来 `createUserDataBackup` 里的一字不差。网页端的 `createUserDataBackup` 先等成绩历史导出完，再用 `Date.now()` 调它；`replaceImportedUserData` 和 `recoverPendingUserDataImport` 留在网页端；`decodeUserDataBackup` 和类型 `DecodedUserDataBackup` 由网页端的 `backup.ts` 转出，文件夹的 barrel 导出的名字不变。
     - Gemini 碰到一条被拒绝的命令就停了，没写报告。所以另外核对了：搬走的编解码代码在新文件里逐字出现（只多了 `export`），ESLint、`shared/core` 的类型检查和 `test:score-history` 都过，豁免条目没有调高；审查的说明里也请它找没做完的地方。
     - 审查没有找到行为上的问题，只指出现有测试不比较备份的字节，也不检查 `exportedAt` 是在导出成绩历史之后取的。前一条补了 `shared/core/user/backup.test.ts`（放进 `test:score-history`）：固定的用户、成绩历史和导出时间要编码成一字不差的 JSON（两段 base64 用 Node 的 Buffer 另算，不经过被测的编码函数），解码要还原出同样的内容，超过一个编码分块（0x8000 字节）的成绩历史也要能来回。后一条没补：`createUserDataBackup` 只有两行，`Date.now()` 在 `await` 之后一眼可见，要测它得把 IndexedDB 的导出挂起来。
+54. **P2-4 的实现（2026-11-16）**：
+    - Gemini 抽的：`b50.vue` 的纯查询逻辑原样搬进 `src/components/data/chart/b50Query.ts`（P2-6 再整体搬进 `shared/core/query/`）：`ComboFilterMode`、`selectB50Charts`（原来 `chartsByNewness` 的计算体，四个模式开关成了 `options` 的字段）、`recordsHaveLastChangedAt`、`createMusicChartMap`、`sumChartRatings`，以及 `convertDFRecordToChart`、`getSourceRecords`、`filterByComboStatus`、`sortCharts`、`calculateRating`、`normalizeConstant`。页面保留原来的名字做薄包装，模板一字未改。
+    - 临时加了 `saltnet/prettier-owned-b50-query`（P2-6 删掉）。新模块没有剩下的违规，不记豁免；`b50.vue` 的计数只降不升，`style/arrow-parens` 那一条删掉。
+    - 包装在调用前就读出所有参数，所以 `chartsByNewness` 多依赖了几个响应式值（数据还没载入时也会读 `musicChartMap` 和模式开关）。这些读取没有副作用，也不会抛错，结果不变。
+    - 验证：一次性的差异测试把上一提交里页面的旧代码（按行切出来，配上假的 `computed` 和 ref）和新模块放在一起跑：三份曲目表（两份带合成的 `fit_diff`）× 70 组成绩 × 四个开关的 24 种组合，共 5040 个场景逐个 `toStrictEqual`，另外比对边界值和 200 轮排序。26 处故意的单行改动全被它抓到。第一轮有两处没抓到（`fitDiff > constant` 改成 `>=`，`ds` 为 NaN 时不回退到定数），因为测试数据里没有恰好等于定数的 `fit_diff`，也没有两位小数的定数（一位小数的定数经过 `normalizeConstant` 不变，回退与否结果一样）；补上这两种数据后全部抓到。P2-5 的 brief 把这两种情况列成了明确的用例。审查没有发现问题。
