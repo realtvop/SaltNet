@@ -38,6 +38,9 @@ export interface PrintedOutput {
         fix?: string;
         retryable: boolean;
         candidates?: { ref: string; [key: string]: unknown }[];
+        preview: Record<string, unknown>;
+        confirmationCode: string;
+        codeRejected: boolean;
     };
 }
 
@@ -48,10 +51,17 @@ export async function commandIn(
     options: {
         now?: Date;
         network?: Record<string, Route>;
+        cwd?: string;
         /** More variables for the command's environment, after the ones below; `undefined` removes one. */
         env?: Record<string, string | undefined>;
     } = {}
-): Promise<{ code: number; json: PrintedOutput; stdout: string; requests: { url: string }[] }> {
+): Promise<{
+    code: number;
+    json: PrintedOutput;
+    stdout: string;
+    stderr: string;
+    requests: { url: string }[];
+}> {
     const fetch = mockFetch(options.network ?? routes());
     const harness = createHarness({
         env: {
@@ -62,6 +72,7 @@ export async function commandIn(
         },
         fetch,
         now: options.now ?? NOW,
+        cwd: options.cwd,
     });
     const code = await run(createRegistry(), harness, command, ...args);
     const stdout = harness.stdout();
@@ -71,5 +82,5 @@ export async function commandIn(
     } catch {
         // Non-JSON output like --format tsv
     }
-    return { code, json: json!, stdout, requests: fetch.requests };
+    return { code, json: json!, stdout, stderr: harness.stderr(), requests: fetch.requests };
 }

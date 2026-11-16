@@ -1,4 +1,5 @@
 import type { CommandDefinition, Registry } from "./registry";
+import { exportBackup, importBackup } from "./backup";
 import { chart } from "./chart";
 import { charts } from "./charts";
 import { collectionList, collectionShow } from "./collection";
@@ -32,6 +33,8 @@ export const COMMANDS: readonly CommandDefinition[] = [
     userEdit,
     userRemove,
     userDefault,
+    exportBackup,
+    importBackup,
     refresh,
     status,
     configList,

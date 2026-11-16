@@ -15,6 +15,8 @@ export interface HarnessOptions {
     fetch?: HttpFetch;
     /** What the command's clock reads; a fixed instant by default. */
     now?: Date;
+    /** Working directory used to resolve command file arguments. */
+    cwd?: string;
 }
 
 /** An in-process terminal: everything the CLI writes is collected instead of printed. */
@@ -39,7 +41,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
         // The command sees only this environment, never the real one; `tests/setup.ts` has already
         // pointed the process's own SALTNET_HOME at a throwaway directory.
         env: { SALTNET_HOME: process.env.SALTNET_HOME, ...options.env },
-        cwd: "/work",
+        cwd: options.cwd ?? "/work",
         readStdin,
         now: () => options.now ?? new Date("2026-11-11T00:00:00Z"),
         fetch,

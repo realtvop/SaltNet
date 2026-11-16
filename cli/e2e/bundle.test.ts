@@ -75,6 +75,7 @@ interface RunResult {
     stdout: string;
     stderr: string;
     saltnetHome: string;
+    cwd: string;
 }
 
 const cliDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -95,16 +96,21 @@ function baseEnvironment(): NodeJS.ProcessEnv {
     return env;
 }
 
-function processHome(seed?: string): { env: NodeJS.ProcessEnv; saltnetHome: string } {
+function processHome(seed?: string): { env: NodeJS.ProcessEnv; saltnetHome: string; cwd: string } {
     const root = path.join(sandbox, `process-${processNumber++}`);
     const saltnetHome = path.join(root, "saltnet-home");
     const userHome = path.join(root, "user-home");
+    const cwd = path.join(root, "work");
     mkdirSync(userHome, { recursive: true });
+    mkdirSync(cwd, { recursive: true });
     if (seed) cpSync(seed, saltnetHome, { recursive: true });
     else mkdirSync(saltnetHome, { recursive: true });
+    const exampleBackup = path.join(saltnetHome, "example-backup.json");
+    if (existsSync(exampleBackup)) cpSync(exampleBackup, path.join(cwd, "saltnet-backup.json"));
 
     return {
         saltnetHome,
+        cwd,
         env: {
             ...baseEnvironment(),
             HOME: userHome,
@@ -127,10 +133,10 @@ function runBundle(args: readonly string[], mode: "serve" | "deny", seed?: strin
 function runBundleAt(
     args: readonly string[],
     mode: "serve" | "deny",
-    home: { env: NodeJS.ProcessEnv; saltnetHome: string }
+    home: { env: NodeJS.ProcessEnv; saltnetHome: string; cwd: string }
 ): RunResult {
     const result = spawnSync(process.execPath, ["--import", preload, bundle, ...args], {
-        cwd: repoRoot,
+        cwd: home.cwd,
         env: {
             ...home.env,
             E2E_FETCH_MODE: mode,
@@ -147,6 +153,7 @@ function runBundleAt(
         stdout: result.stdout,
         stderr: result.stderr,
         saltnetHome: home.saltnetHome,
+        cwd: home.cwd,
     };
 }
 
@@ -154,11 +161,13 @@ function runBundleAt(
 function runBundleInPlace(
     args: readonly string[],
     mode: "serve" | "deny",
-    saltnetHome: string
+    saltnetHome: string,
+    cwd: string
 ): RunResult {
     const root = path.dirname(saltnetHome);
     return runBundleAt(args, mode, {
         saltnetHome,
+        cwd,
         env: {
             ...baseEnvironment(),
             HOME: path.join(root, "user-home"),
@@ -337,6 +346,13 @@ it("runs every bundled guide example from seeded fixtures without network", () =
     );
     expect(success(secondUser, "seed second user").command).toBe("user add");
     const seed = secondUser.saltnetHome;
+    const seedBackup = runBundleInPlace(
+        ["export", path.join(seed, "example-backup.json")],
+        "deny",
+        seed,
+        secondUser.cwd
+    );
+    expect(success(seedBackup, "seed backup").command).toBe("export");
 
     const status = success(runBundle(["status", "--offline"], "deny", seed), "offline status");
     expectConforms(schemaOf("status"), status.data);
@@ -396,7 +412,7 @@ it("runs every bundled guide example from seeded fixtures without network", () =
             expectConforms(envelopeSchema, failed);
             const fixArgs = splitCommandLine(failed.error.fix);
             expect(fixArgs.shift(), line).toBe("saltnet");
-            result = runBundleInPlace(fixArgs, "deny", result.saltnetHome);
+            result = runBundleInPlace(fixArgs, "deny", result.saltnetHome, result.cwd);
         }
         expect(result.status, line).toBe(0);
         if (format === "tsv") {

@@ -35,6 +35,8 @@ describe("schema command", () => {
             "user edit",
             "user remove",
             "user default",
+            "export",
+            "import",
             "refresh",
             "status",
             "config list",

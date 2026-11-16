@@ -73,11 +73,17 @@ SaltNet is a three-package pnpm workspace:
   User management lives in `src/commands/user.ts`: `user list`, `show`, `add`, `edit`, `remove` and
   `default`; removal uses the shared content-bound confirmation. `status` also reports each user's
   score freshness against `scores.staleDays`.
+  Backup interchange lives in `src/commands/backup.ts`: `import` decodes the web v0/v1 format,
+  strips credentials and replaces users plus score events after content-bound confirmation;
+  `export` restores selected credentials and writes a private web-compatible v1 file.
+  `src/runtime/credentials.ts` strictly reads the versioned per-user credential file and stages its
+  mode-0600 whole-file replacement so import can commit the database before the final rename.
   `build.mjs --outfile <path>` writes the bundle to a caller-selected path instead. `e2e/` builds
   such a bundle in a temporary directory, preloads a fixture-only `fetch`, seeds it with one refresh
   and two made-up users, and runs every generated guide example offline on its own copy of the seed
-  data. A confirmation example may return exit code 6; the test validates its failure envelope and
-  runs `error.fix` against the same copy.
+  data. Each example has its own working directory containing a seed backup for the import example.
+  A confirmation example may return exit code 6; the test validates its failure envelope and runs
+  `error.fix` against the same data and working directory.
 
 `cli/src/users/` is the only writer of the user tables: it validates token-free raw users and score
 events, projects their typed copies, assigns catalog chart keys, preserves user order, provides

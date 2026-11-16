@@ -180,7 +180,7 @@
 - [x] P2-13 `feat(cli): add user repository on top of the store`〔新〕
 - [x] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
 - [x] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
-- [ ] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
+- [x] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
 - [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
 - [x] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
 - [ ] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
@@ -815,3 +815,13 @@
     - 我核对过网页端：换码原来经过网页端的 `requestLXNSToken`，它只是把 `URLSearchParams` 转成对象再调 core、不带任何配置；现在直接调 core，参数顺序一样，请求体逐字节相同。网页端生成授权链接时不传配置，仍是原来写死的 `https://maimai.lxns.net`。网页端原有的 OAuth 测试一个没改，全部通过。
     - 测试：改动检查 48 处，第一次 42 处被发现。没被发现的 6 处都是测试的缺口，由我补了 6 个用例：有效期常量本身（原来的边界用例用的是常量，常量改了用例跟着改）、回调里的 `error_description`、回调链接取规范化以后的 `href`（大写的协议和主机）、`userUid` 和 `redirectUri` 不是字符串、换到的 `token_type` 原样保留。补完再跑全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查（这一步在 P2 的审查范围之内提交）。
+73. **P2-16 的实现（2026-11-17）**：
+    - Codex 写的：`import` 和 `export`（`cli/src/commands/backup.ts`），凭据文件（`cli/src/runtime/credentials.ts`；`files.ts` 加了先暂存、后改名的 `stageFileAtomic`）。`credentials.json` 是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?}}}`，值按网页端用户里的 JSON 原样保存；没有文件等于空文件，读不了、JSON 坏了或结构不对时报错，不覆盖。导入：用 core 解码 v0/v1，token 拆进凭据文件、库里写 `null`；成绩事件按网页端的规则换上新的 generation 和 id，超出安全整数的拒绝；确认码绑定文件摘要、本地每个用户的 uid 和更新时间、事件数和 `--keep-lxns`，预览列出文件、要导入的用户、会被覆盖的用户和事件数、Import-Token 数；新的凭据文件先以 0600 写在同一目录，用户和事件在一个事务里整体替换之后才改名到位，事务失败就删掉暂存的文件，旧凭据不变。导出：从 `users.raw` 按用户顺序写 v1，放回 Import-Token，`--keep-lxns` 时也放回落雪授权；以 0600 原子写入；同名文件报 `FILE_EXISTS`，`--overwrite` 才覆盖。端到端测试给每个例子一个自己的工作目录，里面放一份种子备份给 `import` 的例子用。设计 2.1、2.4 写明了凭据文件的格式和导入导出的细节。
+    - 它自己定下的，我同意：凭据的字段名；`User` 类型把 token 限定成具体类型，但这里存的是解码出来的原样 JSON（`unknown`）；设计里的 `favorites` 表还没有（P2-25），导入不碰收藏；导出写缩进的 JSON 加换行（网页端写紧凑的，两边都用 `JSON.parse` 读，互通）。
+    - 我改的三处：
+        - **导出目录不存在**（或路径中间有一段是文件）改报 `USAGE`（退出码 2），消息写出目录并说明不会创建目录。Codex 原来让它落到 `INTERNAL`，可那是用户给的路径，不是数据目录，`INTERNAL` 的说明是「saltnet 的缺陷或数据目录读写失败」；原来的消息还会带出临时文件名。凭据文件坏了仍是 `INTERNAL`：它在数据目录里，正合那条说明；P3-6 再看要不要单独的错误码。
+        - **`--keep-lxns` 而备份里没有某个用户的落雪授权时**，这个用户照默认规则处理（uid 和落雪 id 都没变就留着 CLI 自己的授权）。原来会把 CLI 自己的授权丢掉：加了「沿用对方授权」的选项，反而丢了授权，说不通。选项和命令的说明、设计 2.4 跟着改了。
+        - **能解码、但用户表存不下的备份**（比如 `settings.manuallyUpdate` 不是布尔值、`lxns` 是个数字），在预览之前就报 `INVALID_BACKUP`。原来要等确认之后在事务里失败，报的是 `INTERNAL`。事件也过一遍同样的检查，但 core 的解码器和导入时的安全整数检查已经比它严，这一半现在不会触发，只是保险。
+    - 和网页端的一处差别：网页端用 `file.text()` 读文件，坏的 UTF-8 字节会被换成替换字符；CLI 严格解码，直接报 `INVALID_BACKUP`。
+    - 测试：改动检查 40 处，第一次 28 处被发现；1 处等价（查凭据时的 `Object.hasOwn`：`JSON.parse` 读出的 `__proto__` 是自有属性，继承来的值里也没有凭据字段）。另外 11 处由 Gemini 补测试（新文件 `cli/tests/runtime/credentials.test.ts`，`backup.test.ts` 新增 11 个用例，都只改测试）：版本不是 1、用户条目不是对象、`null` 不算凭据、凭据文件只列有凭据的用户、预览里的 Import-Token 数、两个用户各自保留自己的落雪授权、解码器给的原因写进消息、字符串里坏的 UTF-8、事务失败时（用 SQLite 触发器让插入失败）不留暂存文件、`byteSize` 按 UTF-8 字节计、`--keep-lxns` 的回退。补完全部被发现。我的三处修正另做 6 处改动检查，5 处被发现，剩下的就是上面说的事件检查（等价）。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。
