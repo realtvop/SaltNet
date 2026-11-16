@@ -1363,10 +1363,7 @@
       "count": 12
     },
     "style/operator-linebreak": {
-      "count": 3
-    },
-    "style/comma-dangle": {
-      "count": 1
+      "count": 2
     },
     "style/brace-style": {
       "count": 1
@@ -1390,25 +1387,13 @@
     }
   },
   "src/components/integrations/lxns/oauthSession.ts": {
-    "style/member-delimiter-style": {
-      "count": 13
-    },
-    "regexp/prefer-w": {
-      "count": 1
-    },
-    "regexp/use-ignore-case": {
-      "count": 1
-    },
     "style/operator-linebreak": {
-      "count": 13
+      "count": 1
     },
     "style/comma-dangle": {
       "count": 2
     },
     "style/brace-style": {
-      "count": 5
-    },
-    "antfu/if-newline": {
       "count": 5
     }
   },

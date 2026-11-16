@@ -57,6 +57,9 @@ SaltNet is a three-package pnpm workspace:
       from `CoreConfig` and an injected `fetch`), `diving-fish/convert.ts` (the Diving Fish music
       list and chart score converters), `lxns/type.ts`, the public `lxns/fetchCollection.ts`,
       `lxns/token.ts` (the token endpoint, applying and refreshing an authorization),
+      `lxns/oauth.ts` (the storage-free half of the OAuth flow: PKCE, the authorize URL, reading a
+      callback link, checking a stored transaction and a callback against it, exchanging the code
+      and checking the exchanged token's expiry),
       `lxns/client.ts` (the player API request and the score converters), and `saltnet/client.ts`
       (the SaltNet backend client with the primary and fallback addresses from `CoreConfig`, an
       injected `fetch` and typed errors).
@@ -109,6 +112,9 @@ the originating PWA when a browser uses isolated storage. Never exchange a code 
 matching local transaction and PKCE verifier. Token endpoints accept flat OAuth responses as
 well as the legacy API envelope. Startup callback dialogs wait for
 `dialogStore.waitForInitialHistory()` so restored dialog entries cannot close the new dialog.
+PKCE, the authorize URL, the callback and transaction checks, the code exchange and the token
+expiry check come from `shared/core/integrations/lxns/oauth.ts`; the storage, the recovery and the
+dialogs stay in `src/components/integrations/lxns/`.
 
 ## Build, Test, and Development Commands
 
@@ -159,7 +165,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   formatting-only commits.
 - `pnpm test:oauth` validates callback cleanup, authorization recovery, user identity targeting,
   token response compatibility, refresh-token handling, serialized durable user writes,
-  initial dialog-history reconciliation, and the core token and client tests.
+  initial dialog-history reconciliation, the core token and client tests, and the core OAuth
+  helpers (PKCE against the RFC 7636 example, the authorize URL, the callback and transaction
+  checks, the code exchange and the token expiry check).
 
 There is no aggregate test script: before committing, run `pnpm check`, `pnpm lint`, every
 `pnpm test:*` script above, and the render-service `test` and `check` commands (plus `pnpm build`

@@ -1,6 +1,16 @@
 import { useShared } from "@/components/app/shared";
 import type { LXNSAuth } from "@core/integrations/lxns/type";
-import { applyLXNSAuth, LXNSTokenError, requestLXNSToken } from "./token";
+import {
+    assertLXNSOAuthCallbackAddress,
+    assertLXNSOAuthCallbackParameters,
+    assertLXNSOAuthCallbackSucceeded,
+    assertLXNSOAuthTokenUsable,
+    createLXNSOAuthAuthorizeUrl,
+    exchangeLXNSOAuthCode,
+    generateCodeChallenge,
+    generateCodeVerifier,
+} from "@core/integrations/lxns/oauth";
+import { applyLXNSAuth, LXNSTokenError } from "./token";
 import { confirm, snackbar } from "mdui";
 import { jwtDecode } from "jwt-decode";
 import { markDialogClosed, markDialogOpen } from "@/components/app/router";
@@ -45,16 +55,7 @@ export async function initLXNSOAuth(userIndex: number): Promise<string> {
         redirectUri,
         expiresAt: Date.now() + LXNS_OAUTH_LIFETIME,
     });
-    const params = new URLSearchParams({
-        response_type: "code",
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        code_challenge: codeChallenge,
-        state,
-        code_challenge_method: "S256",
-        scope: "read_user_profile read_player write_player",
-    });
-    return `https://maimai.lxns.net/oauth/authorize?${params}`;
+    return createLXNSOAuthAuthorizeUrl(clientId, redirectUri, codeChallenge, state);
 }
 
 class LXNSOAuthCancelledError extends Error {}
@@ -131,28 +132,19 @@ export function handleLXNSOAuthCallback(callback: LXNSOAuthCallback): Promise<vo
 async function completeLXNSOAuthCallback(callback: LXNSOAuthCallback): Promise<void> {
     const shared = useShared();
     await shared.usersLoaded;
-    if (!callback.state || (!callback.code && !callback.error)) {
-        throw new Error("落雪授权回调参数缺失，请重新授权");
-    }
+    assertLXNSOAuthCallbackParameters(callback);
     const transaction =
         getLXNSOAuthTransaction(callback.state) || getLegacyTransaction(callback.state);
     if (!transaction) {
         throw new LXNSOAuthRecoveryError("此窗口没有对应的授权记录，或授权已过期");
     }
 
-    const returnedUrl = new URL(callback.url);
-    const redirectUrl = new URL(transaction.redirectUri);
-    if (
-        returnedUrl.origin !== redirectUrl.origin ||
-        returnedUrl.pathname !== redirectUrl.pathname
-    ) {
-        throw new Error("授权回调地址不匹配，请使用落雪返回的完整链接");
-    }
+    assertLXNSOAuthCallbackAddress(callback, transaction);
     if (callback.error) {
         removeLXNSOAuthTransaction(callback.state);
         clearCapturedLXNSOAuthCallback(callback.state);
         clearLegacyTransaction(callback.state);
-        throw new Error(`落雪授权失败：${callback.errorDescription || callback.error}`);
+        assertLXNSOAuthCallbackSucceeded(callback);
     }
 
     if (!shared.users.some(user => user.uid === transaction.userUid)) {
@@ -164,31 +156,11 @@ async function completeLXNSOAuthCallback(callback: LXNSOAuthCallback): Promise<v
     try {
         let token = transaction.token;
         if (!token) {
-            const data = await requestLXNSToken(
-                new URLSearchParams({
-                    grant_type: "authorization_code",
-                    code: callback.code,
-                    client_id: transaction.clientId,
-                    redirect_uri: transaction.redirectUri,
-                    code_verifier: transaction.codeVerifier,
-                })
-            );
-            token = {
-                auth: {
-                    accessToken: data.access_token,
-                    refreshToken: data.refresh_token,
-                    tokenType: data.token_type,
-                },
-                expiresAt: data.expires_in
-                    ? Date.now() + data.expires_in * 1000
-                    : jwtDecode<{ exp: number }>(data.access_token).exp * 1000,
-            };
+            token = await exchangeLXNSOAuthCode(callback.code, transaction);
             // Do not redeem the single-use code again if saving or confirmation is interrupted.
             storeLXNSOAuthTransaction(callback.state, { ...transaction, callback, token });
         }
-        if (!Number.isFinite(token.expiresAt) || token.expiresAt <= Date.now()) {
-            throw new LXNSTokenError("落雪授权已过期，请重新授权", "invalid_grant");
-        }
+        assertLXNSOAuthTokenUsable(token);
         await saveLXNSAuth(transaction.userUid, token.auth, (token.expiresAt - Date.now()) / 1000);
         removeLXNSOAuthTransaction(callback.state);
         clearCapturedLXNSOAuthCallback(callback.state);
@@ -211,25 +183,4 @@ function clearLegacyTransaction(state: string): void {
     window.sessionStorage.removeItem("lxns_oauth_user_index");
     window.sessionStorage.removeItem("lxns_oauth_code_verifier");
     window.sessionStorage.removeItem("lxns_oauth_state");
-}
-
-function base64UrlEncode(arrayBuffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-export function generateCodeVerifier(): string {
-    const array = new Uint8Array(64);
-    window.crypto.getRandomValues(array);
-    return base64UrlEncode(array.buffer);
-}
-export async function generateCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const hash = await window.crypto.subtle.digest("SHA-256", data);
-    return base64UrlEncode(hash);
 }

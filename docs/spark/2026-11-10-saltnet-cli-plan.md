@@ -203,7 +203,7 @@
 - [x] P3-2 `refactor(core): move lxns client, token and upload to shared/core`（`test:oauth`）〔简单〕
 - [x] P3-3 `refactor(core): move saltnet backend client to shared/core with injected urls`〔简单〕
 - [x] P3-4 `refactor(core): extract sync fetching and merging from the update worker`：进度走回调，不再调提示条；worker 只剩消息收发〔新〕
-- [ ] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
+- [x] P3-5 `refactor(core): split lxns oauth flow from browser session handling`：PKCE、授权链接、回调校验、换 token 进 core〔新〕
 
 **P3 的 CLI 部分**
 
@@ -808,4 +808,10 @@
     - 它自己定下的，我都同意：注入的接口写成函数属性而不是方法签名（新文件要过 `ts/method-signature-style`）；水鱼公开 B50 失败时照旧得到 `undefined` 而不是 `null`；worker 的 import 按 lint 的顺序重排。worker 里原有违规的豁免计数按实际剩下的手工调低了（`eslint-suppressions.json`，只降不升），没用 `--prune-suppressions`。
     - 我核对过行为：把搬走的函数和原来的 worker 逐段做文本比较，差别只有改名和改成注入的选项。一处可以接受的边界：`qrCode` 不是字符串时，现在在 worker 的 `try` 里面抛错，worker 发回 `updateUserError`；网页端只会传字符串，所以没有实际影响。worker 把二维码打到控制台的那一行照原样保留，网页端行为不变（写进最终报告）。
     - 测试：改动检查 56 处，第一次 49 处被发现。没被发现的 7 处由 Gemini 补测试（只改两个测试文件）：链接里编码后面还有文字时的截取、`http` 和 `https` 两种链接、落雪没给成绩时不报「从落雪补充数据成功」、游戏返回的收藏品和旅行伙伴原样带出、快速更新的请求体里没有 `qrCode` 这个键（原来的测试用 `toEqual`，值为 `undefined` 的键看不出来）。补完再跑，6 处被发现；剩下的一处等价：长度正好 64 的 `SGWCMAID` 输入走到普通分支，结果相同。
+    - 按决定 66 不单独送审，并入 P2 的整体审查（这一步在 P2 的审查范围之内提交）。
+72. **P3-5 的实现（2026-11-17）**：
+    - Codex 新建 `shared/core/integrations/lxns/oauth.ts`，放落雪 OAuth 里和存储、界面无关的一半：回调、事务和 token 的类型，15 分钟有效期、scope 和 PKCE 值的规则这几个常量，`base64UrlEncode`、`generateCodeVerifier`、`generateCodeChallenge`（随机数和 SHA-256 摘要可以注入，默认用 `globalThis.crypto` 和全局的 `btoa`），`createLXNSOAuthAuthorizeUrl`（地址取 `CoreConfig.lxnsBaseUrl`），`parseLXNSOAuthCallback` 和回调参数检查，`validateLXNSOAuthTransaction`（`now` 由调用方给），回调地址检查和 OAuth 错误检查，`exchangeLXNSOAuthCode`，`assertLXNSOAuthTokenUsable`。网页端的 `oauth.ts` 和 `oauthSession.ts` 改成调用这些；存储、回调捕获、同时到达的回调去重、失败时删哪些记录和删的顺序、恢复对话框和 `saveLXNSAuth` 都留在网页端。`oauthSession.ts` 再导出原来那几个名字，别的文件的 import 不用改。新测试进 `test:oauth`。
+    - 它自己定下的，我都同意：回调检查拆成「地址」和「OAuth 错误」两个函数，网页端才能保持原来「先删记录再抛错」的顺序；`now` 是可以注入的时间戳，默认值照旧在拿到响应之后才取；网页端两个文件里原有的 `curly` 违规顺手改掉，豁免计数相应调低（只降不升）。`shared/core/README.md` 原来说 core 唯一的副作用是网络，我补了一句：读随机数和时钟不算副作用，新代码把它们做成可选参数、默认用全局的，并在注入点里列上这个模块。
+    - 我核对过网页端：换码原来经过网页端的 `requestLXNSToken`，它只是把 `URLSearchParams` 转成对象再调 core、不带任何配置；现在直接调 core，参数顺序一样，请求体逐字节相同。网页端生成授权链接时不传配置，仍是原来写死的 `https://maimai.lxns.net`。网页端原有的 OAuth 测试一个没改，全部通过。
+    - 测试：改动检查 48 处，第一次 42 处被发现。没被发现的 6 处都是测试的缺口，由我补了 6 个用例：有效期常量本身（原来的边界用例用的是常量，常量改了用例跟着改）、回调里的 `error_description`、回调链接取规范化以后的 `href`（大写的协议和主机）、`userUid` 和 `redirectUri` 不是字符串、换到的 `token_type` 原样保留。补完再跑全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查（这一步在 P2 的审查范围之内提交）。
