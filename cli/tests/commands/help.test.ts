@@ -78,6 +78,14 @@ describe("root help", () => {
         );
     });
 
+    it("shows a value-less string option with an optional value placeholder", () => {
+        const real = createRegistry();
+        const command = real.find("charts")!;
+        const text = renderHelp(real, { kind: "command", command }, "1.0.0");
+        expect(text).toContain("--achieved [<条件>]");
+        expect(text).toContain("--missing [<条件>]");
+    });
+
     it("says so while there are no commands", () => {
         const empty = buildRegistry({ commands: [] });
         expect(renderHelp(empty, { kind: "root" }, "0.1.0")).toContain("（还没有可用的命令）");

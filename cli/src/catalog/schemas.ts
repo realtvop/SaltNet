@@ -33,7 +33,6 @@ import type {
 import type { SongType } from "./songs";
 import type { SourceState, SourceStatus } from "./statusView";
 import {
-    alwaysNull,
     anyOf,
     bool,
     dictionary,
@@ -185,8 +184,20 @@ export const collectionRowSchema = object<CollectionRow>(
         ),
         description: str("游戏里写的获取方式"),
         songCount: int("获取条件点名的曲目数量；条件没有点名曲目时是 0"),
-        owned: alwaysNull("用户有没有这件收藏品；用户数据加入之前恒为 null"),
-        progress: alwaysNull("用户离拿到它还有多远；用户数据加入之前恒为 null"),
+        owned: nullable(
+            bool("所选用户是否拥有这件收藏品"),
+            "所选用户是否拥有这件收藏品；没有用户时是 null"
+        ),
+        progress: nullable(
+            object(
+                {
+                    completed: int("已经满足获取条件的谱面或曲目数"),
+                    total: int("获取条件要求的谱面或曲目总数"),
+                },
+                { description: "按网页端收藏品进度规则计算的完成数和总数" }
+            ),
+            "按网页端规则计算的完成数和总数；条件不能按成绩判断或没有用户时是 null"
+        ),
     },
     { description: "一件收藏品" }
 );
@@ -219,7 +230,10 @@ export const requirementRowSchema = object<RequirementRow>(
 export const collectionChartRowSchema = extend<CollectionChartRow, ChartRow>(
     chartRowSchema,
     {
-        done: alwaysNull("用户在这张谱上达成条件了没有；用户数据加入之前恒为 null"),
+        done: nullable(
+            bool("所选用户是否已经在这张谱上达成收藏品的条件"),
+            "所选用户是否已经在这张谱上达成收藏品的条件；没有用户时是 null"
+        ),
     },
     { description: "收藏品要求的一张谱面" }
 );

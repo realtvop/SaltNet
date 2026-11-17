@@ -1,4 +1,5 @@
 import type { Chart } from "@core/music/type";
+import type { User } from "@core/user/type";
 import type { UserListRow } from "../../src/users/repository";
 import type { StoredChartScore, UserScores } from "../../src/users/scores";
 import { describe, expect, it } from "vitest";
@@ -34,6 +35,7 @@ function makeScores(score: Partial<StoredChartScore>): UserScores {
     };
     return {
         user: { index: 0, uid: "made-user", displayName: "Made User" } as unknown as UserListRow,
+        raw: { uid: "made-user", data: {} } as User,
         source: "detailed",
         byChartKey: new Map([[key, stored]]),
         playCountByRecordKey: new Map(),

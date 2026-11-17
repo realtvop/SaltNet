@@ -59,7 +59,17 @@ const optionSchema = object(
     {
         flag: str("带两个短横线的选项名"),
         type: strEnum(
-            ["string", "credential", "integer", "number", "boolean", "enum", "list", "range"],
+            [
+                "string",
+                "optional-string",
+                "credential",
+                "integer",
+                "number",
+                "boolean",
+                "enum",
+                "list",
+                "range",
+            ],
             "选项类型"
         ),
         description: str("选项说明"),

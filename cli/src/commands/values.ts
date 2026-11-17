@@ -145,6 +145,9 @@ export function convertOption(entry: OptionEntry, raw: string): unknown {
                 throw new ValueError(`选项 --${flag} 的值不能为空`);
             }
             return raw;
+        case "optional-string":
+            if (raw === "") throw new ValueError(`选项 --${flag} 的值不能为空`);
+            return raw;
         case "credential":
             if (raw !== "-") {
                 throw new ValueError(

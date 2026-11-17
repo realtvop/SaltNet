@@ -1,5 +1,6 @@
 /** Reads one user's score source once and builds the lookups shared by every chart-row command. */
-import type { Chart } from "@core/music/type";
+import type { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+import type { Chart, ChartScore } from "@core/music/type";
 import type { PlayCountEstimate } from "@core/user/scoreHistory/estimate";
 import type { User } from "@core/user/type";
 import type { Store } from "../store/store";
@@ -31,10 +32,46 @@ export interface B50Place {
 
 export interface UserScores {
     readonly user: UserListRow;
+    /** The token-free web user whose copied rows these scores came from. */
+    readonly raw: User;
     readonly source: ScoreSource;
     readonly byChartKey: ReadonlyMap<string, StoredChartScore>;
     readonly playCountByRecordKey: ReadonlyMap<string, PlayCountEstimate>;
     readonly b50ByChartKey: ReadonlyMap<string, B50Place>;
+}
+
+function scoreStatus<T extends string>(value: string | null): T {
+    // An unrecognised or absent copied value must not satisfy a threshold. It still belongs to a
+    // played chart when achievements is numeric, as it does in the web app's runtime data.
+    return (value ?? "__unknown__") as T;
+}
+
+/** The stored score as the core collection functions read it. */
+export function collectionChartScore(row: StoredChartScore | undefined): ChartScore | undefined {
+    if (!row || typeof row.achievements !== "number") return undefined;
+    return {
+        achievements: row.achievements,
+        rankRate: scoreStatus<RankRate>(row.rate),
+        comboStatus: scoreStatus<ComboStatus>(row.fc),
+        syncStatus: scoreStatus<SyncStatus>(row.fs),
+        deluxeScore: row.dxScore ?? 0,
+        deluxeRating: row.rating ?? 0,
+        ...(row.playCount === null ? {} : { playCount: row.playCount }),
+        ...(row.lastChangedAt === null ? {} : { lastChangedAt: row.lastChangedAt }),
+    };
+}
+
+/** A catalog chart with the selected user's collection-facing score, without mutating the catalog. */
+export function chartWithCollectionScore(chart: Chart, scores: UserScores): Chart {
+    return {
+        ...chart,
+        score: collectionChartScore(scores.byChartKey.get(chartKeyOf(chart))),
+    };
+}
+
+/** Attaches collection-facing scores to a catalog once for reuse across many collections. */
+export function chartsWithCollectionScores(charts: readonly Chart[], scores: UserScores): Chart[] {
+    return charts.map(chart => chartWithCollectionScore(chart, scores));
 }
 
 interface ScoreDbRow {
@@ -115,6 +152,7 @@ export function readUserScores(
         const events = readScoreEvents(store, user.uid);
         return {
             user,
+            raw,
             source,
             byChartKey: new Map(rows.map(row => [row.chartKey, row])),
             playCountByRecordKey: calculateUserPlayCountEstimates(events, raw.data.detailed),

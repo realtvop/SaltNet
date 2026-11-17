@@ -188,7 +188,7 @@
 - [x] P2-21 `feat(cli): add history command`〔新〕
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
-- [ ] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
+- [x] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
 - [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
 - [ ] P2-27 `docs: update agents guide for cli phase 2`；把 `AGENTS.md` 里 `cli/` 那一大段拆成分条（第 50 条）；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
@@ -856,4 +856,11 @@
     - brief 里我写错的一处：说端到端测试的种子里有成绩事件，其实只有两个没有成绩的用户。`history` 的指南示例照样运行，得到合法的空结果；P2-26 会把种子换成带成绩的备份。
     - 我改的：`AGENTS.md` 加了 `history.ts`、`users/history.ts` 和 `parseSinceOption` 的说明（没采纳它建议的单独介绍测试文件的那一句）。
     - 测试：改动检查 31 处，第一次 22 处被发现。我补了 6 个用例（同一记录里 sequence 和 id 相同时的先后和前态、后来的 initial 事件只带游玩次数位时仍保留且没有前值、只写 `--type`、`missing` 的顺序、超出 Date 范围的时间、`7D` 和首尾空白），补完 31 处都被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。
+78. **P2-24 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：收藏品的拥有和进度。`collection list` 每行加 `owned`（所选用户是否拥有，照网页端收藏品页面用 core 的 `isCollectionOwned`、`getOwnedCollectionIds`，角色先用 `toCharacterCollection` 转换）和 `progress`（`{completed, total}`，照 core 的 `getCollectionProgress`，只对能用成绩判断的收藏品给，其余是 null），新选项 `--owned`/`--no-owned` 和 `--user`；没有用户时仍只要落雪收藏品列表，`owned`、`progress` 都是 null。`collection show` 加 `owned`、`progress`，谱面行加 `done`，默认只列还没完成的谱面，`--all` 列全部。`charts --achieved`/`--missing` 和恰好一个 `--plate` 或 `--collection` 一起时可以不写条件，每张谱按这个收藏品自己的要求判断（`checkCollectionChartFinish`）；为此加了一种选项 `optional-string`：后面有一个不以 `-` 开头的词时才把它当值，否则值是 null，`--missing=` 这样的空值是 `USAGE`。`cli/src/users/scores.ts` 的 `collectionChartScore` 把存下的成绩转成 core 的 `ChartScore`，`collectionView.ts` 的 `collectionUserContext` 每个命令只算一次拥有和带成绩的谱面。core 一处没改。示例加了 `charts --plate 真極 --missing` 和 `collection show plate:6148 --all --limit 20`，指南加第 8 条（收藏品还差什么）。
+    - 它自己定下的，我都同意：有用户时 `collection list` 总要读曲库（进度要用谱面），所以有用户、离线又没有曲库时报 `OFFLINE_NO_CACHE`，P1 时这样能成功，没有用户时不变；`isCollectionOwned` 给的不是 true 都输出 false；只有水鱼公开 B50 的用户也算进度，带 `PARTIAL_SCORES`；状态未知的成绩达不到任何 combo、sync 要求；`--achieved` 和 `--missing` 都不写条件时结果为空（一张谱不能既完成又没完成）；没有难度的条件每首歌只计一次，用一个构造的收藏品手算核对；原来的 `collection show` 测试改用 `--all`。
+    - 合并：P2-24 和 P2-21 同时在做，用 `git apply --3way` 打到 P2-21 之后，指南第 7 条冲突，两条都留，这一条改成第 8 条。
+    - 我改的：`AGENTS.md` 补了 `optional-string` 的读法、`charts` 不写条件时按收藏品自己的要求、`collection list` 和 `collection show` 的描述，以及 `collectionUserContext`、`collectionChartDone`、`collectionChartScore`。
+    - 测试：改动检查 30 处，第一次 25 处被发现。没被发现的 3 处是测试缺口，我补了 3 个用例：`--condition=` 这样的空值是 `USAGE`、`charts --collection plate:6104` 不写条件时和 core 的计算一致、没有用户时 `collection list --user 1` 在任何请求之前报 `NO_USER`；补完都被发现。剩下 2 处等价：`owned()` 里的 `=== true`（`isCollectionOwned` 只对未知类型给 undefined，CLI 的收藏品类型都已知）和 `collectionChartScore` 里的达成率类型判断（core 的 `scoreMeetsRequirement` 本来就拒绝不是数的达成率，进度也只用 `checkCollectionChartFinish`）。
     - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。

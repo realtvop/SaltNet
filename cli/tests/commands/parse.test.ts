@@ -1,6 +1,7 @@
 import type { ParseOutcome } from "../../src/commands/parse";
 import { describe, expect, it } from "vitest";
 import { parseArgv } from "../../src/commands/parse";
+import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { failureEnvelope } from "../../src/output/envelope";
 import { createTestRegistry } from "./fixtures";
 
@@ -147,6 +148,51 @@ describe("positional arguments", () => {
 });
 
 describe("option syntax", () => {
+    it("reads an optional string value only when the next token does not start with a dash", () => {
+        const optional = defineCommand(
+            {
+                name: "optional",
+                summary: "可选值",
+                category: "catalog",
+                effect: "none",
+                output: "object",
+                options: {
+                    condition: { kind: "optional-string", description: "条件" },
+                    all: { kind: "boolean", description: "全部" },
+                },
+            },
+            args => ({ data: args.options })
+        );
+        const optionalRegistry = buildRegistry({ commands: [optional] });
+        const options = (...argv: string[]) => {
+            const outcome = parseArgv(optionalRegistry, ["optional", ...argv]);
+            expect(outcome.kind).toBe("run");
+            return outcome.kind === "run" ? outcome.args.options : {};
+        };
+
+        expect(options()).toEqual({ condition: undefined, all: false });
+        expect(options("--condition", "SSS+")).toEqual({ condition: "SSS+", all: false });
+        expect(options("--condition=fc")).toEqual({ condition: "fc", all: false });
+        expect(options("--condition")).toEqual({ condition: null, all: false });
+        expect(options("--condition", "--all")).toEqual({ condition: null, all: true });
+        expect(options("--condition=-x")).toEqual({ condition: "-x", all: false });
+
+        const negated = parseArgv(optionalRegistry, ["optional", "--no-condition"]);
+        expect(negated.kind).toBe("error");
+        if (negated.kind === "error") {
+            expect(negated.error.message).toBe(
+                "选项 --condition 不是开关，不能写成 --no-condition"
+            );
+        }
+
+        const empty = parseArgv(optionalRegistry, ["optional", "--condition="]);
+        expect(empty.kind).toBe("error");
+        if (empty.kind === "error") {
+            expect(empty.error.code).toBe("USAGE");
+            expect(empty.error.message).toBe("选项 --condition 的值不能为空");
+        }
+    });
+
     it("takes a value after the flag or after =", () => {
         const parsed = accepted("demo", "x", "--limit", "10", "--sort=constant", "--name=a=b");
         expect(parsed.options).toMatchObject({ limit: 10, sort: "constant", name: "a=b" });

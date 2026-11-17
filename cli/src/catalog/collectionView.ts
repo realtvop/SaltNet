@@ -1,21 +1,56 @@
 /**
  * Collections as the commands print them (design 3.2): the row `collection list` gives for each,
  * and what `collection show` adds: the conditions, the charts they name and the songs the catalog
- * does not have. What a user has done towards a collection comes with the user data; until then
- * `owned`, `progress` and `done` are null.
+ * does not have. Ownership and progress use the same core functions as the web collection page.
  */
 import type { Collection, CollectionRequired, Title } from "@core/collection/type";
+import type { CollectionProgress } from "@core/collection/versionPlate";
+import type { Chart } from "@core/music/type";
 import type { CollectionEntry, CollectionKindName } from "../refs/collection";
 import type { UserScores } from "../users/scores";
 import type { ChartRow } from "./chartRow";
 import type { ChartEntry, SongCatalog } from "./songs";
+import {
+    getOwnedCollectionIds,
+    isCollectionOwned,
+    toCharacterCollection,
+} from "@core/collection/ownership";
+import { characters } from "@core/collection/static";
+import {
+    checkCollectionChartFinish,
+    getCollectionProgress,
+    isCollectionScoreEvaluable,
+} from "@core/collection/versionPlate";
 import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
 import { collectionRef } from "../refs/collection";
 import { difficultyLabel } from "../refs/difficulty";
 import { comboLabel, rankLabel, syncLabel } from "../refs/status";
+import { chartsWithCollectionScores } from "../users/scores";
 import { chartRow } from "./chartRow";
 import { collectionCharts } from "./chartSets";
 import { chartKeyOf } from "./songs";
+
+export interface CollectionUserContext {
+    readonly scores: UserScores;
+    readonly scoredCharts: Chart[];
+    readonly scoredByChartKey: ReadonlyMap<string, Chart>;
+    readonly ownedIds: ReturnType<typeof getOwnedCollectionIds>;
+}
+
+/** Builds score and ownership lookups once for every row of a command result. */
+export function collectionUserContext(
+    scores: UserScores | undefined,
+    charts: readonly Chart[]
+): CollectionUserContext | undefined {
+    if (!scores) return undefined;
+    const scoredCharts = chartsWithCollectionScores(charts, scores);
+    return {
+        scores,
+        scoredCharts,
+        scoredByChartKey: new Map(scoredCharts.map(chart => [chartKeyOf(chart), chart])),
+        ownedIds: getOwnedCollectionIds(scores.raw),
+    };
+}
 
 export interface CollectionRow {
     /** `title:5108`: what `collection show` and `charts --collection` take. */
@@ -31,10 +66,10 @@ export interface CollectionRow {
     readonly description: string;
     /** How many songs the conditions name; 0 when they name none, as with most titles and icons. */
     readonly songCount: number;
-    /** Whether the user has it; null until there is user data. */
-    readonly owned: null;
-    /** How far the user is; null until there is user data. */
-    readonly progress: null;
+    /** Whether the selected user has it; null without a selected user. */
+    readonly owned: boolean | null;
+    /** Score progress for evaluable collections; null otherwise or without a selected user. */
+    readonly progress: CollectionProgress | null;
 }
 
 /** One condition: what has to be reached, at which difficulties, on which songs. */
@@ -58,8 +93,8 @@ export interface CollectionDetail extends CollectionRow {
 
 /** A chart a collection asks for. */
 export interface CollectionChartRow extends ChartRow {
-    /** Whether the user has met the condition on it; null until there is user data. */
-    readonly done: null;
+    /** Whether the user has met the condition on it; null without a selected user. */
+    readonly done: boolean | null;
 }
 
 /** A song the conditions name that the catalog does not have. */
@@ -78,7 +113,20 @@ function songCountOf(collection: Collection): number {
     return new Set((collection.required ?? []).flatMap(musicIdsOf)).size;
 }
 
-export function collectionRow(entry: CollectionEntry): CollectionRow {
+const charactersById = new Map(characters.map(character => [character.id, character]));
+
+function owned(entry: CollectionEntry, context: CollectionUserContext): boolean {
+    const { collection, kind } = entry;
+    const character = kind === "character" ? charactersById.get(collection.id) : undefined;
+    const target =
+        character === undefined ? collection : toCharacterCollection(character, context.scores.raw);
+    return isCollectionOwned(target, () => context.ownedIds) === true;
+}
+
+export function collectionRow(
+    entry: CollectionEntry,
+    context?: CollectionUserContext
+): CollectionRow {
     const { kind, collection } = entry;
     return {
         ref: collectionRef(entry),
@@ -89,8 +137,11 @@ export function collectionRow(entry: CollectionEntry): CollectionRow {
         color: kind === "title" ? ((collection as Title).color ?? null) : null,
         description: collection.description,
         songCount: songCountOf(collection),
-        owned: null,
-        progress: null,
+        owned: context ? owned(entry, context) : null,
+        progress:
+            context && isCollectionScoreEvaluable(collection)
+                ? getCollectionProgress(collection, context.scoredCharts)
+                : null,
     };
 }
 
@@ -105,9 +156,12 @@ export function requirementRow(requirement: CollectionRequired): RequirementRow 
     };
 }
 
-export function collectionDetail(entry: CollectionEntry): CollectionDetail {
+export function collectionDetail(
+    entry: CollectionEntry,
+    context?: CollectionUserContext
+): CollectionDetail {
     return {
-        ...collectionRow(entry),
+        ...collectionRow(entry, context),
         requirements: (entry.collection.required ?? []).map(requirementRow),
     };
 }
@@ -121,8 +175,22 @@ export function collectionChartEntries(
     return entries.filter(({ chart }) => keys.has(chartKeyOf(chart)));
 }
 
-export function collectionChartRow(entry: ChartEntry, scores?: UserScores): CollectionChartRow {
-    return { ...chartRow(entry, scores), done: null };
+export function collectionChartDone(
+    collection: Collection,
+    entry: ChartEntry,
+    context?: CollectionUserContext
+): boolean | null {
+    if (!context) return null;
+    const chart = context.scoredByChartKey.get(chartKeyOf(entry.chart)) ?? entry.chart;
+    return checkCollectionChartFinish(collection, chart);
+}
+
+export function collectionChartRow(
+    entry: ChartEntry,
+    scores?: UserScores,
+    done: boolean | null = null
+): CollectionChartRow {
+    return { ...chartRow(entry, scores), done };
 }
 
 /** The songs the conditions name that the catalog lacks, once each, in the order of the data. */

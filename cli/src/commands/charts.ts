@@ -2,6 +2,7 @@ import type { Collection } from "@core/collection/type";
 import type { ChartSet } from "../catalog/chartSets";
 import type { ChartResultStats } from "../catalog/chartStats";
 import type { ChartEntry } from "../catalog/songs";
+import { checkCollectionChartFinish } from "@core/collection/versionPlate";
 import { GROUP_KEYS, groupCharts } from "../catalog/chartGroups";
 import { allChartEntries, filterCharts } from "../catalog/chartQuery";
 import { chartRow } from "../catalog/chartRow";
@@ -27,6 +28,7 @@ import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
 import { parseScoreCondition } from "../refs/status";
 import { resolveVersions } from "../refs/version";
+import { chartWithCollectionScore } from "../users/scores";
 import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
@@ -75,7 +77,7 @@ export const charts = defineCommand(
         name: "charts",
         summary: "筛选谱面，并按曲目或成绩排序、分组和统计",
         description:
-            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 各接受一个评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；本步条件不能省略。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -137,15 +139,16 @@ export const charts = defineCommand(
                 description: "只要这个收藏品要求的谱面：类型:id 或名称，例如 title:5108",
             },
             achieved: {
-                kind: "string",
+                kind: "optional-string",
                 valueName: "条件",
                 description:
-                    "只要至少达到条件的谱：评级、clear、fc/fc+/ap/ap+ 或 sync/fs/fs+/fdx/fdx+",
+                    "只要至少达到条件的谱；和恰好一个 --plate 或 --collection 一起时可省略条件，按收藏品自己的要求",
             },
             missing: {
-                kind: "string",
+                kind: "optional-string",
                 valueName: "条件",
-                description: "只要没有达到条件的谱，包含没有成绩的谱；条件写法同 --achieved",
+                description:
+                    "只要没有达到条件的谱，包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起时可省略条件",
             },
             recent: {
                 kind: "boolean",
@@ -199,6 +202,10 @@ export const charts = defineCommand(
             },
             { command: "charts --course 十段", description: "十段的四首曲目，按出场顺序" },
             { command: "charts --plate 真極 --diff mas", description: "真極要求的紫谱" },
+            {
+                command: "charts --plate 真極 --missing",
+                description: "真極按每张谱自己的条件还没有完成的谱面",
+            },
             { command: "charts --gate 蓝门 --diff mas", description: "蓝门曲池里歌的紫谱" },
         ],
         errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
@@ -246,9 +253,19 @@ export const charts = defineCommand(
             groupBy,
         } = args.options;
         if (asc && desc) throw usageError("--asc 和 --desc 不能同时写；默认就是 --desc");
+        const ownRequirement = achieved === null || missing === null;
+        if (
+            ownRequirement &&
+            Number(plate !== undefined) + Number(collection !== undefined) !== 1
+        ) {
+            throw usageError(
+                "--achieved 或 --missing 只有和恰好一个 --plate 或 --collection 一起使用时才能省略条件"
+            );
+        }
         const achievedCondition =
-            achieved === undefined ? undefined : parseScoreCondition(achieved);
-        const missingCondition = missing === undefined ? undefined : parseScoreCondition(missing);
+            typeof achieved === "string" ? parseScoreCondition(achieved) : undefined;
+        const missingCondition =
+            typeof missing === "string" ? parseScoreCondition(missing) : undefined;
         // The gates and the courses ship with the CLI, so a wrong one fails before any fetching.
         const gateFound = gate === undefined ? undefined : resolveGate(gate);
         const courseFound = course === undefined ? undefined : resolveCourse(course);
@@ -258,7 +275,14 @@ export const charts = defineCommand(
             sort === "playcount" ||
             sort === "recent";
         const scoreGroup = groupBy === "rank" || groupBy === "combo" || groupBy === "sync";
-        if (achievedCondition || missingCondition || recent || stats || scoreSort || scoreGroup) {
+        if (
+            achieved !== undefined ||
+            missing !== undefined ||
+            recent ||
+            stats ||
+            scoreSort ||
+            scoreGroup
+        ) {
             requireUserForScores(args, ctx);
         }
 
@@ -280,6 +304,7 @@ export const charts = defineCommand(
         const metadataWarnings = [...metadata.warnings, ...(collectionData?.warnings ?? [])];
         try {
             const sets: ChartSet[] = [];
+            let requirementCollection: Collection | undefined;
             if (gateFound) sets.push(gateCharts(gateFound, entries));
             const courseSet = courseFound && courseCharts(courseFound, entries);
             if (courseSet) sets.push(courseSet);
@@ -288,15 +313,17 @@ export const charts = defineCommand(
                 if (plate !== undefined) {
                     const found = resolvePlate(collections.versionPlates, plate);
                     sets.push(songsOf(`牌子「${found.text}」`, found.plate, entries));
+                    if (ownRequirement) requirementCollection = found.plate;
                 }
                 if (collection !== undefined) {
                     const found = resolveCollection(listCollections(collections), collection);
                     const label = `收藏品「${found.collection.name}」（${collectionRef(found)}）`;
                     sets.push(songsOf(label, found.collection, entries));
+                    if (ownRequirement) requirementCollection = found.collection;
                 }
             }
 
-            const matching = filterCharts(catalog, entries, {
+            let matching = filterCharts(catalog, entries, {
                 levels: level ? parseLevelRange(level) : undefined,
                 constants: constant,
                 grades: diff?.map(value => parseDifficulty(value)!.grade),
@@ -308,6 +335,16 @@ export const charts = defineCommand(
                 recent,
                 scores: userScores.scores,
             });
+            const scores = userScores.scores;
+            if (requirementCollection && scores) {
+                matching = matching.filter(entry => {
+                    const done = checkCollectionChartFinish(
+                        requirementCollection,
+                        chartWithCollectionScore(entry.chart, scores)
+                    );
+                    return (achieved !== null || done) && (missing !== null || !done);
+                });
+            }
             const versionNames = cnVersions.map(({ name }) => name);
             const sorted = sortCharts(matching, {
                 key: sort ?? (recent ? "recent" : "default"),

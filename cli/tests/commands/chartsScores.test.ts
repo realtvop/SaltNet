@@ -1,10 +1,17 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { RuntimePaths } from "../../src/runtime/paths";
+import { mapLXNSCollections } from "@core/collection/map";
+import { getScoredCollectionCharts } from "@core/collection/progress";
+import { checkCollectionChartFinish } from "@core/collection/versionPlate";
+import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
+import { allChartEntries } from "../../src/catalog/chartQuery";
+import { listCollections, resolveCollection } from "../../src/refs/collection";
+import { resolvePlate } from "../../src/refs/plate";
 import { commandIn } from "../commandRun";
 import { fixtureSongCatalog } from "../fixtureCatalog";
-import { b50User, recordOf, SCORE_TIME, seedScoreUsers, user } from "../scoreUsers";
+import { b50User, detailedUser, recordOf, SCORE_TIME, seedScoreUsers, user } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 import { useTimeZone } from "../zone";
 
@@ -136,6 +143,7 @@ describe("charts score filters and required users", () => {
             ["--group-by", "rank"],
             ["--group-by", "combo"],
             ["--group-by", "sync"],
+            ["--plate", "真極", "--missing"],
         ];
         for (const args of cases) {
             const result = await commandIn(home(), "charts", args);
@@ -143,6 +151,104 @@ describe("charts score filters and required users", () => {
             expect(result.json.error.code, args.join(" ")).toBe("NO_USER");
             expect(result.requests, args.join(" ")).toEqual([]);
         }
+    });
+
+    it("uses a plate's own per-chart requirement when the score condition is omitted", async () => {
+        const paths = home();
+        const player = detailedUser("made-own-requirement", "Made Own Requirement");
+        player.data.detailed!["8-0"].fc = ComboStatus.None;
+        await seedScoreUsers(paths, [player]);
+
+        const plate = resolvePlate(
+            mapLXNSCollections(getFixtureLXNSCollections()).versionPlates,
+            "真極"
+        ).plate;
+        const charts = allChartEntries(fixtureSongCatalog()).map(entry => entry.chart);
+        const scored = getScoredCollectionCharts(plate, charts, player.data.detailed);
+        const expectedAchieved = scored
+            .filter(chart => checkCollectionChartFinish(plate, chart))
+            .map(chart => `${chart.music.id}-${chart.info.grade}`);
+        const expectedMissing = scored
+            .filter(chart => !checkCollectionChartFinish(plate, chart))
+            .map(chart => `${chart.music.id}-${chart.info.grade}`);
+
+        const achieved = await commandIn(paths, "charts", ["--plate", "真極", "--achieved"]);
+        const missing = await commandIn(paths, "charts", ["--plate", "真極", "--missing"]);
+        expect(new Set(keys(achieved))).toEqual(new Set(expectedAchieved));
+        expect(new Set(keys(missing))).toEqual(new Set(expectedMissing));
+        expect(keys(missing)).toEqual(["8-0"]);
+
+        const followedByOption = await commandIn(paths, "charts", [
+            "--plate",
+            "真極",
+            "--missing",
+            "--diff",
+            "mas",
+        ]);
+        expect(followedByOption.code).toBe(0);
+        expect(keys(followedByOption)).toEqual([]);
+    });
+
+    it("uses the requirement of a collection named by --collection when the condition is omitted", async () => {
+        const paths = home();
+        const player = detailedUser("made-collection-own", "Made Collection Own");
+        player.data.detailed!["115-0"].fc = ComboStatus.None;
+        await seedScoreUsers(paths, [player]);
+
+        const target = resolveCollection(
+            listCollections(mapLXNSCollections(getFixtureLXNSCollections())),
+            "plate:6104"
+        ).collection;
+        const charts = allChartEntries(fixtureSongCatalog()).map(entry => entry.chart);
+        const scored = getScoredCollectionCharts(target, charts, player.data.detailed);
+        const expected = (finished: boolean) =>
+            scored
+                .filter(chart => checkCollectionChartFinish(target, chart) === finished)
+                .map(chart => `${chart.music.id}-${chart.info.grade}`);
+
+        const args = ["--collection", "plate:6104", "--limit", "100"];
+        const achieved = await commandIn(paths, "charts", [...args, "--achieved"]);
+        const missing = await commandIn(paths, "charts", [...args, "--missing"]);
+        expect(achieved.code).toBe(0);
+        expect(missing.code).toBe(0);
+        expect(expected(true).length).toBeGreaterThan(0);
+        expect(new Set(keys(achieved))).toEqual(new Set(expected(true)));
+        expect(new Set(keys(missing))).toEqual(new Set(expected(false)));
+        expect(keys(missing)).toEqual(["115-0"]);
+    });
+
+    it("requires exactly one plate or collection when a score condition is omitted", async () => {
+        const paths = home();
+        await seedScoreUsers(paths, [detailedUser("made-usage-player", "Made Usage Player")]);
+        for (const args of [
+            ["--missing"],
+            ["--achieved", "--course", "十段"],
+            ["--plate", "真極", "--collection", "plate:6101", "--missing"],
+        ]) {
+            const result = await commandIn(paths, "charts", args);
+            expect(result.code, args.join(" ")).toBe(2);
+            expect(result.json.error.code, args.join(" ")).toBe("USAGE");
+            expect(result.json.error.message, args.join(" ")).toContain(
+                "恰好一个 --plate 或 --collection"
+            );
+        }
+    });
+
+    it("uses public B50 scores for omitted collection requirements and keeps its warning", async () => {
+        const paths = home();
+        await seedScoreUsers(paths, [b50User("made-own-b50", "Made Own B50")]);
+        const result = await commandIn(paths, "charts", [
+            "--collection",
+            "plate:6101",
+            "--missing",
+            "--limit",
+            "100",
+        ]);
+        expect(result.code).toBe(0);
+        expect(result.json.warnings.map((warning: { code: string }) => warning.code)).toContain(
+            "PARTIAL_SCORES"
+        );
+        expect(result.json.meta.page.total).toBeGreaterThan(0);
     });
 
     it("keeps ordinary no-user output unchanged and allows explicit default sorting", async () => {

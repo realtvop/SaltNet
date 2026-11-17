@@ -380,6 +380,19 @@ describe("collection list", () => {
         expect(json.data.items.length).toBe(5);
         expectConforms(schemaOf("collection list"), json.data);
     });
+
+    it("describes user progress and both ownership filter results", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("made-schema-owner", "Made Schema Owner")]);
+        for (const args of [
+            ["list", "--limit", "5"],
+            ["list", "--owned", "--limit", "5"],
+            ["list", "--no-owned", "--limit", "5"],
+        ]) {
+            const { json } = await commandIn(paths, "collection", args);
+            expectConforms(schemaOf("collection list"), json.data);
+        }
+    });
 });
 
 describe("collection show", () => {
@@ -401,6 +414,22 @@ describe("collection show", () => {
         expect(json.data.items).toEqual([]);
         expect(json.data.collection.requirements).toEqual([]);
         expectConforms(schemaOf("collection show"), json.data);
+    });
+
+    it("describes done and progress with a user, both by default and with --all", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("made-schema-progress", "Made Schema Progress")]);
+        const remaining = await commandIn(paths, "collection", ["show", "plate:6102"]);
+        expect(
+            remaining.json.data.items.every((item: { done: boolean }) => item.done === false)
+        ).toBe(true);
+        expectConforms(schemaOf("collection show"), remaining.json.data);
+
+        const all = await commandIn(paths, "collection", ["show", "plate:6101", "--all"]);
+        expect(all.json.data.items.every((item: { done: boolean }) => item.done === true)).toBe(
+            true
+        );
+        expectConforms(schemaOf("collection show"), all.json.data);
     });
 });
 

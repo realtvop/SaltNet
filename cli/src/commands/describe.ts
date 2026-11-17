@@ -151,10 +151,15 @@ function listedValues(values: readonly EnumValue[]): string {
 /** The value placeholder following an option flag. */
 export function optionValueLabel(entry: OptionEntry): string {
     const { spec } = entry;
-    if (spec.valueName) return `<${spec.valueName}>`;
+    if (spec.valueName) {
+        const value = `<${spec.valueName}>`;
+        return spec.kind === "optional-string" ? `[${value}]` : value;
+    }
     switch (spec.kind) {
         case "string":
             return "<文本>";
+        case "optional-string":
+            return "[<文本>]";
         case "credential":
             return "-";
         case "integer":

@@ -1,6 +1,10 @@
 import type { Collection, Title } from "@core/collection/type";
+import type { Chart, ChartScore } from "@core/music/type";
+import type { User } from "@core/user/type";
+import type { CollectionUserContext } from "../../src/catalog/collectionView";
 import type { ChartEntry } from "../../src/catalog/songs";
 import type { CollectionEntry } from "../../src/refs/collection";
+import type { UserScores } from "../../src/users/scores";
 import { mapLXNSCollections } from "@core/collection/map";
 import { CollectionKind, TitleColor } from "@core/collection/type";
 import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
@@ -8,6 +12,7 @@ import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
 import { allChartEntries } from "../../src/catalog/chartQuery";
 import {
+    collectionChartDone,
     collectionChartEntries,
     collectionChartRow,
     collectionDetail,
@@ -349,6 +354,17 @@ const EXPECTED_FIXTURE_ROWS = [
 ];
 
 const BMEM = ["BASIC", "ADVANCED", "EXPERT", "MASTER"] as const;
+
+function collectionScore(achievements: number): ChartScore {
+    return {
+        achievements,
+        rankRate: RankRate.sss,
+        comboStatus: ComboStatus.None,
+        syncStatus: SyncStatus.None,
+        deluxeScore: 0,
+        deluxeRating: 0,
+    };
+}
 
 describe("collectionView fixture data", () => {
     const fixtureCollections = mapLXNSCollections(getFixtureLXNSCollections());
@@ -871,6 +887,51 @@ describe("collectionView fixture data", () => {
                 done: null,
             });
         });
+    });
+});
+
+describe("collection progress without a difficulty list", () => {
+    it("counts each song once and treats any played chart as done", () => {
+        const catalog = fixtureSongCatalog();
+        const first = catalog.chartByKey.get("8-0")!;
+        const second = catalog.chartByKey.get("9-0")!;
+        const scoredCharts: Chart[] = [
+            { ...first.chart, score: collectionScore(80) },
+            { ...second.chart, score: undefined },
+        ];
+        const raw = {
+            uid: "made-progress-unit",
+            data: { updateTime: null, name: "Made Progress Unit", rating: null },
+        } as User;
+        const scores = { raw } as UserScores;
+        const context: CollectionUserContext = {
+            scores,
+            scoredCharts,
+            scoredByChartKey: new Map([
+                ["8-0", scoredCharts[0]],
+                ["9-0", scoredCharts[1]],
+            ]),
+            ownedIds: { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] },
+        };
+        const collection: Collection = {
+            type: CollectionKind.Title,
+            id: 999_001,
+            name: "Made Played Collection",
+            description: "Made-up played-only condition",
+            required: [
+                {
+                    songs: [
+                        { id: 8, title: "True Love Song", type: "standard" },
+                        { id: 9, title: "Color My World", type: "standard" },
+                    ],
+                },
+            ],
+        };
+        const entry: CollectionEntry = { kind: "title", collection };
+
+        expect(collectionRow(entry, context).progress).toEqual({ completed: 1, total: 2 });
+        expect(collectionChartDone(collection, first, context)).toBe(true);
+        expect(collectionChartDone(collection, second, context)).toBe(false);
     });
 });
 

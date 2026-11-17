@@ -48,6 +48,21 @@ describe("describeOption", () => {
                 },
             ],
             [
+                { kind: "optional-string", description: "可省略的条件", valueName: "条件" },
+                {
+                    flag: "--test-option",
+                    type: "optional-string",
+                    description: "可省略的条件",
+                    valueName: "条件",
+                    required: false,
+                    default: null,
+                    values: null,
+                    item: null,
+                    min: null,
+                    max: null,
+                },
+            ],
+            [
                 { kind: "integer", description: "整数", min: 1, max: 9, default: 3 },
                 {
                     flag: "--test-option",

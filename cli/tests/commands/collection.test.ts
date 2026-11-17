@@ -1,3 +1,4 @@
+import type { UserItem } from "@core/user/inGame";
 import type {
     CollectionChartRow,
     CollectionDetail,
@@ -6,10 +7,20 @@ import type {
 } from "../../src/catalog/collectionView";
 import type { PrintedOutput } from "../commandRun";
 import { existsSync } from "node:fs";
+import { mapLXNSCollections } from "@core/collection/map";
+import { getScoredCollectionCharts } from "@core/collection/progress";
 import { partners } from "@core/collection/static";
+import { CollectionKind } from "@core/collection/type";
+import { getCollectionProgress, isCollectionScoreEvaluable } from "@core/collection/versionPlate";
+import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
+import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
+import { allChartEntries } from "../../src/catalog/chartQuery";
+import { listCollections } from "../../src/refs/collection";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, LXNS_URL, META_URL, NOW } from "../commandRun";
+import { fixtureSongCatalog } from "../fixtureCatalog";
+import { b50User, detailedUser, SCORE_TIME, seedScoreUsers } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -163,6 +174,10 @@ const EXPECTED_PLATE_6148_KEYS = [
     "9-0",
     "17-0",
 ];
+
+function ownedItem(kind: CollectionKind, id: number): UserItem {
+    return { itemKind: kind, itemId: id, stock: 1, isValid: true };
+}
 
 describe("collection list command", () => {
     it("runs on empty data directory, downloads collections only, and reuses cache on second run", async () => {
@@ -517,9 +532,159 @@ describe("collection list command", () => {
         expect(staleRun.json.meta.dataAsOf.collections).toBe(formatLocalTime(NOW));
         expect(staleRun.json.data.items).toEqual(normalRun.json.data.items);
     });
+
+    it("fills ownership for every kind and filters --owned and --no-owned", async () => {
+        const paths = makeHome();
+        const player = detailedUser("made-owned-player", "Made Owned Player");
+        const itemLists: UserItem[][] = Array.from({ length: 12 }, () => []);
+        itemLists[CollectionKind.Plate] = [ownedItem(CollectionKind.Plate, 6148)];
+        itemLists[CollectionKind.Title] = [ownedItem(CollectionKind.Title, 5102)];
+        itemLists[CollectionKind.Icon] = [ownedItem(CollectionKind.Icon, 209502)];
+        itemLists[CollectionKind.Frame] = [ownedItem(CollectionKind.Frame, 109101)];
+        itemLists[CollectionKind.Partner] = [ownedItem(CollectionKind.Partner, partners[1].id)];
+        player.data.items = itemLists;
+        player.data.characters = [
+            {
+                characterId: 101,
+                point: 0,
+                useCount: 1,
+                level: 1,
+                nextAwake: 0,
+                nextAwakePercent: 0,
+                awakening: 0,
+            },
+        ];
+        await seedScoreUsers(paths, [player]);
+
+        const all = await listIn(paths, ["--limit", "10000"]);
+        const byRef = new Map(all.json.data.items.map(row => [row.ref, row]));
+        for (const ref of [
+            "plate:6148",
+            "title:5102",
+            "icon:209502",
+            "frame:109101",
+            "character:101",
+            `partner:${partners[1].id}`,
+            "plate:1",
+            "title:1",
+            "icon:1",
+            "frame:1",
+            "partner:1",
+        ]) {
+            expect(byRef.get(ref)?.owned, ref).toBe(true);
+        }
+        for (const ref of [
+            "plate:6101",
+            "title:5101",
+            "character:102",
+            `partner:${partners[2].id}`,
+        ]) {
+            expect(byRef.get(ref)?.owned, ref).toBe(false);
+        }
+        expect(all.json.meta.user).toEqual({
+            index: 0,
+            uid: "made-owned-player",
+            name: "Made Owned Player",
+        });
+        expect(all.json.meta.dataAsOf.scores).toBe(formatLocalTime(new Date(SCORE_TIME)));
+
+        const owned = await listIn(paths, ["--owned", "--limit", "10000"]);
+        expect(owned.json.data.items.every(row => row.owned === true)).toBe(true);
+        expect(owned.json.meta.page.total).toBeGreaterThan(0);
+        const notOwned = await listIn(paths, ["--no-owned", "--limit", "10000"]);
+        expect(notOwned.json.data.items.every(row => row.owned === false)).toBe(true);
+        expect(owned.json.meta.page.total + notOwned.json.meta.page.total).toBe(966);
+    });
+
+    it("matches core progress for every evaluable fixture collection", async () => {
+        const paths = makeHome();
+        const player = detailedUser("made-progress-player", "Made Progress Player");
+        await seedScoreUsers(paths, [player]);
+
+        const result = await listIn(paths, ["--limit", "10000"]);
+        const actual = new Map(result.json.data.items.map(row => [row.ref, row.progress]));
+        const mapped = mapLXNSCollections(getFixtureLXNSCollections());
+        const charts = allChartEntries(fixtureSongCatalog()).map(entry => entry.chart);
+        for (const entry of listCollections(mapped)) {
+            const expected = isCollectionScoreEvaluable(entry.collection)
+                ? getCollectionProgress(
+                      entry.collection,
+                      getScoredCollectionCharts(entry.collection, charts, player.data.detailed)
+                  )
+                : null;
+            expect(
+                actual.get(`${entry.kind}:${entry.collection.id}`),
+                entry.collection.name
+            ).toEqual(expected);
+        }
+        expect(actual.get("plate:6148")).toEqual({ completed: 24, total: 24 });
+        expect(actual.get("plate:1")).toBeNull();
+    });
+
+    it("keeps partial B50 progress and rejects --owned before any request without a user", async () => {
+        const noUserPaths = makeHome();
+        const noUser = await listIn(noUserPaths, ["--owned"]);
+        expect(noUser.code).toBe(4);
+        expect(noUser.json.error.code).toBe("NO_USER");
+        expect(noUser.requests).toEqual([]);
+
+        const namedUser = await listIn(noUserPaths, ["--user", "1"]);
+        expect(namedUser.code).toBe(4);
+        expect(namedUser.json.error.code).toBe("NO_USER");
+        expect(namedUser.requests).toEqual([]);
+
+        const b50Paths = makeHome();
+        await seedScoreUsers(b50Paths, [b50User("made-b50-owner", "Made B50 Owner")]);
+        const partial = await listIn(b50Paths, ["--kind", "plate", "--limit", "100"]);
+        expect(partial.code).toBe(0);
+        expect(partial.json.warnings.map(warning => warning.code)).toContain("PARTIAL_SCORES");
+        expect(
+            partial.json.data.items.find(row => row.ref === "plate:6101")?.progress
+        ).not.toBeNull();
+    });
 });
 
 describe("collection show command", () => {
+    it("computes rank, combo and sync done states, hides completed charts, and --all restores them", async () => {
+        const paths = makeHome();
+        const player = detailedUser("made-done-player", "Made Done Player");
+        const records = player.data.detailed!;
+        records["8-0"].fc = ComboStatus.None;
+        records["9-0"].fc = ComboStatus.AllPerfect;
+        records["17-0"].fs = SyncStatus.FullSyncDX;
+        records["30-0"].rate = RankRate.d;
+        await seedScoreUsers(paths, [player]);
+
+        const combo = await showIn(paths, ["plate:6101"]);
+        expect(combo.json.data.items.map(item => [item.chartKey, item.done])).toEqual([
+            ["8-0", false],
+        ]);
+        expect(combo.json.meta.page.total).toBe(1);
+
+        const comboAll = await showIn(paths, ["plate:6101", "--all"]);
+        expect(comboAll.json.meta.page.total).toBe(20);
+        expect(
+            comboAll.json.data.items.filter(item => item.done === false).map(item => item.chartKey)
+        ).toEqual(["8-0"]);
+        expect(comboAll.json.data.items.filter(item => item.done === true)).toHaveLength(19);
+
+        const ap = await showIn(paths, ["plate:6102"]);
+        expect(ap.json.meta.page.total).toBe(19);
+        expect(ap.json.data.items.some(item => item.chartKey === "9-0")).toBe(false);
+        expect(ap.json.data.items.every(item => item.done === false)).toBe(true);
+
+        const sync = await showIn(paths, ["plate:6103"]);
+        expect(sync.json.meta.page.total).toBe(19);
+        expect(sync.json.data.items.some(item => item.chartKey === "17-0")).toBe(false);
+
+        const rank = await showIn(paths, ["plate:6148"]);
+        expect(rank.json.data.items.map(item => [item.chartKey, item.done])).toEqual([
+            ["30-0", false],
+        ]);
+        expect(rank.json.data.collection.owned).toBe(false);
+        expect(rank.json.data.collection.progress).toEqual({ completed: 23, total: 24 });
+    });
+
     it("shows plate:6148 on an empty data directory and downloads collections then catalog", async () => {
         const paths = makeHome();
         const res = await showIn(paths, ["plate:6148"]);

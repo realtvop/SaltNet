@@ -327,9 +327,9 @@ describe("score meta and warnings", () => {
             expectRows: true,
         },
         {
-            name: "collection show plate:6101",
+            name: "collection show plate:6101 --all",
             command: "collection",
-            args: ["show", "plate:6101"],
+            args: ["show", "plate:6101", "--all"],
             getRows: (json: {
                 data: {
                     items: readonly {

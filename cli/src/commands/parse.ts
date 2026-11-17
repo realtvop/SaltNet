@@ -189,6 +189,19 @@ class Scanner {
                 } else {
                     value = inline === undefined ? true : convertBoolean(flag, inline);
                 }
+            } else if (entry.spec.kind === "optional-string") {
+                if (negated) throw new ValueError(`选项 --${flag} 不是开关，不能写成 --no-${flag}`);
+                if (inline !== undefined) {
+                    value = convertOption(entry, inline);
+                } else {
+                    const next = this.argv[index + 1];
+                    if (next !== undefined && !next.startsWith("-")) {
+                        value = convertOption(entry, next);
+                        consumed = index + 1;
+                    } else {
+                        value = null;
+                    }
+                }
             } else {
                 if (negated) throw new ValueError(`选项 --${flag} 不是开关，不能写成 --no-${flag}`);
                 let raw = inline;

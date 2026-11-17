@@ -78,6 +78,11 @@ export interface StringOption extends OptionCommon {
     readonly allowEmpty?: boolean;
 }
 
+/** A string whose value may be omitted: `--x value` or just `--x`. */
+export interface OptionalStringOption extends OptionCommon {
+    readonly kind: "optional-string";
+}
+
 /**
  * A secret (QR code, token, callback link). It is only ever written as `-`, which reads the
  * value from stdin, so it can never end up in shell history or a process list (design 4.1).
@@ -135,6 +140,7 @@ export interface RangeOption extends OptionCommon {
 
 export type OptionSpec =
     | StringOption
+    | OptionalStringOption
     | CredentialOption
     | IntegerOption
     | NumberOption
@@ -216,17 +222,19 @@ type ItemValue<I> = I extends { readonly kind: "enum"; readonly values: readonly
 /** The type a command receives for one option, when the option is present. */
 export type OptionValueType<O> = O extends { readonly kind: "boolean" }
     ? boolean
-    : O extends { readonly kind: "integer" | "number" }
-      ? number
-      : O extends { readonly kind: "enum"; readonly values: readonly (infer V)[] }
-        ? EnumName<V>
-        : O extends { readonly kind: "list"; readonly item: infer I }
-          ? readonly ItemValue<I>[]
-          : O extends { readonly kind: "range"; readonly item: infer I }
-            ? RangeValue<I extends "string" ? string : number>
-            : O extends { readonly kind: "credential" }
-              ? "-"
-              : string;
+    : O extends { readonly kind: "optional-string" }
+      ? string | null
+      : O extends { readonly kind: "integer" | "number" }
+        ? number
+        : O extends { readonly kind: "enum"; readonly values: readonly (infer V)[] }
+          ? EnumName<V>
+          : O extends { readonly kind: "list"; readonly item: infer I }
+            ? readonly ItemValue<I>[]
+            : O extends { readonly kind: "range"; readonly item: infer I }
+              ? RangeValue<I extends "string" ? string : number>
+              : O extends { readonly kind: "credential" }
+                ? "-"
+                : string;
 
 /** Whether a command always gets a value: it is required, has a default, or is a switch. */
 type AlwaysPresent<O> = O extends { readonly kind: "boolean"; readonly optional: true }
