@@ -31,6 +31,7 @@ const EXPECTED_CHART_COMMAND_KEYS = [
     "charter",
     "notes",
     "stats",
+    "stages",
 ];
 
 const EXPECTED_NOTES_KEYS = ["tap", "hold", "slide", "touch", "break", "total"];
@@ -45,7 +46,7 @@ const EXPECTED_STATS_KEYS = [
 ];
 
 describe("saltnet chart command", () => {
-    it("returns output matching the 14 expected keys in order", async () => {
+    it("returns output matching the 15 expected keys in order", async () => {
         const paths = makeHome();
         const { code, json } = await chartIn(paths, ["146-3"]);
 
@@ -510,21 +511,21 @@ describe("saltnet chart --with related", () => {
         expect(resFoo.code).toBe(2);
         expect(resFoo.json.error.code).toBe("USAGE");
         expect(resFoo.json.error.message).toBe(
-            "选项 --with 的值「foo」不在可选范围内；可选值：related"
+            "选项 --with 的值「foo」不在可选范围内；可选值：stages、friends、history、related、position、all"
         );
         expect(resFoo.json.error.fix).toBe("saltnet chart --help");
         expect(resFoo.requests).toEqual([]);
         expect(existsSync(paths1.home)).toBe(false);
 
         const paths2 = makeHome();
-        const resAll = await chartIn(paths2, ["10146-3", "--with", "all"]);
-        expect(resAll.code).toBe(2);
-        expect(resAll.json.error.code).toBe("USAGE");
-        expect(resAll.json.error.message).toBe(
-            "选项 --with 的值「all」不在可选范围内；可选值：related"
+        const resBar = await chartIn(paths2, ["10146-3", "--with", "bar"]);
+        expect(resBar.code).toBe(2);
+        expect(resBar.json.error.code).toBe("USAGE");
+        expect(resBar.json.error.message).toBe(
+            "选项 --with 的值「bar」不在可选范围内；可选值：stages、friends、history、related、position、all"
         );
-        expect(resAll.json.error.fix).toBe("saltnet chart --help");
-        expect(resAll.requests).toEqual([]);
+        expect(resBar.json.error.fix).toBe("saltnet chart --help");
+        expect(resBar.requests).toEqual([]);
         expect(existsSync(paths2.home)).toBe(false);
 
         const paths3 = makeHome();

@@ -17,15 +17,25 @@ import { listCollections } from "../refs/collection";
 import { useMetadata } from "./metadata";
 
 export const WITH_VALUES = ["related"] as const;
+export const CHART_WITH_VALUES = [
+    "stages",
+    "friends",
+    "history",
+    "related",
+    "position",
+    "all",
+] as const;
 
-export function withOptions() {
+export function withOptions<T extends string = "related">(
+    values: readonly T[] = WITH_VALUES as unknown as readonly T[],
+    description: string = "多带上的内容，多个用逗号隔开；related 是用到它的收藏品、段位和门（要用落雪的收藏品列表，不写这个选项就不取）"
+) {
     return {
         with: {
             kind: "list",
-            item: { kind: "enum", values: WITH_VALUES },
+            item: { kind: "enum", values },
             valueName: "内容,内容",
-            description:
-                "多带上的内容，多个用逗号隔开；related 是用到它的收藏品、段位和门（要用落雪的收藏品列表，不写这个选项就不取）",
+            description,
         },
     } as const satisfies Readonly<Record<string, OptionSpec>>;
 }
@@ -43,7 +53,8 @@ export async function loadRelated(
     ctx: CommandContext,
     charts: readonly Chart[]
 ) {
-    if (!args.options.with?.includes("related")) return undefined;
+    const withValues = args.options.with ?? [];
+    if (!withValues.includes("related") && !withValues.includes("all")) return undefined;
     const metadata = await useMetadata(args, ctx, ["collections"]);
     const data: Related = relatedTo(charts, {
         collections: listCollections(metadata.collections.collections),

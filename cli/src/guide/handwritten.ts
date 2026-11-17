@@ -28,6 +28,7 @@ export const GUIDE_RULES: readonly string[] = [
     "7. **成绩变化**：成绩发生过什么变化要读 `history`，问“最近进步了什么”时用 `history --since 7d`；不要比较两次 `charts` 的输出来推断变化。",
     "8. **收藏品还差什么**：牌子或收藏品未完成的谱面用 `charts --plate <牌子> --missing`、`charts --collection <收藏品> --missing` 或 `collection show <收藏品>` 查；省略 `--missing` 的条件时，会按每张谱自己的收藏品要求判断。`collection list` 和 `collection show` 的 `progress` 与网页端一样按要求的谱面计数；没有指定难度的条件每首歌只计一次。",
     "9. **收藏夹**：收藏夹只保存在本机（不包含在备份里），按曲目收藏；用 `saltnet charts --fav <收藏夹> --diff <难度>` 查看其中的谱面。",
+    "10. **Rating 与达成率换算**：达成率和单曲 rating 之间的换算用 `calc`，或者读 `chart <谱面> --with stages` 的阶段表；不要自己用公式推算或估算。",
 ];
 
 /** What to do on each exit code other than 0, shown next to its meaning (design 4.6, 6.1). */

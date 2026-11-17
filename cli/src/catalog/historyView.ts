@@ -18,13 +18,15 @@ export interface HistoryChange {
     readonly after: HistoryValue;
 }
 
-export interface HistoryItem extends ChartRow {
+export interface ChartHistoryEntry {
     readonly eventId: string;
     readonly time: string | null;
     readonly source: "inGame" | "lxns" | "divingFishImport" | "divingFishPublic";
     readonly kind: "initial" | "change";
     readonly changes: readonly HistoryChange[];
 }
+
+export interface HistoryItem extends ChartRow, ChartHistoryEntry {}
 
 function known<T extends string>(values: readonly T[], value: string): T | undefined {
     return values.includes(value as T) ? (value as T) : undefined;
@@ -69,6 +71,16 @@ function eventTime(value: number): string | null {
     return Number.isNaN(date.getTime()) ? null : formatLocalTime(date);
 }
 
+export function chartHistoryEntry(entry: ScoreHistoryTimelineEntry): ChartHistoryEntry {
+    return {
+        eventId: entry.event.id,
+        time: eventTime(entry.event.observedAt),
+        source: entry.event.source,
+        kind: entry.event.kind,
+        changes: historyChanges(entry),
+    };
+}
+
 export function historyItem(
     chart: ChartEntry,
     entry: ScoreHistoryTimelineEntry,
@@ -76,10 +88,6 @@ export function historyItem(
 ): HistoryItem {
     return {
         ...chartRow(chart, scores),
-        eventId: entry.event.id,
-        time: eventTime(entry.event.observedAt),
-        source: entry.event.source,
-        kind: entry.event.kind,
-        changes: historyChanges(entry),
+        ...chartHistoryEntry(entry),
     };
 }

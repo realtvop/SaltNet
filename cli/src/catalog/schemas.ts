@@ -21,6 +21,7 @@ import type { ChartScoreRow } from "./chartScore";
 import type { CollectionChartRow, CollectionRow, RequirementRow } from "./collectionView";
 import type { CourseInfo, CourseTrackRow } from "./courseView";
 import type { PendingSong, PhaseRow } from "./gateView";
+import type { ChartHistoryEntry, HistoryChange, HistoryField } from "./historyView";
 import type {
     Related,
     RelatedCollection,
@@ -61,6 +62,47 @@ export const DIFFICULTY_LABELS: readonly string[] = DIFFICULTIES.map(({ grade })
     difficultyLabel(grade)
 );
 
+export const chartScoreSchema = object<ChartScoreRow>(
+    {
+        achievements: nullable(num("达成率"), "达成率；副本里的值未知时是 null"),
+        rank: nullable(
+            strEnum(RANKS.map(rankLabel), "游戏里的评级写法，例如 SSS+"),
+            "游戏里的评级写法，例如 SSS+；没有或不认识时是 null"
+        ),
+        combo: nullable(
+            strEnum(labelsOf(COMBOS, comboLabel), "游戏里的连击状态写法"),
+            "游戏里的连击状态写法，例如 AP+；没有或不认识时是 null"
+        ),
+        sync: nullable(
+            strEnum(labelsOf(SYNCS, syncLabel), "游戏里的同步状态写法"),
+            "游戏里的同步状态写法，例如 FDX+；没有或不认识时是 null"
+        ),
+        dxScore: nullable(int("DX 分数"), "DX 分数；副本里的值未知时是 null"),
+        dxScoreMax: nullable(
+            int("曲库给出的这张谱的 DX 满分"),
+            "曲库给出的这张谱的 DX 满分；不是正数时是 null"
+        ),
+        dxStars: nullable(
+            int("按 DX 分数比例算出的星数，0 到 5"),
+            "按 DX 分数比例算出的星数，0 到 5；分数或满分未知时是 null"
+        ),
+        rating: nullable(
+            int("这张谱贡献的 rating"),
+            "这张谱贡献的 rating；副本里的值未知时是 null"
+        ),
+        playCount: nullable(
+            int("游玩次数"),
+            "记录的游玩次数，或成绩历史推算的下限；都没有时是 null"
+        ),
+        playCountEstimated: bool("playCount 是否来自成绩历史的估算"),
+        changedAt: nullable(
+            str("成绩最后变化的时间，用本机时区的偏移写"),
+            "成绩最后变化的时间，用本机时区的偏移写；没有正数时间时是 null"
+        ),
+    },
+    { description: "这个用户在这张谱上的成绩" }
+);
+
 /** The row every command that lists charts prints (design 4.4). */
 export const chartRowSchema = object<ChartRow>(
     {
@@ -79,49 +121,7 @@ export const chartRowSchema = object<ChartRow>(
             "拟合定数：玩家的成绩反推出来的难度，保留四位小数；没有玩家成绩统计时是 null"
         ),
         version: str("加入游戏的国服版本名，例如 maimai PLUS"),
-        score: nullable(
-            object<ChartScoreRow>(
-                {
-                    achievements: nullable(num("达成率"), "达成率；副本里的值未知时是 null"),
-                    rank: nullable(
-                        strEnum(RANKS.map(rankLabel), "游戏里的评级写法，例如 SSS+"),
-                        "游戏里的评级写法，例如 SSS+；没有或不认识时是 null"
-                    ),
-                    combo: nullable(
-                        strEnum(labelsOf(COMBOS, comboLabel), "游戏里的连击状态写法"),
-                        "游戏里的连击状态写法，例如 AP+；没有或不认识时是 null"
-                    ),
-                    sync: nullable(
-                        strEnum(labelsOf(SYNCS, syncLabel), "游戏里的同步状态写法"),
-                        "游戏里的同步状态写法，例如 FDX+；没有或不认识时是 null"
-                    ),
-                    dxScore: nullable(int("DX 分数"), "DX 分数；副本里的值未知时是 null"),
-                    dxScoreMax: nullable(
-                        int("曲库给出的这张谱的 DX 满分"),
-                        "曲库给出的这张谱的 DX 满分；不是正数时是 null"
-                    ),
-                    dxStars: nullable(
-                        int("按 DX 分数比例算出的星数，0 到 5"),
-                        "按 DX 分数比例算出的星数，0 到 5；分数或满分未知时是 null"
-                    ),
-                    rating: nullable(
-                        int("这张谱贡献的 rating"),
-                        "这张谱贡献的 rating；副本里的值未知时是 null"
-                    ),
-                    playCount: nullable(
-                        int("游玩次数"),
-                        "记录的游玩次数，或成绩历史推算的下限；都没有时是 null"
-                    ),
-                    playCountEstimated: bool("playCount 是否来自成绩历史的估算"),
-                    changedAt: nullable(
-                        str("成绩最后变化的时间，用本机时区的偏移写"),
-                        "成绩最后变化的时间，用本机时区的偏移写；没有正数时间时是 null"
-                    ),
-                },
-                { description: "这个用户在这张谱上的成绩" }
-            ),
-            "这个用户在这张谱上的成绩；没有成绩时是 null"
-        ),
+        score: nullable(chartScoreSchema, "这个用户在这张谱上的成绩；没有成绩时是 null"),
         b50: nullable(
             object<B50Place>(
                 {
@@ -137,6 +137,125 @@ export const chartRowSchema = object<ChartRow>(
         ),
     },
     { description: "一张谱面；所有列出谱面的命令都用这个结构，各自可以再加字段" }
+);
+
+export interface RatingStageEntry {
+    readonly achievements: number;
+    readonly rating: number;
+    readonly rank: string;
+}
+
+export const ratingStageSchema = object<RatingStageEntry>(
+    {
+        achievements: num("达成率"),
+        rating: int("该达成率对应的单曲 rating"),
+        rank: strEnum(RANKS.map(rankLabel), "达成率对应的评级写法，例如 SSS+"),
+    },
+    { description: "吃分表或阶段表中的一个阶段" }
+);
+
+export interface ChartPositionRow {
+    readonly level: string;
+    readonly place: number | null;
+    readonly total: number | null;
+    readonly playCount: number | null;
+    readonly playCountEstimated: boolean;
+}
+
+export const chartPositionSchema = object<ChartPositionRow>(
+    {
+        level: str("等级，例如 14+"),
+        place: nullable(
+            int("在同等级谱面中按达成率排第几名；未找到或无法计算时为 null"),
+            "在同等级谱面中按达成率排第几名；未找到或无法计算时为 null"
+        ),
+        total: nullable(
+            int("同等级谱面总数加一（与网页端一致，比实际曲目数多 1）；未找到或无法计算时为 null"),
+            "同等级谱面总数加一（与网页端一致，比实际曲目数多 1）；未找到或无法计算时为 null"
+        ),
+        playCount: nullable(
+            int("游玩次数"),
+            "记录的游玩次数，或成绩历史推算的下限；都没有时是 null"
+        ),
+        playCountEstimated: bool("playCount 是否来自成绩历史的估算"),
+    },
+    { description: "该谱面在同等级中的项目位置与游玩次数" }
+);
+
+export interface ChartFriendEntry {
+    readonly index: number;
+    readonly uid: string;
+    readonly name: string;
+    readonly rank: number | null;
+    readonly current: boolean;
+    readonly score: ChartScoreRow | null;
+}
+
+export const chartFriendEntrySchema = object<ChartFriendEntry>(
+    {
+        index: int("用户序号，从 0 开始"),
+        uid: str("用户唯一标识 uid"),
+        name: str("用户显示名"),
+        rank: nullable(
+            int("在这张谱上的好友排名，同分并列；未游玩时为 null"),
+            "在这张谱上的好友排名，同分并列；未游玩时为 null"
+        ),
+        current: bool("是否为当前选中的用户"),
+        score: nullable(chartScoreSchema, "该用户在这张谱上的成绩；未游玩时为 null"),
+    },
+    { description: "本地其他用户在这张谱上的成绩和排名" }
+);
+
+export const HISTORY_SOURCES = ["inGame", "lxns", "divingFishImport", "divingFishPublic"] as const;
+export const HISTORY_KINDS = ["initial", "change"] as const;
+
+export const historyStatusValues = [
+    ...COMBOS.map(comboLabel).filter((value): value is string => value !== null),
+    ...SYNCS.map(syncLabel).filter((value): value is string => value !== null),
+];
+
+export const changeValueSchema = nullable(
+    anyOf(
+        "成绩历史字段在一次事件前后的值",
+        num("达成率、DX 分或游玩次数的数值"),
+        strEnum(historyStatusValues, "combo 或 sync 的游戏内写法")
+    ),
+    "成绩历史字段在一次事件前后的值；首次记录、没有前态或状态为 none 时是 null"
+);
+
+export const historyChangeSchema = object<HistoryChange>(
+    {
+        field: strEnumOf<HistoryField>(
+            {
+                achievements: "达成率",
+                dxScore: "DX 分",
+                combo: "连击状态",
+                sync: "同步状态",
+                playCount: "游玩次数",
+            },
+            "变化字段"
+        ),
+        before: changeValueSchema,
+        after: changeValueSchema,
+    },
+    { description: "网页端成绩历史会显示的一项变化" }
+);
+
+export const chartHistoryEntrySchema = object<ChartHistoryEntry>(
+    {
+        eventId: str("成绩历史事件的稳定 id"),
+        time: nullable(
+            str("观察到事件的时间，用本机时区的偏移写"),
+            "观察到事件的时间；存储的时间超出 Date 范围时是 null"
+        ),
+        source: strEnum(HISTORY_SOURCES, "事件来源"),
+        kind: strEnum(HISTORY_KINDS, "initial 是首次记录，change 是变化"),
+        changes: list(
+            historyChangeSchema,
+            "网页端会显示的变化，顺序固定为达成率、DX 分、combo、sync、游玩次数"
+        ),
+    },
+    { description: "一张谱面的一条成绩历史记录" }
 );
 
 /** Which charts a song has: `search` and `song` say it the same way. */

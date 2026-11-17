@@ -94,10 +94,14 @@ describe("chart-row score shaping", () => {
         });
         expect(exactResult.json.meta.dataAsOf.scores).toBe("2026-11-09T22:04:05-05:00");
 
-        const estimateResult = await commandIn(paths, "chart", ["146-2"]);
+        const estimateResult = await commandIn(paths, "chart", ["146-2", "--with", "position"]);
         expect(scoreOf(estimateResult.json)).toMatchObject({
             combo: null,
             sync: null,
+            playCount: 2,
+            playCountEstimated: true,
+        });
+        expect(estimateResult.json.data.position).toMatchObject({
             playCount: 2,
             playCountEstimated: true,
         });

@@ -1,29 +1,23 @@
 import type { ChartRow } from "../catalog/chartRow";
-import type { HistoryChange, HistoryField, HistoryItem } from "../catalog/historyView";
+import type { HistoryItem } from "../catalog/historyView";
 import type { ScoreRecordLink } from "../users/history";
 import { historyItem } from "../catalog/historyView";
-import { chartRowSchema } from "../catalog/schemas";
+import {
+    chartRowSchema,
+    HISTORY_KINDS,
+    HISTORY_SOURCES,
+    historyChangeSchema,
+} from "../catalog/schemas";
 import { buildSongCatalog, chartKeyOf } from "../catalog/songs";
 import { usageError } from "../errors";
 import { paginate } from "../output/paging";
-import {
-    anyOf,
-    extend,
-    int,
-    list,
-    nullable,
-    num,
-    object,
-    str,
-    strEnum,
-    strEnumOf,
-} from "../output/schema";
+import { extend, int, list, nullable, object, str, strEnum } from "../output/schema";
 import { resolveChart } from "../refs/chart";
-import { comboLabel, COMBOS, syncLabel, SYNCS } from "../refs/status";
 import { parseSinceOption } from "../refs/time";
 import {
     buildScoreHistoryTimeline,
     filterScoreHistory,
+    readChartScoreHistoryEntries,
     readStoredScoreHistory,
     sortScoreHistoryNewest,
 } from "../users/history";
@@ -32,9 +26,6 @@ import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
 import { defineCommand } from "./registry";
 import { carryScoreContext, requireUserForScores, scoreMeta, useUserScores } from "./userScores";
-
-const HISTORY_SOURCES = ["inGame", "lxns", "divingFishImport", "divingFishPublic"] as const;
-const HISTORY_KINDS = ["initial", "change"] as const;
 
 interface MissingHistory {
     readonly recordKey: string;
@@ -45,38 +36,6 @@ interface HistoryResult {
     readonly items: readonly HistoryItem[];
     readonly missing: readonly MissingHistory[];
 }
-
-const statusValues = [
-    ...COMBOS.map(comboLabel).filter((value): value is string => value !== null),
-    ...SYNCS.map(syncLabel).filter((value): value is string => value !== null),
-];
-
-const changeValueSchema = nullable(
-    anyOf(
-        "成绩历史字段在一次事件前后的值",
-        num("达成率、DX 分或游玩次数的数值"),
-        strEnum(statusValues, "combo 或 sync 的游戏内写法")
-    ),
-    "成绩历史字段在一次事件前后的值；首次记录、没有前态或状态为 none 时是 null"
-);
-
-const changeSchema = object<HistoryChange>(
-    {
-        field: strEnumOf<HistoryField>(
-            {
-                achievements: "达成率",
-                dxScore: "DX 分",
-                combo: "连击状态",
-                sync: "同步状态",
-                playCount: "游玩次数",
-            },
-            "变化字段"
-        ),
-        before: changeValueSchema,
-        after: changeValueSchema,
-    },
-    { description: "网页端成绩历史会显示的一项变化" }
-);
 
 const itemSchema = extend<HistoryItem, ChartRow>(
     chartRowSchema,
@@ -89,7 +48,7 @@ const itemSchema = extend<HistoryItem, ChartRow>(
         source: strEnum(HISTORY_SOURCES, "事件来源"),
         kind: strEnum(HISTORY_KINDS, "initial 是首次记录，change 是变化"),
         changes: list(
-            changeSchema,
+            historyChangeSchema,
             "网页端会显示的变化，顺序固定为达成率、DX 分、combo、sync、游玩次数"
         ),
     },
@@ -213,26 +172,27 @@ export const history = defineCommand(
                           difficulty: args.positionals.difficulty,
                           type: args.options.type,
                       });
-            const stored = readStoredScoreHistory(ctx.store(), selected.user.uid);
-            const links = linkMaps(stored.links);
-            const requestedKey = requested ? chartKeyOf(requested.chart) : undefined;
-            const recordKey =
-                requestedKey === undefined
-                    ? undefined
-                    : (links.byChart.get(requestedKey) ?? requestedKey);
-            const timeline = buildScoreHistoryTimeline(
-                recordKey === undefined
-                    ? stored.events
-                    : stored.events.filter(event => event.chartKey === recordKey)
-            );
-            const filtered = sortScoreHistoryNewest(
-                filterScoreHistory(timeline, { since, allChanges: args.options.allChanges })
-            );
-
+            let items: HistoryItem[];
             const missing = new Map<string, number>();
-            const items = filtered.flatMap(({ recordKey: key, entry }) => {
-                let chart = requested;
-                if (!chart) {
+            if (requested) {
+                const requestedKey = chartKeyOf(requested.chart);
+                const timeline = readChartScoreHistoryEntries(
+                    ctx.store(),
+                    selected.user.uid,
+                    requestedKey,
+                    { since, allChanges: args.options.allChanges }
+                );
+                items = timeline.map(entry => historyItem(requested, entry, selected));
+            } else {
+                const stored = readStoredScoreHistory(ctx.store(), selected.user.uid);
+                const links = linkMaps(stored.links);
+                const timeline = buildScoreHistoryTimeline(stored.events);
+                const filtered = sortScoreHistoryNewest(
+                    filterScoreHistory(timeline, { since, allChanges: args.options.allChanges })
+                );
+
+                items = filtered.flatMap(({ recordKey: key, entry }) => {
+                    let chart;
                     if (links.byRecord.has(key)) {
                         const linkedKey = links.byRecord.get(key);
                         chart =
@@ -242,13 +202,13 @@ export const history = defineCommand(
                     } else {
                         chart = catalog.chartByKey.get(key);
                     }
-                }
-                if (!chart) {
-                    if (!requested) missing.set(key, (missing.get(key) ?? 0) + 1);
-                    return [];
-                }
-                return [historyItem(chart, entry, selected)];
-            });
+                    if (!chart) {
+                        missing.set(key, (missing.get(key) ?? 0) + 1);
+                        return [];
+                    }
+                    return [historyItem(chart, entry, selected)];
+                });
+            }
             const page = paginate(items, args.options);
             return {
                 data: {

@@ -294,6 +294,150 @@ describe("chart", () => {
         expect(json.data.related.courses.length).toBeGreaterThan(0);
         expectConforms(schemaOf("chart"), json.data);
     });
+
+    it("describes a chart with --with stages (full stages table)", async () => {
+        const { json } = await commandIn(makeHome(), "chart", ["146-3", "--with", "stages"]);
+        expect(json.data.stages.length).toBeGreaterThan(3);
+        expectConforms(schemaOf("chart"), json.data);
+    });
+
+    it("describes a chart with --with friends (seeded users)", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(home, [
+            { ...detailedUser("uid-1", "好友一号"), remark: "好友一号" },
+            { ...detailedUser("uid-2", "好友二号"), remark: "好友二号" },
+        ]);
+        const { json } = await commandIn(home, "chart", ["146-3", "--with", "friends"]);
+        expect(json.data.friends.length).toBe(2);
+        expectConforms(schemaOf("chart"), json.data);
+    });
+
+    it("describes a chart with --with history (seeded events)", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(
+            home,
+            [{ ...detailedUser("uid-1", "历史用户"), remark: "历史用户" }],
+            [scoreEvent("ev-1", "uid-1", "146-3", 1, 5)]
+        );
+        const { json } = await commandIn(home, "chart", ["146-3", "--with", "history"]);
+        expect(json.data.history.length).toBeGreaterThan(0);
+        expectConforms(schemaOf("chart"), json.data);
+    });
+
+    it("describes a chart with --with position", async () => {
+        const { json } = await commandIn(makeHome(), "chart", ["146-3", "--with", "position"]);
+        expect(json.data.position).not.toBeNull();
+        expect(typeof json.data.position.place).toBe("number");
+        expect(typeof json.data.position.total).toBe("number");
+        expectConforms(schemaOf("chart"), json.data);
+    });
+
+    it("describes a chart with --with all", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(home, [{ ...detailedUser("uid-1", "全部用户"), remark: "全部用户" }]);
+        const { json } = await commandIn(home, "chart", ["146-3", "--with", "all"]);
+        expect(json.data.stages).toBeDefined();
+        expect(json.data.related).toBeDefined();
+        expect(json.data.friends).toBeDefined();
+        expect(json.data.history).toBeDefined();
+        expect(json.data.position).toBeDefined();
+        expectConforms(schemaOf("chart"), json.data);
+    });
+});
+
+describe("calc", () => {
+    it("describes calc with a constant and no options (full stages table)", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["13.5"]);
+        expect(json.data.constant).toBe(13.5);
+        expect(json.data.chart).toBeNull();
+        expect(json.data.target).toBeNull();
+        expect(json.data.achievements).toBeNull();
+        expect(json.data.rating).toBeNull();
+        expect(json.data.rank).toBeNull();
+        expect(json.data.stages.length).toBeGreaterThan(0);
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a constant and --achievements", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["13.5", "--achievements", "100.25"]);
+        expect(json.data.constant).toBe(13.5);
+        expect(json.data.chart).toBeNull();
+        expect(json.data.achievements).toBe(100.25);
+        expect(typeof json.data.rating).toBe("number");
+        expect(typeof json.data.rank).toBe("string");
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a constant and reachable --rating", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["13.5", "--rating", "250"]);
+        expect(json.data.constant).toBe(13.5);
+        expect(json.data.chart).toBeNull();
+        expect(json.data.target).toBe(250);
+        expect(typeof json.data.achievements).toBe("number");
+        expect(typeof json.data.rating).toBe("number");
+        expect(typeof json.data.rank).toBe("string");
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a constant and unreachable --rating", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["13.5", "--rating", "9999"]);
+        expect(json.data.constant).toBe(13.5);
+        expect(json.data.chart).toBeNull();
+        expect(json.data.target).toBe(9999);
+        expect(json.data.achievements).toBeNull();
+        expect(json.data.rating).toBeNull();
+        expect(json.data.rank).toBeNull();
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a chart and no options", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["146-3"]);
+        expect(json.data.constant).toBe(13);
+        expect(json.data.chart).not.toBeNull();
+        expect(json.data.stages.length).toBeGreaterThan(0);
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a chart and --achievements", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["146-3", "--achievements", "100.5"]);
+        expect(json.data.constant).toBe(13);
+        expect(json.data.chart).not.toBeNull();
+        expect(json.data.achievements).toBe(100.5);
+        expect(typeof json.data.rating).toBe("number");
+        expect(typeof json.data.rank).toBe("string");
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a chart and --rating", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["146-3", "--rating", "250"]);
+        expect(json.data.constant).toBe(13);
+        expect(json.data.chart).not.toBeNull();
+        expect(json.data.target).toBe(250);
+        expect(typeof json.data.achievements).toBe("number");
+        expect(typeof json.data.rating).toBe("number");
+        expect(typeof json.data.rank).toBe("string");
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
+
+    it("describes calc with a chart and unreachable --rating", async () => {
+        const { json } = await commandIn(makeHome(), "calc", ["146-3", "--rating", "9999"]);
+        expect(json.data.constant).toBe(13);
+        expect(json.data.chart).not.toBeNull();
+        expect(json.data.target).toBe(9999);
+        expect(json.data.achievements).toBeNull();
+        expect(json.data.rating).toBeNull();
+        expect(json.data.rank).toBeNull();
+        expect(json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), json.data);
+    });
 });
 
 describe("charts", () => {

@@ -1,6 +1,7 @@
 import type { CommandDefinition, Registry } from "./registry";
 import { b50 } from "./b50";
 import { exportBackup, importBackup } from "./backup";
+import { calc } from "./calc";
 import { chart } from "./chart";
 import { charts } from "./charts";
 import { collectionList, collectionShow } from "./collection";
@@ -28,6 +29,7 @@ export const COMMANDS: readonly CommandDefinition[] = [
     charts,
     b50,
     rating,
+    calc,
     history,
     collectionList,
     collectionShow,

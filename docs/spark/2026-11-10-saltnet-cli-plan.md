@@ -186,7 +186,7 @@
 - [x] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
 - [x] P2-20 `feat(cli): add b50 and rating commands`〔新〕
 - [x] P2-21 `feat(cli): add history command`〔新〕
-- [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
+- [x] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
 - [x] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
 - [x] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
@@ -872,4 +872,13 @@
     - 合并：用 `git apply --3way` 打到 P2-24 之后，指南的第 7 条冲突，它的这条改成第 9 条；`charts` 的描述冲突，留 P2-24 的写法再加上 `--fav`。
     - 我改的：`fav add` 和 `fav remove` 原来先读曲库再找收藏夹，我改成先找收藏夹（和 `charts --fav` 一样），收藏夹名字写错时不发任何请求就报 `NOT_FOUND`，补了测试。`AGENTS.md` 补了迁移 5、`--fav`、`fav` 命令和两个模块、`v_favorites` 和端到端测试的种子。
     - 测试：改动检查 28 处，第一次 18 处被发现。没被发现的 7 处是测试缺口，我补了 3 个用例：一个视图用例（两个收藏夹，曲目 id 不按大小加入，删掉一条之后位置仍连续、顺序仍是加入顺序、条目位置和收藏夹位置分开）、确认码绑定每一条的难度（同一首曲目换难度重新加入，条数和曲目 id 都不变，旧的确认码仍被拒绝；顺带核对 `fav list` 的条数）、名称以 `-` 开头的收藏夹能用 `--` 建出来，`error.fix` 能删掉它。补完都被发现。剩下 3 处等价：重排位置前先把位置整体加大的两句（按原来的顺序从小到大重排时，每条只会挪到空着的或它自己的位置，不会撞上，这两句是多余的保护），和名称不能全是空白的 CHECK（仓库和命令都先拒绝了，别的代码不写这张表）。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。
+80. **P2-22 的实现（2026-11-17）**：
+    - 分工改了：计划里这一步是〔新〕，因为 Codex 每周的额度已经用了 86%（11-17 13:05），要留给 P2 的整体审查，改给 Gemini 3.8 Flash，照一份写得很细的说明做。一次成功（1891 秒），快照里不含 `.env*`。
+    - Gemini 写的：`chart` 总带 `stages`，是谱面弹窗默认「简洁」模式的阶段表（每项 `{achievements, rating, rank}`；宴谱是 `[]`；没有用户时是没有成绩的表）。`--with` 加了 `stages`（弹窗的「完整」表，界面上叫「全部」）、`friends`（弹窗的好友排名）、`history`（这张谱的成绩历史，从新到旧，隐藏只改游玩次数的记录）、`position`（同等级里的项目位置和游玩次数；`total` 照 core 比谱面数多一，schema 里写明）和 `all`。`history <谱面>` 和 `chart --with history` 共用 `cli/src/users/history.ts` 的 `readChartScoreHistoryEntries`，没有复制；历史变化字段的 schema 挪到 `schemas.ts` 给两处用。新命令 `calc` 是弹窗里的计算器：`--achievements` 算 rating 和评级，`--rating` 用二分查找达到它的最低达成率（步长 0.0001，101 也达不到时全是 null），两个都不给时输出完整阶段表；第一个参数是 1.0–15.0、最多一位小数的定数时不读曲库也不读用户，可以离线运行，否则照 `chart` 的规则解析谱面，带 `--user`。指南加一条（合并后是第 10 条）。
+    - 和网页端不同的两处，都是说明里定的：弹窗的 `getLowestRaInSection` 遇到空的 B50 分区会去读不存在的最后一项而出错，CLI 在调用 core 之前自己判断，分区为空或不存在时当作没有最低 rating（core 没改）；好友排名里只有水鱼公开 B50 的用户，弹窗只读详细记录，所以显示未游玩，CLI 用谱面行的成绩（决定 70），这张谱在他的 B50 里时就有成绩和名次。
+    - 它自己定下的，我都同意：没有难度也没有 `--type` 时，1–15 之间最多一位小数的数读作定数，大于 15 的整数读作曲目 id；带小数却超出范围的数和不大于 0 的数报 `USAGE`；有难度或 `--type` 时一律读作谱面引用。`calc` 的 `data` 是 `{constant, chart, target, achievements, rating, rank, stages}`。
+    - 合并：用 `git apply --3way` 打到 P2-25 之后，只有指南冲突，它的这条改成第 10 条，并写明用 `chart <谱面> --with stages`。
+    - 我改的：`--achievements` 的 0–101 和 `--rating` 不小于 0 原来是命令里手写检查，我改成在注册表里声明 `min`、`max`（`schema calc` 能看到上下限，越界由解析器统一报 `USAGE`），删掉了手写检查。`AGENTS.md` 补了 `chart` 的阶段表和新的 `--with` 值、`calc.ts`、`readChartScoreHistoryEntries`。
+    - 测试：改动检查 37 处，第一次 22 处被发现。没被发现的 15 处里，2 处检查的是 `--achievements` 的手写范围检查，那段代码已删掉（改成注册表的 `min`、`max`），我另加了 3 处检查注册表里的上下限；其余都是测试缺口，我补了 7 个用例：`--rating` 的反算按手算核对（定数 13.0：252 要 97.0000，253 要 97.3077，292 只有 100.5 能到，293 达不到，0 在 0 处就达到）；`--achievements` 的两端 101 和 0 可以用，101.0001 和 -0.5 不行；超出范围的数（15.5、0.9、0）报定数范围的错误，而不是被当成谱面；有 `--type` 时数字按谱面引用解析；谱面所在的 B50 分区为空、另一个分区有成绩时不出错；好友排名里玩过的在前，没玩过的和没有达成率的记录按用户顺序排在后面；存着旧定数留下的 rating（比现在的定数能给的都高）时，简洁表照弹窗按这张谱自己的 rating 判断要不要多列一项。另外在估算游玩次数的用例里加了 `--with position`。补完之后，还适用的 38 处全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。

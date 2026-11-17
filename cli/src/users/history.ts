@@ -113,3 +113,26 @@ export function sortScoreHistoryNewest(
         return compareText(a.id, b.id);
     });
 }
+
+/** Resolves the stored score record key for one chart key. */
+export function chartRecordKey(links: readonly ScoreRecordLink[], chartKey: string): string {
+    for (const link of links) {
+        if (link.chartKey === chartKey) return link.recordKey;
+    }
+    return chartKey;
+}
+
+/** Reads and builds the score-history timeline entries of one chart. */
+export function readChartScoreHistoryEntries(
+    store: Store,
+    userUid: string,
+    chartKey: string,
+    options: { readonly since?: number; readonly allChanges: boolean } = { allChanges: false }
+): ScoreHistoryTimelineEntry[] {
+    const stored = readStoredScoreHistory(store, userUid);
+    const recordKey = chartRecordKey(stored.links, chartKey);
+    const events = stored.events.filter(event => event.chartKey === recordKey);
+    const timeline = buildScoreHistoryTimeline(events);
+    const filtered = filterScoreHistory(timeline, options);
+    return sortScoreHistoryNewest(filtered).map(item => item.entry);
+}
