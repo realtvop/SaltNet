@@ -24,6 +24,8 @@ describe("schema command", () => {
             "song",
             "chart",
             "charts",
+            "b50",
+            "rating",
             "collection list",
             "collection show",
             "course list",

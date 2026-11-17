@@ -184,7 +184,7 @@
 - [x] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
 - [x] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
 - [x] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
-- [ ] P2-20 `feat(cli): add b50 and rating commands`〔新〕
+- [x] P2-20 `feat(cli): add b50 and rating commands`〔新〕
 - [ ] P2-21 `feat(cli): add history command`〔新〕
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
@@ -842,3 +842,9 @@
     - Gemini（Gemini 3.8 Flash）写的 `cli/tests/commands/backupFixture.test.ts`，只加测试：导入的预览和结果（token 拆进凭据文件、事件换上新的 generation 和 id）、导出回网页端格式（放回 Import-Token、不带落雪授权）、带 `--keep-lxns` 的往返逐字段保留原样的 JSON 和不认识的字段、第二次往返什么都不变、导入的成绩能直接给 `chart` 用（详细成绩，和只有公开 B50 时的 `PARTIAL_SCORES`）。
     - 它报告的两处和 brief 不一致，都是 brief 写错了：第一个用户显示的名字是备注「made-up 主账号」而不是游戏里的名字（`getUserDisplayName` 先取备注）；夹具里第 1 条事件的观察时间比第 2、3 条晚，库里按观察时间和序号存取，所以测试按这个顺序比较事件。网页端读历史时也按观察时间和序号排序，备份文件里事件的先后没有意义。
     - 只加了夹具和测试，CLI 和网页端都没有变化；`AGENTS.md` 的 `fixtures/` 一句补上了这份夹具。
+76. **P2-20 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：`b50`（`cli/src/commands/b50.ts`）用 core 的 `selectB50Charts` 实现网页端 B50 页的 normal、fit、ap、fc、pc、nb 六种模式，固定输出 B35、B15 两组，每组各自分页，`count` 和 rating 总和按分页前的完整一组算；谱面行加上这个模式里的名次 `rank`、计入总分的 `rating` 和 `ratingConstant`（fit、nb 模式重算用的拟合定数，其他模式是 null）；`label` 是网页端的模式名，普通模式网页端不显示名字，CLI 写 `B50`。`rating`（`cli/src/commands/rating.ts`）给出当前 rating，加 `--history` 时给出规范化的历史（从旧到新，每条带相对上一条的变化）；它不读曲库、不联网，但要打开数据库，所以错误列表里有 `DB_LOCKED`。新的警告 `NO_PLAY_COUNTS`：PC50 时详细成绩里没有一个正数的游玩次数。指南加了第 6 条：B50 和总 rating 用 `b50`，不要把 `charts` 按 rating 排序后自己截取、求和。
+    - 它自己定下的，我都同意：网页端只在记录带 `lastChangedAt` 时才提供 PC50，CLI 照 brief 总是能算，没有游玩次数时报 `NO_PLAY_COUNTS`；这个警告只看详细成绩（PC50 本身也只读详细成绩），没有详细成绩时会和 `PARTIAL_SCORES` 或 `NO_SCORES` 一起出现；两个命令都要用户，先调 `requireUserForScores`；设计表里的 `b50 --image` 留给 P4-3；默认的 `--limit 50` 不用改，B35 最多 35 张、B15 最多 15 张。
+    - 我改的一处：core 的 `normalizeRatingHistory` 在没有有效历史时用 `Date.now()` 补一条，Codex 为了用注入的时钟，在 `rating.ts` 里把 core 的筛选条件抄了一遍再替换时间。我改成给 `normalizeRatingHistory` 加一个可选的 `now`（默认仍是 `Date.now()`，照决定 72 定下的规矩），`rating.ts` 直接传 `ctx.io.now()`；网页端的调用一个没改，行为不变。core 原来没有这个函数的测试，我补了 `shared/core/user/ratingHistory.test.ts`（放进 `test:score-history`），`shared/core/README.md` 的注入点里加了这一条。`AGENTS.md` 补了 `b50.ts`、`rating.ts` 两句、core 的时钟和 `test:score-history` 的说明。
+    - 测试：CLI 改动检查 32 处，第一次 26 处被发现。没被发现的 4 处是测试缺口，我在 `b50Rating.test.ts` 补了 4 个用例：nb 模式的 `ratingConstant`、`NO_PLAY_COUNTS` 只在 pc 模式出现、公开 B50 里的游玩次数不算、曲库的警告会带出来。补完再跑都被发现；剩下 2 处等价：`ratingConstantOf` 里的模式判断（core 只在 fit、nb 模式给谱面写拟合定数）和有限数判断（core 取不到拟合定数时用谱面定数，进得了 B50 的谱面定数都是有限数）。core 的 2 处改动检查都被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。网页端行为不变，`pnpm build` 通过。

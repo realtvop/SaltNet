@@ -1,6 +1,13 @@
 import type { RatingHistoryEntry, User } from "./type";
 
-export function normalizeRatingHistory(user: User): RatingHistoryEntry[] {
+/**
+ * The user's rating history, valid entries only, oldest first. A user with no valid entry but a
+ * current rating gets one entry made from it, timed at the last update or, without one, at `now()`.
+ */
+export function normalizeRatingHistory(
+    user: User,
+    now: () => number = () => Date.now()
+): RatingHistoryEntry[] {
     const history = Array.isArray(user.data.ratingHistory)
         ? user.data.ratingHistory
               .filter(
@@ -21,7 +28,7 @@ export function normalizeRatingHistory(user: User): RatingHistoryEntry[] {
             time:
                 typeof user.data.updateTime === "number" && Number.isFinite(user.data.updateTime)
                     ? user.data.updateTime
-                    : Date.now(),
+                    : now(),
             rating: user.data.rating,
         });
     }

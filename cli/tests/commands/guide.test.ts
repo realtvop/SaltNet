@@ -68,9 +68,11 @@ describe("guide command", () => {
         for (const view of PUBLIC_VIEWS) expect(stdout).toContain(`- \`${view.name}\`：`);
     });
 
-    it("omits empty categories", async () => {
+    it("includes the scores category once it has commands", async () => {
         const { stdout } = await commandIn(makeHome(), "guide", []);
-        expect(stdout).not.toContain("### 成绩");
+        expect(stdout).toContain("### 成绩");
+        expect(stdout).toContain("#### `saltnet b50 [选项]`");
+        expect(stdout).toContain("#### `saltnet rating [选项]`");
         expect(stdout).toContain("### 用户、同步、账号");
     });
 

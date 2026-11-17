@@ -534,6 +534,24 @@ describe("chart-row schemas with users", () => {
     });
 });
 
+describe("b50 and rating", () => {
+    it.each(["normal", "fit", "ap", "fc", "pc", "nb"])("describes b50 --mode %s", async mode => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser(`schema-${mode}`, `Schema ${mode}`)]);
+        const { json } = await commandIn(paths, "b50", ["--mode", mode]);
+        expectConforms(schemaOf("b50"), json.data);
+    });
+
+    it("describes rating with and without history", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("schema-rating", "Schema Rating")]);
+        for (const args of [[], ["--history"]]) {
+            const { json } = await commandIn(paths, "rating", args);
+            expectConforms(schemaOf("rating"), json.data);
+        }
+    });
+});
+
 describe("refresh", () => {
     it("describes successful refresh output", async () => {
         const { json } = await commandIn(makeHome(), "refresh", []);

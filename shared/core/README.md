@@ -22,5 +22,7 @@ Injection points:
   own implementation (timeouts, proxies, mocks); the global `fetch` is the default.
 - `integrations/lxns/oauth.ts` takes the random bytes of a PKCE verifier, the SHA-256 digest of its
   challenge and the current time as optional arguments.
+- `user/ratingHistory.ts`: `normalizeRatingHistory` takes the current time as an optional argument
+  (it is read only when the single entry made from the current rating has no update time).
 - Network helpers return a result value for expected failures (for example `fetchSaltMetaMusicList`
   returns `{ ok: false, failure }`) instead of showing messages; the caller decides how to report it.

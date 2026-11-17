@@ -1,4 +1,5 @@
 import type { CommandDefinition, Registry } from "./registry";
+import { b50 } from "./b50";
 import { exportBackup, importBackup } from "./backup";
 import { chart } from "./chart";
 import { charts } from "./charts";
@@ -7,6 +8,7 @@ import { configGet, configList, configSet, configUnset } from "./config";
 import { courseList, courseShow } from "./course";
 import { guide } from "./guide";
 import { kaleidxscope } from "./kaleidxscope";
+import { rating } from "./rating";
 import { refresh } from "./refresh";
 import { buildRegistry } from "./registry";
 import { schema } from "./schema";
@@ -22,6 +24,8 @@ export const COMMANDS: readonly CommandDefinition[] = [
     song,
     chart,
     charts,
+    b50,
+    rating,
     collectionList,
     collectionShow,
     courseList,
