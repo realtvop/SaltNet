@@ -8,6 +8,7 @@ import type { ChartFriendEntry, ChartPositionRow, RatingStageEntry } from "../ca
 import type { Store } from "../store/store";
 import type { UserScores } from "../users/scores";
 import { getChartPositionByDifficulty } from "@core/chart/position";
+import { getB50Gain } from "@core/query/b50";
 import {
     getChartRatingTables,
     getLowestRaInChartOrSection,
@@ -292,10 +293,12 @@ export const chart = defineCommand(
                     const sectionLowest = safeLowestRaInSection(rawUser, entry.chart);
                     return getLowestRaInChartOrSection(entry.chart, scoreForTables, sectionLowest);
                 };
+                const userB50 = userScores.scores?.b50;
                 stages = selectDisplayedRaTable(tables.current, stageMode, getBaseRa).map(item => ({
                     achievements: item.achievements,
                     rating: item.rating,
                     rank: rankLabel(item.rank),
+                    gain: userB50 ? getB50Gain(userB50, entry.chart, item.rating) : null,
                 }));
             }
 

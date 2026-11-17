@@ -1,11 +1,13 @@
 import type { Collection } from "@core/collection/type";
+import type { ChartRow } from "../catalog/chartRow";
 import type { ChartSet } from "../catalog/chartSets";
 import type { ChartResultStats } from "../catalog/chartStats";
 import type { ChartEntry } from "../catalog/songs";
 import { checkCollectionChartFinish } from "@core/collection/versionPlate";
+import { calculateRating, getB50Gain } from "@core/query/b50";
 import { GROUP_KEYS, groupCharts } from "../catalog/chartGroups";
 import { allChartEntries, filterCharts } from "../catalog/chartQuery";
-import { chartRow } from "../catalog/chartRow";
+import { chartRow, constantOf } from "../catalog/chartRow";
 import {
     collectionCharts,
     courseCharts,
@@ -17,11 +19,11 @@ import {
 import { SORT_KEYS, sortCharts } from "../catalog/chartSort";
 import { countChartResultStats } from "../catalog/chartStats";
 import { chartRowSchema } from "../catalog/schemas";
-import { buildSongCatalog } from "../catalog/songs";
+import { buildSongCatalog, chartKeyOf } from "../catalog/songs";
 import { usageError } from "../errors";
 import { listFavorites } from "../favorites/repository";
 import { paginate } from "../output/paging";
-import { anyOf, int, list, nullable, object, str } from "../output/schema";
+import { anyOf, extend, int, list, nullable, object, str } from "../output/schema";
 import { collectionRef, listCollections, resolveCollection } from "../refs/collection";
 import { resolveCourse } from "../refs/course";
 import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
@@ -29,7 +31,7 @@ import { resolveFavorite } from "../refs/favorite";
 import { resolveGate } from "../refs/gate";
 import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
-import { parseScoreCondition } from "../refs/status";
+import { parseScoreCondition, parseTargetRate } from "../refs/status";
 import { resolveVersions } from "../refs/version";
 import { chartWithCollectionScore } from "../users/scores";
 import { USER_OPTION } from "./describe";
@@ -64,11 +66,29 @@ const groupKeySchema = nullable(
     "分组依据的值；没有定数或没有对应成绩状态的组是 null"
 );
 
+export interface ChartsRow extends ChartRow {
+    readonly gain?: number | null;
+}
+
+const chartsRowSchema = extend<ChartsRow, ChartRow>(
+    chartRowSchema,
+    {
+        gain: nullable(
+            int("打到目标档时用户 B50 总分的理论增加值"),
+            "打到目标档时用户 B50 总分的理论增加值；仅在 --sort gain 时提供。所在部分未满时为打到目标档的完整单曲 rating，已满时为超出该部分最低单曲 rating 的差值；无定数、宴谱、新旧曲属性未知或未选择用户时为 null"
+        ),
+    },
+    {
+        description: "符合条件的谱面；按 gain 排序时附带打到目标档的 B50 涨分",
+        optional: ["gain"],
+    }
+);
+
 function groupSchema(withStats: boolean) {
     const common = {
         key: groupKeySchema,
         count: int("该组在分页前包含的谱面总数"),
-        items: list(chartRowSchema, "该组分页后的谱面列表"),
+        items: list(chartsRowSchema, "该组分页后的谱面列表"),
     };
     return withStats
         ? object({ ...common, stats: statsSchema }, { description: "一个带成绩统计的谱面分组" })
@@ -80,7 +100,7 @@ export const charts = defineCommand(
         name: "charts",
         summary: "筛选谱面，并按曲目或成绩排序、分组和统计",
         description:
-            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection、--fav 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection、--fav 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent、gain 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。--sort gain 按打到目标档能获得的 B50 涨分排序，每行带 gain；--target 指定目标评级或达成率（0 到 101），默认 sss+。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -166,12 +186,18 @@ export const charts = defineCommand(
                 kind: "boolean",
                 description: "统计分页前的 total、played、SSS、SSS+、FC、AP 和 FDX 数量",
             },
+            target: {
+                kind: "string",
+                valueName: "目标",
+                description:
+                    "目标评级或达成率（0 到 101），计算打到该目标时的 B50 涨分；仅用于 --sort gain，默认 sss+",
+            },
             sort: {
                 kind: "enum",
                 values: SORT_KEYS,
                 valueName: "依据",
                 description:
-                    "排序依据：default、constant、achievements、rating、playcount、version 或 recent；不写时是 default，--recent 时是 recent",
+                    "排序依据：default、constant、achievements、rating、playcount、version、recent 或 gain；不写时是 default，--recent 时是 recent",
             },
             asc: {
                 kind: "boolean",
@@ -216,17 +242,22 @@ export const charts = defineCommand(
                 description: "真極按每张谱自己的条件还没有完成的谱面",
             },
             { command: "charts --gate 蓝门 --diff mas", description: "蓝门曲池里歌的紫谱" },
+            { command: "charts --sort gain --limit 10", description: "推分收益最高的十张谱面" },
+            {
+                command: "charts --sort gain --target sss --diff mas --limit 5",
+                description: "打到 SSS 涨分最高的五张紫谱",
+            },
         ],
         errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: anyOf(
             "谱面筛选结果：普通或分组列表，各自可以带分页前的成绩统计",
             object(
-                { items: list(chartRowSchema, "符合条件的谱面列表") },
+                { items: list(chartsRowSchema, "符合条件的谱面列表") },
                 { description: "不带统计的谱面列表" }
             ),
             object(
                 {
-                    items: list(chartRowSchema, "符合条件并分页后的谱面列表"),
+                    items: list(chartsRowSchema, "符合条件并分页后的谱面列表"),
                     stats: statsSchema,
                 },
                 { description: "带分页前成绩统计的谱面列表" }
@@ -257,12 +288,17 @@ export const charts = defineCommand(
             missing,
             recent,
             stats,
+            target,
             sort,
             asc,
             desc,
             groupBy,
         } = args.options;
         if (asc && desc) throw usageError("--asc 和 --desc 不能同时写；默认就是 --desc");
+        if (target !== undefined && sort !== "gain") {
+            throw usageError("--target 只有在 --sort gain 时才能使用");
+        }
+        const targetRate = sort === "gain" ? parseTargetRate(target ?? "sss+") : undefined;
         const ownRequirement = achieved === null || missing === null;
         if (
             ownRequirement &&
@@ -286,7 +322,8 @@ export const charts = defineCommand(
             sort === "achievements" ||
             sort === "rating" ||
             sort === "playcount" ||
-            sort === "recent";
+            sort === "recent" ||
+            sort === "gain";
         const scoreGroup = groupBy === "rank" || groupBy === "combo" || groupBy === "sync";
         if (
             achieved !== undefined ||
@@ -359,6 +396,23 @@ export const charts = defineCommand(
                     return (achieved !== null || done) && (missing !== null || !done);
                 });
             }
+            let gains: Map<string, number | null> | undefined;
+            if (sort === "gain") {
+                gains = new Map();
+                for (const entry of matching) {
+                    const constVal = constantOf(entry.chart);
+                    if (constVal === null || !userScores.scores) {
+                        gains.set(chartKeyOf(entry.chart), null);
+                    } else {
+                        const targetRating = calculateRating(
+                            targetRate!,
+                            entry.chart.info.constant
+                        );
+                        const gain = getB50Gain(userScores.scores.b50, entry.chart, targetRating);
+                        gains.set(chartKeyOf(entry.chart), gain);
+                    }
+                }
+            }
             const versionNames = cnVersions.map(({ name }) => name);
             const sorted = sortCharts(matching, {
                 key: sort ?? (recent ? "recent" : "default"),
@@ -366,8 +420,17 @@ export const charts = defineCommand(
                 versions: versionNames,
                 order: courseSet?.order,
                 scores: userScores.scores,
+                gains,
             });
             const warnings = [...metadataWarnings, ...userScores.warnings];
+
+            const rowOf = (entry: ChartEntry): ChartsRow => {
+                const base = chartRow(entry, userScores.scores);
+                if (sort === "gain") {
+                    return { ...base, gain: gains?.get(chartKeyOf(entry.chart)) ?? null };
+                }
+                return base;
+            };
 
             if (groupBy) {
                 const groups = groupCharts(sorted, groupBy, versionNames, userScores.scores).map(
@@ -377,9 +440,7 @@ export const charts = defineCommand(
                         ...(stats
                             ? { stats: countChartResultStats(group.entries, userScores.scores) }
                             : {}),
-                        items: paginate(group.entries, args.options).items.map(entry =>
-                            chartRow(entry, userScores.scores)
-                        ),
+                        items: paginate(group.entries, args.options).items.map(rowOf),
                     })
                 );
                 return {
@@ -392,7 +453,7 @@ export const charts = defineCommand(
             const { items, page } = paginate(sorted, args.options);
             return {
                 data: {
-                    items: items.map(entry => chartRow(entry, userScores.scores)),
+                    items: items.map(rowOf),
                     ...(stats ? { stats: countChartResultStats(matching, userScores.scores) } : {}),
                 },
                 meta: scoreMeta(userScores, dataAsOf, { page }),

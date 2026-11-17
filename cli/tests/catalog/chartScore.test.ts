@@ -40,6 +40,7 @@ function makeScores(score: Partial<StoredChartScore>): UserScores {
         byChartKey: new Map([[key, stored]]),
         playCountByRecordKey: new Map(),
         b50ByChartKey: new Map(),
+        b50: { old: [], newer: [] },
     };
 }
 

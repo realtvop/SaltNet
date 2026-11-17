@@ -143,6 +143,7 @@ export interface RatingStageEntry {
     readonly achievements: number;
     readonly rating: number;
     readonly rank: string;
+    readonly gain: number | null;
 }
 
 export const ratingStageSchema = object<RatingStageEntry>(
@@ -150,6 +151,10 @@ export const ratingStageSchema = object<RatingStageEntry>(
         achievements: num("达成率"),
         rating: int("该达成率对应的单曲 rating"),
         rank: strEnum(RANKS.map(rankLabel), "达成率对应的评级写法，例如 SSS+"),
+        gain: nullable(
+            int("打到该阶段单曲 rating 时，用户 B50 总分的理论增加值"),
+            "打到该阶段单曲 rating 时，用户 B50 总分的理论增加值；所在部分未满时为完整单曲 rating，已满时为超出该部分最低单曲 rating 的差值；无用户、直接指定定数、宴谱或新旧曲属性未知时为 null"
+        ),
     },
     { description: "吃分表或阶段表中的一个阶段" }
 );

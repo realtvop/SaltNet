@@ -187,7 +187,7 @@
 - [x] P2-20 `feat(cli): add b50 and rating commands`〔新〕
 - [x] P2-21 `feat(cli): add history command`〔新〕
 - [x] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
-- [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
+- [x] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
 - [x] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
 - [x] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
@@ -882,3 +882,11 @@
     - 我改的：`--achievements` 的 0–101 和 `--rating` 不小于 0 原来是命令里手写检查，我改成在注册表里声明 `min`、`max`（`schema calc` 能看到上下限，越界由解析器统一报 `USAGE`），删掉了手写检查。`AGENTS.md` 补了 `chart` 的阶段表和新的 `--with` 值、`calc.ts`、`readChartScoreHistoryEntries`。
     - 测试：改动检查 37 处，第一次 22 处被发现。没被发现的 15 处里，2 处检查的是 `--achievements` 的手写范围检查，那段代码已删掉（改成注册表的 `min`、`max`），我另加了 3 处检查注册表里的上下限；其余都是测试缺口，我补了 7 个用例：`--rating` 的反算按手算核对（定数 13.0：252 要 97.0000，253 要 97.3077，292 只有 100.5 能到，293 达不到，0 在 0 处就达到）；`--achievements` 的两端 101 和 0 可以用，101.0001 和 -0.5 不行；超出范围的数（15.5、0.9、0）报定数范围的错误，而不是被当成谱面；有 `--type` 时数字按谱面引用解析；谱面所在的 B50 分区为空、另一个分区有成绩时不出错；好友排名里玩过的在前，没玩过的和没有达成率的记录按用户顺序排在后面；存着旧定数留下的 rating（比现在的定数能给的都高）时，简洁表照弹窗按这张谱自己的 rating 判断要不要多列一项。另外在估算游玩次数的用例里加了 `--with position`。补完之后，还适用的 38 处全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。
+81. **P2-23 的实现（2026-11-17）**：
+    - 分工改了：计划里这一步是〔新〕，同样因为 Codex 每周的额度要留给 P2 的整体审查，改给 Gemini 3.8 Flash，照一份写得很细的说明做。一次成功（2264 秒），快照里不含 `.env*`。
+    - Gemini 写的：core 的 `shared/core/query/b50.ts` 加了一个纯函数 `getB50Gain(b50, chart, targetRating)`：按 `music.info.isNew` 选新曲（最多 15 张）或旧曲（最多 35 张）部分，这张谱在部分里时是 `max(0, 目标 − 它的 rating)`，不在而部分没满时是目标 rating 本身，部分满了时是 `max(0, 目标 − 部分里最低的 rating)`；宴谱和新旧属性未知时是 `null`。它的测试 `b50Gain.test.ts` 加进了 `test:query`。`cli/src/users/scores.ts` 把每个命令只选一次的普通 B50 留在 `UserScores.b50` 里，`chart` 和 `calc` 的每个阶段、`calc` 给了谱面和 `--achievements` 或 `--rating` 时的顶层 `gain`、`charts --sort gain` 都按它算，所以这几个命令和 `b50` 不会对不上。`charts --sort gain` 按打到 `--target`（评级或 0 到 101 的达成率，默认 sss+，阈值取自 core）能涨的分从大到小排（`--asc` 反过来），`gain` 是 null 的谱排在最后，相同的按谱面键区分；只有按 gain 排时每行才带 `gain`；本地没有用户时在任何请求之前报 `NO_USER`；`--target` 不和 `--sort gain` 一起写或者写错时报 `USAGE`。指南加了第 11 条「该推哪首」。
+    - 和网页端不同的一处，是说明里定的：谱面弹窗显示的涨分是 `阶段 rating − max(这张谱现在的 rating, 所在部分最低的 rating)`，部分满了时没错，没满时偏小（不在 B50 里的谱放进没满的部分，加的是它全部的 rating）。CLI 按 B50 实际的选法算，写进了 core 函数的说明；弹窗没改。
+    - 合并：用 `git apply --3way` 打到 P2-22 之后，没有冲突；只是我在 P2-22 里后加的一个测试（谱面自己存的 rating 比部分最低高时的阶段表）缺新的 `gain`，我补上了（这张谱在部分里，rating 300 高于每个阶段，所以每个阶段都是 0）。
+    - 我改的：`AGENTS.md` 补了 `getB50Gain`、阶段和 `calc` 的 `gain`、`--sort gain` 和 `--target`、`UserScores` 留下的 B50，以及 `test:query` 里的新测试。
+    - 测试：改动检查 35 处（core 15 处、CLI 20 处），第一次（补上那个测试的 `gain` 之后）core 11 处、CLI 12 处被发现。没被发现的里，1 处是等价的（`charts` 对没有定数的谱直接给 null：没有定数的只有宴谱，core 对宴谱本来就返回 null，测试数据和今天的真实曲库都是这样）；其余都是测试缺口。core 我补了 3 个用例：差一张才满的部分仍按没满算，同一首歌的别的难度不算这张谱，部分里最低的 rating 不在两头时也取最低。CLI 的排序测试用的用户每条记录的 rating 都在 10 万上下，两个部分都满，所有 gain 都是 0，排序、目标档和 `--asc` 等于没测：我把这几个测试换成 9 条按公式算 rating 的记录（两个部分都没满），检查 gain 不止一种值，加了大写的 `SSS`、只有按 gain 排时行里才有 `gain`，以及手算的 `calc`：定数 13.0 上 `--rating 230` 找到 97.0000、rating 252、gain 252（不是 230），已经有 252 时打到 100.5 涨 40。之后除了等价的那处，改动检查全部被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。core 只加了这个函数和它的测试，网页端没改。

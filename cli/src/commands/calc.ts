@@ -3,6 +3,7 @@ import type { RatingStageEntry } from "../catalog/schemas";
 import { getDetailedRatingsByConstant } from "@core/chart/rating";
 import { ScoreCoefficient } from "@core/chart/rating/ScoreCoefficient";
 import { getRankRateByAchievement } from "@core/mai/types";
+import { getB50Gain } from "@core/query/b50";
 import { chartRow, constantOf } from "../catalog/chartRow";
 import { chartRowSchema, ratingStageSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
@@ -22,6 +23,7 @@ export interface CalcData {
     readonly achievements: number | null;
     readonly rating: number | null;
     readonly rank: string | null;
+    readonly gain: number | null;
     readonly stages: readonly RatingStageEntry[] | null;
 }
 
@@ -41,6 +43,10 @@ const calcDataSchema = object<CalcData>(
         rank: nullable(
             strEnum(RANKS.map(rankLabel), "达成率对应的评级写法，例如 SSS+"),
             "达成率对应的评级写法，例如 SSS+；未指定计算选项或无法达到时为 null"
+        ),
+        gain: nullable(
+            int("打到计算得出的单曲 rating 时，用户 B50 总分的理论增加值"),
+            "打到计算得出的单曲 rating 时，用户 B50 总分的理论增加值；所在部分未满时为完整单曲 rating，已满时为超出该部分最低单曲 rating 的差值；未指定计算选项、无法达到目标、直接指定定数、宴谱、新旧曲属性未知或无用户时为 null"
         ),
         stages: nullable(
             list(ratingStageSchema, "完整的 Rating 阶段表"),
@@ -196,6 +202,7 @@ export const calc = defineCommand(
                     achievements: item.achievements,
                     rating: item.rating,
                     rank: rankLabel(item.rank),
+                    gain: null,
                 }));
             }
 
@@ -207,6 +214,7 @@ export const calc = defineCommand(
                     achievements,
                     rating,
                     rank,
+                    gain: null,
                     stages,
                 },
                 meta: {},
@@ -235,6 +243,7 @@ export const calc = defineCommand(
             let achievements: number | null = null;
             let rating: number | null = null;
             let rank: string | null = null;
+            let gain: number | null = null;
             let stages: RatingStageEntry[] | null = null;
 
             if (args.options.achievements !== undefined) {
@@ -242,17 +251,26 @@ export const calc = defineCommand(
                 const coeff = new ScoreCoefficient(achievements);
                 rating = coeff.ra(constant);
                 rank = rankLabel(getRankRateByAchievement(achievements));
+                gain = userScores.scores
+                    ? getB50Gain(userScores.scores.b50, entry.chart, rating)
+                    : null;
             } else if (args.options.rating !== undefined) {
                 target = args.options.rating;
                 const found = findLowestAchievementsForRating(constant, target);
                 achievements = found.achievements;
                 rating = found.rating;
                 rank = found.rank;
+                gain =
+                    rating !== null && userScores.scores
+                        ? getB50Gain(userScores.scores.b50, entry.chart, rating)
+                        : null;
             } else {
+                const userB50 = userScores.scores?.b50;
                 stages = getDetailedRatingsByConstant(constant).map(item => ({
                     achievements: item.achievements,
                     rating: item.rating,
                     rank: rankLabel(item.rank),
+                    gain: userB50 ? getB50Gain(userB50, entry.chart, item.rating) : null,
                 }));
             }
 
@@ -264,6 +282,7 @@ export const calc = defineCommand(
                     achievements,
                     rating,
                     rank,
+                    gain,
                     stages,
                 },
                 meta: scoreMeta(userScores, metadata.dataAsOf),

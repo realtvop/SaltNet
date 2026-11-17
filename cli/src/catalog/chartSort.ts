@@ -22,6 +22,7 @@ export const SORT_KEYS = [
     "playcount",
     "version",
     "recent",
+    "gain",
 ] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 
@@ -58,11 +59,12 @@ export interface ChartSort {
      * it in place of the game's order: the first track first, and `--asc` the last.
      */
     readonly order?: ReadonlyMap<string, number>;
+    readonly gains?: ReadonlyMap<string, number | null>;
 }
 
 /** A copy of `entries` in the requested order. */
 export function sortCharts(entries: readonly ChartEntry[], sort: ChartSort): ChartEntry[] {
-    const { key, ascending, versions, order, scores } = sort;
+    const { key, ascending, versions, order, scores, gains } = sort;
     const versionIndex = new Map(versions.map((name, index) => [name, index]));
     const placeOf = (entry: ChartEntry) => order?.get(chartKeyOf(entry.chart)) ?? null;
     const scoreOf = (entry: ChartEntry) => chartScoreOf(entry.chart, scores);
@@ -120,6 +122,12 @@ export function sortCharts(entries: readonly ChartEntry[], sort: ChartSort): Cha
                 return compareKnown(scoreValue(a), scoreValue(b), ascending);
             case "recent":
                 return compareKnown(scoreValue(a), scoreValue(b), ascending) || recentTie(a, b);
+            case "gain":
+                return compareKnown(
+                    gains?.get(chartKeyOf(a.chart)) ?? null,
+                    gains?.get(chartKeyOf(b.chart)) ?? null,
+                    ascending
+                );
             default:
                 return defaultOrder(a, b);
         }

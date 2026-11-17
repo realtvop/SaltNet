@@ -326,6 +326,7 @@ describe("schema command", () => {
             "--missing",
             "--recent",
             "--stats",
+            "--target",
             "--sort",
             "--asc",
             "--desc",

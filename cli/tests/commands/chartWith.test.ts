@@ -3,6 +3,7 @@ import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
 import { getChartPositionByDifficulty } from "@core/chart/position";
 import { getDetailedRatingsByConstant } from "@core/chart/rating";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
+import { createMusicChartMap, getB50Gain, selectB50Charts } from "@core/query/b50";
 import {
     getChartRatingTables,
     getLowestRaInChartOrSection,
@@ -72,6 +73,7 @@ describe("chart concise stages and --with stages", () => {
             achievements: r.achievements,
             rating: r.rating,
             rank: rankLabel(r.rank),
+            gain: null,
         }));
 
         expect(json.data.stages).toEqual(expected);
@@ -95,11 +97,18 @@ describe("chart concise stages and --with stages", () => {
         const lowestInSection = () => getLowestRaInSection(testUser, chart);
         const getBaseRa = () => getLowestRaInChartOrSection(chart, userScore, lowestInSection());
 
+        const b50 = selectB50Charts(testUser.data, createMusicChartMap(allCatalogCharts()), {
+            fitDiff: false,
+            nb50: false,
+            comboFilter: null,
+            pc50: false,
+        });
         const tables = getChartRatingTables(chart, userScore, "简洁");
         const expected = selectDisplayedRaTable(tables.current, "简洁", getBaseRa).map(r => ({
             achievements: r.achievements,
             rating: r.rating,
             rank: rankLabel(r.rank),
+            gain: getB50Gain(b50, chart, r.rating),
         }));
 
         expect(json.data.stages).toEqual(expected);
@@ -129,10 +138,13 @@ describe("chart concise stages and --with stages", () => {
         const { json } = await commandIn(home, "chart", ["146-3"]);
         const dialogScore = { achievements: 97, deluxeRating: 300 } as unknown as ChartScore;
         const tables = getChartRatingTables(chart, dialogScore, "简洁");
+        // The normal B50 is read from the detailed records, so the chart is in its section at its
+        // stored 300, above every stage: no stage gains anything.
         const toStage = (r: ReturnType<typeof selectDisplayedRaTable>[number]) => ({
             achievements: r.achievements,
             rating: r.rating,
             rank: rankLabel(r.rank),
+            gain: 0,
         });
         const base = getLowestRaInChartOrSection(chart, dialogScore, 260);
         expect(base).toBe(300);
@@ -208,19 +220,20 @@ describe("chart concise stages and --with stages", () => {
             achievements: r.achievements,
             rating: r.rating,
             rank: rankLabel(r.rank),
+            gain: null,
         }));
         expect(stages13).toEqual(expected13);
 
         // Hand check 3 rows for constant 13:
         // 1. 100.5% SSS+ -> floor(13 * 1.005 * 22.4) = 292
         const row1005_13 = stages13.find((r: { achievements: number }) => r.achievements === 100.5);
-        expect(row1005_13).toEqual({ achievements: 100.5, rating: 292, rank: "SSS+" });
+        expect(row1005_13).toEqual({ achievements: 100.5, rating: 292, rank: "SSS+", gain: null });
         // 2. 100.0% SSS -> floor(13 * 1.000 * 21.6) = 280
         const row1000_13 = stages13.find((r: { achievements: number }) => r.achievements === 100.0);
-        expect(row1000_13).toEqual({ achievements: 100.0, rating: 280, rank: "SSS" });
+        expect(row1000_13).toEqual({ achievements: 100.0, rating: 280, rank: "SSS", gain: null });
         // 3. 99.5% SS+ -> floor(13 * 0.995 * 21.1) = 272
         const row995_13 = stages13.find((r: { achievements: number }) => r.achievements === 99.5);
-        expect(row995_13).toEqual({ achievements: 99.5, rating: 272, rank: "SS+" });
+        expect(row995_13).toEqual({ achievements: 99.5, rating: 272, rank: "SS+", gain: null });
 
         // Constant 5.0 (chart 146-0)
         const res5 = await commandIn(home, "chart", ["146-0", "--with", "stages"]);
@@ -231,19 +244,20 @@ describe("chart concise stages and --with stages", () => {
             achievements: r.achievements,
             rating: r.rating,
             rank: rankLabel(r.rank),
+            gain: null,
         }));
         expect(stages5).toEqual(expected5);
 
         // Hand check 3 rows for constant 5:
         // 1. 100.5% SSS+ -> floor(5 * 1.005 * 22.4) = 112
         const row1005_5 = stages5.find((r: { achievements: number }) => r.achievements === 100.5);
-        expect(row1005_5).toEqual({ achievements: 100.5, rating: 112, rank: "SSS+" });
+        expect(row1005_5).toEqual({ achievements: 100.5, rating: 112, rank: "SSS+", gain: null });
         // 2. 100.0% SSS -> floor(5 * 1.000 * 21.6) = 108
         const row1000_5 = stages5.find((r: { achievements: number }) => r.achievements === 100.0);
-        expect(row1000_5).toEqual({ achievements: 100.0, rating: 108, rank: "SSS" });
+        expect(row1000_5).toEqual({ achievements: 100.0, rating: 108, rank: "SSS", gain: null });
         // 3. 99.5% SS+ -> floor(5 * 0.995 * 21.1) = 104
         const row995_5 = stages5.find((r: { achievements: number }) => r.achievements === 99.5);
-        expect(row995_5).toEqual({ achievements: 99.5, rating: 104, rank: "SS+" });
+        expect(row995_5).toEqual({ achievements: 99.5, rating: 104, rank: "SS+", gain: null });
     });
 });
 

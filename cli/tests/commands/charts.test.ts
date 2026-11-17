@@ -655,7 +655,7 @@ describe("saltnet charts sorting and grouping", () => {
         ]);
     });
 
-    it("rejects contradictory sort directions and the later gain sort with USAGE error", async () => {
+    it("rejects contradictory sort directions and sort gain without users", async () => {
         const paths = makeHome();
 
         const { code, json, requests } = await chartsIn(paths, ["--asc", "--desc"]);
@@ -670,8 +670,8 @@ describe("saltnet charts sorting and grouping", () => {
             json: jsonGain,
             requests: gainRequests,
         } = await chartsIn(paths, ["--sort", "gain"]);
-        expect(codeGain).toBe(2);
-        expect(jsonGain.error.code).toBe("USAGE");
+        expect(codeGain).toBe(4);
+        expect(jsonGain.error.code).toBe("NO_USER");
         expect(gainRequests).toHaveLength(0);
     });
 

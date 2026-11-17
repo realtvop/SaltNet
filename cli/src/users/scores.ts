@@ -38,6 +38,7 @@ export interface UserScores {
     readonly byChartKey: ReadonlyMap<string, StoredChartScore>;
     readonly playCountByRecordKey: ReadonlyMap<string, PlayCountEstimate>;
     readonly b50ByChartKey: ReadonlyMap<string, B50Place>;
+    readonly b50: { readonly old: readonly Chart[]; readonly newer: readonly Chart[] };
 }
 
 function scoreStatus<T extends string>(value: string | null): T {
@@ -121,13 +122,16 @@ function scoreRows(store: Store, uid: string, source: ScoreSource): StoredChartS
     }));
 }
 
-function b50Places(user: User, charts: readonly Chart[]): Map<string, B50Place> {
-    const selected = selectB50Charts(user.data, createMusicChartMap([...charts]), {
+function selectNormalB50(user: User, charts: readonly Chart[]): { old: Chart[]; newer: Chart[] } {
+    return selectB50Charts(user.data, createMusicChartMap([...charts]), {
         fitDiff: false,
         nb50: false,
         comboFilter: null,
         pc50: false,
     });
+}
+
+function b50Places(selected: { old: Chart[]; newer: Chart[] }): Map<string, B50Place> {
     const result = new Map<string, B50Place>();
     selected.old.forEach((chart, index) => {
         result.set(chartKeyOf(chart), { part: "B35", rank: index + 1 });
@@ -150,13 +154,15 @@ export function readUserScores(
         const source = scoreSource(raw);
         const rows = scoreRows(store, user.uid, source);
         const events = readScoreEvents(store, user.uid);
+        const b50 = selectNormalB50(raw, charts);
         return {
             user,
             raw,
             source,
             byChartKey: new Map(rows.map(row => [row.chartKey, row])),
             playCountByRecordKey: calculateUserPlayCountEstimates(events, raw.data.detailed),
-            b50ByChartKey: b50Places(raw, charts),
+            b50ByChartKey: b50Places(b50),
+            b50,
         };
     });
 }

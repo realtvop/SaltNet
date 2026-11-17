@@ -3,7 +3,13 @@
  * `FDX+`. Commands print these, and the score filters accept the same spellings without regard
  * to case.
  */
-import { ComboStatus, RANK_RATE_DISPLAY_NAMES, RankRate, SyncStatus } from "@core/mai/types";
+import {
+    ACHIEVEMENT_RATE_THRESHOLDS,
+    ComboStatus,
+    RANK_RATE_DISPLAY_NAMES,
+    RankRate,
+    SyncStatus,
+} from "@core/mai/types";
 import { usageError } from "../errors";
 
 /** Every rank, from the lowest to the highest (the order of the enum). */
@@ -112,4 +118,22 @@ export function scoreReachesCondition(
         case "sync":
             return reaches(score.fs, condition.value, SYNCS);
     }
+}
+
+/** Parses a target rank (any case) or numeric achievement rate (0 to 101) into an achievement rate number. */
+export function parseTargetRate(text: string): number {
+    const folded = text.trim().toLowerCase();
+    const rank = RANKS.find(value => rankLabel(value).toLowerCase() === folded);
+    if (rank !== undefined) {
+        if (rank === RankRate.d) return 0;
+        const found = ACHIEVEMENT_RATE_THRESHOLDS.find(t => t.rank === rank);
+        if (found) return found.threshold;
+    }
+    if (/^\d+(?:\.\d+)?$/.test(text.trim())) {
+        const numVal = Number(text.trim());
+        if (numVal >= 0 && numVal <= 101) {
+            return numVal;
+        }
+    }
+    throw usageError(`目标「${text}」无效；应为评级（如 sss+）或 0 到 101 之间的达成率`);
 }

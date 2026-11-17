@@ -346,6 +346,22 @@ describe("chart", () => {
         expect(json.data.position).toBeDefined();
         expectConforms(schemaOf("chart"), json.data);
     });
+
+    it("describes a chart and chart --with stages with user score gains", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(home, [detailedUser("uid-schema", "Schema User")]);
+
+        const concise = await commandIn(home, "chart", ["146-3"]);
+        expect(concise.json.data.stages.length).toBeGreaterThan(0);
+        expect(concise.json.data.stages[0].gain).not.toBeNull();
+        expectConforms(schemaOf("chart"), concise.json.data);
+
+        const full = await commandIn(home, "chart", ["146-3", "--with", "stages"]);
+        expect(full.json.data.stages.length).toBeGreaterThan(3);
+        expect(full.json.data.stages[0].gain).not.toBeNull();
+        expectConforms(schemaOf("chart"), full.json.data);
+    });
 });
 
 describe("calc", () => {
@@ -438,9 +454,36 @@ describe("calc", () => {
         expect(json.data.stages).toBeNull();
         expectConforms(schemaOf("calc"), json.data);
     });
+
+    it("describes calc with a chart and user score gains", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(home, [detailedUser("uid-calc-schema", "Calc Schema User")]);
+
+        const fullStages = await commandIn(home, "calc", ["146-3"]);
+        expect(fullStages.json.data.gain).toBeNull();
+        expect(fullStages.json.data.stages.length).toBeGreaterThan(0);
+        expect(fullStages.json.data.stages[0].gain).not.toBeNull();
+        expectConforms(schemaOf("calc"), fullStages.json.data);
+
+        const withAch = await commandIn(home, "calc", ["146-3", "--achievements", "100.5"]);
+        expect(withAch.json.data.gain).not.toBeNull();
+        expect(withAch.json.data.stages).toBeNull();
+        expectConforms(schemaOf("calc"), withAch.json.data);
+    });
 });
 
 describe("charts", () => {
+    it("describes charts with --sort gain", async () => {
+        const home = makeHome();
+        await commandIn(home, "refresh", []);
+        await seedScoreUsers(home, [detailedUser("uid-charts-gain", "Charts Gain User")]);
+
+        const { json } = await commandIn(home, "charts", ["--sort", "gain", "--limit", "5"]);
+        expect(json.data.items.length).toBe(5);
+        expect(json.data.items[0].gain).toBeDefined();
+        expectConforms(schemaOf("charts"), json.data);
+    });
     it("describes the default charts list", async () => {
         const { json } = await commandIn(makeHome(), "charts", []);
         expect(json.data.items.length).toBeGreaterThan(0);

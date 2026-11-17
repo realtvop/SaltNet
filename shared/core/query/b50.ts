@@ -200,3 +200,43 @@ export function normalizeConstant(value?: number | null): number | undefined {
     if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
     return Math.round(value * 10) / 10;
 }
+
+/**
+ * How much the normal B50 total rises when `chart` is played to `targetRating`.
+ *
+ * This deliberately differs from the dialog. The dialog shows
+ * `stage.rating - max(<the chart's current rating>, <the section's lowest>)`,
+ * which is right for a full section but too small when the section is not full
+ * (a chart that is not in a section of ten gains its whole rating, not the
+ * difference to the tenth).
+ */
+export function getB50Gain(
+    b50: {
+        readonly old: readonly Chart[];
+        readonly newer: readonly Chart[];
+    },
+    chart: Chart,
+    targetRating: number
+): number | null {
+    if (isUtageGrade(chart.info.grade)) return null;
+    if (chart.music?.info?.isNew !== true && chart.music?.info?.isNew !== false) return null;
+
+    const isNew = chart.music.info.isNew;
+    const section = isNew ? b50.newer : b50.old;
+    const cap = isNew ? 15 : 35;
+
+    const existing = section.find(
+        entry => entry.music.id === chart.music.id && entry.info.grade === chart.info.grade
+    );
+    if (existing) {
+        const currentRating = existing.score?.deluxeRating ?? 0;
+        return Math.max(0, targetRating - currentRating);
+    }
+
+    if (section.length < cap) {
+        return Math.max(0, targetRating);
+    }
+
+    const lowestRating = Math.min(...section.map(entry => entry.score?.deluxeRating ?? 0));
+    return Math.max(0, targetRating - lowestRating);
+}
