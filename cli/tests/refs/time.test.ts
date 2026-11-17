@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTime, parseTimeOption } from "../../src/refs/time";
+import { parseSinceOption, parseTime, parseTimeOption } from "../../src/refs/time";
 import { formatLocalTime } from "../../src/util/time";
 import { caught } from "../caught";
 import { useTimeZone } from "../zone";
@@ -184,4 +184,34 @@ describe("parseTimeOption", () => {
         expect(err.code).toBe("USAGE");
         expect(err.message).toMatch(/^选项 --since 的值「x」不是时间/);
     });
+});
+
+describe("parseSinceOption", () => {
+    const now = new Date("2026-11-11T01:00:00Z");
+
+    it("accepts ISO times and positive whole day or hour durations", () => {
+        expect(parseSinceOption("since", "2026-11-11T01:00:00Z", now).getTime()).toBe(
+            now.getTime()
+        );
+        expect(parseSinceOption("since", "7d", now).getTime()).toBe(now.getTime() - 7 * 86_400_000);
+        expect(parseSinceOption("since", "24H", now).getTime()).toBe(
+            now.getTime() - 24 * 3_600_000
+        );
+    });
+
+    it("reads an upper-case day unit as days and ignores surrounding whitespace", () => {
+        expect(parseSinceOption("since", "7D", now).getTime()).toBe(now.getTime() - 7 * 86_400_000);
+        expect(parseSinceOption("since", " 7d ", now).getTime()).toBe(
+            now.getTime() - 7 * 86_400_000
+        );
+    });
+
+    it.each(["0d", "-1d", "1.5h", "d7", "7w", "Infinityh"])(
+        "rejects invalid relative duration %s",
+        text => {
+            const err = caught(() => parseSinceOption("since", text, now));
+            expect(err.code).toBe("USAGE");
+            expect(err.message).toContain("7d、24h");
+        }
+    );
 });

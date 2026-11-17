@@ -185,7 +185,7 @@
 - [x] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
 - [x] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
 - [x] P2-20 `feat(cli): add b50 and rating commands`〔新〕
-- [ ] P2-21 `feat(cli): add history command`〔新〕
+- [x] P2-21 `feat(cli): add history command`〔新〕
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
 - [ ] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
@@ -848,3 +848,12 @@
     - 我改的一处：core 的 `normalizeRatingHistory` 在没有有效历史时用 `Date.now()` 补一条，Codex 为了用注入的时钟，在 `rating.ts` 里把 core 的筛选条件抄了一遍再替换时间。我改成给 `normalizeRatingHistory` 加一个可选的 `now`（默认仍是 `Date.now()`，照决定 72 定下的规矩），`rating.ts` 直接传 `ctx.io.now()`；网页端的调用一个没改，行为不变。core 原来没有这个函数的测试，我补了 `shared/core/user/ratingHistory.test.ts`（放进 `test:score-history`），`shared/core/README.md` 的注入点里加了这一条。`AGENTS.md` 补了 `b50.ts`、`rating.ts` 两句、core 的时钟和 `test:score-history` 的说明。
     - 测试：CLI 改动检查 32 处，第一次 26 处被发现。没被发现的 4 处是测试缺口，我在 `b50Rating.test.ts` 补了 4 个用例：nb 模式的 `ratingConstant`、`NO_PLAY_COUNTS` 只在 pc 模式出现、公开 B50 里的游玩次数不算、曲库的警告会带出来。补完再跑都被发现；剩下 2 处等价：`ratingConstantOf` 里的模式判断（core 只在 fit、nb 模式给谱面写拟合定数）和有限数判断（core 取不到拟合定数时用谱面定数，进得了 B50 的谱面定数都是有限数）。core 的 2 处改动检查都被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查。网页端行为不变，`pnpm build` 通过。
+77. **P2-21 的实现（2026-11-17）**：
+    - Codex（GPT 5.6 Sol）写的：`history`（`cli/src/commands/history.ts`）列出所选用户全部谱面或一张谱的成绩历史，从新到旧，谱面写法和 `chart` 一样（第二个可选参数是难度，标题或别名两面都有时用 `--type`）；`--since` 收 ISO 8601 或从现在倒推的正整数天、小时（`refs/time.ts` 的 `parseSinceOption`，用 `ctx.io.now()`）；`--all-changes` 也列出只有游玩次数变化的事件；分页和 `--fields` 照列表命令。每条是谱面行（成绩是用户当前存下的值）加事件 id、时间、来源、类型和变化 `changes`（`{field, before, after}`）。`cli/src/users/history.ts` 在一次一致的读取里取出事件和成绩记录的关联，先按记录 key 给每个事件找好前态，再做 `--since` 和变化类型筛选，所以窗口里的第一条仍带着窗口之前的值；`cli/src/catalog/historyView.ts` 把一条事件做成输出的一行。
+    - 关联谱面：先按存下的成绩记录的 key 找它的谱面键；没有这条记录时把记录 key 当谱面键去曲库找（`<曲目 id>-<难度>`）；都找不到的不输出，按记录 key 计入 `missing`（分页前按完整的筛选结果计数，单谱查询时总是空列表）。`v_score_events` 视图没改，这个后备只在命令里做。
+    - 和网页端一致的地方：默认隐藏只有游玩次数变化的 change 事件，initial 事件总是保留；变化的字段和顺序同 `getScoreHistoryDisplayChanges`（达成率、DX 分、combo、sync、游玩次数），但输出原值而不是网页端格式化好的中文：combo、sync 用游戏内写法，状态为 none 时是 null。
+    - 它自己定下的，我都同意：类别是 `scores`（设计 3.2 把 `history` 列在「曲目与谱面」表里，brief 要求 `scores`）；时间和 sequence 都相同的事件按 id 升序（网页端单谱只按时间和 sequence 排）；超出 Date 范围的时间输出 null，不丢掉事件；只写 `--type` 不写谱面是 `USAGE`；相对时长不分大小写、允许首尾空白、必须大于零；用户引用解析失败时没有 `meta.user` 可带，和其他成绩命令一样在读元数据之前报 `NOT_FOUND`。指南加了第 7 条：成绩变化读 `history`，「最近进步了什么」用 `history --since 7d`。
+    - brief 里我写错的一处：说端到端测试的种子里有成绩事件，其实只有两个没有成绩的用户。`history` 的指南示例照样运行，得到合法的空结果；P2-26 会把种子换成带成绩的备份。
+    - 我改的：`AGENTS.md` 加了 `history.ts`、`users/history.ts` 和 `parseSinceOption` 的说明（没采纳它建议的单独介绍测试文件的那一句）。
+    - 测试：改动检查 31 处，第一次 22 处被发现。我补了 6 个用例（同一记录里 sequence 和 id 相同时的先后和前态、后来的 initial 事件只带游玩次数位时仍保留且没有前值、只写 `--type`、`missing` 的顺序、超出 Date 范围的时间、`7D` 和首尾空白），补完 31 处都被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。

@@ -57,3 +57,24 @@ export function parseTimeOption(flag: string, text: string): Date {
         `选项 --${flag} 的值${echo(text)}不是时间；写成 ISO 8601，例如 2026-10-01、2026-10-01T07:00 或 2026-10-01T07:00:00+08:00，没写时区就按本机时区算`
     );
 }
+
+const RELATIVE_TIME = /^(\d+)([dh])$/i;
+
+/** An ISO time or a positive whole number of days/hours counted back from `now`. */
+export function parseSinceOption(flag: string, text: string, now: Date): Date {
+    const trimmed = text.trim();
+    const relative = RELATIVE_TIME.exec(trimmed);
+    if (relative) {
+        const amount = Number(relative[1]);
+        const unit = relative[2].toLowerCase();
+        const duration = amount * (unit === "d" ? 86_400_000 : 3_600_000);
+        const value = new Date(now.getTime() - duration);
+        if (amount > 0 && Number.isFinite(duration) && !Number.isNaN(value.getTime())) return value;
+    } else {
+        const absolute = parseTime(trimmed);
+        if (absolute) return absolute;
+    }
+    throw usageError(
+        `选项 --${flag} 的值${echo(text)}不是时间或相对时长；写成 ISO 8601（没写时区就按本机时区算），或正整数加 d/h，例如 7d、24h`
+    );
+}

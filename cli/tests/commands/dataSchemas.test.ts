@@ -21,7 +21,7 @@ import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms, expectValidSchema } from "../dataSchema";
 import { fixtureSongCatalog } from "../fixtureCatalog";
-import { b50User, detailedUser, seedScoreUsers } from "../scoreUsers";
+import { b50User, detailedUser, scoreEvent, seedScoreUsers } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -549,6 +549,24 @@ describe("b50 and rating", () => {
             const { json } = await commandIn(paths, "rating", args);
             expectConforms(schemaOf("rating"), json.data);
         }
+    });
+});
+
+describe("history", () => {
+    it("describes populated items and missing", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(
+            paths,
+            [detailedUser("schema-history", "Schema History")],
+            [
+                scoreEvent("schema-event", "schema-history", "146-3", 1),
+                scoreEvent("schema-missing", "schema-history", "made-missing", 1),
+            ]
+        );
+        const { json } = await commandIn(paths, "history", []);
+        expect(json.data.items).toHaveLength(1);
+        expect(json.data.missing).toEqual([{ recordKey: "made-missing", count: 1 }]);
+        expectConforms(schemaOf("history"), json.data);
     });
 });
 

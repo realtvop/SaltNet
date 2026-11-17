@@ -7,6 +7,7 @@ import { collectionList, collectionShow } from "./collection";
 import { configGet, configList, configSet, configUnset } from "./config";
 import { courseList, courseShow } from "./course";
 import { guide } from "./guide";
+import { history } from "./history";
 import { kaleidxscope } from "./kaleidxscope";
 import { rating } from "./rating";
 import { refresh } from "./refresh";
@@ -26,6 +27,7 @@ export const COMMANDS: readonly CommandDefinition[] = [
     charts,
     b50,
     rating,
+    history,
     collectionList,
     collectionShow,
     courseList,
