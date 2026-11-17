@@ -1149,7 +1149,7 @@
       "count": 4
     },
     "style/operator-linebreak": {
-      "count": 3
+      "count": 1
     }
   },
   "src/components/data/user/update/index.ts": {
@@ -1162,13 +1162,13 @@
   },
   "src/components/data/user/update/updateUser.ts": {
     "antfu/curly": {
-      "count": 3
+      "count": 2
     },
     "antfu/if-newline": {
-      "count": 7
+      "count": 5
     },
     "import/consistent-type-specifier-style": {
-      "count": 2
+      "count": 1
     },
     "perfectionist/sort-named-imports": {
       "count": 2
@@ -1182,14 +1182,8 @@
     "style/comma-dangle": {
       "count": 1
     },
-    "style/indent": {
-      "count": 3
-    },
     "style/member-delimiter-style": {
-      "count": 5
-    },
-    "style/operator-linebreak": {
-      "count": 3
+      "count": 1
     },
     "style/quotes": {
       "count": 1

@@ -172,6 +172,34 @@ describe("score history repository", () => {
         expect(page.entries[1].event.observedAt).toBe(500);
     });
 
+    it("adds no second baseline once a chart has events", async () => {
+        const before = convertDetailed([createRecord({ lastChangedAt: 500 })]);
+        const after = [createRecord({ achievements: 100.6 })];
+        const first = createScoreHistoryCandidates(before, after, 1_000);
+        await appendScoreHistoryBatch({
+            batchId: "batch-2a",
+            userUid: "user-1",
+            source: "lxns",
+            candidates: first,
+        });
+        const middleRecord = createRecord({ achievements: 100.6, lastChangedAt: 1_000 });
+        const latest = [createRecord({ achievements: 100.7 })];
+        const second = createScoreHistoryCandidates(convertDetailed([middleRecord]), latest, 2_000);
+        await appendScoreHistoryBatch({
+            batchId: "batch-2b",
+            userUid: "user-1",
+            source: "lxns",
+            candidates: second,
+        });
+
+        const page = await getScoreHistoryPage("user-1", first[0].chartKey);
+        expect(page.entries.map(entry => [entry.event.kind, entry.event.observedAt])).toEqual([
+            ["change", 2_000],
+            ["change", 1_000],
+            ["initial", 500],
+        ]);
+    });
+
     it("hides play-count-only changes unless requested", async () => {
         const existing = convertDetailed([createRecord({ lastChangedAt: 500 })]);
         const candidates = createScoreHistoryCandidates(

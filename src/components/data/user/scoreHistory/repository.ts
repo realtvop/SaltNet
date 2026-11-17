@@ -1,4 +1,5 @@
 import type { DetailedData } from "@core/user/type";
+import { buildScoreHistoryBatchEvents } from "@core/user/scoreHistory/batch";
 import {
     calculatePlayCountEstimate,
     calculateUserPlayCountEstimates,
@@ -6,7 +7,6 @@ import {
 } from "@core/user/scoreHistory/estimate";
 import {
     SCORE_HISTORY_PAGE_SIZE,
-    SCORE_HISTORY_SCHEMA_VERSION,
     ScoreHistoryChange,
     type PendingScoreHistoryImport,
     type ScoreHistoryBatch,
@@ -136,50 +136,13 @@ export async function appendScoreHistoryBatch(batch: ScoreHistoryBatch): Promise
         (await getUserEvents(generationId, batch.userUid)).map(event => event.chartKey)
     );
 
+    const events = buildScoreHistoryBatchEvents(batch, generationId, existingKeys);
+
     const database = await openDatabase();
     const transaction = database.transaction(EVENTS_STORE, "readwrite");
     const store = transaction.objectStore(EVENTS_STORE);
 
-    for (const candidate of batch.candidates) {
-        let sequence = 0;
-        if (
-            candidate.kind === "change" &&
-            candidate.before &&
-            !existingKeys.has(candidate.chartKey)
-        ) {
-            const baselineTime = candidate.previousObservedAt ?? candidate.observedAt;
-            const baseline: ScoreHistoryEventV1 = {
-                id: `${generationId}:${batch.batchId}:${candidate.chartKey}:baseline`,
-                schemaVersion: SCORE_HISTORY_SCHEMA_VERSION,
-                generationId,
-                batchId: batch.batchId,
-                userUid: batch.userUid,
-                chartKey: candidate.chartKey,
-                observedAt: baselineTime,
-                sequence: 0,
-                source: batch.source,
-                kind: "initial",
-                changedMask: 0,
-                state: candidate.before,
-            };
-            store.put(baseline);
-            sequence = baselineTime === candidate.observedAt ? 1 : 0;
-        }
-
-        const event: ScoreHistoryEventV1 = {
-            id: `${generationId}:${batch.batchId}:${candidate.chartKey}:${candidate.kind}`,
-            schemaVersion: SCORE_HISTORY_SCHEMA_VERSION,
-            generationId,
-            batchId: batch.batchId,
-            userUid: batch.userUid,
-            chartKey: candidate.chartKey,
-            observedAt: candidate.observedAt,
-            sequence,
-            source: batch.source,
-            kind: candidate.kind,
-            changedMask: candidate.changedMask,
-            state: candidate.after,
-        };
+    for (const event of events) {
         store.put(event);
     }
     await transactionDone(transaction);

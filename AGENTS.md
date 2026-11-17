@@ -39,9 +39,10 @@ SaltNet is a three-package pnpm workspace:
       history; `normalizeRatingHistory` takes an optional clock), `backup.ts` (the user data backup file: building a v1 backup and reading v0 and v1
       backups, including their score history), `migrateData.ts` (migrating and timestamping updated
       score records and B50 lists, and supplementing record data) and `scoreHistory/`: the score
-      history types (`type.ts`), detecting score changes between two score maps (`candidates.ts`), the
-      play-count estimate (`estimate.ts`), the display helpers (`presentation.ts`) and
-      `userIdentity.ts` (stable user UIDs and detecting a changed account identity).
+      history types (`type.ts`), detecting score changes between two score maps (`candidates.ts`),
+      building a batch's events (`batch.ts`), the play-count estimate (`estimate.ts`), the display
+      helpers (`presentation.ts`) and `userIdentity.ts` (stable user UIDs and detecting a changed
+      account identity).
     - `query/`: the songs-page query helpers in `songs.ts` (ordering, category filtering, position
       indexes, grouping and statistics as pure functions), which re-exports the web search in
       `search.ts`: existing matches ranked by exact ID, whole title/alias, name prefix, name
@@ -68,8 +69,8 @@ SaltNet is a three-package pnpm workspace:
       (the SaltNet backend client with the primary and fallback addresses from `CoreConfig`, an
       injected `fetch` and typed errors).
     - `sync/`: score syncing from the game, LXNS and Diving Fish moved out of the update worker:
-      source choice, fetching, merging with existing scores, progress through a `report` callback,
-      network calls and uploads from the caller.
+      source choice, fetching, merging with existing scores, applying a sync update to a user
+      (`apply.ts`), progress through a `report` callback, network calls and uploads from the caller.
     - `util/`: `toHalfWidth`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
@@ -454,14 +455,14 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   LXNS collection fetch and mapping, static character/partner data, the ChartInfo reverse
   association index (core builder and web wrapper), collection ownership and scored collection
   charts, and version-plate tab merging.
-- `pnpm test:score-history` validates score-change detection, IndexedDB history, generations,
-  user-backup compatibility, and rating-history normalization.
+- `pnpm test:score-history` validates score-change detection, building batch events, IndexedDB
+  history, generations, user-backup compatibility, and rating-history normalization.
 - `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
 - `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, the duplicate-song merge, and the shared SaltMeta and LXNS test fixtures.
 - `pnpm test:integrations` validates the Diving Fish client and converter, the SaltNet backend
   client with a made-up fetch, that the web wrappers keep the web app's errors and logging, and
-  the sync and `toHalfWidth` tests.
+  the sync, applying updates, and `toHalfWidth` tests.
 - `pnpm test:query` compares the songs-page query helpers (ordering, category filtering, position
   indexes, search, grouping and statistics), the B50 page's record selection, sorting and rating
   sums, the B50 gain (`b50Gain.test.ts`, checked by hand), and the chart info dialog's rating stage tables, display modes and B50 floor with committed

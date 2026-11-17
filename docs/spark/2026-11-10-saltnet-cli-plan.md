@@ -209,6 +209,8 @@
 
 - [x] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
 - [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
+- [ ] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
+- [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
 - [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
@@ -922,4 +924,13 @@
         - `import` 和 `user remove` 在凭据锁里做。`user remove` 连预览和确认码也在锁里算，这样别的进程拿着锁时，它直接报 `DB_LOCKED`，不会给出一个确认不了的预览。删除时去掉这个用户的凭据和指向它的进行中授权。导入会丢掉所有进行中授权。
     - 我改的：响应体不是合法 JSON 时，不再带 cause。Node 的解析错误会引用响应体的开头，可能带着被截断的请求头的值（服务器原样回显请求时），而截断的值查不出来，原来的写法会留下它。这个 cause 也说不出消息之外的东西。
     - 测试：变异 49 处（请求头的四种字符、检查整个关掉、脱敏、`Bearer`、短值、四处 cause、重试的每个状态码、404 不重试、第二次不再重试、三处等待、默认延迟、日志、三处接线、有旧数据时不重试、文件的四项结构检查、锁的释放、锁名和等待、清理的四条、两处 0600、锁里重读、文件不存在等于空、`user remove` 的两项清理、它的锁和暂存文件的丢弃、`import` 的锁）。第一次漏了 9 处，其中两处是 JSON 解析错误的 cause，随上面的改动去掉了。另外 7 处补了测试：超时错误里有请求头的值时不带 cause、连接失败也要等、默认等 500 毫秒、状态码重试的日志、没有旧数据时的曲库下载重试、锁里重读文件、数据库删除失败时丢掉暂存的凭据文件（用触发器让删除失败）。补完重跑，7 处全部被发现。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+85. **P3-8a 的实现（2026-11-17）**：
+    - 这一步是新加的。P3-8 的 CLI 同步要和网页端一样把同步结果写进用户、生成成绩历史事件，这两段原来在网页端：`updateUser.ts` 收到 worker 结果后的处理，和 `scoreHistory/repository.ts` 的 `appendScoreHistoryBatch` 里的循环。按「每期先把要用的模块抽到 `shared/core/`」，先搬进 core，标〔简单〕，交给 Gemini。这次提交也在计划里加了 P3-7b：P3-7 的 brief 把 `import` 和 `user remove` 接上同步锁的部分拆了出去，因为 P2 审查的修复同时在改这两个命令；P3-7 提交时的决定再细说。
+    - Gemini 搬的：
+        - `shared/core/sync/apply.ts` 的 `applySyncUpdate(user, update, now)`：从结果里取出 `lxns`、`scoreHistorySource`、`userId`，用旧成绩（`detailed` 和 B50）和新成绩算成绩历史候选；`observedAt` 取结果的 `updateTime`，不是数字就用 `now()`；追加 rating 历史；合并 `user.data`（`userId` 不是 `undefined` 才写，`null` 也写）；合并 `lxns`；`userId` 为真时写 `inGame.id`，`inGame.id` 是 8 位数时写 `inGame.name`。返回 `observedAt`、候选和来源。和网页端原来的代码比，只把 `Date.now` 换成了可注入的 `now`，顺序和条件都没变。
+        - `shared/core/user/scoreHistory/batch.ts` 的 `buildScoreHistoryBatchEvents(batch, generationId, existingChartKeys)`：原来边建边 `store.put`，现在先建成数组，网页端照原来的顺序逐条 `put`。事件改在打开 IndexedDB 事务之前建好；建事件是同步的纯计算，不影响事务。
+        - 网页端的 `updateUser.ts` 和 `repository.ts` 改成调用这两个函数。两个新测试文件分别加进 `test:integrations` 和 `test:score-history`。
+    - lint：搬走的代码在两个网页端文件里有冻结的违规，搬走后 ESLint 报「有不再出现的抑制项」。照决定 71 的做法手工把计数调到实际剩下的数（只降不升），没用 `--prune-suppressions`：`repository.ts` 的 `style/operator-linebreak` 3→1；`updateUser.ts` 的 `antfu/curly` 3→2、`antfu/if-newline` 7→5、`import/consistent-type-specifier-style` 2→1、`style/member-delimiter-style` 5→1，`style/indent`（3）和 `style/operator-linebreak`（3）清零删去。
+    - 测试：变异 35 处（`observedAt` 的两处来源、只取 `detailed` 或只取 B50、丢掉 B50 的 SD 或 DX 一半、rating 历史的有无和时间、`userId` 为 `null` 和缺省、`user.data` 的合并和顺序、`lxns` 的合并和顺序、写 `inGame.id` 的条件、8 位数、名字、来源、旧成绩的两部分；事件那边：基线的三个条件、基线的时间、两种 sequence、基线自己的 sequence、mask、id、kind、state、时间、漏推基线、新事件的 state 和 id；网页端传入的已有谱面键）。第一次漏了 2 处：只在 B50 的 SD 一半里出现的谱面，和网页端同一谱面第二批不该再补基线。各补了一个测试（core 的 `apply.test.ts` 一个，网页端的 `index.test.ts` 一个；后者写成单行调用，免得给这个文件添新的 lint 违规），补完重跑都被发现。
     - 按决定 66 不单独送审，并入 P3 的整体审查。
