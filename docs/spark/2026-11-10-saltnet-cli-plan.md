@@ -181,7 +181,7 @@
 - [x] P2-14 `feat(cli): add confirmation codes for destructive commands`：预览、确认码、退出码 6〔新〕
 - [x] P2-15 `feat(cli): add user management commands`：`user list/show/add/edit/remove/default`；`status` 同时加上 `users`（用户列表和各用户的成绩更新时间），P1-15 的 `status` 还没有用户〔新〕
 - [x] P2-16 `feat(cli): add backup import and export`：v0/v1、凭据拆分、`--keep-lxns`、`FILE_EXISTS`〔新〕
-- [ ] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
+- [x] P2-17 `test(cli): cover backup round trip with a web v1 fixture`〔简单〕
 - [x] P2-18 `feat(cli): add scores to song, chart and charts output`：谱面行、`--user`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES`〔新〕
 - [x] P2-19 `feat(cli): add charts score filters, stats and score grouping`：`--achieved`、`--missing`、`--recent`、`--stats`、按成绩排序和分组〔新〕
 - [ ] P2-20 `feat(cli): add b50 and rating commands`〔新〕
@@ -837,3 +837,8 @@
     - `AGENTS.md` 里 `charts.ts`、`chartSort.ts`、`chartGroups.ts` 和 `refs/status.ts` 这几句是我改的（brief 不让 Codex 动 `AGENTS.md`）。
     - 测试：改动检查 74 处，第一次 66 处被发现。没被发现的 8 处由 Gemini 补测试（只改 `cli/tests/commands/chartsScores.test.ts`）：普通 FC 和普通 FDX 计入统计、条件两边的空格和大小写、`--sort recent` 按变化时间而不是达成率排、相同变化时间时的比较链（升序和降序各一次）、达成率不是数字的记录（存成 null，谱面行里有成绩但不算玩过）。补完再跑，8 处全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查。只动了 CLI，网页端没有变化。
+75. **P2-17 的实现（2026-11-17）**：
+    - 夹具 `shared/core/fixtures/web-backup-v1.json` 是我生成的：数据全是编的，用 core 的 `encodeUserDataBackup` 写成网页端导出的紧凑 JSON（在快照里当作一次性的 vitest 测试跑，生成器不进仓库）。里面两个用户：第一个有 183 条详细成绩（取自固定的 SaltMeta 夹具）、假的 Import-Token 和落雪 token、3 条 rating 记录，以及网页端还不认识的字段（`data.futureData` 和用户上的 `futureRoot`），用来看往返时会不会丢；第二个只有水鱼公开 B50，没有 token。另有同一个 generation 的 4 条成绩事件，其中一条来源是 `divingFishImport`。
+    - Gemini（Gemini 3.8 Flash）写的 `cli/tests/commands/backupFixture.test.ts`，只加测试：导入的预览和结果（token 拆进凭据文件、事件换上新的 generation 和 id）、导出回网页端格式（放回 Import-Token、不带落雪授权）、带 `--keep-lxns` 的往返逐字段保留原样的 JSON 和不认识的字段、第二次往返什么都不变、导入的成绩能直接给 `chart` 用（详细成绩，和只有公开 B50 时的 `PARTIAL_SCORES`）。
+    - 它报告的两处和 brief 不一致，都是 brief 写错了：第一个用户显示的名字是备注「made-up 主账号」而不是游戏里的名字（`getUserDisplayName` 先取备注）；夹具里第 1 条事件的观察时间比第 2、3 条晚，库里按观察时间和序号存取，所以测试按这个顺序比较事件。网页端读历史时也按观察时间和序号排序，备份文件里事件的先后没有意义。
+    - 只加了夹具和测试，CLI 和网页端都没有变化；`AGENTS.md` 的 `fixtures/` 一句补上了这份夹具。

@@ -51,7 +51,9 @@ SaltNet is a three-package pnpm workspace:
       rating sums), and `chartInfo.ts` holds the chart info dialog's rating calculations (the rating stage
       table and its display modes, and the user's B50 floor the gains are shown against).
     - `fixtures/`: a trimmed real SaltMeta document with a helper that converts it, used as fixed
-      test data by every package, plus a trimmed copy of the four LXNS collection lists (`lxns.ts`).
+      test data by every package, plus a trimmed copy of the four LXNS collection lists (`lxns.ts`)
+      and a made-up web user backup (`web-backup-v1.json`: two users, fake tokens, four score
+      events) that the CLI backup round-trip test (`cli/tests/commands/backupFixture.test.ts`) reads.
     - `integrations/`: `diving-fish/type.ts`, `diving-fish/client.ts` (the player query, the
       records and the upload by Import-Token, and the B50 built from records, with the base URL
       from `CoreConfig` and an injected `fetch`), `diving-fish/convert.ts` (the Diving Fish music
