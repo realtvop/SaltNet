@@ -106,6 +106,7 @@ export const refresh = defineCommand(
                 ctx.http({
                     timeoutMs: ctx.config.values.network.timeoutMs,
                     timeoutKey: "network.timeoutMs",
+                    retry: true,
                 }),
             now: () => ctx.io.now(),
             log: ctx.log,

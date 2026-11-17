@@ -5,7 +5,7 @@ import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { CliError } from "../../src/errors";
 import { createHttp, hostOf, upstreamStatusError } from "../../src/runtime/http";
 import { createHarness, run } from "../harness";
-import { jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { delayedRoute, jsonResponse, mockFetch, textResponse } from "../mockHttp";
 
 const URL_WITH_TOKEN = "https://meta.example.com/data/v1.json?token=secret";
 
@@ -295,5 +295,368 @@ describe("a command's http", () => {
             "测试没有模拟这个地址的网络请求"
         );
         expect(harness.fetch).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("header character checks", () => {
+    it.each([
+        ["NUL", "bad\x00val"],
+        ["CR", "bad\rval"],
+        ["LF", "bad\nval"],
+        ["U+0100", "bad\u0100val"],
+        ["emoji", "bad\u{1F600}val"],
+    ])(
+        "rejects header with %s before calling fetch and names header without value",
+        async (_, badVal) => {
+            let fetchCalled = false;
+            const fetch: HttpFetch = async () => {
+                fetchCalled = true;
+                return textResponse("ok");
+            };
+            const error = await failureOf(
+                http(fetch)(URL_WITH_TOKEN, {
+                    headers: { Authorization: badVal },
+                })
+            );
+            expect(fetchCalled).toBe(false);
+            expect(error.code).toBe("INTERNAL");
+            expect(error.message).toContain("Authorization");
+            expect(error.message).not.toContain(badVal);
+            expect(error.message).toBe(
+                "请求头 Authorization 的值含有不能发送的字符；如果它来自绑定的凭据，请重新绑定"
+            );
+            expect(error.cause).toBeUndefined();
+        }
+    );
+
+    it("sends a header value with a tab or Latin-1 characters", async () => {
+        const fetch = mockFetch({ [URL_WITH_TOKEN]: jsonResponse({}) });
+        const latin1AndTab = "prefix\t\xE9\xFF";
+        await http(fetch)(URL_WITH_TOKEN, {
+            headers: { "X-Custom": latin1AndTab },
+        });
+        expect(fetch.requests).toHaveLength(1);
+        expect(fetch.requests[0].init?.headers?.["X-Custom"]).toBe(latin1AndTab);
+    });
+});
+
+describe("redaction of header values from errors", () => {
+    it("redacts fake token from fetch error message and cause without leaking into serialized error", async () => {
+        const fakeToken = "fake-secret-token-xyz";
+        const fetch: HttpFetch = async () => {
+            const err = new TypeError(`fetch failed with ${fakeToken}`);
+            err.cause = Object.assign(new Error(`connect ECONNREFUSED with ${fakeToken}`), {
+                code: "ECONNREFUSED",
+            });
+            throw err;
+        };
+
+        const error = await failureOf(
+            http(fetch)(URL_WITH_TOKEN, {
+                headers: { Authorization: `Bearer ${fakeToken}` },
+            })
+        );
+
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toBe("无法连接到 meta.example.com（ECONNREFUSED）");
+        expect(error.message).not.toContain(fakeToken);
+        expect(error.fix).toBeUndefined();
+        expect(error.cause).toBeUndefined();
+
+        const serialized = JSON.stringify(error);
+        expect(serialized).not.toContain(fakeToken);
+
+        let cur: unknown = error;
+        while (cur instanceof Error) {
+            expect(cur.message).not.toContain(fakeToken);
+            cur = cur.cause;
+        }
+    });
+
+    it("redacts fake token when error has no code and uses message", async () => {
+        const fakeToken = "fake-secret-token-12345";
+        const fetch: HttpFetch = async () => {
+            throw new Error(`something failed ${fakeToken}`);
+        };
+
+        const error = await failureOf(
+            http(fetch)(URL_WITH_TOKEN, {
+                headers: { Authorization: fakeToken },
+            })
+        );
+
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toBe("无法连接到 meta.example.com（something failed <已隐藏>）");
+        expect(error.message).not.toContain(fakeToken);
+        expect(error.cause).toBeUndefined();
+        expect(JSON.stringify(error)).not.toContain(fakeToken);
+    });
+
+    it("drops the cause of a timeout whose error holds a header value", async () => {
+        const fakeToken = "fake-secret-token-timeout";
+        const fetch: HttpFetch = async () => {
+            throw Object.assign(new Error(`aborted while sending ${fakeToken}`), {
+                name: "TimeoutError",
+            });
+        };
+
+        const error = await failureOf(
+            http(fetch)(URL_WITH_TOKEN, { headers: { Authorization: `Bearer ${fakeToken}` } })
+        );
+
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toContain("超时");
+        expect(error.cause).toBeUndefined();
+        expect(JSON.stringify(error)).not.toContain(fakeToken);
+    });
+
+    it.each([false, true])(
+        "keeps no cause when an answer that is not JSON repeats a header value (retry %s)",
+        async retry => {
+            const fakeToken = "fake-secret-token-echoed";
+            const fetch: HttpFetch = async () => textResponse(`{"echo": ${fakeToken}}`, 200);
+            const client = createHttp({
+                fetch,
+                userAgent: "saltnet-cli/1.2.3",
+                timeoutMs: 5000,
+                timeoutKey: "network.timeoutMs",
+                retry,
+            });
+
+            const response = await client(URL_WITH_TOKEN, { headers: { "X-Token": fakeToken } });
+            const error = await failureOf(response.json());
+
+            expect(error.code).toBe("UPSTREAM_ERROR");
+            expect(error.message).toBe("meta.example.com 返回的内容不是合法的 JSON");
+            expect(error.cause).toBeUndefined();
+        }
+    );
+});
+
+describe("retry", () => {
+    function retryingHttp(
+        fetch: HttpFetch,
+        options?: {
+            timeoutMs?: number;
+            retryDelayMs?: number;
+            sleep?: (ms: number) => Promise<void>;
+            log?: (msg: string) => void;
+        }
+    ) {
+        return createHttp({
+            fetch,
+            userAgent: "saltnet-cli/1.2.3",
+            timeoutMs: options?.timeoutMs ?? 5000,
+            timeoutKey: "network.timeoutMs",
+            retry: true,
+            retryDelayMs: options?.retryDelayMs ?? 0,
+            sleep: options?.sleep,
+            log: options?.log,
+        });
+    }
+
+    it.each([
+        ["connection failure", async () => Promise.reject(fetchFailed("ECONNREFUSED"))],
+        ["timeout", async () => Promise.reject(fetchFailed("UND_ERR_CONNECT_TIMEOUT"))],
+        ["429", async () => textResponse("rate limited", 429)],
+        ["500", async () => textResponse("internal server error", 500)],
+        ["502", async () => textResponse("bad gateway", 502)],
+        ["503", async () => textResponse("service unavailable", 503)],
+        ["504", async () => textResponse("gateway timeout", 504)],
+    ])("retries %s exactly once on failure (count is 2)", async (_, failingResponse) => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return failingResponse();
+        };
+
+        try {
+            await retryingHttp(fetch)(URL_WITH_TOKEN);
+        } catch {
+            // expected for network failures
+        }
+        expect(calls).toBe(2);
+    });
+
+    it.each([400, 404])("does not retry HTTP %s", async status => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return textResponse("error", status);
+        };
+
+        const res = await retryingHttp(fetch)(URL_WITH_TOKEN);
+        expect(calls).toBe(1);
+        expect(res.status).toBe(status);
+    });
+
+    it("does not retry when retry option is false", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return textResponse("service unavailable", 503);
+        };
+        const client = createHttp({
+            fetch,
+            userAgent: "agent",
+            timeoutMs: 1000,
+            timeoutKey: "network.timeoutMs",
+            retry: false,
+        });
+        const res = await client(URL_WITH_TOKEN);
+        expect(calls).toBe(1);
+        expect(res.status).toBe(503);
+    });
+
+    it("returns body when second try succeeds", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            if (calls === 1) return textResponse("busy", 503);
+            return jsonResponse({ success: true });
+        };
+
+        const res = await retryingHttp(fetch)(URL_WITH_TOKEN);
+        expect(calls).toBe(2);
+        expect(res.ok).toBe(true);
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ success: true });
+    });
+
+    it("second failure is final", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return textResponse("down", 503);
+        };
+
+        const res = await retryingHttp(fetch)(URL_WITH_TOKEN);
+        expect(calls).toBe(2);
+        expect(res.status).toBe(503);
+        expect(await res.text()).toBe("down");
+    });
+
+    it("retries a failure while reading the body", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            if (calls === 1) {
+                return {
+                    ok: true,
+                    status: 200,
+                    text: async () => Promise.reject(fetchFailed("ECONNRESET")),
+                    json: async () => Promise.reject(new Error("unused")),
+                };
+            }
+            return jsonResponse({ recovered: true });
+        };
+
+        const res = await retryingHttp(fetch)(URL_WITH_TOKEN);
+        expect(calls).toBe(2);
+        expect(res.ok).toBe(true);
+        expect(await res.json()).toEqual({ recovered: true });
+    });
+
+    it("does not retry invalid JSON on body read", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return textResponse("not json at all");
+        };
+
+        const res = await retryingHttp(fetch)(URL_WITH_TOKEN);
+        expect(calls).toBe(1);
+        const error = await failureOf(res.json());
+        expect(error.code).toBe("UPSTREAM_ERROR");
+        expect(calls).toBe(1);
+    });
+
+    it("awaits the retry delay between tries", async () => {
+        const delays: number[] = [];
+        const sleep = async (ms: number) => {
+            delays.push(ms);
+        };
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            if (calls === 1) return textResponse("busy", 503);
+            return textResponse("ok", 200);
+        };
+
+        await retryingHttp(fetch, { retryDelayMs: 250, sleep })(URL_WITH_TOKEN);
+        expect(calls).toBe(2);
+        expect(delays).toEqual([250]);
+    });
+
+    it("waits before retrying a connection failure and logs the retry", async () => {
+        const delays: number[] = [];
+        const lines: string[] = [];
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            if (calls === 1) throw fetchFailed("ECONNRESET");
+            return textResponse("ok", 200);
+        };
+        const sleep = async (ms: number) => {
+            delays.push(ms);
+        };
+
+        const response = await retryingHttp(fetch, {
+            retryDelayMs: 250,
+            sleep,
+            log: line => lines.push(line),
+        })(URL_WITH_TOKEN);
+
+        expect(await response.text()).toBe("ok");
+        expect(calls).toBe(2);
+        expect(delays).toEqual([250]);
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain("meta.example.com");
+        expect(lines[0]).toContain("准备重试");
+    });
+
+    it("logs a retried status", async () => {
+        const lines: string[] = [];
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            return calls === 1 ? textResponse("busy", 503) : textResponse("ok", 200);
+        };
+
+        await retryingHttp(fetch, { log: line => lines.push(line) })(URL_WITH_TOKEN);
+
+        expect(lines).toEqual(["请求 meta.example.com 返回 HTTP 503，准备重试"]);
+    });
+
+    it("waits 500 ms before a retry by default", async () => {
+        const delays: number[] = [];
+        let calls = 0;
+        const client = createHttp({
+            fetch: async () => {
+                calls++;
+                return textResponse(calls === 1 ? "busy" : "ok", calls === 1 ? 502 : 200);
+            },
+            userAgent: "saltnet-cli/1.2.3",
+            timeoutMs: 5000,
+            timeoutKey: "network.timeoutMs",
+            retry: true,
+            sleep: async ms => {
+                delays.push(ms);
+            },
+        });
+
+        expect(await (await client(URL_WITH_TOKEN)).text()).toBe("ok");
+        expect(delays).toEqual([500]);
+    });
+
+    it("gives each try its own deadline", async () => {
+        const fetch = mockFetch({
+            [URL_WITH_TOKEN]: delayedRoute(textResponse("ok"), 30),
+        });
+
+        const error = await failureOf(retryingHttp(fetch, { timeoutMs: 20 })(URL_WITH_TOKEN));
+        expect(fetch.requests).toHaveLength(2);
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toContain("超时");
     });
 });

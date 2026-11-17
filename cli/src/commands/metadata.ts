@@ -29,6 +29,7 @@ function ensureDeps(args: { readonly global: GlobalOptions }, ctx: CommandContex
             network: ctx.http({
                 timeoutMs: ctx.config.values.network.timeoutMs,
                 timeoutKey: "network.timeoutMs",
+                retry: true,
             }),
         },
         now: () => ctx.io.now(),

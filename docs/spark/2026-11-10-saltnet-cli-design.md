@@ -108,7 +108,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 ```
 
 - 凭据单独放一个文件，这样 `saltnet sql` 打开数据库时永远读不到 token。
-- `credentials.json` 当前是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?}}}`；两个凭据值都按网页用户里的 JSON 值原样保存。缺文件等同空文件；已有文件读不了、JSON 损坏或结构不对时必须报错，不能静默覆盖。
+- `credentials.json` 当前是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?}}, pendingLxnsAuthorizations?: {<state>: LXNSOAuthTransaction}}`；两个凭据值都按网页用户里的 JSON 值原样保存。缺文件等同空文件；已有文件读不了、JSON 损坏或结构不对时必须报错，不能静默覆盖。每次改动时自动清理：过期或格式损坏的进行中授权被丢弃；目标用户不在库里的进行中授权被丢弃；不在库里或两项凭据都没有的用户条目被丢弃。
 - 进行中的落雪授权按 state 各存一条记录：PKCE verifier、目标用户、过期时间（15 分钟）。换到 token 后先暂存在这条记录里，直到绑定完成（见 5.2）。
 - 二维码一律不存盘。
 

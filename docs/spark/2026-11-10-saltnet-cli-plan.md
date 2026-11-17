@@ -207,7 +207,7 @@
 
 **P3 的 CLI 部分**
 
-- [ ] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
+- [x] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
 - [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
 - [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
@@ -912,3 +912,14 @@
         - 和网页端的差别，都是已定的：只有水鱼公开 B50 的用户，网页端的进度只读详细成绩（`data.detailed`），所以全是 0；CLI 照决定 78 把公开 B50 的成绩算进去，带 `PARTIAL_SCORES`（用户 1 有 56 个姓名框不是 0，例如覇者 11 / 2123）。网页端只对第一个用户（`users[0]`）显示进度，所以这一项只对照了用户 0。网页端只在记录带 `lastChangedAt` 时提供 PC50（决定 76），这份备份的记录都带，所以 PC50 也对上了。
     - 测试：只改文档，按 finish.sh 跑全部检查。
     - 按决定 66 不单独送审；P2 整体审查从 `91c0892` 起。
+84. **P3-6 的实现（2026-11-17）**：
+    - 分工改了：这一步是〔新〕，原定 Codex 写。当时 Codex 这一周的额度已经用了 89%，要到 11-19 00:14 才重置，剩下的要留给 P2 的整体审查和审查后的修复，所以照一份写细了的 brief 交给 Gemini。P3-7 也一样。
+    - Gemini 写的：
+        - `credentials.json` 多了 `pendingLxnsAuthorizations`：按 state 存 core 的 `LXNSOAuthTransaction`。读文件时，顶层只认 `version`、`users`、`pendingLxnsAuthorizations` 三项，每个用户项和每条进行中的授权都得是对象。文件坏了仍报 `INTERNAL`：消息里只有路径和错误码，不带文件内容；`fix` 让人检查文件，修不好就移走它再重新绑定（决定 73 留下的问题，不另设错误码）。
+        - `withCredentialsLock` 拿名为 `credentials` 的锁（30 秒），拿不到每 100 毫秒再试，5 秒后报 `DB_LOCKED` 并写出对方的 pid；`work` 抛错也会释放锁。`updateCredentials` 在锁里重读文件、交给调用方改、清理，再以 0600 原子写入。清理的四条：数据库里没有的用户、两项凭据都没有的用户项、过期或格式不对的进行中授权（`validateLXNSOAuthTransaction`）、指向不存在用户的进行中授权。
+        - `ctx.http()`：发请求之前先检查每个请求头的值，含 NUL、CR、LF 或大于 U+00FF 的字符就报 `INTERNAL`。消息只说是哪个请求头，不写它的值，请求也不发出（决定 64 留下的 Node 把整个值写进错误的问题）。错误信息里出现的请求头的值（4 个字符以上；`Bearer ` 后面的部分另算一个）换成 `<已隐藏>`；换过的，或者 cause 链里出现过这些值的，不带 cause。
+        - 重试：`retry: true` 时，连接失败、超时、读响应中断，以及 429、500、502、503、504，都重试一次。重试前先等 `retryDelayMs`（默认 500 毫秒）。每一次都有自己的截止时间，响应体在这一次里读完。`refresh` 和没有旧数据可退的曲库下载用 `retry: true`；有旧数据可退的（`metadata.timeoutMs`）不重试，好尽快退回旧数据。
+        - `import` 和 `user remove` 在凭据锁里做。`user remove` 连预览和确认码也在锁里算，这样别的进程拿着锁时，它直接报 `DB_LOCKED`，不会给出一个确认不了的预览。删除时去掉这个用户的凭据和指向它的进行中授权。导入会丢掉所有进行中授权。
+    - 我改的：响应体不是合法 JSON 时，不再带 cause。Node 的解析错误会引用响应体的开头，可能带着被截断的请求头的值（服务器原样回显请求时），而截断的值查不出来，原来的写法会留下它。这个 cause 也说不出消息之外的东西。
+    - 测试：变异 49 处（请求头的四种字符、检查整个关掉、脱敏、`Bearer`、短值、四处 cause、重试的每个状态码、404 不重试、第二次不再重试、三处等待、默认延迟、日志、三处接线、有旧数据时不重试、文件的四项结构检查、锁的释放、锁名和等待、清理的四条、两处 0600、锁里重读、文件不存在等于空、`user remove` 的两项清理、它的锁和暂存文件的丢弃、`import` 的锁）。第一次漏了 9 处，其中两处是 JSON 解析错误的 cause，随上面的改动去掉了。另外 7 处补了测试：超时错误里有请求头的值时不带 cause、连接失败也要等、默认等 500 毫秒、状态码重试的日志、没有旧数据时的曲库下载重试、锁里重读文件、数据库删除失败时丢掉暂存的凭据文件（用触发器让删除失败）。补完重跑，7 处全部被发现。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。

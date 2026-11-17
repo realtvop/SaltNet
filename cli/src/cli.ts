@@ -108,6 +108,9 @@ async function run(
                     userAgent: config.values.network.userAgent,
                     timeoutMs: options?.timeoutMs ?? config.values.network.timeoutMs,
                     timeoutKey: options?.timeoutKey ?? "network.timeoutMs",
+                    retry: options?.retry,
+                    retryDelayMs: options?.retryDelayMs,
+                    log: logTo(io, args),
                 }),
             log: logTo(io, args),
         });

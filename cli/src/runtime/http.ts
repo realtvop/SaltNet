@@ -23,6 +23,10 @@ export interface HttpOptions {
     timeoutMs: number;
     /** The setting to name when this deadline expires. */
     timeoutKey: TimeoutConfigKey;
+    retry?: boolean;
+    retryDelayMs?: number;
+    sleep?: (ms: number) => Promise<void>;
+    log?: (message: string) => void;
 }
 
 /** Just the host, for messages. */
@@ -45,6 +49,8 @@ const TIMEOUT_CODES: ReadonlySet<string> = new Set([
     "UND_ERR_BODY_TIMEOUT",
     "ETIMEDOUT",
 ]);
+
+const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 500, 502, 503, 504]);
 
 const MAX_CAUSE_DEPTH = 5;
 
@@ -75,31 +81,96 @@ function reasonOf(error: unknown): string {
     return message;
 }
 
+function hasInvalidHeaderChar(value: string): boolean {
+    for (let i = 0; i < value.length; i++) {
+        const code = value.charCodeAt(i);
+        if (code === 0 || code === 10 || code === 13 || code > 0xff) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function collectHeaderSecrets(headers: Record<string, string>): readonly string[] {
+    const secrets: string[] = [];
+    for (const v of Object.values(headers)) {
+        if (typeof v === "string" && v.length >= 4) {
+            secrets.push(v);
+            if (v.startsWith("Bearer ") && v.length > 7) {
+                secrets.push(v.slice(7));
+            }
+        }
+    }
+    return [...new Set(secrets)].sort((a, b) => b.length - a.length);
+}
+
+function redact(text: string, secrets: readonly string[]): { text: string; replaced: boolean } {
+    let result = text;
+    let replaced = false;
+    for (const secret of secrets) {
+        if (result.includes(secret)) {
+            replaced = true;
+            result = result.replaceAll(secret, "<已隐藏>");
+        }
+    }
+    return { text: result, replaced };
+}
+
+function errorChainContains(error: unknown, secrets: readonly string[]): boolean {
+    if (secrets.length === 0) return false;
+    let current: unknown = error;
+    for (let depth = 0; depth <= MAX_CAUSE_DEPTH && current != null; depth++) {
+        const message = current instanceof Error ? current.message : String(current);
+        for (const secret of secrets) {
+            if (message.includes(secret)) return true;
+        }
+        current = current instanceof Error ? current.cause : undefined;
+    }
+    return false;
+}
+
 function networkError(
     host: string,
     error: unknown,
     timeoutMs: number,
     timeoutKey: TimeoutConfigKey,
-    phase: "request" | "body"
+    phase: "request" | "body",
+    secrets: readonly string[]
 ): CliError {
+    const hasSecret = errorChainContains(error, secrets);
     if (isTimeout(error)) {
         return new CliError(
             "NETWORK",
             `请求 ${host} 超时（超过 ${formatDuration(timeoutMs)} 没有完成）`,
             {
                 fix: `网络较慢时可以调大 ${timeoutKey}，例如 saltnet config set ${timeoutKey} 60000`,
-                cause: error,
+                cause: hasSecret ? undefined : error,
             }
         );
     }
-    const reason = reasonOf(error);
+    const rawReason = reasonOf(error);
+    const { text: reason, replaced } = redact(rawReason, secrets);
+    const shouldDropCause = hasSecret || replaced;
     return new CliError(
         "NETWORK",
         phase === "request"
             ? `无法连接到 ${host}（${reason}）`
             : `读取 ${host} 的响应时中断（${reason}）`,
-        { cause: error }
+        { cause: shouldDropCause ? undefined : error }
     );
+}
+
+/**
+ * The body as JSON. The parse error is not kept as the cause: it quotes the start of the body, which
+ * can repeat a header value cut short (a server that echoes the request), and it adds nothing to
+ * the message.
+ */
+function parseJson(host: string, text: string): unknown {
+    try {
+        return JSON.parse(text) as unknown;
+    } catch {
+        throw new CliError("UPSTREAM_ERROR", `${host} 返回的内容不是合法的 JSON`);
+    }
 }
 
 /**
@@ -118,19 +189,96 @@ export function upstreamStatusError(url: string, status: number): CliError {
  * `upstreamStatusError` is there for the callers that turn it into a `CliError`.
  */
 export function createHttp(options: HttpOptions): FetchLike {
-    const { timeoutMs, timeoutKey } = options;
+    const { timeoutMs, timeoutKey, retry = false } = options;
+    const retryDelayMs = options.retryDelayMs ?? 500;
+    const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
 
     return async (input: string, init?: FetchInit): Promise<FetchResponse> => {
         const host = hostOf(input);
+        const headers: Record<string, string> = {
+            "User-Agent": options.userAgent,
+            ...init?.headers,
+        };
+
+        for (const [name, val] of Object.entries(headers)) {
+            if (val !== undefined && hasInvalidHeaderChar(String(val))) {
+                throw new CliError(
+                    "INTERNAL",
+                    `请求头 ${name} 的值含有不能发送的字符；如果它来自绑定的凭据，请重新绑定`
+                );
+            }
+        }
+
+        const secrets = collectHeaderSecrets(headers);
+
+        if (retry) {
+            let lastError: unknown;
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                const signal = AbortSignal.timeout(timeoutMs);
+                let rawResponse: FetchResponse;
+                try {
+                    rawResponse = await options.fetch(input, {
+                        ...init,
+                        headers,
+                        signal,
+                    });
+                } catch (error) {
+                    lastError = networkError(
+                        host,
+                        error,
+                        timeoutMs,
+                        timeoutKey,
+                        "request",
+                        secrets
+                    );
+                    if (attempt === 1) {
+                        options.log?.(
+                            `请求 ${host} 失败（${(lastError as CliError).message}），准备重试`
+                        );
+                        await sleep(retryDelayMs);
+                        continue;
+                    }
+                    throw lastError;
+                }
+
+                if (attempt === 1 && RETRYABLE_STATUSES.has(rawResponse.status)) {
+                    options.log?.(`请求 ${host} 返回 HTTP ${rawResponse.status}，准备重试`);
+                    await sleep(retryDelayMs);
+                    continue;
+                }
+
+                let bodyText: string;
+                try {
+                    bodyText = await rawResponse.text();
+                } catch (error) {
+                    lastError = networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
+                    if (attempt === 1) {
+                        options.log?.(`读取 ${host} 响应中断，准备重试`);
+                        await sleep(retryDelayMs);
+                        continue;
+                    }
+                    throw lastError;
+                }
+
+                return {
+                    ok: rawResponse.ok,
+                    status: rawResponse.status,
+                    text: async () => bodyText,
+                    json: async () => parseJson(host, bodyText),
+                };
+            }
+            throw lastError;
+        }
+
         let response: FetchResponse;
         try {
             response = await options.fetch(input, {
                 ...init,
-                headers: { "User-Agent": options.userAgent, ...init?.headers },
+                headers,
                 signal: AbortSignal.timeout(timeoutMs),
             });
         } catch (error) {
-            throw networkError(host, error, timeoutMs, timeoutKey, "request");
+            throw networkError(host, error, timeoutMs, timeoutKey, "request", secrets);
         }
 
         // The deadline also covers the body, which is where a slow server usually stalls.
@@ -138,7 +286,7 @@ export function createHttp(options: HttpOptions): FetchLike {
             try {
                 return await response.text();
             } catch (error) {
-                throw networkError(host, error, timeoutMs, timeoutKey, "body");
+                throw networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
             }
         };
 
@@ -146,16 +294,7 @@ export function createHttp(options: HttpOptions): FetchLike {
             ok: response.ok,
             status: response.status,
             text: readText,
-            json: async () => {
-                const text = await readText();
-                try {
-                    return JSON.parse(text) as unknown;
-                } catch (error) {
-                    throw new CliError("UPSTREAM_ERROR", `${host} 返回的内容不是合法的 JSON`, {
-                        cause: error,
-                    });
-                }
-            },
+            json: async () => parseJson(host, await readText()),
         };
     };
 }

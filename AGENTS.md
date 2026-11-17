@@ -179,14 +179,16 @@ SaltNet is a three-package pnpm workspace:
         - `refresh.ts` is the `saltnet refresh` command; the downloads themselves are
           `src/catalog/refresh.ts`.
         - `user.ts` holds `user list`, `show`, `add`, `edit`, `remove` and `default`; removal uses
-          the shared content-bound confirmation.
+          the shared content-bound confirmation and deletes that user's credentials under the
+          credentials lock.
         - `fav.ts` holds `fav list`, `create`, `rename`, `delete` (content-bound confirmation),
           `add` and `remove`. As in the web app, a favorite holds songs by the music id of their
           side together with the difficulty each was added at, and `charts --fav` lists every chart
           of those songs.
         - `backup.ts` is the backup interchange: `import` decodes the web v0/v1 format, strips
-          credentials and replaces users plus score events after content-bound confirmation;
-          `export` restores selected credentials and writes a private web-compatible v1 file.
+          credentials and replaces users plus score events under the credentials lock after
+          content-bound confirmation, dropping pending authorizations; `export` restores selected
+          credentials and writes a private web-compatible v1 file.
     - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
       registry-generated Markdown (`markdown.ts`).
     - `src/output/` turns a command's result into output: the versioned JSON envelope
@@ -205,12 +207,16 @@ SaltNet is a three-package pnpm workspace:
           rewriting the whole file in one step through `files.ts`, which `catalog/snapshots.ts` uses
           too, and leaves a file that is not a JSON object alone.
         - `io.ts` wraps stdout/stderr/stdin and the network (`fetch`) so tests can inject them.
-        - `http.ts` gives commands a `fetch` (`ctx.http()`) that adds the User-Agent and a deadline
-          (`network.timeoutMs` unless the caller names another timeout setting) and reports failures
-          as `NETWORK`/`UPSTREAM_ERROR`, a timeout with a `fix` that names the setting to raise.
-        - `credentials.ts` strictly reads the versioned per-user credential file and stages its
-          mode-0600 whole-file replacement so import can commit the database before the final
-          rename.
+        - `http.ts` gives commands a `fetch` (`ctx.http()`) that validates header characters before
+          sending, redacts header values from error messages and causes, adds the User-Agent and a
+          deadline (`network.timeoutMs` unless the caller names another timeout setting), retries
+          read requests once on connection failures, timeouts, body-read errors or 429/5xx statuses
+          when requested, and reports failures as `NETWORK`/`UPSTREAM_ERROR`, a timeout with a `fix`
+          that names the setting to raise.
+        - `credentials.ts` strictly reads the versioned credential file (users and pending OAuth
+          authorizations) with a fix on parse failures, serializes modifications with
+          `withCredentialsLock`, prunes expired authorizations and orphaned user entries in
+          `updateCredentials`, and stages mode-0600 whole-file replacements.
     - `src/util/` has small helpers (edit distance and nearest names, name folding, display width,
       command-line splitting and quoting (`splitCommandLine`, `quoteArg`, `joinCommandLine`), times
       with a UTC offset).

@@ -1,11 +1,14 @@
+import type { LXNSOAuthTransaction } from "@core/integrations/lxns/oauth";
 import type { User } from "@core/user/type";
+import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
 import type { UserDetail, UserRow } from "../users/view";
 import { createUserUid } from "@core/user/scoreHistory/userIdentity";
 import { userCountsSchema, userRowSchema } from "../catalog/schemas";
-import { usageError } from "../errors";
+import { CliError, usageError } from "../errors";
 import { paginate } from "../output/paging";
 import { extend, int, list, object } from "../output/schema";
 import { resolveUser } from "../refs/user";
+import { readCredentials, stageCredentials, withCredentialsLock } from "../runtime/credentials";
 import {
     listUsers,
     makeDefaultUser,
@@ -268,7 +271,7 @@ export const userRemove = defineCommand(
                 description: "预览删除序号为 1 的用户；确认后运行 error.fix",
             },
         ],
-        errors: ["USAGE", ...USER_REFERENCE_ERRORS, "CONFIRMATION_REQUIRED"],
+        errors: ["USAGE", ...USER_REFERENCE_ERRORS, "CONFIRMATION_REQUIRED", "DB_LOCKED"],
         dataSchema: extend<RemovedUser, UserDetail>(
             userDetailSchema,
             { remainingUsers: int("删除后还剩多少个用户") },
@@ -277,7 +280,7 @@ export const userRemove = defineCommand(
     },
     (args, ctx) => {
         const store = ctx.store();
-        return store.transaction(() => {
+        return withCredentialsLock(store, () => {
             const users = listUsers(store);
             const found = removalUser(users, args.positionals.user, args.options.yes);
             const detail = userDetail(found, readUserCounts(store, found.uid));
@@ -305,7 +308,58 @@ export const userRemove = defineCommand(
                 summary: `将删除用户「${detail.name}」及其成绩和历史`,
                 confirmArgs,
             });
-            if (!removeUser(store, found.uid)) throw new Error("confirmed user disappeared");
+
+            const currentCredentials = readCredentials(ctx.paths);
+            const nextUsers: Record<string, UserCredentials> = {};
+            for (const [uid, creds] of Object.entries(currentCredentials.users)) {
+                if (uid !== found.uid) {
+                    nextUsers[uid] = creds;
+                }
+            }
+            const nextCredentials: CredentialsFile = {
+                version: 1,
+                users: nextUsers,
+            };
+            if (currentCredentials.pendingLxnsAuthorizations !== undefined) {
+                const nextPending: Record<string, LXNSOAuthTransaction> = {};
+                for (const [state, record] of Object.entries(
+                    currentCredentials.pendingLxnsAuthorizations
+                )) {
+                    if (record.userUid !== found.uid) {
+                        nextPending[state] = record;
+                    }
+                }
+                nextCredentials.pendingLxnsAuthorizations = nextPending;
+            }
+
+            const staged = stageCredentials(ctx.paths, nextCredentials);
+            let userDeleted = false;
+            try {
+                store.transaction(() => {
+                    if (!removeUser(store, found.uid))
+                        throw new Error("confirmed user disappeared");
+                });
+                userDeleted = true;
+            } catch (error) {
+                staged.discard();
+                throw error;
+            }
+
+            try {
+                staged.commit();
+            } catch (error) {
+                if (userDeleted) {
+                    const reason = error instanceof Error ? `（${error.message}）` : "";
+                    throw new CliError(
+                        "INTERNAL",
+                        `用户「${detail.name}」已删除，但凭据文件未能更新${reason}；残留凭据将在下次改动凭据文件时自动清理`,
+                        { cause: error }
+                    );
+                }
+                staged.discard();
+                throw error;
+            }
+
             return { data: { ...detail, remainingUsers: users.length - 1 } };
         });
     }

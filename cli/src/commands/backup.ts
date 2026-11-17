@@ -9,7 +9,7 @@ import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
 import { getUserDisplayName } from "@core/user/type";
 import { CliError } from "../errors";
 import { bool, int, object, str } from "../output/schema";
-import { readCredentials, stageCredentials } from "../runtime/credentials";
+import { readCredentials, stageCredentials, withCredentialsLock } from "../runtime/credentials";
 import { writeFileAtomic } from "../runtime/files";
 import {
     assertStoredScoreEvent,
@@ -233,7 +233,7 @@ export const importBackup = defineCommand(
         name: "import",
         summary: "确认后从网页端备份整体替换用户和成绩历史",
         description:
-            "读取网页端 v0 或 v1 用户备份，预览文件内容和会被覆盖的本地数据；确认后整体替换用户与成绩历史，收藏夹不受影响。水鱼 Import-Token 会移到 credentials.json；落雪授权默认丢弃，但会保留 uid 与落雪 id 都未改变的 CLI 自有授权。--keep-lxns 改为采用备份里的落雪授权；备份里没有落雪授权的用户仍照默认规则处理。输出和预览永远只含凭据数量，不含凭据值。",
+            "读取网页端 v0 或 v1 用户备份，预览文件内容和会被覆盖的本地数据；确认后整体替换用户与成绩历史，收藏夹不受影响。水鱼 Import-Token 会移到 credentials.json；进行中的落雪授权会被丢弃；落雪授权默认丢弃，但会保留 uid 与落雪 id 都未改变的 CLI 自有授权。--keep-lxns 改为采用备份里的落雪授权；备份里没有落雪授权的用户仍照默认规则处理。输出和预览永远只含凭据数量，不含凭据值。",
         category: "data",
         effect: "local",
         output: "object",
@@ -271,93 +271,95 @@ export const importBackup = defineCommand(
         const prepared = prepareImport(backup.decoded.users, backup.decoded.events);
         assertImportable(absolutePath, prepared);
         const store = ctx.store();
-        const currentUsers = readUsers(store);
-        const currentRows = listUsers(store);
-        const currentEventCount = readScoreEvents(store).length;
-        const currentCredentials = readCredentials(ctx.paths);
-        const credentials = applyCredentialPolicy(
-            prepared,
-            currentUsers,
-            currentCredentials,
-            args.options.keepLxns
-        );
-        const version = backup.source.version as 0 | 1;
-        const importedRows = prepared.users.map((user, index) => ({
-            index,
-            uid: user.uid as string,
-            name: String(getUserDisplayName(user)),
-        }));
-        const confirmArgs = [
-            "import",
-            givenPath,
-            ...(args.options.keepLxns ? ["--keep-lxns"] : []),
-        ];
-        requireConfirmation(args.options.yes, {
-            operation: "backup.import",
-            target: absolutePath,
-            state: {
-                fileDigest: createHash("sha256").update(backup.bytes).digest("hex"),
-                currentUsers: currentRows.map(user => ({
-                    uid: user.uid,
-                    updatedAt: user.updatedAt,
-                })),
-                currentEventCount,
-                keepLxns: args.options.keepLxns,
-            },
-            preview: {
-                file: {
-                    path: absolutePath,
-                    version,
-                    ...(version === 1
-                        ? {
-                              exportedAt: formatLocalTime(
-                                  new Date(backup.source.exportedAt as number)
-                              ),
-                          }
-                        : {}),
-                },
-                users: importedRows,
-                eventCount: prepared.events.length,
-                overwritten: {
-                    users: currentRows.map(user => ({
-                        index: user.index,
-                        uid: user.uid,
-                        name: user.displayName,
-                    })),
-                    eventCount: currentEventCount,
-                },
-                keepLxns: args.options.keepLxns,
-                divingFishTokenCount: prepared.divingFishTokenCount,
-            },
-            summary: `将用备份中的 ${prepared.users.length} 个用户和 ${prepared.events.length} 条成绩历史覆盖本地数据`,
-            confirmArgs,
-        });
-
-        const staged = stageCredentials(ctx.paths, credentials);
-        try {
-            replaceUsers(store, prepared.users, prepared.events);
-        } catch (error) {
-            staged.discard();
-            throw error;
-        }
-        try {
-            staged.commit();
-        } catch (error) {
-            throw new Error(
-                `用户已经导入，但凭据未保存到 ${ctx.paths.credentials}；请修复文件权限后重新导入`,
-                { cause: error }
+        return withCredentialsLock(store, () => {
+            const currentUsers = readUsers(store);
+            const currentRows = listUsers(store);
+            const currentEventCount = readScoreEvents(store).length;
+            const currentCredentials = readCredentials(ctx.paths);
+            const credentials = applyCredentialPolicy(
+                prepared,
+                currentUsers,
+                currentCredentials,
+                args.options.keepLxns
             );
-        }
+            const version = backup.source.version as 0 | 1;
+            const importedRows = prepared.users.map((user, index) => ({
+                index,
+                uid: user.uid as string,
+                name: String(getUserDisplayName(user)),
+            }));
+            const confirmArgs = [
+                "import",
+                givenPath,
+                ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+            ];
+            requireConfirmation(args.options.yes, {
+                operation: "backup.import",
+                target: absolutePath,
+                state: {
+                    fileDigest: createHash("sha256").update(backup.bytes).digest("hex"),
+                    currentUsers: currentRows.map(user => ({
+                        uid: user.uid,
+                        updatedAt: user.updatedAt,
+                    })),
+                    currentEventCount,
+                    keepLxns: args.options.keepLxns,
+                },
+                preview: {
+                    file: {
+                        path: absolutePath,
+                        version,
+                        ...(version === 1
+                            ? {
+                                  exportedAt: formatLocalTime(
+                                      new Date(backup.source.exportedAt as number)
+                                  ),
+                              }
+                            : {}),
+                    },
+                    users: importedRows,
+                    eventCount: prepared.events.length,
+                    overwritten: {
+                        users: currentRows.map(user => ({
+                            index: user.index,
+                            uid: user.uid,
+                            name: user.displayName,
+                        })),
+                        eventCount: currentEventCount,
+                    },
+                    keepLxns: args.options.keepLxns,
+                    divingFishTokenCount: prepared.divingFishTokenCount,
+                },
+                summary: `将用备份中的 ${prepared.users.length} 个用户和 ${prepared.events.length} 条成绩历史覆盖本地数据`,
+                confirmArgs,
+            });
 
-        return {
-            data: {
-                path: absolutePath,
-                userCount: prepared.users.length,
-                eventCount: prepared.events.length,
-                divingFishTokenCount: credentialCount(credentials, "divingFishImportToken"),
-                lxnsAuthorizationCount: credentialCount(credentials, "lxnsAuthorization"),
-            } satisfies ImportResult,
-        };
+            const staged = stageCredentials(ctx.paths, credentials);
+            try {
+                replaceUsers(store, prepared.users, prepared.events);
+            } catch (error) {
+                staged.discard();
+                throw error;
+            }
+            try {
+                staged.commit();
+            } catch (error) {
+                throw new Error(
+                    `用户已经导入，但凭据未保存到 ${ctx.paths.credentials}；请修复文件权限后重新导入`,
+                    { cause: error }
+                );
+            }
+
+            return {
+                data: {
+                    path: absolutePath,
+                    userCount: prepared.users.length,
+                    eventCount: prepared.events.length,
+                    divingFishTokenCount: credentialCount(credentials, "divingFishImportToken"),
+                    lxnsAuthorizationCount: credentialCount(credentials, "lxnsAuthorization"),
+                } satisfies ImportResult,
+            };
+        });
     }
 );
 

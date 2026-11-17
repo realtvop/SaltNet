@@ -7,7 +7,7 @@ import { useMetadata } from "../../src/commands/metadata";
 import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { formatLocalTime } from "../../src/util/time";
 import { createHarness, run } from "../harness";
-import { jsonResponse, mockFetch } from "../mockHttp";
+import { jsonResponse, mockFetch, textResponse } from "../mockHttp";
 import { useTempHome } from "../tempHome";
 
 const META_URL = "https://meta.test/saltmeta.json";
@@ -142,6 +142,48 @@ describe("a command that reads the catalog", () => {
         expect(json.meta.dataAsOf.catalog).toBe(formatLocalTime(ago(30)));
         expect(json.warnings).toHaveLength(1);
         expect(json.warnings[0]).toMatchObject({ code: "STALE_METADATA", fix: "saltnet refresh" });
+    });
+
+    it("does not retry when stored rows exist to fall back on", async () => {
+        const paths = makeHome();
+        await probeIn(paths, { now: ago(30) });
+
+        let calls = 0;
+        const { code, json, requests } = await probeIn(paths, {
+            network: routes({
+                [META_URL]: () => {
+                    calls++;
+                    return textResponse("service unavailable", 503);
+                },
+            }),
+        });
+
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+        expect(calls).toBe(1);
+        expect(requests.filter(r => r.url === META_URL)).toHaveLength(1);
+        expect(json.warnings).toHaveLength(1);
+        expect(json.warnings[0]).toMatchObject({ code: "STALE_METADATA", fix: "saltnet refresh" });
+    });
+
+    it("retries a failed download once when nothing is stored to fall back on", async () => {
+        const paths = makeHome();
+        let calls = 0;
+        const { code, json } = await probeIn(paths, {
+            network: routes({
+                [META_URL]: () => {
+                    calls++;
+                    return calls === 1
+                        ? textResponse("service unavailable", 503)
+                        : jsonResponse(getFixtureSaltMetaCompacted());
+                },
+            }),
+        });
+
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+        expect(calls).toBe(2);
+        expect(json.warnings).toHaveLength(0);
     });
 
     it("fails with NETWORK when nothing is stored and the download fails", async () => {

@@ -465,4 +465,23 @@ describe("the lock", () => {
         await refresh(paths, routes({ [META_URL]: refusedConnection }));
         expect(counts(paths).locks).toBe(0);
     });
+
+    it("retries a 503 once and succeeds", async () => {
+        const paths = makeHome();
+        let metaCalls = 0;
+        const retryRoutes = routes({
+            [META_URL]: () => {
+                metaCalls++;
+                if (metaCalls === 1) return textResponse("busy", 503);
+                return jsonResponse(getFixtureSaltMetaCompacted());
+            },
+        });
+
+        const { code, json, requests } = await refresh(paths, retryRoutes);
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+        expect(metaCalls).toBe(2);
+        const metaRequests = requests.filter(r => r.url === META_URL);
+        expect(metaRequests).toHaveLength(2);
+    });
 });

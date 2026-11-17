@@ -1,9 +1,13 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
 import type { User } from "@core/user/type";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { CollectionKind } from "@core/collection/type";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { describe, expect, it } from "vitest";
+import { readCredentials } from "../../src/runtime/credentials";
+import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { readScoreEvents, readUsers, replaceUsers } from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
@@ -618,6 +622,131 @@ describe("user remove and default", () => {
         expect(removed.code).toBe(0);
         expect(removed.json.data.uid).toBe("42");
         expect(readStored(paths).map(user => user.uid)).toEqual(["other"]);
+    });
+
+    it("removes user credentials and pending authorizations upon confirmed removal, keeping other users byte-for-byte unchanged", async () => {
+        const paths = makeHome();
+        seed(paths, [madeUser("one", { remark: "One" }), madeUser("two", { remark: "Two" })]);
+
+        const otherUserCreds = {
+            divingFishImportToken: "fake-df-token-two",
+            lxnsAuthorization: { accessToken: "fake-lxns-token-two", customField: 123 },
+        };
+        const initialCreds = {
+            version: 1 as const,
+            users: {
+                one: { divingFishImportToken: "fake-df-token-one" },
+                two: otherUserCreds,
+            },
+            pendingLxnsAuthorizations: {
+                s1: {
+                    userUid: "one",
+                    codeVerifier: "a".repeat(43),
+                    clientId: "c1",
+                    redirectUri: "https://example.com",
+                    expiresAt: Date.now() + 60_000,
+                },
+                s2: {
+                    userUid: "two",
+                    codeVerifier: "b".repeat(43),
+                    clientId: "c2",
+                    redirectUri: "https://example.com",
+                    expiresAt: Date.now() + 60_000,
+                },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(initialCreds, null, 2)}\n`, "utf8");
+
+        const preview = await commandIn(paths, "user", ["remove", "one"]);
+        expect(preview.code).toBe(6);
+        const fix = (preview.json.error as unknown as ConfirmationError).fix;
+        const confirmArgs = splitCommandLine(fix).slice(1);
+
+        const removed = await commandIn(paths, confirmArgs[0], confirmArgs.slice(1));
+        expect(removed.code).toBe(0);
+
+        const credsAfter = readCredentials(paths);
+        expect(credsAfter.users.one).toBeUndefined();
+        expect(credsAfter.users.two).toEqual(otherUserCreds);
+        expect(credsAfter.pendingLxnsAuthorizations?.s1).toBeUndefined();
+        expect(credsAfter.pendingLxnsAuthorizations?.s2).toEqual(
+            initialCreds.pendingLxnsAuthorizations.s2
+        );
+    });
+
+    it("changes nothing on unconfirmed removal", async () => {
+        const paths = makeHome();
+        seed(paths, [madeUser("one", { remark: "One" })]);
+        const initialContent = `${JSON.stringify(
+            {
+                version: 1,
+                users: { one: { divingFishImportToken: "fake-token" } },
+                pendingLxnsAuthorizations: {
+                    s1: {
+                        userUid: "one",
+                        codeVerifier: "a".repeat(43),
+                        clientId: "c1",
+                        redirectUri: "https://example.com",
+                        expiresAt: Date.now() + 60_000,
+                    },
+                },
+            },
+            null,
+            2
+        )}\n`;
+        writeFileSync(paths.credentials, initialContent, "utf8");
+
+        const preview = await commandIn(paths, "user", ["remove", "one"]);
+        expect(preview.code).toBe(6);
+        expect(readStored(paths).map(u => u.uid)).toEqual(["one"]);
+        expect(readFileSync(paths.credentials, "utf8")).toBe(initialContent);
+    });
+
+    it("discards the staged credentials file when the removal fails in the database", async () => {
+        const paths = makeHome();
+        seed(paths, [madeUser("one", { remark: "One" }), madeUser("two", { remark: "Two" })]);
+        const initialCreds = `${JSON.stringify({ version: 1, users: { one: { divingFishImportToken: "fake-df-token-one" } } }, null, 2)}\n`;
+        writeFileSync(paths.credentials, initialCreds, "utf8");
+
+        const preview = await commandIn(paths, "user", ["remove", "one"]);
+        expect(preview.code).toBe(6);
+        const fix = (preview.json.error as unknown as ConfirmationError).fix;
+        const confirmArgs = splitCommandLine(fix).slice(1);
+
+        const other = openStore(paths);
+        other.db.exec(
+            "CREATE TRIGGER refuse_delete BEFORE DELETE ON users BEGIN SELECT RAISE(ABORT, 'refused'); END"
+        );
+        other.close();
+
+        const removed = await commandIn(paths, confirmArgs[0], confirmArgs.slice(1));
+        expect(removed.code).not.toBe(0);
+
+        expect(readFileSync(paths.credentials, "utf8")).toBe(initialCreds);
+        expect(
+            readdirSync(dirname(paths.credentials)).filter(name => name.includes("credentials"))
+        ).toEqual(["credentials.json"]);
+        expect(readStored(paths).map(user => user.uid)).toEqual(["one", "two"]);
+    });
+
+    it("fails with DB_LOCKED and removes nothing when credentials lock is held", async () => {
+        const paths = makeHome();
+        seed(paths, [madeUser("one", { remark: "One" })]);
+        const store = openStore(paths);
+        const locked = acquireLock(store, "credentials", { ttlMs: 10_000 });
+        expect(locked.acquired).toBe(true);
+
+        const res = await commandIn(paths, "user", ["remove", "one"]);
+        expect(res.code).toBe(7);
+        expect(res.json.error).toMatchObject({
+            code: "DB_LOCKED",
+            retryable: true,
+            message: expect.stringContaining("正在改凭据文件；稍后再试"),
+        });
+        expect(readStored(paths).map(u => u.uid)).toEqual(["one"]);
+
+        if (locked.acquired) locked.lock.release();
+        store.close();
     });
 
     it("moves a user to index 0, keeps relative order, and accepts the current default", async () => {

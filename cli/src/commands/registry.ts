@@ -297,7 +297,12 @@ export interface CommandContext {
      * an explicit deadline says otherwise) and reports a failed connection as `NETWORK` and an
      * unreadable answer as `UPSTREAM_ERROR`. A status that is not a success is left to the caller.
      */
-    readonly http: (options?: { timeoutMs: number; timeoutKey: TimeoutConfigKey }) => FetchLike;
+    readonly http: (options?: {
+        timeoutMs?: number;
+        timeoutKey?: TimeoutConfigKey;
+        retry?: boolean;
+        retryDelayMs?: number;
+    }) => FetchLike;
     /**
      * Progress and diagnostics, one line each. They go to stderr when a person is watching
      * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's

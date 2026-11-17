@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { createRegistry } from "../../src/commands";
 import { addChartToFavorite, createFavorite, listFavorites } from "../../src/favorites/repository";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
+import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import {
     appendScoreEvents,
@@ -933,5 +934,66 @@ describe("backup import and export", () => {
         } finally {
             storeAfter.close();
         }
+    });
+
+    it("fails with DB_LOCKED and changes neither database nor credentials when credentials lock is held during import", async () => {
+        const paths = makeHome();
+        const initialUser = storedUser("original-user");
+        seed(paths, [initialUser], []);
+
+        const initialCreds = {
+            version: 1 as const,
+            users: { "original-user": { divingFishImportToken: "fake-df-original" } },
+        };
+        const staged = stageCredentials(paths, initialCreds);
+        staged.commit();
+
+        const store = openStore(paths);
+        const locked = acquireLock(store, "credentials", { ttlMs: 10_000 });
+        expect(locked.acquired).toBe(true);
+
+        const source = writeBackup(paths, "source.json");
+        const result = await commandIn(paths, "import", [source]);
+        expect(result.code).toBe(7);
+        expect(result.json.error).toMatchObject({
+            code: "DB_LOCKED",
+            retryable: true,
+            message: expect.stringContaining("正在改凭据文件；稍后再试"),
+        });
+
+        // Database and credentials file are unchanged
+        expect(readState(paths).users.map(u => u.uid)).toEqual(["original-user"]);
+        expect(readCredentials(paths)).toEqual(initialCreds);
+
+        if (locked.acquired) locked.lock.release();
+        store.close();
+    });
+
+    it("drops pending authorizations after import", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("initial-user")], []);
+
+        const initialCreds = {
+            version: 1 as const,
+            users: { "initial-user": { divingFishImportToken: "fake-df" } },
+            pendingLxnsAuthorizations: {
+                pending1: {
+                    userUid: "initial-user",
+                    codeVerifier: "a".repeat(43),
+                    clientId: "client-id",
+                    redirectUri: "https://example.com",
+                    expiresAt: Date.now() + 60_000,
+                },
+            },
+        };
+        const staged = stageCredentials(paths, initialCreds);
+        staged.commit();
+
+        const source = writeBackup(paths, "source.json");
+        const imported = await importFile(paths, source);
+        expect(imported.code).toBe(0);
+
+        const credsAfter = readCredentials(paths);
+        expect(credsAfter.pendingLxnsAuthorizations).toBeUndefined();
     });
 });
