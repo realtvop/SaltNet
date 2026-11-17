@@ -89,10 +89,14 @@ SaltNet is a three-package pnpm workspace:
   `src/runtime/credentials.ts` strictly reads the versioned per-user credential file and stages its
   mode-0600 whole-file replacement so import can commit the database before the final rename.
   `build.mjs --outfile <path>` writes the bundle to a caller-selected path instead. `e2e/` builds
-  such a bundle in a temporary directory, preloads a fixture-only `fetch`, seeds it with one refresh,
-  two made-up users and a favorite, and runs every generated guide example offline on its own copy
-  of the seed data. Each example has its own working directory containing a seed backup for the
-  import example.
+  such a bundle in a temporary directory, preloads a fixture-only `fetch`, and seeds it with one
+  refresh, an import of the made-up web backup (`shared/core/fixtures/web-backup-v1.json`, confirmed
+  through its `error.fix`) and a favorite. It checks the score commands against what the core
+  functions give for that backup (the gains on a copy of the seed with a user without scores, since
+  the backup's made-up ratings leave every gain of its users at 0) and runs every generated guide
+  example offline on its own copy of the seed data; an example with `--fields` must hold exactly
+  those fields of the rows the same command prints without it. Each example has its own working
+  directory containing a seed backup for the import example.
   A confirmation example may return exit code 6; the test validates its failure envelope and runs
   `error.fix` against the same data and working directory.
 

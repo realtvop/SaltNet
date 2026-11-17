@@ -13,10 +13,25 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { isUtageGrade } from "@core/chart/difficulty";
+import { getSaltNetMusicIdForChartType } from "@core/music/saltmeta";
+import {
+    calculateRating,
+    createMusicChartMap,
+    getB50Gain,
+    selectB50Charts,
+    sumChartRatings,
+} from "@core/query/b50";
+import { decodeUserDataBackup } from "@core/user/backup";
+import { normalizeRatingHistory } from "@core/user/ratingHistory";
 import { afterAll, expect, it } from "vitest";
+import { allChartEntries } from "../src/catalog/chartQuery";
+import { constantOf } from "../src/catalog/chartRow";
+import { chartKeyOf } from "../src/catalog/songs";
 import { createRegistry } from "../src/commands";
 import { splitCommandLine } from "../src/util/shell";
 import { expectConforms } from "../tests/dataSchema";
+import { fixtureSongCatalog } from "../tests/fixtureCatalog";
 
 const SALTMETA_URL = "https://meta.e2e.invalid/saltmeta.json";
 const LXNS_URL = "https://lxns.e2e.invalid";
@@ -237,13 +252,36 @@ function requestedFields(args: readonly string[]): string[] | undefined {
         .split(",");
 }
 
-function withoutFormat(args: readonly string[]): string[] {
+function withoutOption(args: readonly string[], option: string): string[] {
     const kept: string[] = [];
     for (let index = 0; index < args.length; index++) {
-        if (args[index] === "--format") index++;
-        else if (!args[index].startsWith("--format=")) kept.push(args[index]);
+        if (args[index] === option) index++;
+        else if (!args[index].startsWith(`${option}=`)) kept.push(args[index]);
     }
     return kept;
+}
+
+function withoutFormat(args: readonly string[]): string[] {
+    return withoutOption(args, "--format");
+}
+
+/** The row lists of a result: its `items`, or the `items` of each of its `groups`. */
+function rowLists(data: unknown): unknown[][] {
+    const { items, groups } = data as { items?: unknown[]; groups?: { items: unknown[] }[] };
+    return items ? [items] : (groups ?? []).map(group => group.items);
+}
+
+/** A result without its rows: the part `--fields` leaves alone. */
+function withoutRows(data: unknown): unknown {
+    const {
+        items: _items,
+        groups,
+        ...rest
+    } = data as {
+        items?: unknown;
+        groups?: { items: unknown }[];
+    };
+    return { ...rest, groups: groups?.map(({ items: _rows, ...group }) => group) };
 }
 
 /** A TSV cell as design 4.2 writes it: empty for null, JSON for objects, escaped tabs and newlines. */
@@ -337,15 +375,28 @@ it("runs every bundled guide example from seeded fixtures without network", () =
 
     const refresh = runBundle(["refresh"], "serve");
     expect(success(refresh, "refresh").command).toBe("refresh");
-    const firstUser = runBundle(["user", "add", "--remark", "主玩家"], "deny", refresh.saltnetHome);
-    expect(success(firstUser, "seed first user").command).toBe("user add");
-    const secondUser = runBundle(
-        ["user", "add", "--remark", "副玩家"],
+    const fixtureBackupPath = path.resolve(repoRoot, "shared/core/fixtures/web-backup-v1.json");
+    const importPreview = runBundle(["import", fixtureBackupPath], "deny", refresh.saltnetHome);
+    expect(importPreview.status, "import preview status").toBe(6);
+    expect(importPreview.stderr, "import preview stderr").toBe("");
+    const importFailed = JSON.parse(importPreview.stdout) as {
+        ok: boolean;
+        error: { code: string; fix: string };
+    };
+    expect(importFailed.ok, "import preview ok").toBe(false);
+    expect(importFailed.error.code, "import preview error code").toBe("CONFIRMATION_REQUIRED");
+    if (!envelopeSchema) throw new Error("envelope schema has not been read yet");
+    expectConforms(envelopeSchema, importFailed);
+    const importFixArgs = splitCommandLine(importFailed.error.fix);
+    expect(importFixArgs.shift(), "import fix saltnet").toBe("saltnet");
+    const importConfirmed = runBundleInPlace(
+        importFixArgs,
         "deny",
-        firstUser.saltnetHome
+        importPreview.saltnetHome,
+        importPreview.cwd
     );
-    expect(success(secondUser, "seed second user").command).toBe("user add");
-    const seedFavCreate = runBundle(["fav", "create", "练习"], "deny", secondUser.saltnetHome);
+    expect(success(importConfirmed, "seed import").command).toBe("import");
+    const seedFavCreate = runBundle(["fav", "create", "练习"], "deny", importPreview.saltnetHome);
     expect(success(seedFavCreate, "seed fav create").command).toBe("fav create");
     const seedFavAdd = runBundle(
         ["fav", "add", "练习", "146-3"],
@@ -358,7 +409,7 @@ it("runs every bundled guide example from seeded fixtures without network", () =
         ["export", path.join(seed, "example-backup.json")],
         "deny",
         seed,
-        secondUser.cwd
+        seedFavAdd.cwd
     );
     expect(success(seedBackup, "seed backup").command).toBe("export");
 
@@ -388,6 +439,294 @@ it("runs every bundled guide example from seeded fixtures without network", () =
     expect(best, "search 39").toMatchObject({ musicId: 146, title: "39" });
     expect(best.matchedBy, "search 39").toContain("title");
 
+    const fixtureBackup = decodeUserDataBackup(JSON.parse(readFileSync(fixtureBackupPath, "utf8")));
+    const catalog = fixtureSongCatalog();
+    const entries = allChartEntries(catalog);
+    const catalogCharts = entries.map(entry => entry.chart);
+    const chartMap = createMusicChartMap(catalogCharts);
+    const b50Options = { fitDiff: false, nb50: false, comboFilter: null, pc50: false } as const;
+    const user0B50 = selectB50Charts(fixtureBackup.users[0].data, chartMap, b50Options);
+    const user1B50 = selectB50Charts(fixtureBackup.users[1].data, chartMap, b50Options);
+
+    const userList = success(runBundle(["user", "list", "--offline"], "deny", seed), "user list");
+    expect(userList.command).toBe("user list");
+    expectConforms(schemaOf("user list"), userList.data);
+    const userListItems = (userList.data as { items: { index: number; uid: string }[] }).items;
+    expect(userListItems).toHaveLength(fixtureBackup.users.length);
+    expect(userListItems.map(item => item.uid)).toEqual(fixtureBackup.users.map(u => u.uid));
+    expect(userListItems.map(item => item.index)).toEqual([0, 1]);
+
+    const ratingDefault = success(runBundle(["rating", "--offline"], "deny", seed), "rating");
+    expect(ratingDefault.command).toBe("rating");
+    expectConforms(schemaOf("rating"), ratingDefault.data);
+    expect((ratingDefault.data as { rating: number | null }).rating).toBe(
+        fixtureBackup.users[0].data.rating ?? null
+    );
+
+    const ratingUser1 = success(
+        runBundle(["rating", "--user", "1", "--offline"], "deny", seed),
+        "rating --user 1"
+    );
+    expect(ratingUser1.command).toBe("rating");
+    expectConforms(schemaOf("rating"), ratingUser1.data);
+    expect((ratingUser1.data as { rating: number | null }).rating).toBe(
+        fixtureBackup.users[1].data.rating ?? null
+    );
+
+    const ratingHistory = success(
+        runBundle(["rating", "--history", "--offline"], "deny", seed),
+        "rating --history"
+    );
+    expect(ratingHistory.command).toBe("rating");
+    expectConforms(schemaOf("rating"), ratingHistory.data);
+    const expectedHistory = normalizeRatingHistory(fixtureBackup.users[0]);
+    const historyRows = (
+        ratingHistory.data as {
+            history: { rating: number; change: number | null }[];
+        }
+    ).history;
+    expect(historyRows).toHaveLength(expectedHistory.length);
+    expect(historyRows.map(row => row.rating)).toEqual(expectedHistory.map(entry => entry.rating));
+    expect(historyRows.map(row => row.change)).toEqual(
+        expectedHistory.map((entry, index) =>
+            index === 0 ? null : entry.rating - expectedHistory[index - 1].rating
+        )
+    );
+
+    const b50Default = success(runBundle(["b50", "--offline"], "deny", seed), "b50");
+    expect(b50Default.command).toBe("b50");
+    expectConforms(schemaOf("b50"), b50Default.data);
+    const b50DefaultData = b50Default.data as {
+        rating: { b35: number; b15: number; total: number };
+        groups: { key: string; items: { chartKey: string }[] }[];
+    };
+    const expectedB35Rating = sumChartRatings(user0B50.old);
+    const expectedB15Rating = sumChartRatings(user0B50.newer);
+    expect(b50DefaultData.rating.b35).toBe(expectedB35Rating);
+    expect(b50DefaultData.rating.b15).toBe(expectedB15Rating);
+    expect(b50DefaultData.rating.total).toBe(expectedB35Rating + expectedB15Rating);
+    const b50B35Group = b50DefaultData.groups.find(group => group.key === "B35")!;
+    const b50B15Group = b50DefaultData.groups.find(group => group.key === "B15")!;
+    expect(b50B35Group.items.map(item => item.chartKey)).toEqual(user0B50.old.map(chartKeyOf));
+    expect(b50B15Group.items.map(item => item.chartKey)).toEqual(user0B50.newer.map(chartKeyOf));
+
+    const b50User1Result = runBundle(["b50", "--user", "1", "--offline"], "deny", seed);
+    const b50User1 = success(b50User1Result, "b50 --user 1");
+    expect(b50User1.command).toBe("b50");
+    expectConforms(schemaOf("b50"), b50User1.data);
+    const b50User1Data = b50User1.data as {
+        rating: { b35: number; b15: number; total: number };
+        groups: { key: string; items: { chartKey: string }[] }[];
+    };
+    const expectedUser1B35Rating = sumChartRatings(user1B50.old);
+    const expectedUser1B15Rating = sumChartRatings(user1B50.newer);
+    expect(b50User1Data.rating.b35).toBe(expectedUser1B35Rating);
+    expect(b50User1Data.rating.b15).toBe(expectedUser1B15Rating);
+    expect(b50User1Data.rating.total).toBe(expectedUser1B35Rating + expectedUser1B15Rating);
+    const user1B35Group = b50User1Data.groups.find(group => group.key === "B35")!;
+    const user1B15Group = b50User1Data.groups.find(group => group.key === "B15")!;
+    expect(user1B35Group.items.map(item => item.chartKey)).toEqual(user1B50.old.map(chartKeyOf));
+    expect(user1B15Group.items.map(item => item.chartKey)).toEqual(user1B50.newer.map(chartKeyOf));
+    const b50User1Envelope = JSON.parse(b50User1Result.stdout) as { warnings?: { code: string }[] };
+    expect(b50User1Envelope.warnings).toEqual([
+        expect.objectContaining({ code: "PARTIAL_SCORES" }),
+    ]);
+
+    const historyAll = success(
+        runBundle(["history", "--all-changes", "--offline"], "deny", seed),
+        "history --all-changes"
+    );
+    expect(historyAll.command).toBe("history");
+    expectConforms(schemaOf("history"), historyAll.data);
+    const historyAllItems = (historyAll.data as { items: { chartKey: string }[] }).items;
+    expect(historyAllItems).toHaveLength(4);
+    expect(historyAllItems.map(item => item.chartKey)).toEqual(["131-4", "58-4", "70-4", "131-4"]);
+
+    // No fixture event changes only the play count: the second event of 131-4 is marked as an
+    // achievement change (mask 1, not `ScoreHistoryChange.PlayCount`, 16), so the default list
+    // hides nothing. Hiding is covered by `tests/commands/history.test.ts`.
+    const historyDefault = success(runBundle(["history", "--offline"], "deny", seed), "history");
+    expect(historyDefault.command).toBe("history");
+    expect(historyDefault.data).toEqual(historyAll.data);
+
+    const chartsAchieved = success(
+        runBundle(["charts", "--achieved", "sss", "--limit", "1000", "--offline"], "deny", seed),
+        "charts --achieved sss --limit 1000"
+    );
+    expect(chartsAchieved.command).toBe("charts");
+    expectConforms(schemaOf("charts"), chartsAchieved.data);
+    const achievedItems = (
+        chartsAchieved.data as { items: { chartKey: string; score: { achievements: number } }[] }
+    ).items;
+    expect(achievedItems.length).toBeGreaterThan(0);
+    for (const row of achievedItems) {
+        expect(row.score.achievements).toBeGreaterThanOrEqual(100);
+    }
+    const expectedSssCount = Object.values(fixtureBackup.users[0].data.detailed ?? {}).filter(
+        record => {
+            if (record.achievements < 100) return false;
+            const musicId = getSaltNetMusicIdForChartType(record.song_id, record.type);
+            const chart = chartMap.get(`${musicId}-${record.level_index}`);
+            return chart !== undefined && !isUtageGrade(chart.info.grade);
+        }
+    ).length;
+    expect(achievedItems).toHaveLength(expectedSssCount);
+
+    const targetChartKey = "131-4";
+    const targetChart = chartMap.get(targetChartKey)!;
+    const targetRecord = fixtureBackup.users[0].data.detailed![targetChartKey];
+    const chartDetail = success(
+        runBundle(["chart", targetChartKey, "--offline"], "deny", seed),
+        `chart ${targetChartKey}`
+    );
+    expect(chartDetail.command).toBe("chart");
+    expectConforms(schemaOf("chart"), chartDetail.data);
+    const chartDetailData = chartDetail.data as {
+        score: {
+            achievements: number | null;
+            rank: string | null;
+            combo: string | null;
+            sync: string | null;
+            dxScore: number | null;
+        } | null;
+        stages: { rating: number; gain: number | null }[];
+    };
+    expect(chartDetailData.score).toMatchObject({
+        achievements: targetRecord.achievements,
+        rank: "SSS",
+        combo: "FC",
+        sync: "FS",
+        dxScore: targetRecord.dxScore,
+    });
+    expect(chartDetailData.stages.length).toBeGreaterThan(0);
+    for (const stage of chartDetailData.stages) {
+        expect(stage.gain).toBe(getB50Gain(user0B50, targetChart, stage.rating));
+    }
+
+    const calcResult = success(
+        runBundle(["calc", targetChartKey, "--achievements", "100.5", "--offline"], "deny", seed),
+        `calc ${targetChartKey} --achievements 100.5`
+    );
+    expect(calcResult.command).toBe("calc");
+    expectConforms(schemaOf("calc"), calcResult.data);
+    const calcData = calcResult.data as { rating: number | null; gain: number | null };
+    const targetConstant = constantOf(targetChart)!;
+    const expectedCalcRating = calculateRating(100.5, targetConstant);
+    expect(calcData.rating).toBe(expectedCalcRating);
+    expect(calcData.gain).toBe(getB50Gain(user0B50, targetChart, expectedCalcRating));
+
+    const chartsGain = success(
+        runBundle(["charts", "--sort", "gain", "--limit", "10", "--offline"], "deny", seed),
+        "charts --sort gain --limit 10"
+    );
+    expect(chartsGain.command).toBe("charts");
+    expectConforms(schemaOf("charts"), chartsGain.data);
+    const gainItems = (chartsGain.data as { items: { chartKey: string; gain: number | null }[] })
+        .items;
+    expect(gainItems).toHaveLength(10);
+    for (const item of gainItems) {
+        const itemChart = chartMap.get(item.chartKey)!;
+        const itemConstant = constantOf(itemChart);
+        const expectedGain =
+            itemConstant === null
+                ? null
+                : getB50Gain(user0B50, itemChart, calculateRating(100.5, itemConstant));
+        expect(item.gain).toBe(expectedGain);
+    }
+    for (let i = 1; i < gainItems.length; i++) {
+        const prev = gainItems[i - 1].gain ?? -Infinity;
+        const curr = gainItems[i].gain ?? -Infinity;
+        expect(prev).toBeGreaterThanOrEqual(curr);
+    }
+
+    // The fixture's made-up ratings (about 100000 each) fill both sections of user 0 and leave no
+    // new chart outside user 1's B15, so every gain of theirs is 0. A user without scores has an
+    // empty B50, where every chart gains its whole rating at any stage: a copy of the seed gets
+    // one, so a wrong gain or target shows.
+    const blank = runBundle(["user", "add", "--remark", "空白"], "deny", seed);
+    expect(success(blank, "user add 空白").command).toBe("user add");
+    const inBlank = (args: string[]) =>
+        success(
+            runBundleInPlace(
+                [...args, "--user", "2", "--offline"],
+                "deny",
+                blank.saltnetHome,
+                blank.cwd
+            ),
+            `${args.join(" ")} --user 2`
+        );
+    const blankStages = (
+        inBlank(["chart", targetChartKey]).data as {
+            stages: { rating: number; gain: number | null }[];
+        }
+    ).stages;
+    expect(blankStages.length).toBeGreaterThan(0);
+    for (const stage of blankStages) expect(stage.gain).toBe(stage.rating);
+    expect(blankStages.some(stage => stage.rating > 0)).toBe(true);
+
+    const blankCalc = inBlank(["calc", targetChartKey, "--achievements", "100.5"]);
+    expectConforms(schemaOf("calc"), blankCalc.data);
+    expect(blankCalc.data).toMatchObject({ rating: expectedCalcRating, gain: expectedCalcRating });
+
+    const blankGains = inBlank(["charts", "--sort", "gain", "--limit", "10"]);
+    expectConforms(schemaOf("charts"), blankGains.data);
+    const expectedTopGains = catalogCharts
+        .filter(chart => !isUtageGrade(chart.info.grade) && constantOf(chart) !== null)
+        .map(chart => calculateRating(100.5, constantOf(chart)!))
+        .sort((a, b) => b - a)
+        .slice(0, 10);
+    expect(expectedTopGains[0]).toBeGreaterThan(0);
+    expect(
+        (blankGains.data as { items: { gain: number | null }[] }).items.map(item => item.gain)
+    ).toEqual(expectedTopGains);
+
+    const collectionShow = success(
+        runBundle(["collection", "show", "plate:6148", "--all", "--offline"], "deny", seed),
+        "collection show plate:6148 --all"
+    );
+    expect(collectionShow.command).toBe("collection show");
+    expectConforms(schemaOf("collection show"), collectionShow.data);
+    // Every record of user 0 is SSS with FC and FS: 覇者 (rank A) is done exactly on the charts
+    // they have a record of, 真神 (AP) on none of them.
+    const user0RecordKeys = new Set(
+        Object.values(fixtureBackup.users[0].data.detailed ?? {}).map(
+            record =>
+                `${getSaltNetMusicIdForChartType(record.song_id, record.type)}-${record.level_index}`
+        )
+    );
+    const showItems = (collectionShow.data as { items: { chartKey: string; done: unknown }[] })
+        .items;
+    expect(showItems.length).toBeGreaterThan(0);
+    for (const item of showItems) {
+        expect(item.done, item.chartKey).toBe(user0RecordKeys.has(item.chartKey));
+    }
+    expect(showItems.some(item => item.done === true)).toBe(true);
+    const apPlate = success(
+        runBundle(["collection", "show", "plate:6102", "--all", "--offline"], "deny", seed),
+        "collection show plate:6102 --all"
+    );
+    expectConforms(schemaOf("collection show"), apPlate.data);
+    const apItems = (apPlate.data as { items: { chartKey: string; done: unknown }[] }).items;
+    expect(apItems.length).toBeGreaterThan(0);
+    for (const item of apItems) expect(item.done, item.chartKey).toBe(false);
+
+    const favCharts = success(
+        runBundle(["charts", "--fav", "练习", "--offline"], "deny", seed),
+        "charts --fav 练习"
+    );
+    expect(favCharts.command).toBe("charts");
+    expectConforms(schemaOf("charts"), favCharts.data);
+    const favItems = (favCharts.data as { items: { chartKey: string; musicId: number }[] }).items;
+    expect(favItems.length).toBeGreaterThan(0);
+    for (const item of favItems) {
+        expect(item.musicId).toBe(146);
+    }
+    const expectedMusic146Keys = entries
+        .filter(entry => entry.chart.music.id === 146)
+        .map(entry => chartKeyOf(entry.chart))
+        .sort();
+    expect(favItems.map(item => item.chartKey).sort()).toEqual(expectedMusic146Keys);
+
     const guide = runBundle(["guide"], "deny", seed);
     expect(guide.status, "guide").toBe(0);
     expect(guide.stderr, "guide").toBe("");
@@ -399,6 +738,9 @@ it("runs every bundled guide example from seeded fixtures without network", () =
     );
     expect(examples).toHaveLength(expectedExamples);
 
+    // Rows that `--fields` examples printed; some may print none (`history --since 7d` once the
+    // fixture's events are older than that), but not all of them.
+    let projectedRows = 0;
     for (const example of examples) {
         const args = splitCommandLine(example);
         const name = commandName(args);
@@ -470,6 +812,38 @@ it("runs every bundled guide example from seeded fixtures without network", () =
 
         const envelope = success(result, line);
         expect(envelope.command, line).toBe(name);
+        const fields = requestedFields(args);
+        if (fields) {
+            // The published schema describes whole rows: the same command without `--fields` must
+            // conform to it, and the projected rows must hold exactly the requested fields of its
+            // rows, everything else unchanged.
+            const whole = success(
+                runBundle(withoutOption(runArgs, "--fields"), "deny", seed),
+                `${line} without --fields`
+            );
+            expectConforms(schemaOf(name), whole.data);
+            expect(withoutRows(envelope.data), line).toEqual(withoutRows(whole.data));
+            const projectedLists = rowLists(envelope.data);
+            const wholeLists = rowLists(whole.data);
+            expect(
+                projectedLists.map(rows => rows.length),
+                line
+            ).toEqual(wholeLists.map(rows => rows.length));
+            projectedRows += projectedLists.flat().length;
+            const topLevel = [...new Set(fields.map(field => field.split(".")[0]))].sort();
+            projectedLists.forEach((rows, listIndex) => {
+                rows.forEach((row, rowIndex) => {
+                    expect(Object.keys(row as object).sort(), line).toEqual(topLevel);
+                    for (const field of fields) {
+                        expect(valueAt(row, field), `${line}: ${field}`).toEqual(
+                            valueAt(wholeLists[listIndex][rowIndex], field)
+                        );
+                    }
+                });
+            });
+            continue;
+        }
         expectConforms(schemaOf(name), envelope.data);
     }
+    expect(projectedRows).toBeGreaterThan(0);
 });

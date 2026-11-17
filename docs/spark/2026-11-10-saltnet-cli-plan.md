@@ -190,7 +190,7 @@
 - [x] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
 - [x] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
 - [x] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
-- [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
+- [x] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
 - [ ] P2-27 `docs: update agents guide for cli phase 2`；把 `AGENTS.md` 里 `cli/` 那一大段拆成分条（第 50 条）；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
 
 ### P3 同步和绑定
@@ -890,3 +890,14 @@
     - 我改的：`AGENTS.md` 补了 `getB50Gain`、阶段和 `calc` 的 `gain`、`--sort gain` 和 `--target`、`UserScores` 留下的 B50，以及 `test:query` 里的新测试。
     - 测试：改动检查 35 处（core 15 处、CLI 20 处），第一次（补上那个测试的 `gain` 之后）core 11 处、CLI 12 处被发现。没被发现的里，1 处是等价的（`charts` 对没有定数的谱直接给 null：没有定数的只有宴谱，core 对宴谱本来就返回 null，测试数据和今天的真实曲库都是这样）；其余都是测试缺口。core 我补了 3 个用例：差一张才满的部分仍按没满算，同一首歌的别的难度不算这张谱，部分里最低的 rating 不在两头时也取最低。CLI 的排序测试用的用户每条记录的 rating 都在 10 万上下，两个部分都满，所有 gain 都是 0，排序、目标档和 `--asc` 等于没测：我把这几个测试换成 9 条按公式算 rating 的记录（两个部分都没满），检查 gain 不止一种值，加了大写的 `SSS`、只有按 gain 排时行里才有 `gain`，以及手算的 `calc`：定数 13.0 上 `--rating 230` 找到 97.0000、rating 252、gain 252（不是 230），已经有 252 时打到 100.5 涨 40。之后除了等价的那处，改动检查全部被发现。
     - 按决定 66 不单独送审，并入 P2 的整体审查。core 只加了这个函数和它的测试，网页端没改。
+82. **P2-26 的实现（2026-11-17）**：
+    - Gemini 写的（〔简单〕，分工没变）：端到端测试的种子不再用两条 `user add`，改成导入 `shared/core/fixtures/web-backup-v1.json`（先得到退出码 6，再照 `error.fix` 确认），其余照旧（收藏夹、给导入示例用的导出备份）。新的检查都拿 core 函数对这份备份算出的结果比：`user list`、两个用户的 `rating`、`rating --history`、两个用户的 `b50`（两个部分的谱面和 rating 总和）、`history`、`charts --achieved sss`、`chart 131-4`（成绩和阶段的 gain）、`calc 131-4 --achievements 100.5`、`charts --sort gain`、`collection show plate:6148 --all`、`charts --fav 练习`。
+    - Gemini 指出 brief 里的一处错：我让带 `--fields` 的输出也对命令公开的 schema 校验，但 schema 描述的是完整的行，投影后的行少了必填字段。种子有了成绩以后，指南示例里带 `--fields` 的 JSON 输出（`b50`、`history --since 7d`）也因此不再符合。
+    - 我改的：
+        - `charts --achieved sss` 去掉 `--fields`，加 `--limit 1000`（默认只给 50 条，对不上 175 条的预期）。
+        - 指南示例带 `--fields` 的 JSON 输出：同一条命令去掉 `--fields` 再跑一遍，它要符合 schema；投影后每一行只有所要的字段，值和完整的行一样，行以外的部分（rating 总和、分组的键、分页）不变。`history --since 7d` 在夹具的事件超过 7 天以后没有行，所以只要求所有带 `--fields` 的示例合起来有行。
+        - Gemini 以为 131-4 的第二条事件只改了游玩次数（预期默认的 `history` 少一条）。它的 `changedMask` 是 1，是达成率那一位，只改游玩次数的那一位是 16，所以默认列表和 `--all-changes` 一样。改成断言两者相同，注明隐藏由 `tests/commands/history.test.ts` 覆盖。
+        - 增益和收藏品的检查原来等于没测（见下）：在种子的一份拷贝里加一个没有成绩的用户，它的 B50 是空的，每张谱在每个阶段都涨整个 rating，于是查 `chart 131-4` 的每个阶段 gain 等于 rating、`calc` 的 gain 等于 rating、`charts --sort gain` 前 10 的 gain 等于全曲库按 SSS+ 算出的最高 10 个。收藏品改成：覇者（要求 A）恰好在用户 0 有记录的谱上完成，真神（要求 AP，用户 0 的记录全是 FC）一张都没完成。
+        - `AGENTS.md` 改了 `e2e/` 那句。
+    - 测试：对端到端测试做改动检查 8 处。第一次只发现 3 处（`b50` 的 B15 总和、`rating` 的变化量、导入丢一条事件）；阶段和 `calc` 的 gain 恒为 0、`--sort gain` 的默认目标换成 SSS、收藏品恒为完成都没被发现：夹具里每条记录的 rating 都在 10 万上下，用户 0 的两个部分都满，用户 1 只有公开 B50，新谱全在它的 B15 里，所以所有 gain 都是 0；用户 0 的记录全是 SSS、FC、FS，覇者每张都完成。按上面改了以后，加上收藏品恒为未完成，8 处全部被发现。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。
