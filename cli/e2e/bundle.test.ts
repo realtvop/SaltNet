@@ -345,7 +345,15 @@ it("runs every bundled guide example from seeded fixtures without network", () =
         firstUser.saltnetHome
     );
     expect(success(secondUser, "seed second user").command).toBe("user add");
-    const seed = secondUser.saltnetHome;
+    const seedFavCreate = runBundle(["fav", "create", "练习"], "deny", secondUser.saltnetHome);
+    expect(success(seedFavCreate, "seed fav create").command).toBe("fav create");
+    const seedFavAdd = runBundle(
+        ["fav", "add", "练习", "146-3"],
+        "deny",
+        seedFavCreate.saltnetHome
+    );
+    expect(success(seedFavAdd, "seed fav add").command).toBe("fav add");
+    const seed = seedFavAdd.saltnetHome;
     const seedBackup = runBundleInPlace(
         ["export", path.join(seed, "example-backup.json")],
         "deny",

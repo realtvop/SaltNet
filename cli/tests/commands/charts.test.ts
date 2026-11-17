@@ -1325,4 +1325,54 @@ describe("saltnet charts sorting and grouping", () => {
         expect(stdout).toContain("--desc");
         expect(stdout).toContain("--group-by");
     });
+
+    describe("--fav option", () => {
+        it("filters charts by favorite with and without --diff, handles utage, combines filters, and handles empty favorites", async () => {
+            const paths = makeHome();
+            await commandIn(paths, "fav", ["create", "练习"]);
+            await commandIn(paths, "fav", ["add", "练习", "146-3"]);
+            await commandIn(paths, "fav", ["add", "练习", "110851-10"]);
+            await commandIn(paths, "fav", ["create", "空收藏夹"]);
+
+            // Without --diff: non-utage charts of the favorited music IDs (146 has 5 charts)
+            const withoutDiff = await chartsIn(paths, ["--fav", "练习"]);
+            expect(withoutDiff.code).toBe(0);
+            expect(withoutDiff.json.data.items.map(c => c.chartKey)).toEqual([
+                "146-4",
+                "146-3",
+                "146-2",
+                "146-1",
+                "146-0",
+            ]);
+
+            // With --diff mas: only MASTER
+            const withMas = await chartsIn(paths, ["--fav", "练习", "--diff", "mas"]);
+            expect(withMas.code).toBe(0);
+            expect(withMas.json.data.items.map(c => c.chartKey)).toEqual(["146-3"]);
+
+            // With --diff utage: only UTAGE
+            const withUtage = await chartsIn(paths, ["--fav", "练习", "--diff", "utage"]);
+            expect(withUtage.code).toBe(0);
+            expect(withUtage.json.data.items.map(c => c.chartKey)).toEqual(["110851-10"]);
+
+            // Combined with another filter (--diff exp)
+            const withDiff = await chartsIn(paths, ["--fav", "练习", "--diff", "exp"]);
+            expect(withDiff.code).toBe(0);
+            expect(withDiff.json.data.items.map(c => c.chartKey)).toEqual(["146-2"]);
+
+            // Empty favorite gives empty result
+            const emptyFav = await chartsIn(paths, ["--fav", "空收藏夹"]);
+            expect(emptyFav.code).toBe(0);
+            expect(emptyFav.json.data.items).toEqual([]);
+            expect(emptyFav.json.meta.page.total).toBe(0);
+        });
+
+        it("fails on unknown favorite before fetching metadata", async () => {
+            const paths = makeHome();
+            const unknownFav = await chartsIn(paths, ["--fav", "不存在"]);
+            expect(unknownFav.code).toBe(3);
+            expect(unknownFav.json.error.code).toBe("NOT_FOUND");
+            expect(unknownFav.requests).toEqual([]);
+        });
+    });
 });

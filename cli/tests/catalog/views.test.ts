@@ -20,6 +20,11 @@ import {
     VIEWS_VERSION,
     viewsMentionedIn,
 } from "../../src/catalog/views";
+import {
+    addChartToFavorite,
+    createFavorite,
+    removeChartFromFavorite,
+} from "../../src/favorites/repository";
 import { collectionRef, listCollections } from "../../src/refs/collection";
 import { difficultyLabel } from "../../src/refs/difficulty";
 import { runQuery } from "../../src/store/query";
@@ -253,6 +258,17 @@ describe("views contract", () => {
                 { name: "difficulty", type: "TEXT" },
             ],
         },
+        {
+            name: "v_favorites",
+            needs: [],
+            columns: [
+                { name: "name", type: "TEXT" },
+                { name: "position", type: "INTEGER" },
+                { name: "entry_position", type: "INTEGER" },
+                { name: "music_id", type: "INTEGER" },
+                { name: "grade", type: "INTEGER" },
+            ],
+        },
     ];
 
     it("matches the declared names, versions, and dependencies", () => {
@@ -266,6 +282,7 @@ describe("views contract", () => {
             "v_user_items",
             "v_user_characters",
             "v_course_tracks",
+            "v_favorites",
         ]);
         expect(PUBLIC_VIEW_NAMES).toEqual([
             "v_charts",
@@ -277,8 +294,9 @@ describe("views contract", () => {
             "v_user_items",
             "v_user_characters",
             "v_course_tracks",
+            "v_favorites",
         ]);
-        expect(VIEWS_VERSION).toBe(2);
+        expect(VIEWS_VERSION).toBe(3);
 
         for (let i = 0; i < EXPECTED_VIEWS.length; i++) {
             const exp = EXPECTED_VIEWS[i];
@@ -331,6 +349,7 @@ describe("viewsMentionedIn", () => {
             "SELECT * FROM v_collections, v_collection_targets",
             ["v_collections", "v_collection_targets"],
         ],
+        ["SELECT * FROM v_favorites", ["v_favorites"]],
         ["", []],
     ];
 
@@ -2010,6 +2029,50 @@ describe("what the views make of odd collection data", () => {
         expect(rows).toEqual([
             { course_id: 551001, course_locked: 0, unlock_course_id: null },
             { course_id: 551002, course_locked: 1, unlock_course_id: 551003 },
+        ]);
+    });
+
+    it("v_favorites lists favorite charts in position order", () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const f = createFavorite(store, "练习");
+        addChartToFavorite(store, f.id, 146, 3);
+        store.close();
+
+        const favView = PUBLIC_VIEWS.find(v => v.name === "v_favorites")!;
+        const sb = sandboxOf(paths, [favView]);
+        const res = runQuery(sb.db, "SELECT * FROM v_favorites", 10);
+        expect(res.rows).toEqual([
+            {
+                name: "练习",
+                position: 0,
+                entry_position: 0,
+                music_id: 146,
+                grade: 3,
+            },
+        ]);
+    });
+
+    it("v_favorites keeps insertion order and contiguous positions", () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const first = createFavorite(store, "练习");
+        const second = createFavorite(store, "课题");
+        addChartToFavorite(store, first.id, 146, 3);
+        addChartToFavorite(store, first.id, 8, 2);
+        addChartToFavorite(store, first.id, 77, 1);
+        addChartToFavorite(store, second.id, 30, 0);
+        addChartToFavorite(store, second.id, 9, 4);
+        removeChartFromFavorite(store, first.id, 146);
+        store.close();
+
+        const favView = PUBLIC_VIEWS.find(v => v.name === "v_favorites")!;
+        const sb = sandboxOf(paths, [favView]);
+        expect(runQuery(sb.db, "SELECT * FROM v_favorites", 10).rows).toEqual([
+            { name: "练习", position: 0, entry_position: 0, music_id: 8, grade: 2 },
+            { name: "练习", position: 0, entry_position: 1, music_id: 77, grade: 1 },
+            { name: "课题", position: 1, entry_position: 0, music_id: 30, grade: 0 },
+            { name: "课题", position: 1, entry_position: 1, music_id: 9, grade: 4 },
         ]);
     });
 });

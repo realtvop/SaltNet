@@ -55,6 +55,8 @@ describe("the shipped migrations", () => {
             "collections",
             "course_tracks",
             "courses",
+            "favorite_charts",
+            "favorites",
             "locks",
             "meta_state",
             "rating_history",
@@ -97,10 +99,10 @@ describe("the shipped migrations", () => {
 
         expect(migrate(db, MIGRATIONS, backup)).toEqual({
             from: 3,
-            to: 4,
+            to: 5,
             backup: "/cache/saltnet-v3.db",
         });
-        expect(readUserVersion(db)).toBe(4);
+        expect(readUserVersion(db)).toBe(5);
         expect(backup).toHaveBeenCalledWith(3);
         expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
         expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
@@ -112,9 +114,32 @@ describe("the shipped migrations", () => {
             "user_characters",
             "rating_history",
             "score_events",
+            "favorites",
+            "favorite_charts",
         ]) {
             expect(tables(db)).toContain(table);
         }
+    });
+
+    it("keeps existing rows when upgrading from version 4 to 5 and creates favorites tables", () => {
+        const db = memory();
+        migrate(db, MIGRATIONS.slice(0, 4));
+        db.exec("INSERT INTO versions (position, name, word) VALUES (0, 'maimai', '真')");
+        db.exec(
+            "INSERT INTO meta_state (source, fetched_at, builder) VALUES ('saltmeta', 1000, 'catalog-2/search-1')"
+        );
+        insertMadeUsers(db, [{ uid: "u1", position: 0 }]);
+        const backup = vi.fn(() => "/cache/saltnet-v4.db");
+
+        const result = migrate(db, MIGRATIONS, backup);
+        expect(result).toEqual({ from: 4, to: 5, backup: "/cache/saltnet-v4.db" });
+        expect(readUserVersion(db)).toBe(5);
+        expect(backup).toHaveBeenCalledWith(4);
+        expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
+        expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
+        expect(db.prepare("SELECT uid FROM users").all()).toEqual([{ uid: "u1" }]);
+        expect(tables(db)).toContain("favorites");
+        expect(tables(db)).toContain("favorite_charts");
     });
 
     it("enforces user-data checks, strict types, and one score per chart", () => {

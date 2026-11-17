@@ -27,6 +27,7 @@ export const GUIDE_RULES: readonly string[] = [
     "6. **B50 和总 rating**：要用 `b50` 的分组和 `rating.total`，不要把 `charts` 按 rating 排序后自行截取或求和；`charts` 的排序不是网页端 B50 的选谱规则。",
     "7. **成绩变化**：成绩发生过什么变化要读 `history`，问“最近进步了什么”时用 `history --since 7d`；不要比较两次 `charts` 的输出来推断变化。",
     "8. **收藏品还差什么**：牌子或收藏品未完成的谱面用 `charts --plate <牌子> --missing`、`charts --collection <收藏品> --missing` 或 `collection show <收藏品>` 查；省略 `--missing` 的条件时，会按每张谱自己的收藏品要求判断。`collection list` 和 `collection show` 的 `progress` 与网页端一样按要求的谱面计数；没有指定难度的条件每首歌只计一次。",
+    "9. **收藏夹**：收藏夹只保存在本机（不包含在备份里），按曲目收藏；用 `saltnet charts --fav <收藏夹> --diff <难度>` 查看其中的谱面。",
 ];
 
 /** What to do on each exit code other than 0, shown next to its meaning (design 4.6, 6.1). */

@@ -38,6 +38,12 @@ describe("schema command", () => {
             "user edit",
             "user remove",
             "user default",
+            "fav list",
+            "fav create",
+            "fav rename",
+            "fav delete",
+            "fav add",
+            "fav remove",
             "export",
             "import",
             "refresh",
@@ -71,6 +77,18 @@ describe("schema command", () => {
                     "user edit",
                     "user remove",
                     "user default",
+                ],
+            },
+            {
+                name: "fav",
+                summary: "收藏夹：查看和管理本地收藏夹",
+                commands: [
+                    "fav list",
+                    "fav create",
+                    "fav rename",
+                    "fav delete",
+                    "fav add",
+                    "fav remove",
                 ],
             },
             {
@@ -302,6 +320,7 @@ describe("schema command", () => {
             "--course",
             "--plate",
             "--collection",
+            "--fav",
             "--achieved",
             "--missing",
             "--recent",
@@ -381,10 +400,10 @@ describe("schema command", () => {
     });
 
     it("lists versioned views without their SELECT text", async () => {
-        expect(VIEWS_CHANGES.at(-1)?.version).toBe(2);
+        expect(VIEWS_CHANGES.at(-1)?.version).toBe(3);
         const { code, json } = await commandIn(makeHome(), "schema", ["--views"]);
         expect(code).toBe(0);
-        expect(json.data).toMatchObject({ kind: "views", version: 2, changes: VIEWS_CHANGES });
+        expect(json.data).toMatchObject({ kind: "views", version: 3, changes: VIEWS_CHANGES });
         expect(
             json.data.views.map(
                 (view: { name: string; columns: unknown[]; needs: string[]; select?: string }) => ({
@@ -409,6 +428,7 @@ describe("schema command", () => {
             { name: "v_user_items", columns: 7, needs: [], select: undefined },
             { name: "v_user_characters", columns: 10, needs: [], select: undefined },
             { name: "v_course_tracks", columns: 16, needs: [], select: undefined },
+            { name: "v_favorites", columns: 5, needs: [], select: undefined },
         ]);
         for (const view of json.data.views) {
             for (const column of view.columns) {

@@ -66,6 +66,16 @@ export function collectionCharts(collection: Collection, entries: readonly Chart
     return { keys: new Set(charts.map(chart => chartKeyOf(chart))) };
 }
 
+/** Every chart of every song in the favorite list. */
+export function favoriteCharts(
+    favorite: { readonly musicIds: readonly number[] },
+    entries: readonly ChartEntry[]
+): ChartSet {
+    const musicIds = new Set(favorite.musicIds);
+    const keys = entries.filter(({ chart }) => musicIds.has(chart.music.id)).map(entryKey);
+    return { keys: new Set(keys) };
+}
+
 /** Whether the collection has any song in its conditions; without one it names no chart. */
 export function hasSongRequirement(collection: Collection): boolean {
     return (collection.required ?? []).some(requirement => (requirement.songs?.length ?? 0) > 0);

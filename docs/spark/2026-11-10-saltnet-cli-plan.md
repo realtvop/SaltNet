@@ -189,7 +189,7 @@
 - [ ] P2-22 `feat(cli): add calc command and chart stages`：阶段表、`chart --with`〔新〕
 - [ ] P2-23 `feat(cli): add b50 gain to stages and charts --sort gain`〔新〕
 - [x] P2-24 `feat(cli): add collection progress to collection and charts`〔新〕
-- [ ] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
+- [x] P2-25 `feat(cli): add fav commands`：`favorites` 表（迁移）、`fav` 命令和 `charts --fav`（后者从 P1-10 挪来，见第 34 条）；对外视图加上 `v_favorites`（`VIEWS_VERSION` 再加一）〔新〕
 - [ ] P2-26 `test(cli): extend offline end-to-end test with scores`〔简单〕
 - [ ] P2-27 `docs: update agents guide for cli phase 2`；把 `AGENTS.md` 里 `cli/` 那一大段拆成分条（第 50 条）；对照验证：同一份备份，CLI 的 B50、rating、牌子进度与网页端逻辑的结果逐项一致（并在浏览器里打开网页端对照）〔协调〕
 
@@ -863,4 +863,13 @@
     - 合并：P2-24 和 P2-21 同时在做，用 `git apply --3way` 打到 P2-21 之后，指南第 7 条冲突，两条都留，这一条改成第 8 条。
     - 我改的：`AGENTS.md` 补了 `optional-string` 的读法、`charts` 不写条件时按收藏品自己的要求、`collection list` 和 `collection show` 的描述，以及 `collectionUserContext`、`collectionChartDone`、`collectionChartScore`。
     - 测试：改动检查 30 处，第一次 25 处被发现。没被发现的 3 处是测试缺口，我补了 3 个用例：`--condition=` 这样的空值是 `USAGE`、`charts --collection plate:6104` 不写条件时和 core 的计算一致、没有用户时 `collection list --user 1` 在任何请求之前报 `NO_USER`；补完都被发现。剩下 2 处等价：`owned()` 里的 `=== true`（`isCollectionOwned` 只对未知类型给 undefined，CLI 的收藏品类型都已知）和 `collectionChartScore` 里的达成率类型判断（core 的 `scoreMeetsRequirement` 本来就拒绝不是数的达成率，进度也只用 `checkCollectionChartFinish`）。
+    - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。
+79. **P2-25 的实现（2026-11-17）**：
+    - 分工改了：计划里这一步是〔新〕，因为 Codex 每周的额度已经用了 86%（11-17 13:05），改给 Gemini 3.8 Flash，照一份写得很细的说明做。一次成功（2041 秒），快照里不含 `.env*`。
+    - Gemini 写的：迁移 5 加 `favorites`（名称唯一、位置唯一）和 `favorite_charts`（属于一个收藏夹，删收藏夹时一起删；同一个收藏夹里一首曲目只有一条），只在本机，不进备份（`import` 不动它们，有测试）；`cli/src/favorites/repository.ts` 是这两张表唯一的写入者，删除后把位置重新排成从 0 开始的连续整数；`cli/src/refs/favorite.ts` 先按完整名称、再按只有一个收藏夹有的部分名称找。命令 `fav list`、`create`、`rename`、`delete`（共用的按内容确认）、`add`、`remove`，`charts --fav` 在下载任何东西之前就解析收藏夹，对外视图加 `v_favorites`（`VIEWS_VERSION` 升到 3），指南加一条（合并后是第 9 条），端到端测试的种子加了 `fav create 练习` 和 `fav add 练习 146-3`。
+    - 和网页端一样：收藏夹按曲目那一面的 id 收藏，记下加入时选的难度；同一首曲目换个难度再加不会改变什么（`added` 是 false）；`remove` 按曲目删；`charts --fav` 列出这些曲目的全部谱面，难度照 CLI 的规则由 `--diff` 选。
+    - 它自己定下的，我都同意：`fav delete` 成功后的 `data` 加 `remainingFavorites`（对应 `user remove` 的 `remainingUsers`）；确认码绑定名称和每一条的曲目与难度；以 `-` 开头的名称在 `error.fix` 里写在 `--` 之后；改回自己现在的名称算成功。
+    - 合并：用 `git apply --3way` 打到 P2-24 之后，指南的第 7 条冲突，它的这条改成第 9 条；`charts` 的描述冲突，留 P2-24 的写法再加上 `--fav`。
+    - 我改的：`fav add` 和 `fav remove` 原来先读曲库再找收藏夹，我改成先找收藏夹（和 `charts --fav` 一样），收藏夹名字写错时不发任何请求就报 `NOT_FOUND`，补了测试。`AGENTS.md` 补了迁移 5、`--fav`、`fav` 命令和两个模块、`v_favorites` 和端到端测试的种子。
+    - 测试：改动检查 28 处，第一次 18 处被发现。没被发现的 7 处是测试缺口，我补了 3 个用例：一个视图用例（两个收藏夹，曲目 id 不按大小加入，删掉一条之后位置仍连续、顺序仍是加入顺序、条目位置和收藏夹位置分开）、确认码绑定每一条的难度（同一首曲目换难度重新加入，条数和曲目 id 都不变，旧的确认码仍被拒绝；顺带核对 `fav list` 的条数）、名称以 `-` 开头的收藏夹能用 `--` 建出来，`error.fix` 能删掉它。补完都被发现。剩下 3 处等价：重排位置前先把位置整体加大的两句（按原来的顺序从小到大重排时，每条只会挪到空着的或它自己的位置，不会撞上，这两句是多余的保护），和名称不能全是空白的 CHECK（仓库和命令都先拒绝了，别的代码不写这张表）。
     - 按决定 66 不单独送审，并入 P2 的整体审查。没有改 core 和网页端。

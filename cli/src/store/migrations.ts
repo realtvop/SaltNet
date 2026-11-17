@@ -332,6 +332,30 @@ export const MIGRATIONS: readonly Migration[] = [
             `);
         },
     },
+    {
+        version: 5,
+        name: "favorites",
+        up: db => {
+            // Favorites are stored locally on this machine and never exported to backups.
+            db.exec(`
+                CREATE TABLE favorites (
+                    id INTEGER PRIMARY KEY,
+                    position INTEGER NOT NULL UNIQUE CHECK (position >= 0),
+                    name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
+                ) STRICT;
+
+                CREATE TABLE favorite_charts (
+                    favorite_id INTEGER NOT NULL REFERENCES favorites (id) ON DELETE CASCADE,
+                    position INTEGER NOT NULL CHECK (position >= 0),
+                    music_id INTEGER NOT NULL,
+                    grade INTEGER NOT NULL,
+                    PRIMARY KEY (favorite_id, position),
+                    UNIQUE (favorite_id, music_id)
+                ) STRICT;
+                CREATE INDEX favorite_charts_music_id ON favorite_charts (music_id);
+            `);
+        },
+    },
 ];
 
 export interface MigrationResult {

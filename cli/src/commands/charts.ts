@@ -9,6 +9,7 @@ import { chartRow } from "../catalog/chartRow";
 import {
     collectionCharts,
     courseCharts,
+    favoriteCharts,
     gateCharts,
     hasSongRequirement,
     intersectChartSets,
@@ -18,11 +19,13 @@ import { countChartResultStats } from "../catalog/chartStats";
 import { chartRowSchema } from "../catalog/schemas";
 import { buildSongCatalog } from "../catalog/songs";
 import { usageError } from "../errors";
+import { listFavorites } from "../favorites/repository";
 import { paginate } from "../output/paging";
 import { anyOf, int, list, nullable, object, str } from "../output/schema";
 import { collectionRef, listCollections, resolveCollection } from "../refs/collection";
 import { resolveCourse } from "../refs/course";
 import { DIFFICULTIES, parseDifficulty } from "../refs/difficulty";
+import { resolveFavorite } from "../refs/favorite";
 import { resolveGate } from "../refs/gate";
 import { parseLevelRange } from "../refs/level";
 import { resolvePlate } from "../refs/plate";
@@ -77,7 +80,7 @@ export const charts = defineCommand(
         name: "charts",
         summary: "筛选谱面，并按曲目或成绩排序、分组和统计",
         description:
-            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection、--fav 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。只有 --sort gain 仍留到后续步骤。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -137,6 +140,11 @@ export const charts = defineCommand(
                 kind: "string",
                 valueName: "收藏品",
                 description: "只要这个收藏品要求的谱面：类型:id 或名称，例如 title:5108",
+            },
+            fav: {
+                kind: "string",
+                valueName: "收藏夹",
+                description: "只要这个收藏夹里曲目的谱面，例如 练习",
             },
             achieved: {
                 kind: "optional-string",
@@ -201,6 +209,7 @@ export const charts = defineCommand(
                 description: "紫谱按版本分组，每个版本看三张",
             },
             { command: "charts --course 十段", description: "十段的四首曲目，按出场顺序" },
+            { command: "charts --fav 练习 --diff mas", description: "收藏夹「练习」里的紫谱" },
             { command: "charts --plate 真極 --diff mas", description: "真極要求的紫谱" },
             {
                 command: "charts --plate 真極 --missing",
@@ -243,6 +252,7 @@ export const charts = defineCommand(
             course,
             plate,
             collection,
+            fav,
             achieved,
             missing,
             recent,
@@ -267,8 +277,11 @@ export const charts = defineCommand(
         const missingCondition =
             typeof missing === "string" ? parseScoreCondition(missing) : undefined;
         // The gates and the courses ship with the CLI, so a wrong one fails before any fetching.
+        // The favorites also live locally in the database, so an unknown favorite fails before any fetching.
         const gateFound = gate === undefined ? undefined : resolveGate(gate);
         const courseFound = course === undefined ? undefined : resolveCourse(course);
+        const favFound =
+            fav === undefined ? undefined : resolveFavorite(listFavorites(ctx.store()), fav);
         const scoreSort =
             sort === "achievements" ||
             sort === "rating" ||
@@ -308,6 +321,7 @@ export const charts = defineCommand(
             if (gateFound) sets.push(gateCharts(gateFound, entries));
             const courseSet = courseFound && courseCharts(courseFound, entries);
             if (courseSet) sets.push(courseSet);
+            if (favFound) sets.push(favoriteCharts(favFound, entries));
             if (collectionData) {
                 const { collections } = collectionData.collections;
                 if (plate !== undefined) {

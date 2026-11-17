@@ -6,6 +6,7 @@ import { charts } from "./charts";
 import { collectionList, collectionShow } from "./collection";
 import { configGet, configList, configSet, configUnset } from "./config";
 import { courseList, courseShow } from "./course";
+import { favAdd, favCreate, favDelete, favList, favRemove, favRename } from "./fav";
 import { guide } from "./guide";
 import { history } from "./history";
 import { kaleidxscope } from "./kaleidxscope";
@@ -39,6 +40,12 @@ export const COMMANDS: readonly CommandDefinition[] = [
     userEdit,
     userRemove,
     userDefault,
+    favList,
+    favCreate,
+    favRename,
+    favDelete,
+    favAdd,
+    favRemove,
     exportBackup,
     importBackup,
     refresh,
@@ -57,6 +64,7 @@ export const COMMAND_GROUPS: Readonly<Record<string, string>> = {
     collection: "收藏品：列表和详情",
     config: "设置：查看和修改 config.json",
     course: "段位：列表和详情",
+    fav: "收藏夹：查看和管理本地收藏夹",
     user: "用户：查看和管理本地用户",
 };
 

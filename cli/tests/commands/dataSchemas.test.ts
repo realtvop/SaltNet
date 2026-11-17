@@ -1068,3 +1068,47 @@ describe("sql: more", () => {
         expectConforms(schemaOf("sql"), json.data);
     });
 });
+
+describe("fav commands data schemas", () => {
+    it("conforms to fav list, fav create, fav rename, fav add, fav remove, fav delete, and charts --fav schemas", async () => {
+        const home = makeHome();
+
+        // fav list
+        const emptyList = await commandIn(home, "fav", ["list"]);
+        expect(emptyList.code).toBe(0);
+        expectConforms(schemaOf("fav list"), emptyList.json.data);
+
+        // fav create
+        const created = await commandIn(home, "fav", ["create", "练习"]);
+        expect(created.code).toBe(0);
+        expectConforms(schemaOf("fav create"), created.json.data);
+
+        // fav rename
+        const renamed = await commandIn(home, "fav", ["rename", "练习", "新练习"]);
+        expect(renamed.code).toBe(0);
+        expectConforms(schemaOf("fav rename"), renamed.json.data);
+
+        // fav add
+        const added = await commandIn(home, "fav", ["add", "新练习", "146-3"]);
+        expect(added.code).toBe(0);
+        expectConforms(schemaOf("fav add"), added.json.data);
+
+        // charts --fav
+        const chartsFav = await commandIn(home, "charts", ["--fav", "新练习"]);
+        expect(chartsFav.code).toBe(0);
+        expectConforms(schemaOf("charts"), chartsFav.json.data);
+
+        // fav remove
+        const removed = await commandIn(home, "fav", ["remove", "新练习", "146-3"]);
+        expect(removed.code).toBe(0);
+        expectConforms(schemaOf("fav remove"), removed.json.data);
+
+        // fav delete
+        const preview = await commandIn(home, "fav", ["delete", "新练习"]);
+        expect(preview.code).toBe(6);
+        const fixArgs = splitCommandLine(preview.json.error.fix!).slice(1);
+        const deleted = await commandIn(home, fixArgs[0], fixArgs.slice(1));
+        expect(deleted.code).toBe(0);
+        expectConforms(schemaOf("fav delete"), deleted.json.data);
+    });
+});

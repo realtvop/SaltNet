@@ -9,6 +9,7 @@ import { ComboStatus, SyncStatus } from "@core/mai/types";
 import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
 import { describe, expect, it } from "vitest";
 import { createRegistry } from "../../src/commands";
+import { addChartToFavorite, createFavorite, listFavorites } from "../../src/favorites/repository";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import { openStore } from "../../src/store/store";
 import {
@@ -904,5 +905,33 @@ describe("backup import and export", () => {
         expect(result.code).toBe(2);
         expect(result.json.error.code).toBe("USAGE");
         expect(result.json.error.message).toContain(existingFile);
+    });
+
+    it("leaves existing favorites untouched during backup import", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        try {
+            const fav = createFavorite(store, "保留的收藏夹");
+            addChartToFavorite(store, fav.id, 146, 3);
+        } finally {
+            store.close();
+        }
+
+        const source = writeBackup(paths, "source.json");
+        const imported = await importFile(paths, source);
+        expect(imported.code).toBe(0);
+
+        const storeAfter = openStore(paths);
+        try {
+            const favorites = listFavorites(storeAfter);
+            expect(favorites).toHaveLength(1);
+            expect(favorites[0]).toMatchObject({
+                name: "保留的收藏夹",
+                count: 1,
+                musicIds: [146],
+            });
+        } finally {
+            storeAfter.close();
+        }
     });
 });

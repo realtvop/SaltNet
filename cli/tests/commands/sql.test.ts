@@ -63,7 +63,7 @@ describe("sql command", () => {
         ]);
         expect(res.json.meta).toEqual({
             dataAsOf: {},
-            viewsVersion: 2,
+            viewsVersion: 3,
             columns: ["two"],
             limit: 1000,
             truncated: false,
@@ -449,9 +449,32 @@ describe("sql command", () => {
         expect(res.code).toBe(0);
         const expectedTable =
             "chart_key  level\n8-0        5\n8-1        7\n8-2        10\n8-3        12\n\n";
-        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 2\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
+        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 3\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
         expect(res.stdout.startsWith(expectedTable)).toBe(true);
         expect(res.stdout).toContain(expectedMeta);
+    });
+
+    it("queries v_favorites and joins with v_charts", async () => {
+        const paths = makeHome();
+        await commandIn(paths, "fav", ["create", "练习"]);
+        await commandIn(paths, "fav", ["add", "练习", "146-3"]);
+
+        const res = await runSql(paths, [
+            "SELECT name, position, entry_position, music_id, grade FROM v_favorites",
+        ]);
+        expect(res.code).toBe(0);
+        expect(res.json.data.items).toEqual([
+            { name: "练习", position: 0, entry_position: 0, music_id: 146, grade: 3 },
+        ]);
+        expect(res.requests).toEqual([]);
+
+        const joinRes = await runSql(paths, [
+            "SELECT f.name, c.title, c.difficulty FROM v_favorites f JOIN v_charts c ON c.music_id = f.music_id AND c.grade = f.grade",
+        ]);
+        expect(joinRes.code).toBe(0);
+        expect(joinRes.json.data.items).toEqual([
+            { name: "练习", title: "39", difficulty: "MASTER" },
+        ]);
     });
 
     it("outputs help information for sql --help", async () => {

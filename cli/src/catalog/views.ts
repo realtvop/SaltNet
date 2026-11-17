@@ -22,7 +22,7 @@ import { SOURCE_OF_KIND } from "./ensure";
 import { SOURCE_LABELS } from "./refresh";
 
 /** Raise it when a view changes in a way a query can notice; see the top of this file. */
-export const VIEWS_VERSION = 2;
+export const VIEWS_VERSION = 3;
 
 /** The incompatible public-view changes, in version order. */
 export const VIEWS_CHANGES = [
@@ -34,6 +34,10 @@ export const VIEWS_CHANGES = [
         version: 2,
         description:
             "加入用户成绩、成绩历史、rating 历史、收藏品和角色视图；v_charts 加入默认用户的成绩列",
+    },
+    {
+        version: 3,
+        description: "加入收藏夹条目视图 v_favorites",
     },
 ] as const;
 
@@ -726,6 +730,26 @@ const COURSE_TRACKS = view({
     rest: `FROM ${REAL_SCHEMA}.course_tracks t JOIN ${REAL_SCHEMA}.courses c ON c.id = t.course_id ORDER BY c.position, t.position`,
 });
 
+const FAVORITES = view({
+    name: "v_favorites",
+    summary:
+        "收藏夹条目：每个收藏夹里的一首曲目一行。可用 music_id 和 grade（或 music_id || '-' || grade = chart_key）与 v_charts 连接",
+    needs: [],
+    columns: [
+        column("name", "TEXT", "收藏夹名称", "f.name"),
+        column("position", "INTEGER", "收藏夹在列表中的位置，从 0 开始", "f.position"),
+        column("entry_position", "INTEGER", "条目在收藏夹内的位置，从 0 开始", "fc.position"),
+        column("music_id", "INTEGER", "曲目 id，和 v_charts.music_id 一样", "fc.music_id"),
+        column(
+            "grade",
+            "INTEGER",
+            "难度编号：0 到 4 是 BASIC 到 Re:MASTER，10 是宴会谱；和 v_charts.grade 一样",
+            "fc.grade"
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.favorite_charts fc JOIN ${REAL_SCHEMA}.favorites f ON f.id = fc.favorite_id ORDER BY f.position, fc.position`,
+});
+
 /** Every view `sql` can read, in the order `schema --views` lists them. */
 export const PUBLIC_VIEWS: readonly PublicView[] = [
     CHARTS,
@@ -737,6 +761,7 @@ export const PUBLIC_VIEWS: readonly PublicView[] = [
     USER_ITEMS,
     USER_CHARACTERS,
     COURSE_TRACKS,
+    FAVORITES,
 ];
 
 /** The names of the views, in lower case as SQLite compares them. */
