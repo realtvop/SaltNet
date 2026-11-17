@@ -134,7 +134,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 - `user_items`、`user_characters`、`rating_history`。
 - `score_events`：字段和 `ScoreHistoryEventV1` 一一对应，保证备份导出再导入不丢信息。
 - `favorites`：网页端的备份不含收藏夹，所以只存本地。
-- `sync_runs`：每次同步、上传、账号操作和导入的时间、来源、结果摘要。agent 可以靠它回答「上次什么时候更新的、改了什么」，所有对外写操作也都在这里留痕。不记二维码和 token。
+- `sync_runs`：每次同步、上传、账号操作和导入的时间、来源、结果摘要。结果状态有 running、ok、failed、interrupted。它独立于用户生命周期（删除用户和导入备份时保留所有记录），也不属于备份内容。agent 可以靠它回答「上次什么时候更新的、改了什么」，所有对外写操作也都在这里留痕。不记二维码和 token。
 
 **内部**
 
@@ -145,7 +145,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 - `v_charts`：一张谱面一行，含曲目信息和默认用户的成绩
 - `v_scores`、`v_score_events`、`v_rating_history`
 - `v_collections`、`v_collection_targets`、`v_user_items`、`v_user_characters`
-- `v_course_tracks`、`v_favorites`
+- `v_course_tracks`、`v_favorites`、`v_sync_runs`
 
 `sql` 在一个临时的内存数据库里执行：先以只读方式打开真正的数据库，在同一个事务里把查询里写到的视图复制进去，然后断开真正的数据库，再用 SQLite 的 authorizer（`node:sqlite` 的 `setAuthorizer`，默认拒绝）、`query_only` 和 defensive 模式把查询限制成只能 `SELECT` 这些副本，所以查询运行时够不到任何基础表。（不在真实连接的视图上装 authorizer：SQLite 报告对视图的读取时，给的是底层表的读取，不带「是通过哪个视图读的」，`count(*)` 这类查询没法和直接读基础表区分，CTE 也能冒充视图的上下文。）
 

@@ -269,6 +269,25 @@ describe("views contract", () => {
                 { name: "grade", type: "INTEGER" },
             ],
         },
+        {
+            name: "v_sync_runs",
+            needs: [],
+            columns: [
+                { name: "id", type: "INTEGER" },
+                { name: "kind", type: "TEXT" },
+                { name: "user_uid", type: "TEXT" },
+                { name: "user_name", type: "TEXT" },
+                { name: "source", type: "TEXT" },
+                { name: "mode", type: "TEXT" },
+                { name: "outcome", type: "TEXT" },
+                { name: "error_code", type: "TEXT" },
+                { name: "error_message", type: "TEXT" },
+                { name: "summary", type: "TEXT" },
+                { name: "started_at", type: "TEXT" },
+                { name: "finished_at", type: "TEXT" },
+                { name: "cli_version", type: "TEXT" },
+            ],
+        },
     ];
 
     it("matches the declared names, versions, and dependencies", () => {
@@ -283,6 +302,7 @@ describe("views contract", () => {
             "v_user_characters",
             "v_course_tracks",
             "v_favorites",
+            "v_sync_runs",
         ]);
         expect(PUBLIC_VIEW_NAMES).toEqual([
             "v_charts",
@@ -295,8 +315,9 @@ describe("views contract", () => {
             "v_user_characters",
             "v_course_tracks",
             "v_favorites",
+            "v_sync_runs",
         ]);
-        expect(VIEWS_VERSION).toBe(3);
+        expect(VIEWS_VERSION).toBe(4);
 
         for (let i = 0; i < EXPECTED_VIEWS.length; i++) {
             const exp = EXPECTED_VIEWS[i];

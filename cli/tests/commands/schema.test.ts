@@ -402,10 +402,10 @@ describe("schema command", () => {
     });
 
     it("lists versioned views without their SELECT text", async () => {
-        expect(VIEWS_CHANGES.at(-1)?.version).toBe(3);
+        expect(VIEWS_CHANGES.at(-1)?.version).toBe(4);
         const { code, json } = await commandIn(makeHome(), "schema", ["--views"]);
         expect(code).toBe(0);
-        expect(json.data).toMatchObject({ kind: "views", version: 3, changes: VIEWS_CHANGES });
+        expect(json.data).toMatchObject({ kind: "views", version: 4, changes: VIEWS_CHANGES });
         expect(
             json.data.views.map(
                 (view: { name: string; columns: unknown[]; needs: string[]; select?: string }) => ({
@@ -431,6 +431,7 @@ describe("schema command", () => {
             { name: "v_user_characters", columns: 10, needs: [], select: undefined },
             { name: "v_course_tracks", columns: 16, needs: [], select: undefined },
             { name: "v_favorites", columns: 5, needs: [], select: undefined },
+            { name: "v_sync_runs", columns: 13, needs: [], select: undefined },
         ]);
         for (const view of json.data.views) {
             for (const column of view.columns) {

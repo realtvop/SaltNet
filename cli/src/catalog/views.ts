@@ -22,7 +22,7 @@ import { SOURCE_OF_KIND } from "./ensure";
 import { SOURCE_LABELS } from "./refresh";
 
 /** Raise it when a view changes in a way a query can notice; see the top of this file. */
-export const VIEWS_VERSION = 3;
+export const VIEWS_VERSION = 4;
 
 /** The incompatible public-view changes, in version order. */
 export const VIEWS_CHANGES = [
@@ -38,6 +38,10 @@ export const VIEWS_CHANGES = [
     {
         version: 3,
         description: "加入收藏夹条目视图 v_favorites",
+    },
+    {
+        version: 4,
+        description: "加入同步与操作日志视图 v_sync_runs",
     },
 ] as const;
 
@@ -750,6 +754,63 @@ const FAVORITES = view({
     rest: `FROM ${REAL_SCHEMA}.favorite_charts fc JOIN ${REAL_SCHEMA}.favorites f ON f.id = fc.favorite_id ORDER BY f.position, fc.position`,
 });
 
+const SYNC_RUNS = view({
+    name: "v_sync_runs",
+    summary: "同步、上传、账号操作和导入的执行日志，按 id 倒序",
+    needs: [],
+    columns: [
+        column("id", "INTEGER", "运行记录 id", "r.id"),
+        column(
+            "kind",
+            "TEXT",
+            "操作类型：sync（同步成绩）、upload（上传成绩）、account（账号操作）或 import（导入备份）",
+            "r.kind"
+        ),
+        column("user_uid", "TEXT", "目标用户的 uid；非用户操作时为 NULL", "r.user_uid"),
+        column(
+            "user_name",
+            "TEXT",
+            "执行时的用户显示名，删除或重命名用户后保留当时的名字；非用户操作时为 NULL",
+            "r.user_name"
+        ),
+        column(
+            "source",
+            "TEXT",
+            "来源或目标服务：ingame、lxns、df-token、df-name、diving-fish；没有时为 NULL",
+            "r.source"
+        ),
+        column(
+            "mode",
+            "TEXT",
+            "操作模式或子操作，如 full、fast、public-b50、clear-tickets；没有时为 NULL",
+            "r.mode"
+        ),
+        column(
+            "outcome",
+            "TEXT",
+            "执行结果：running（进行中）、ok（成功）、failed（失败）、interrupted（中断）",
+            "r.outcome"
+        ),
+        column("error_code", "TEXT", "失败时的错误码，成功或进行中时为 NULL", "r.error_code"),
+        column(
+            "error_message",
+            "TEXT",
+            "失败时的错误信息，成功或进行中时为 NULL",
+            "r.error_message"
+        ),
+        column("summary", "TEXT", "结果摘要 JSON 文本；没有时为 NULL", "r.summary"),
+        column("started_at", "TEXT", "开始时间，UTC ISO 8601 格式", utcTimeOf("r.started_at")),
+        column(
+            "finished_at",
+            "TEXT",
+            "结束时间，UTC ISO 8601 格式；进行中或中断时为 NULL",
+            utcTimeOf("r.finished_at")
+        ),
+        column("cli_version", "TEXT", "执行时 saltnet CLI 的版本号", "r.cli_version"),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.sync_runs r ORDER BY r.id DESC`,
+});
+
 /** Every view `sql` can read, in the order `schema --views` lists them. */
 export const PUBLIC_VIEWS: readonly PublicView[] = [
     CHARTS,
@@ -762,6 +823,7 @@ export const PUBLIC_VIEWS: readonly PublicView[] = [
     USER_CHARACTERS,
     COURSE_TRACKS,
     FAVORITES,
+    SYNC_RUNS,
 ];
 
 /** The names of the views, in lower case as SQLite compares them. */

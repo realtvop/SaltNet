@@ -231,7 +231,7 @@ SaltNet is a three-package pnpm workspace:
           the user tables are copies of parts of it for queries), `scores`, `b50_snapshot`,
           `user_items`, `user_characters`, `rating_history`, and `score_events`; migration 5 adds
           `favorites` and their `favorite_charts`, which stay on this machine and are never part of
-          a backup.
+          a backup; migration 6 adds `sync_runs`.
         - `locks.ts` holds the expiring named locks, and `errors.ts` maps SQLite failures to CLI
           errors.
         - `sandbox.ts` and `query.ts` are where `sql` runs. `openSandbox` copies only the public
@@ -310,8 +310,9 @@ SaltNet is a three-package pnpm workspace:
           merged (`mergedDuplicatesOf`).
         - `views.ts` is the contract `sql` offers. `PUBLIC_VIEWS` lists `v_charts` (including the
           default user's score), `v_scores`, `v_score_events`, `v_rating_history`, `v_collections`,
-          `v_collection_targets`, `v_user_items`, `v_user_characters`, `v_course_tracks`, and
-          `v_favorites` (one row per favorite entry), each a SELECT over the tables (optionally
+          `v_collection_targets`, `v_user_items`, `v_user_characters`, `v_course_tracks`,
+          `v_favorites` (one row per favorite entry), and `v_sync_runs` (one row per journal row,
+          newest first), each a SELECT over the tables (optionally
           after a `WITH` prefix; `v_collection_targets` uses one to parse each collection condition
           once instead of once per row) with its columns described and the downloaded sources it
           needs, so a query only makes current what it reads. `VIEWS_VERSION` rises when a query
@@ -364,6 +365,13 @@ SaltNet is a three-package pnpm workspace:
           `chart --with history`.
     - `src/favorites/repository.ts` is the only writer of the favorite tables and keeps their
       positions contiguous.
+    - `src/sync/` holds the `sync_runs` journal and sync locks.
+        - `journal.ts` is the sole writer of the `sync_runs` table (`beginRun`, `finishRun`,
+          `recordRun`, `readRuns`). It checks summaries recursively against credential keywords and
+          rejects non-plain JSON values, ensuring no token or secret is ever recorded.
+        - `lock.ts` manages the per-user sync lock `sync:<uid>` (`withSyncLock`, `assertNoSync`).
+          It auto-renews while active, marks abandoned runs as interrupted upon taking the lock, and
+          protects concurrent mutations.
     - `tests/` holds the Vitest suite.
         - `harness.ts` runs a command line in-process with captured output; `createHarness` has no
           network unless a test brings one. `mockHttp.ts` answers requests from a table, and

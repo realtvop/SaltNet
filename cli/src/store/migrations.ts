@@ -356,6 +356,46 @@ export const MIGRATIONS: readonly Migration[] = [
             `);
         },
     },
+    {
+        version: 6,
+        name: "sync_runs",
+        up: db => {
+            // The journal of syncs, uploads, account operations and imports (design 2.2).
+            // It outlives the users it mentions: deleting a user or importing a backup leaves
+            // every row intact, and it is never exported to backups. user_name keeps the display
+            // name at the time of the run so the journal stays readable after a rename or removal.
+            db.exec(`
+                -- kind: 'sync', 'upload', 'account', 'import' (validated in TypeScript).
+                -- user_uid: target user's uid; null for whole-library or non-user runs.
+                -- user_name: target user's display name at run time.
+                -- source: for 'sync' (ingame, lxns, df-token, df-name); for 'upload' (diving-fish, lxns);
+                --         for 'account' (ingame); for 'import' null.
+                -- mode: for 'sync' (full, fast, public-b50); for 'account' the operation (e.g. clear-tickets);
+                --       otherwise null.
+                -- outcome: 'running' while active, then 'ok' or 'failed'; 'interrupted' when process ended prematurely.
+                -- error_code & error_message: CliError code and message of a failed run; null otherwise.
+                -- summary: kind-specific JSON object or null; no secrets ever recorded.
+                -- started_at & finished_at: epoch milliseconds; finished_at is null while running or interrupted.
+                -- cli_version: saltnet CLI version that recorded the run.
+                CREATE TABLE sync_runs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind TEXT NOT NULL,
+                    user_uid TEXT,
+                    user_name TEXT,
+                    source TEXT,
+                    mode TEXT,
+                    outcome TEXT NOT NULL CHECK (outcome IN ('running', 'ok', 'failed', 'interrupted')),
+                    error_code TEXT,
+                    error_message TEXT,
+                    summary TEXT CHECK (summary IS NULL OR (json_valid(summary) AND json_type(summary) = 'object')),
+                    started_at INTEGER NOT NULL,
+                    finished_at INTEGER,
+                    cli_version TEXT NOT NULL
+                ) STRICT;
+                CREATE INDEX sync_runs_user ON sync_runs (user_uid, id);
+            `);
+        },
+    },
 ];
 
 export interface MigrationResult {

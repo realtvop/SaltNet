@@ -63,7 +63,7 @@ describe("sql command", () => {
         ]);
         expect(res.json.meta).toEqual({
             dataAsOf: {},
-            viewsVersion: 3,
+            viewsVersion: 4,
             columns: ["two"],
             limit: 1000,
             truncated: false,
@@ -449,7 +449,7 @@ describe("sql command", () => {
         expect(res.code).toBe(0);
         const expectedTable =
             "chart_key  level\n8-0        5\n8-1        7\n8-2        10\n8-3        12\n\n";
-        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 3\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
+        const expectedMeta = `dataAsOf:\n  catalog: ${formatLocalTime(NOW)}\nviewsVersion: 4\ncolumns: chart_key、level\nlimit: 1000\ntruncated: false\n`;
         expect(res.stdout.startsWith(expectedTable)).toBe(true);
         expect(res.stdout).toContain(expectedMeta);
     });

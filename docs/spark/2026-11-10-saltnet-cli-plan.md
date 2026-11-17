@@ -208,7 +208,7 @@
 **P3 的 CLI 部分**
 
 - [x] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
-- [ ] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
+- [x] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
 - [ ] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
 - [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
 - [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
@@ -933,4 +933,19 @@
         - 网页端的 `updateUser.ts` 和 `repository.ts` 改成调用这两个函数。两个新测试文件分别加进 `test:integrations` 和 `test:score-history`。
     - lint：搬走的代码在两个网页端文件里有冻结的违规，搬走后 ESLint 报「有不再出现的抑制项」。照决定 71 的做法手工把计数调到实际剩下的数（只降不升），没用 `--prune-suppressions`：`repository.ts` 的 `style/operator-linebreak` 3→1；`updateUser.ts` 的 `antfu/curly` 3→2、`antfu/if-newline` 7→5、`import/consistent-type-specifier-style` 2→1、`style/member-delimiter-style` 5→1，`style/indent`（3）和 `style/operator-linebreak`（3）清零删去。
     - 测试：变异 35 处（`observedAt` 的两处来源、只取 `detailed` 或只取 B50、丢掉 B50 的 SD 或 DX 一半、rating 历史的有无和时间、`userId` 为 `null` 和缺省、`user.data` 的合并和顺序、`lxns` 的合并和顺序、写 `inGame.id` 的条件、8 位数、名字、来源、旧成绩的两部分；事件那边：基线的三个条件、基线的时间、两种 sequence、基线自己的 sequence、mask、id、kind、state、时间、漏推基线、新事件的 state 和 id；网页端传入的已有谱面键）。第一次漏了 2 处：只在 B50 的 SD 一半里出现的谱面，和网页端同一谱面第二批不该再补基线。各补了一个测试（core 的 `apply.test.ts` 一个，网页端的 `index.test.ts` 一个；后者写成单行调用，免得给这个文件添新的 lint 违规），补完重跑都被发现。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+86. **P3-7 的实现（2026-11-17）**：
+    - 分工：这一步是〔新〕，原定 Codex 写，和 P3-6 一样照写细了的 brief 交给 Gemini（原因见决定 84）。
+    - 拆分：P3-7 原来也要让 `import` 和 `user remove` 用上同步锁，可 P2 审查的修复同时在改这两个命令。为了能并行，这一步只做日志、锁和视图，接线拆成 P3-7b：`import` 在写事务里先 `assertNoSync(store, null, now)`，成功后用 `recordRun` 记一条 `import`；`user remove` 在事务里检查这个用户的锁；两个命令在预览之前也先查一次，免得让人确认一个随后会被拒绝的操作。
+    - Gemini 写的：
+        - 迁移 6：`sync_runs` 表，每列的含义写在迁移的注释里。没有指向 `users` 的外键：日志比用户留得久，也不进备份。`AUTOINCREMENT` 会让 SQLite 多出一张 `sqlite_sequence`，迁移测试的表清单跟着改了。
+        - `cli/src/sync/journal.ts` 是唯一写 `sync_runs` 的地方：`beginRun` 写一条 `running`；`sync`、`upload`、`account` 必须拿着这个用户的同步锁，开始前续约一次。`finishRun` 在事务里把它改成 `ok` 或 `failed`，只能结束还在 `running` 的。`recordRun` 一步写完，给 `import` 用。`readRuns` 按 id 倒序，可按用户、种类、开始时间筛选，分页带总数。摘要写入前先检查：任何一层的键名含 token、authorization、verifier、secret、password、cookie、qr（不分大小写）就报 `INTERNAL`，消息只写键名不写值；只收普通的 JSON 对象，undefined、函数、NaN、类实例和循环引用都拒绝。
+        - `cli/src/sync/lock.ts`：`withSyncLock` 的锁名是 `sync:<uid>`，3 分钟过期，每 60 秒续约一次，计时器 `unref`。拿到锁先把这个用户还在 `running` 的记录标成 `interrupted`；拿不到就报 `SYNC_IN_PROGRESS`，消息写出对方的 pid 和开始时间，`extra.holder` 里有 pid 和两个时间。`handle.assertHeld()` 在最后写入前确认锁还在。`assertNoSync` 在写事务里检查有没有还活着的同步锁，按锁名精确比较，不用 `LIKE`。
+        - 视图 `v_sync_runs`，视图版本升到 4。
+    - 我改的：
+        - `SyncRunKind` 原来写成 `"sync" | "upload" | "account" | "import" | string`，等于只是 `string`，去掉了 `| string`。
+        - `beginRun` 原来有两种写法（锁作第三个参数，或放进选项里），靠运行时判断对象的形状来区分。改成只有一种：`beginRun(store, start, lock, options)`。
+        - `recordRun` 原来只在给了锁的时候才检查锁，所以不拿锁也能一步写进一条 `sync` 记录。现在 `sync`、`upload`、`account` 一律拒绝，它们要先 `beginRun` 再 `finishRun`；加了测试。原来这样写记录的两个测试，改成先拿锁。
+        - `assertNoSync` 报错时的用户名，原来自己用 SQL 的 `coalesce(remark, data_name, …)` 取，和别的命令显示的名字不一定一样。改成和 `user list` 一样用 core 的 `getUserDisplayName`，用户不在了就写 uid。
+    - 测试：变异 45 处，第一轮杀掉 36 处。存活的 9 处都补了测试：默认 3 分钟的租期和每 60 秒一次的续约；检查所有用户时也不算过期的锁；锁名按整个名字比较（uid 里的 `_`、`%` 不当通配符，大小写有别，`metadata` 和 `SYNC:` 开头的锁不算同步锁）；两种检查报错里的用户名都和 `user list` 一样，用户不在了写 uid；循环引用的摘要报 `INTERNAL`，同一个对象出现两次不算循环；`import` 带着锁开始会被拒绝；不写版本时记下的是这个 CLI 的版本。重跑这 9 处全部杀掉。
     - 按决定 66 不单独送审，并入 P3 的整体审查。

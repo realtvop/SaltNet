@@ -63,6 +63,8 @@ describe("the shipped migrations", () => {
             "score_events",
             "scores",
             "songs",
+            "sqlite_sequence",
+            "sync_runs",
             "user_characters",
             "user_items",
             "users",
@@ -99,10 +101,10 @@ describe("the shipped migrations", () => {
 
         expect(migrate(db, MIGRATIONS, backup)).toEqual({
             from: 3,
-            to: 5,
+            to: 6,
             backup: "/cache/saltnet-v3.db",
         });
-        expect(readUserVersion(db)).toBe(5);
+        expect(readUserVersion(db)).toBe(6);
         expect(backup).toHaveBeenCalledWith(3);
         expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
         expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
@@ -116,12 +118,13 @@ describe("the shipped migrations", () => {
             "score_events",
             "favorites",
             "favorite_charts",
+            "sync_runs",
         ]) {
             expect(tables(db)).toContain(table);
         }
     });
 
-    it("keeps existing rows when upgrading from version 4 to 5 and creates favorites tables", () => {
+    it("keeps existing rows when upgrading from version 4 to 6 and creates favorites tables", () => {
         const db = memory();
         migrate(db, MIGRATIONS.slice(0, 4));
         db.exec("INSERT INTO versions (position, name, word) VALUES (0, 'maimai', '真')");
@@ -132,14 +135,110 @@ describe("the shipped migrations", () => {
         const backup = vi.fn(() => "/cache/saltnet-v4.db");
 
         const result = migrate(db, MIGRATIONS, backup);
-        expect(result).toEqual({ from: 4, to: 5, backup: "/cache/saltnet-v4.db" });
-        expect(readUserVersion(db)).toBe(5);
+        expect(result).toEqual({ from: 4, to: 6, backup: "/cache/saltnet-v4.db" });
+        expect(readUserVersion(db)).toBe(6);
         expect(backup).toHaveBeenCalledWith(4);
         expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
         expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
         expect(db.prepare("SELECT uid FROM users").all()).toEqual([{ uid: "u1" }]);
         expect(tables(db)).toContain("favorites");
         expect(tables(db)).toContain("favorite_charts");
+        expect(tables(db)).toContain("sync_runs");
+    });
+
+    it("creates sync_runs table and index in fresh database and keeps rows when migrating from version 5", () => {
+        const fresh = memory();
+        migrate(fresh);
+        const columns = fresh.prepare("PRAGMA table_info(sync_runs)").all() as { name: string }[];
+        expect(columns.map(c => c.name)).toEqual([
+            "id",
+            "kind",
+            "user_uid",
+            "user_name",
+            "source",
+            "mode",
+            "outcome",
+            "error_code",
+            "error_message",
+            "summary",
+            "started_at",
+            "finished_at",
+            "cli_version",
+        ]);
+        const indexes = fresh
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'sync_runs'"
+            )
+            .all() as { name: string }[];
+        expect(indexes.map(i => i.name)).toContain("sync_runs_user");
+
+        // Migrating from version 5 with users, scores and favorites
+        const db = memory();
+        migrate(db, MIGRATIONS.slice(0, 5));
+        db.exec("INSERT INTO versions (position, name, word) VALUES (0, 'maimai', '真')");
+        db.exec(
+            "INSERT INTO meta_state (source, fetched_at, builder) VALUES ('saltmeta', 1000, 'catalog-2/search-1')"
+        );
+        insertMadeUsers(db, [{ uid: "u1", position: 0, scores: [{ recordKey: "1-0" }] }]);
+        db.exec("INSERT INTO favorites (id, position, name) VALUES (1, 0, 'fav1')");
+        db.exec(
+            "INSERT INTO favorite_charts (favorite_id, position, music_id, grade) VALUES (1, 0, 100, 3)"
+        );
+        const backup = vi.fn(() => "/cache/saltnet-v5.db");
+
+        const result = migrate(db, MIGRATIONS, backup);
+        expect(result).toEqual({ from: 5, to: 6, backup: "/cache/saltnet-v5.db" });
+        expect(readUserVersion(db)).toBe(6);
+        expect(backup).toHaveBeenCalledWith(5);
+        expect(db.prepare("SELECT name FROM versions").all()).toEqual([{ name: "maimai" }]);
+        expect(db.prepare("SELECT source FROM meta_state").all()).toEqual([{ source: "saltmeta" }]);
+        expect(db.prepare("SELECT uid FROM users").all()).toEqual([{ uid: "u1" }]);
+        expect(db.prepare("SELECT record_key FROM scores").all()).toEqual([{ record_key: "1-0" }]);
+        expect(db.prepare("SELECT name FROM favorites").all()).toEqual([{ name: "fav1" }]);
+        expect(db.prepare("SELECT music_id FROM favorite_charts").all()).toEqual([
+            { music_id: 100 },
+        ]);
+        expect(tables(db)).toContain("sync_runs");
+
+        // CHECK constraints
+        expect(() =>
+            db.exec(
+                "INSERT INTO sync_runs (kind, outcome, started_at, cli_version) VALUES ('sync', 'unknown', 1000, '0.0.0')"
+            )
+        ).toThrow(/CHECK constraint failed/);
+
+        expect(() =>
+            db.exec(
+                "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', '[1, 2]', 1000, '0.0.0')"
+            )
+        ).toThrow(/CHECK constraint failed/);
+
+        expect(() =>
+            db.exec(
+                "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', '\"string\"', 1000, '0.0.0')"
+            )
+        ).toThrow(/CHECK constraint failed/);
+
+        expect(() =>
+            db.exec(
+                "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', '123', 1000, '0.0.0')"
+            )
+        ).toThrow(/CHECK constraint failed/);
+
+        expect(() =>
+            db.exec(
+                "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', '{bad json', 1000, '0.0.0')"
+            )
+        ).toThrow(/CHECK constraint failed/);
+
+        // Valid summary object and null summary
+        db.exec(
+            "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', '{\"users\": 1}', 1000, '0.0.0')"
+        );
+        db.exec(
+            "INSERT INTO sync_runs (kind, outcome, summary, started_at, cli_version) VALUES ('sync', 'ok', NULL, 1000, '0.0.0')"
+        );
+        expect(db.prepare("SELECT count(*) AS n FROM sync_runs").get()).toEqual({ n: 2 });
     });
 
     it("enforces user-data checks, strict types, and one score per chart", () => {
