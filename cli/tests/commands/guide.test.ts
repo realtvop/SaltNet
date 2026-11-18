@@ -8,6 +8,7 @@ import { ERROR_CODES } from "../../src/errors";
 import { escapeTableCell, renderGuide } from "../../src/guide/markdown";
 import { WARNING_CODES } from "../../src/output/warning";
 import { commandIn } from "../commandRun";
+import { COMMANDS_WITHOUT_EXAMPLES } from "../examples";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -44,13 +45,22 @@ describe("guide command", () => {
         const registry = createRegistry();
         for (const command of registry.commands) {
             expect(stdout).toContain(`#### \`${commandUsage(command)}\``);
+            if (COMMANDS_WITHOUT_EXAMPLES.has(command.spec.name)) {
+                expect(command.spec.examples ?? [], command.spec.name).toHaveLength(0);
+                continue;
+            }
             expect(command.spec.examples?.length, command.spec.name).toBeGreaterThan(0);
             for (const example of command.spec.examples ?? []) {
                 expect(stdout).toContain(`# ${example.description}\nsaltnet ${example.command}`);
             }
         }
         const fences = stdout.match(/```bash\n[\s\S]*?\n```/g) ?? [];
-        expect(fences).toHaveLength(registry.commands.length);
+        const withoutExamples = registry.commands.filter(c =>
+            COMMANDS_WITHOUT_EXAMPLES.has(c.spec.name)
+        );
+        // Every exempt name is a registered command, so the count below is exact.
+        expect(withoutExamples).toHaveLength(COMMANDS_WITHOUT_EXAMPLES.size);
+        expect(fences).toHaveLength(registry.commands.length - withoutExamples.length);
     });
 
     it("prints exact exit rows, every error and warning, and every view", async () => {

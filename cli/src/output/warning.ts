@@ -12,6 +12,7 @@ export const WARNING_CODES = {
     UPLOAD_FAILED: "同步成功了，但上传到水鱼或落雪失败",
     SOME_FAILED: "sync --all 里有用户失败",
     LXNS_EXPIRING: "落雪授权快过期了",
+    PUBLIC_B50_ONLY: "只更新了水鱼公开的 B50，详细成绩保留原样",
 } as const;
 
 export type WarningCode = keyof typeof WARNING_CODES;

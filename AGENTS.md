@@ -205,6 +205,12 @@ SaltNet is a three-package pnpm workspace:
           (never their values) and the options; v0 users get stable uids from the file digest and
           their position. `export` reads users and events in one `Store.read`. Both keep or restore
           an LXNS authorization only for the LXNS account it was stored for.
+        - `sync.ts` is the `sync` command: fetches scores from Diving Fish (import token or username
+          with backend fallback to public B50, warning `PUBLIC_B50_ONLY`) or LXNS (matching
+          authorization) and writes them to SQLite (users, scores, b50_snapshot, rating_history,
+          score_events) under the sync lock, records a `sync_runs` journal entry, and reports score
+          counts, rating before/after, and up to 20 score changes ordered by rating gain; in-game source
+          and uploads are deferred to later steps.
     - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
       registry-generated Markdown (`markdown.ts`).
     - `src/output/` turns a command's result into output: the versioned JSON envelope
@@ -385,7 +391,21 @@ SaltNet is a three-package pnpm workspace:
           `chart --with history`.
     - `src/favorites/repository.ts` is the only writer of the favorite tables and keeps their
       positions contiguous.
-    - `src/sync/` holds the `sync_runs` journal and sync locks.
+    - `src/sync/` holds score syncing, the `sync_runs` journal and sync locks.
+        - `types.ts` defines sync options, result data shapes, change items, sources and modes.
+        - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`),
+          builds credential-bearing user working copies for core, and checks expired LXNS tokens.
+        - `clients.ts` constructs `SyncClients` with core clients and network retries, wraps calls to
+          capture upstream errors, and maps them to `CliError`.
+        - `changes.ts` calculates score change items between before and after, orders by rating
+          gain, and computes summary counts (`charts`, `added`, `improved`).
+        - `storedUser.ts` (`applySyncToStoredUser`) applies an update to a stored user as the web app
+          does: core reads the copy without the records it cannot look up, the update replaces
+          `detailed` and `b50` only when it has them, and every other part of the stored data stays
+          as it was.
+        - `execute.ts` coordinates sync execution: acquires `withSyncLock`, records `beginRun`,
+          fetches scores, writes transactionally with `applySyncToStoredUser` and
+          `buildScoreHistoryBatchEvents`, records `finishRun`, and formats the returned `data`.
         - `journal.ts` is the sole writer of the `sync_runs` table (`beginRun`, `finishRun`,
           `recordRun`, `readRuns`). It checks summaries recursively against credential keywords and
           rejects non-plain JSON values, ensuring no token or secret is ever recorded.
@@ -410,6 +430,8 @@ SaltNet is a three-package pnpm workspace:
         - `dataSchema.ts` checks a value against a published schema with Ajv in strict mode;
           `commands/describe.test.ts`, `schema.test.ts`, `guide.test.ts` and `errorCodes.test.ts`
           cover the generated descriptions and published failures.
+        - `examples.ts` lists the commands without a guide example (`sync`, which only talks to
+          accounts); every other command needs one.
         - `caught.ts` returns the `CliError` a call throws, and `zone.ts` (`useTimeZone`) runs a
           test file in a fixed time zone (the commands write times in the machine's own offset).
     - `e2e/` builds a bundle with `build.mjs --outfile` in a temporary directory, preloads a

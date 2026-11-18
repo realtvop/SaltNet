@@ -9,6 +9,7 @@ import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn, LXNS_URL, META_URL, NOW, routes } from "../commandRun";
+import { COMMANDS_WITHOUT_EXAMPLES } from "../examples";
 import { createHarness, run } from "../harness";
 import { mockFetch, textResponse } from "../mockHttp";
 import { useTempHome } from "../tempHome";
@@ -113,6 +114,10 @@ describe("published command error codes", () => {
     for (const command of registry.commands) {
         it(`${command.spec.name}: every failure of its examples in offline, network, upstream, fixture, and lock states is published`, async () => {
             const examples = command.spec.examples ?? [];
+            if (COMMANDS_WITHOUT_EXAMPLES.has(command.spec.name)) {
+                expect(examples, `${command.spec.name} has no offline example`).toHaveLength(0);
+                return;
+            }
             expect(examples.length, `${command.spec.name} needs an example`).toBeGreaterThan(0);
             const allowed = commandErrorCodes(command.spec);
 

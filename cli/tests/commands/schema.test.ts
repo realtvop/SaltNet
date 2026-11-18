@@ -41,6 +41,7 @@ describe("schema command", () => {
             "user default",
             "user bind",
             "user unbind",
+            "sync",
             "fav list",
             "fav create",
             "fav rename",

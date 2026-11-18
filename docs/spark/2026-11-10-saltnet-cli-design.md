@@ -426,6 +426,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
     - `UPLOAD_FAILED`：同步成功了，但上传到水鱼或落雪失败（见 5.1）
     - `SOME_FAILED`：`sync --all` 里有用户失败（见 5.1）
     - `LXNS_EXPIRING`：落雪授权快过期了（见 5.3）
+    - `PUBLIC_B50_ONLY`：只更新了水鱼公开的 B50，详细成绩保留原样（见 5.1）
 
 失败时的例子：`song link`。两首「Link」的别名里都有 link。
 
@@ -549,11 +550,17 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 
 **返回的 `data`**
 
-- `source`；`mode` 是 `full` 或 `fast`，水鱼用户名退回公开 B50 时是 `public-b50`；快速更新时还会注明用哪个来源补全的
-- `rating`：`{before, after}`
-- `counts`：谱面总数、新增数、提升数
-- `changes`：有变化的谱面，每条是谱面行加上变化前的成绩，按 rating 变化从大到小排，默认 20 条。首次同步只给数量
-- `uploads`：每个上传目标的结果
+- `user`：`{uid, index, name}`。
+- `source`：本次使用的同步来源。
+- `mode`：同步模式。落雪和水鱼 token 为 `full`；水鱼用户名在后端返回详细记录时为 `full`，退回公开 B50 时为 `public-b50` 并给出 `PUBLIC_B50_ONLY` 警告；快速更新为 `fast`（后续步骤支持）。
+- `rating`：`{before, after}`，原先无数据或不是安全整数时为 null。
+- `counts`：`{charts, added, improved}`。`charts` 为同步后有成绩的谱面数（`detailed` 或公开 B50 谱面总数）；`added` 为本次新游玩的谱面数；`improved` 为本次有成绩提升的谱面数。
+- `changes`：本次产生变动的谱面列表。每条为标准谱面行附带变动前成绩 `before`（之前无成绩时为 null）。按 rating 增幅倒序排列，增幅相同时按 chart key 排序。默认最多 20 条，带 `changesTotal` 与 `missing`。用户首次同步时 `changes` 为空，只给数量。
+- `uploads`：每个上传目标的结果（后续步骤支持，目前为空数组）。
+
+**成绩事件的 generation 规则**：生成成绩变动历史时，沿用该用户最新一条历史事件的 `generation_id`（按 `observed_at DESC, id DESC` 排序）；若尚无历史事件则新建 `cli-<uuid>`。网页端每个用户维护一个活跃 generation，CLI 沿用该规则。
+
+**后续功能说明**：舞萌机厅来源（`ingame`）与自动上传（`uploads`）在后续步骤（P3-9、P3-10）实现，目前暂未开放。
 
 **`--all`**：和网页端的「全部更新」一样，同步所有没开「手动更新」的用户，各用户之间互不影响。
 

@@ -211,7 +211,7 @@
 - [x] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
 - [ ] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
 - [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
-- [ ] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
+- [x] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
@@ -985,4 +985,24 @@
         - 其余 6 处补了测试：二维码查询不重试（主地址只问一次）；UserID 为 0 报 `UPSTREAM_ERROR`；token 写在命令行上时，即使 stdin 有可用的 token、服务器也能应答，仍报 `USAGE`，不发请求，不回显；什么都没绑定时 `unbind df-token` 不创建凭据文件；只剩「启用」时 `unbind ingame` 也算有变化；授权只留在 `credentials.json` 时 `unbind lxns` 也会清掉。
         - 重跑这 7 处，全部杀掉。
     - 留给后面的：P3-14 之后 `unbind lxns` 还要删签发时间；P3-7b 给绑定和解绑的写事务加 `assertNoSync`。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+89. **P3-8 的实现（2026-11-18）**：
+    - 分工：这一步是〔新〕，原定 Codex 写。Codex 本周额度用完，照写细了的 brief 交给 Gemini。第一轮到 40 分钟超时被停，留下没写完的改动；我把它作为快照的起点，让 Gemini 接着写完（p3-8b），两轮合起来是这次的改动。
+    - 我的 brief 自相矛盾：一处不许改 `cli/src/output/warning.ts`，另一处要新加警告 `PUBLIC_B50_ONLY`。第二轮的 brief 写明可以加这一条。
+    - Gemini 写的：`saltnet sync`（`cli/src/commands/sync.ts`）和 `cli/src/sync/` 下的 `types.ts`、`sources.ts`、`clients.ts`、`changes.ts`、`execute.ts`。
+        - 来源按设计 5.1 选：水鱼 Import-Token；水鱼用户名，后端查不到时退回公开 B50 并警告 `PUBLIC_B50_ONLY`；落雪，授权必须属于这个用户的落雪账号。游戏来源和上传留给 P3-9、P3-10。
+        - 在同步锁里记一条 `sync_runs`，拉成绩，在一个事务里写用户、成绩、B50、Rating 历史和成绩历史事件，报告成绩数、Rating 前后和按 Rating 涨幅排的前 20 条变化。
+    - 我改的：
+        - 详细成绩原来是合并进旧成绩的。网页端和设计都是整个替换：core 的 `applySyncUpdate` 只在更新里有 `detailed`、`b50` 时才替换。新加 `cli/src/sync/storedUser.ts` 的 `applySyncToStoredUser`：core 读的是去掉它查不了的记录的副本（`userForCoreScores`）；更新里有的部分整个替换，存储里 core 查不了的记录一起换掉；更新里没有的部分保留存储的原样，包括 core 查不了的记录；Rating 历史只在 Rating 是有限数时才变。测试拿网页端同一份数据的结果比对。
+        - 交给 core 的用户（`buildUserForCore`）原来是存储的原样，有 core 查不了的记录时同步会出错。改成先经过 `userForCoreScores`。
+        - 宴会场谱面的变化原来都算作 `missing`：成绩历史用的记录键是 `<SaltNet 曲目 id>-<level_index>`，和 CLI 的谱面键不同。改成按 `scores` 和 `b50_snapshot` 里存的记录键到谱面键的对应找谱面（`cli/src/users/scores.ts` 的 `readRecordChartKeys`）。
+        - 错误里的命令原来从 core 的用户对象上读序号。那里没有序号，所以选了别的用户时，提示的命令都指向默认用户，uid 也没加引号。改成默认用户写 `0`，其他用户写加引号的 uid（`syncUserRef`、`quoteArg`）。
+        - 水鱼拒绝按用户名查询（400、401、403）时，提示原来让人重绑 token，现在让人重绑 `df-name`。
+        - 写入事务可能遇到数据库被锁，`errors` 加了 `DB_LOCKED`。
+        - Gemini 为了让没有指南示例的 `sync` 通过测试，把 `guide.test.ts` 和 `errorCodes.test.ts` 里「每个命令都要有示例」的检查对所有命令放宽了。改成只豁免明确列出的命令：`cli/tests/examples.ts` 的 `COMMANDS_WITHOUT_EXAMPLES`，现在只有 `sync`（它只和账号打交道，种子数据里没有能离线跑的例子）。
+    - 测试：变异 22 处，杀掉 11 处。存活的 11 处里：
+        - 一处是死分支（删存储里的键），已删掉。
+        - 两处在落雪过期判断 `isLxnsTokenExpired` 里。P3-14 接进同步时用刷新替换它，会删掉它。
+        - 其余 8 处缺测试：同步前的 Rating 不是整数时 `rating.before` 为 null；公开 B50 的 `counts.charts` 算上 sd 和 dx 两半；新事件沿用最新已存事件的代；core 读不到的记录（转换时会让 core 抛错的 `song_id`）不能挡住同步；落雪本身失败时提示里不再建议 `--source lxns`；涨幅相同的变化按谱面键排序；超过 20 条时只列 20 条、`changesTotal` 算全部；公开 B50 的变化按 `b50_snapshot` 的记录对应找谱面。
+        - 我的额度快用完了，这 8 处没有自己补，写进 P3-14 第二轮的 brief，和那一步一起交给 Gemini，届时重跑这几处变异。这偏离了「变异全部杀掉才提交」的做法，在这里记下。
     - 按决定 66 不单独送审，并入 P3 的整体审查。

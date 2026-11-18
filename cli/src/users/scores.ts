@@ -168,3 +168,28 @@ export function readUserScores(
         };
     });
 }
+
+interface RecordLinkRow {
+    record_key: string;
+    chart_key: string | null;
+}
+
+/**
+ * The catalog chart key of each stored record of a user, from the detailed scores and then the B50
+ * snapshot (null where the catalog has no chart for the record). A record key and a chart key differ
+ * for utage records, so a score history key, which is a record key, is placed in the catalog here.
+ */
+export function readRecordChartKeys(store: Store, userUid: string): Map<string, string | null> {
+    return store.read(() => {
+        const links = new Map<string, string | null>();
+        for (const table of ["scores", "b50_snapshot"] as const) {
+            const rows = store.db
+                .prepare(`SELECT record_key, chart_key FROM ${table} WHERE user_uid = ?`)
+                .all(userUid) as unknown as RecordLinkRow[];
+            for (const row of rows) {
+                if (!links.has(row.record_key)) links.set(row.record_key, row.chart_key);
+            }
+        }
+        return links;
+    });
+}

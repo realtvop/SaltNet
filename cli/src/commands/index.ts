@@ -20,6 +20,7 @@ import { search } from "./search";
 import { song } from "./song";
 import { sql } from "./sql";
 import { status } from "./status";
+import { sync } from "./sync";
 import { userAdd, userDefault, userEdit, userList, userRemove, userShow } from "./user";
 
 /** Every command, in the order `--help` lists them within a category. */
@@ -45,6 +46,7 @@ export const COMMANDS: readonly CommandDefinition[] = [
     userDefault,
     userBind,
     userUnbind,
+    sync,
     favList,
     favCreate,
     favRename,
