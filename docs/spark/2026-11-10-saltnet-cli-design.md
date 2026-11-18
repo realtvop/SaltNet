@@ -108,7 +108,7 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 ```
 
 - 凭据单独放一个文件，这样 `saltnet sql` 打开数据库时永远读不到 token。
-- `credentials.json` 当前是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?}}, pendingLxnsAuthorizations?: {<state>: LXNSOAuthTransaction}}`；两个凭据值都按网页用户里的 JSON 值原样保存。缺文件等同空文件；已有文件读不了、JSON 损坏或结构不对时必须报错，不能静默覆盖。每次改动时自动清理：过期或格式损坏的进行中授权被丢弃；目标用户不在库里的进行中授权被丢弃；不在库里或两项凭据都没有的用户条目被丢弃。
+- `credentials.json` 当前是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?, lxnsAccountId?}}, pendingLxnsAuthorizations?: {<state>: LXNSOAuthTransaction}}`；两个凭据值都按网页用户里的 JSON 值原样保存。`lxnsAccountId` 是写入授权时该用户 `lxns.id` 的 JSON 值，没有落雪账号时是 `null`；旧文件没有这个成员时，授权不视为与任何账号匹配。缺文件等同空文件；已有文件读不了、JSON 损坏或结构不对时必须报错，不能静默覆盖。每次改动时自动清理：过期或格式损坏的进行中授权被丢弃；目标用户不在库里的进行中授权被丢弃；落雪账号不匹配时授权和 `lxnsAccountId` 被丢弃，但水鱼 token 保留；不在库里或两项凭据都没有的用户条目被丢弃。
 - 进行中的落雪授权按 state 各存一条记录：PKCE verifier、目标用户、过期时间（15 分钟）。换到 token 后先暂存在这条记录里，直到绑定完成（见 5.2）。
 - 二维码一律不存盘。
 
@@ -167,8 +167,8 @@ cache/             上游原始快照（SaltMeta、落雪的四类收藏品）�
 ### 2.4 和网页端互通
 
 - `saltnet import <文件>`：用 core 里同一套解码（v0/v1），整体替换用户和成绩历史。语义和网页端一样是全部覆盖，所以需要确认（见 5.4）。凭据拆出来存进 `credentials.json`，数据库里相应位置写 `null`；收藏夹不受影响。和网页端的导入一样，成绩历史的每个事件换上这次导入新起的 generation 和 id。成绩历史里的 `sequence`、`dxScore`、`playCount` 超出 ±(2^53−1) 时拒绝导入：网页端不会写出这样的值，SQLite 的整数列存进去也读不回来。新的凭据文件先以 0600 写在同目录；用户和事件在一个数据库事务里提交后才把它改名到位，事务失败时旧凭据不变。
-- `saltnet export <文件>`：从 `users.raw` 按用户顺序生成 v1 文件，连同数据库里的成绩事件，网页端可以直接导入；水鱼 Import-Token 从 `credentials.json` 放回。文件里可能有凭据，所以以 0600 在目标目录原子写入，目录不存在时报 `USAGE` 且不创建。
-- 落雪 token 默认不跟着导入，也不跟着导出。落雪每次刷新都会换发新的 refresh token，网页端也是整份替换保存；两边共用同一份授权时，一边刷新后另一边会收到 `invalid_grant`，授权就被清掉了。所以默认让 CLI 自己单独授权一次，两边互不影响。落雪 id 和名字照常导入导出，用于身份判断。确实想沿用对方的授权，导入或导出时加 `--keep-lxns`；导入时备份里没有某个用户的落雪授权，这个用户仍照默认规则处理（uid 和落雪 id 都没变就留着 CLI 自己的授权），不会因为加了这个选项反而丢掉授权。
+- `saltnet export <文件>`：在同一个数据库快照里从 `users.raw` 按用户顺序读取用户和成绩事件，生成网页端可以直接导入的 v1 文件；水鱼 Import-Token 从 `credentials.json` 放回。文件里可能有凭据，所以以 0600 在目标目录原子写入，目录不存在时报 `USAGE` 且不创建。
+- 落雪 token 默认不跟着导入，也不跟着导出。落雪每次刷新都会换发新的 refresh token，网页端也是整份替换保存；两边共用同一份授权时，一边刷新后另一边会收到 `invalid_grant`，授权就被清掉了。所以默认让 CLI 自己单独授权一次，两边互不影响。落雪 id 和名字照常导入导出，用于身份判断。确实想沿用对方的授权，导入或导出时加 `--keep-lxns`；导入备份授权时同时记下导入用户的落雪 id。备份里没有某个用户的落雪授权时，只在凭据条目已经记下的落雪 id 与导入用户相同（`null` 也可相同）时保留 CLI 自己的授权；旧条目缺少该 id 时不保留。导出也只放回所记落雪 id 与数据库用户相同的授权。
 
 ## 3. 实体、引用与命令
 

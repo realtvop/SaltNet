@@ -9,13 +9,20 @@ import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
 import { getUserDisplayName } from "@core/user/type";
 import { CliError } from "../errors";
 import { bool, int, object, str } from "../output/schema";
-import { readCredentials, stageCredentials, withCredentialsLock } from "../runtime/credentials";
+import {
+    lxnsAccountIdOf,
+    matchingLxnsAuthorization,
+    readCredentials,
+    stageCredentials,
+    withCredentialsLock,
+} from "../runtime/credentials";
 import { writeFileAtomic } from "../runtime/files";
 import {
     assertStoredScoreEvent,
     assertStoredUser,
     listUsers,
     readScoreEvents,
+    readUserRemovalFingerprint,
     readUsers,
     replaceUsers,
 } from "../users/repository";
@@ -54,6 +61,13 @@ interface PreparedImport {
     events: ScoreHistoryEventV1[];
     credentials: CredentialsFile;
     divingFishTokenCount: number;
+}
+
+interface CredentialOutcome {
+    uid: string;
+    divingFishImportToken: boolean;
+    lxnsAuthorization: boolean;
+    lxnsAuthorizationSource: "backup" | "kept" | null;
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -109,6 +123,13 @@ function readBackup(file: string): {
 
     try {
         const decoded = decodeUserDataBackup(source);
+        if ((source as Record<string, unknown>).version === 0) {
+            const digest = createHash("sha256").update(bytes).digest("hex").slice(0, 24);
+            decoded.users = decoded.users.map((user, index) => ({
+                ...user,
+                uid: `import-v0-${digest}-${index}`,
+            }));
+        }
         return { bytes, source: source as Record<string, unknown>, decoded };
     } catch (error) {
         throw backupError(file, safeDecodeReason(error), error);
@@ -158,6 +179,7 @@ function prepareImport(
         }
         if (hasLxnsAuthorization) {
             credentials.lxnsAuthorization = lxnsAuthorization;
+            credentials.lxnsAccountId = lxnsAccountIdOf(raw);
         }
         if (hasImportToken || hasLxnsAuthorization)
             credentialUsers[source.uid as string] = credentials;
@@ -189,17 +211,13 @@ function assertImportable(file: string, prepared: PreparedImport): void {
     }
 }
 
-function lxnsId(user: User): unknown {
-    return record((user as unknown as Record<string, unknown>).lxns)?.id;
-}
-
 function applyCredentialPolicy(
     prepared: PreparedImport,
-    currentUsers: readonly User[],
     currentCredentials: CredentialsFile,
     keepLxns: boolean
-): CredentialsFile {
+): { credentials: CredentialsFile; outcome: CredentialOutcome[] } {
     const users = emptyCredentialUsers();
+    const outcome: CredentialOutcome[] = [];
     for (const imported of prepared.users) {
         const uid = imported.uid as string;
         const incoming = credentialsOf(prepared.credentials, uid);
@@ -209,19 +227,31 @@ function applyCredentialPolicy(
         if (present(importToken)) {
             entry.divingFishImportToken = importToken;
         }
+        const accountId = lxnsAccountIdOf(imported);
         if (keepLxns && present(incomingLxns)) {
             entry.lxnsAuthorization = incomingLxns;
+            entry.lxnsAccountId = accountId;
         } else {
-            const current = currentUsers.find(user => user.uid === uid);
-            const own = credentialsOf(currentCredentials, uid);
-            const ownLxns = own?.lxnsAuthorization;
-            if (current && lxnsId(current) === lxnsId(imported) && present(ownLxns)) {
+            const ownLxns = matchingLxnsAuthorization(
+                credentialsOf(currentCredentials, uid),
+                accountId
+            );
+            if (ownLxns !== undefined) {
                 entry.lxnsAuthorization = ownLxns;
+                entry.lxnsAccountId = accountId;
             }
         }
         if (Object.keys(entry).length > 0) users[uid] = entry;
+        const hasIncomingLxns = keepLxns && present(incomingLxns);
+        const hasFinalLxns = present(entry.lxnsAuthorization);
+        outcome.push({
+            uid,
+            divingFishImportToken: present(entry.divingFishImportToken),
+            lxnsAuthorization: hasFinalLxns,
+            lxnsAuthorizationSource: hasIncomingLxns ? "backup" : hasFinalLxns ? "kept" : null,
+        });
     }
-    return { version: 1, users };
+    return { credentials: { version: 1, users }, outcome };
 }
 
 function credentialCount(credentials: CredentialsFile, key: keyof UserCredentials): number {
@@ -233,7 +263,7 @@ export const importBackup = defineCommand(
         name: "import",
         summary: "确认后从网页端备份整体替换用户和成绩历史",
         description:
-            "读取网页端 v0 或 v1 用户备份，预览文件内容和会被覆盖的本地数据；确认后整体替换用户与成绩历史，收藏夹不受影响。水鱼 Import-Token 会移到 credentials.json；进行中的落雪授权会被丢弃；落雪授权默认丢弃，但会保留 uid 与落雪 id 都未改变的 CLI 自有授权。--keep-lxns 改为采用备份里的落雪授权；备份里没有落雪授权的用户仍照默认规则处理。输出和预览永远只含凭据数量，不含凭据值。",
+            "读取网页端 v0 或 v1 用户备份，预览文件内容和会被覆盖的本地数据；确认后整体替换用户与成绩历史，收藏夹不受影响。水鱼 Import-Token 会移到 credentials.json；进行中的落雪授权会被丢弃；落雪授权默认丢弃，但会保留凭据所记账号 id 与导入用户相同的 CLI 自有授权。--keep-lxns 改为采用备份里的落雪授权；备份里没有落雪授权的用户仍照默认规则处理。输出和预览永远只含凭据数量，不含凭据值。",
         category: "data",
         effect: "local",
         output: "object",
@@ -243,7 +273,7 @@ export const importBackup = defineCommand(
             keepLxns: {
                 kind: "boolean",
                 description:
-                    "采用备份里的落雪授权（备份里没有的用户照默认处理）；默认丢弃并保留身份未变的 CLI 自有授权",
+                    "采用备份里的落雪授权（备份里没有的用户照默认处理）；默认丢弃并保留账号 id 匹配的 CLI 自有授权",
             },
         },
         examples: [
@@ -272,16 +302,24 @@ export const importBackup = defineCommand(
         assertImportable(absolutePath, prepared);
         const store = ctx.store();
         return withCredentialsLock(store, () => {
-            const currentUsers = readUsers(store);
-            const currentRows = listUsers(store);
-            const currentEventCount = readScoreEvents(store).length;
             const currentCredentials = readCredentials(ctx.paths);
-            const credentials = applyCredentialPolicy(
+            const snapshot = store.read(() => {
+                const currentRows = listUsers(store);
+                return {
+                    currentRows,
+                    currentEventCount: readScoreEvents(store).length,
+                    fingerprints: currentRows.map(user => ({
+                        uid: user.uid,
+                        digest: readUserRemovalFingerprint(store, user.uid),
+                    })),
+                };
+            });
+            const { credentials, outcome } = applyCredentialPolicy(
                 prepared,
-                currentUsers,
                 currentCredentials,
                 args.options.keepLxns
             );
+            const { currentRows, currentEventCount, fingerprints } = snapshot;
             const version = backup.source.version as 0 | 1;
             const importedRows = prepared.users.map((user, index) => ({
                 index,
@@ -290,19 +328,22 @@ export const importBackup = defineCommand(
             }));
             const confirmArgs = [
                 "import",
-                givenPath,
                 ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+                ...(givenPath.startsWith("-") ? ["--"] : []),
+                givenPath,
             ];
             requireConfirmation(args.options.yes, {
                 operation: "backup.import",
                 target: absolutePath,
                 state: {
                     fileDigest: createHash("sha256").update(backup.bytes).digest("hex"),
-                    currentUsers: currentRows.map(user => ({
-                        uid: user.uid,
-                        updatedAt: user.updatedAt,
+                    currentUsers: fingerprints,
+                    credentialOutcome: outcome.map(item => ({
+                        uid: item.uid,
+                        divingFishImportToken: item.divingFishImportToken,
+                        lxnsAuthorization: item.lxnsAuthorization,
+                        lxnsAuthorizationSource: item.lxnsAuthorizationSource,
                     })),
-                    currentEventCount,
                     keepLxns: args.options.keepLxns,
                 },
                 preview: {
@@ -378,7 +419,9 @@ function restoreCredentials(
         const raw = source as unknown as Record<string, unknown>;
         const entry = credentialsOf(credentials, source.uid as string);
         const importToken = entry?.divingFishImportToken;
-        const lxnsAuthorization = entry?.lxnsAuthorization;
+        const lxnsAuthorization = keepLxns
+            ? matchingLxnsAuthorization(entry, lxnsAccountIdOf(source))
+            : undefined;
         let restored: Record<string, unknown> = { ...raw };
         if (present(importToken)) {
             restored = {
@@ -390,7 +433,7 @@ function restoreCredentials(
             };
             divingFishTokenCount++;
         }
-        if (keepLxns && present(lxnsAuthorization)) {
+        if (lxnsAuthorization !== undefined) {
             restored = {
                 ...restored,
                 lxns: { ...record(raw.lxns), auth: lxnsAuthorization },
@@ -407,14 +450,17 @@ export const exportBackup = defineCommand(
         name: "export",
         summary: "导出网页端可直接导入的 v1 用户备份",
         description:
-            "按 users.raw 的顺序导出全部用户和成绩历史，并从 credentials.json 放回水鱼 Import-Token。落雪授权默认不导出，加 --keep-lxns 才放回。文件以 0600 权限原子写入；已有文件必须加 --overwrite。输出只含凭据数量，不含凭据值。",
+            "按 users.raw 的顺序导出全部用户和成绩历史，并从 credentials.json 放回水鱼 Import-Token。落雪授权默认不导出；加 --keep-lxns 时，也只放回绑定的落雪账号 id 与用户当前 id 相同的授权。文件以 0600 权限原子写入；已有文件必须加 --overwrite。输出只含凭据数量，不含凭据值。",
         category: "data",
         effect: "local",
         output: "object",
         positionals: [FILE_POSITIONAL],
         options: {
             overwrite: { kind: "boolean", description: "允许替换已经存在的目标文件" },
-            keepLxns: { kind: "boolean", description: "把 credentials.json 里的落雪授权写进备份" },
+            keepLxns: {
+                kind: "boolean",
+                description: "把账号 id 与用户当前 id 相同的落雪授权写进备份",
+            },
         },
         examples: [
             {
@@ -440,7 +486,11 @@ export const exportBackup = defineCommand(
     (args, ctx) => {
         const absolutePath = path.resolve(ctx.io.cwd, args.positionals.file);
         const store = ctx.store();
-        const users = readUsers(store);
+        const snapshot = store.read(() => ({
+            users: readUsers(store),
+            events: readScoreEvents(store),
+        }));
+        const { users, events } = snapshot;
         if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户可以导出");
         if (existsSync(absolutePath) && !args.options.overwrite) {
             throw new CliError("FILE_EXISTS", `文件已经存在：${absolutePath}`, {
@@ -450,7 +500,6 @@ export const exportBackup = defineCommand(
         }
         const credentials = readCredentials(ctx.paths);
         const restored = restoreCredentials(users, credentials, args.options.keepLxns);
-        const events = readScoreEvents(store);
         const backup = encodeUserDataBackup(restored.users, events, ctx.io.now().getTime());
         const content = `${JSON.stringify(backup, null, 2)}\n`;
         try {

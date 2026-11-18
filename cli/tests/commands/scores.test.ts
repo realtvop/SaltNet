@@ -1,12 +1,19 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
+import type { User } from "@core/user/type";
 import { existsSync } from "node:fs";
+import { kaleidxscopeGates } from "@core/kaleidxscope";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { ScoreHistoryChange } from "@core/user/scoreHistory/type";
 import { describe, expect, it } from "vitest";
+import { replaceMusic } from "../../src/catalog/store";
 import { createRegistry } from "../../src/commands";
 import { renderHelp } from "../../src/commands/help";
+import { openStore } from "../../src/store/store";
+import { replaceUsers } from "../../src/users/repository";
+import { userForCoreScores } from "../../src/users/rows";
 import { commandIn, NOW } from "../commandRun";
 import { fixtureSongCatalog } from "../fixtureCatalog";
+import { madeMusicBuild } from "../madeCatalog";
 import {
     allFixtureRecords,
     b50User,
@@ -34,6 +41,59 @@ function scoreOf(json: Awaited<ReturnType<typeof commandIn>>["json"]) {
 }
 
 describe("chart-row score shaping", () => {
+    it("filters only records core cannot inspect and leaves a web-written user deeply equal", async () => {
+        const clean = detailedUser("clean-copy", "Clean Copy");
+        clean.data.rating = 15_000;
+        clean.data.ratingHistory = [{ time: SCORE_TIME, rating: 15_000 }];
+        expect(userForCoreScores(clean)).toEqual(clean);
+
+        const bad = structuredClone(clean) as User;
+        const detailed = bad.data.detailed as unknown as Record<string, unknown>;
+        detailed["bad-null-type"] = { song_id: 1, type: null, level_index: 0, ds: 1 };
+        detailed["bad-number-type"] = { song_id: 1, type: 7, level_index: 0, ds: 1 };
+        detailed["bad-song-id"] = {
+            song_id: { toString: 1 },
+            type: "SD",
+            level_index: 0,
+            ds: 1,
+        };
+        bad.data.b50 = {
+            sd: [{ song_id: 1, type: null, level_index: 0, ds: 1 }],
+            dx: [],
+        } as unknown as User["data"]["b50"];
+        bad.data.ratingHistory = [
+            ...(bad.data.ratingHistory ?? []),
+            null as unknown as NonNullable<User["data"]["ratingHistory"]>[number],
+        ];
+        const safe = userForCoreScores(bad);
+        expect(Object.keys(safe.data.detailed ?? {})).toEqual(Object.keys(clean.data.detailed!));
+        expect(safe.data.b50).toEqual({ sd: [], dx: [] });
+        expect(safe.data.ratingHistory).toEqual(clean.data.ratingHistory);
+
+        const cleanPaths = home();
+        const badPaths = home();
+        await seedScoreUsers(cleanPaths, [clean]);
+        await seedScoreUsers(badPaths, [bad]);
+        const cases: [string, string[]][] = [
+            ["rating", ["--history"]],
+            ...(["normal", "fit", "ap", "fc", "pc", "nb"] as const).map(
+                mode => ["b50", ["--mode", mode, "--limit", "10000"]] as [string, string[]]
+            ),
+            ["charts", ["--sort", "rating", "--limit", "10000"]],
+            ["charts", ["--sort", "gain", "--limit", "10000"]],
+            ["chart", ["146-3", "--with", "all"]],
+            ["calc", ["146-3", "--achievements", "100.5"]],
+            ["collection", ["show", "plate:6148", "--all", "--limit", "10000"]],
+            ["kaleidxscope", ["blue"]],
+        ];
+        for (const [command, args] of cases) {
+            const expected = await commandIn(cleanPaths, command, args);
+            const actual = await commandIn(badPaths, command, args);
+            expect(actual.code, `${command} ${args.join(" ")}`).toBe(0);
+            expect(actual.json.data, `${command} ${args.join(" ")}`).toEqual(expected.json.data);
+        }
+    });
+
     it("prints every score key, estimates play counts, and keeps unsafe copies null", async () => {
         const paths = home();
         const exact = recordOf(chart("146-3"));
@@ -344,28 +404,6 @@ describe("score meta and warnings", () => {
             }) => json.data.items,
             expectRows: true,
         },
-        {
-            name: "kaleidxscope blue",
-            command: "kaleidxscope",
-            args: ["blue"],
-            getRows: (json: {
-                data: {
-                    keyCondition: {
-                        songs: readonly {
-                            chartKey: string;
-                            score: { achievements: number | null } | null;
-                        }[];
-                    };
-                    pools: readonly {
-                        songs: readonly {
-                            chartKey: string;
-                            score: { achievements: number | null } | null;
-                        }[];
-                    }[];
-                };
-            }) => [...json.data.keyCondition.songs, ...json.data.pools.flatMap(pool => pool.songs)],
-            expectRows: false,
-        },
     ])("attaches scores and warnings in $name", async ({ command, args, getRows, expectRows }) => {
         const paths = home();
         await seedScoreUsers(paths, [
@@ -389,6 +427,83 @@ describe("score meta and warnings", () => {
             message: "成绩已经 4 天没更新",
             fix: "saltnet sync",
         });
+    });
+
+    it("attaches the selected user's distinct scores to real KALEIDXSCOPE gate songs", async () => {
+        const blue = kaleidxscopeGates.find(gate => gate.id === "blue")!;
+        const keySong = blue.keyCondition.songs[0];
+        const keyMusicIds = new Set(blue.keyCondition.songs.map(song => song.musicId));
+        const poolSong = blue.selectionPools
+            .flatMap(pool => pool.songs ?? [])
+            .find(song => !keyMusicIds.has(song.musicId))!;
+        expect(keySong).toBeDefined();
+        expect(poolSong).toBeDefined();
+        const entries = [keySong, poolSong].map(song => ({
+            id: song.musicId,
+            title: song.title,
+            charters: ["B", "A", "E", "M"],
+        }));
+        const build = madeMusicBuild(entries);
+        const record = (musicId: number, achievements: number) => {
+            const chart = build.music.musicList[musicId].charts[3];
+            return { ...recordOf(chart), achievements };
+        };
+        const firstRecords = {
+            [`${keySong.musicId}-3`]: record(keySong.musicId, 91.1111),
+            [`${poolSong.musicId}-3`]: record(poolSong.musicId, 92.2222),
+        };
+        const secondRecords = {
+            [`${keySong.musicId}-3`]: record(keySong.musicId, 93.3333),
+            [`${poolSong.musicId}-3`]: record(poolSong.musicId, 94.4444),
+        };
+        const paths = home();
+        const store = openStore(paths);
+        try {
+            replaceMusic(store, build, { fetchedAt: NOW.getTime(), upstreamVersion: "made" });
+            replaceUsers(
+                store,
+                [
+                    user("gate-first", "Gate First", {
+                        updateTime: SCORE_TIME,
+                        detailed: firstRecords,
+                    }),
+                    user("gate-second", "Gate Second", {
+                        updateTime: SCORE_TIME,
+                        detailed: secondRecords,
+                    }),
+                ],
+                []
+            );
+        } finally {
+            store.close();
+        }
+
+        const rowsOf = (result: Awaited<ReturnType<typeof commandIn>>) => [
+            ...result.json.data.keyCondition.songs,
+            ...result.json.data.pools.flatMap((pool: { songs: unknown[] }) => pool.songs),
+        ];
+        const first = await commandIn(paths, "kaleidxscope", ["blue", "--diff", "mas"]);
+        const second = await commandIn(paths, "kaleidxscope", [
+            "blue",
+            "--diff",
+            "mas",
+            "--user",
+            "gate-second",
+        ]);
+        expect(first.code).toBe(0);
+        expect(second.code).toBe(0);
+        expect(first.json.data.keyCondition.songs).toHaveLength(1);
+        expect(second.json.data.keyCondition.songs).toHaveLength(1);
+        expect(first.json.data.keyCondition.songs[0].score.achievements).toBe(91.1111);
+        expect(second.json.data.keyCondition.songs[0].score.achievements).toBe(93.3333);
+        const firstPoolRows = rowsOf(first).filter(row => row.musicId === poolSong.musicId);
+        const secondPoolRows = rowsOf(second).filter(row => row.musicId === poolSong.musicId);
+        expect(firstPoolRows.length).toBeGreaterThan(0);
+        expect(secondPoolRows.length).toBe(firstPoolRows.length);
+        expect(firstPoolRows.every(row => row.score?.achievements === 92.2222)).toBe(true);
+        expect(secondPoolRows.every(row => row.score?.achievements === 94.4444)).toBe(true);
+        expect(rowsOf(first).every(row => row.score !== null)).toBe(true);
+        expect(rowsOf(second).every(row => row.score !== null)).toBe(true);
     });
 });
 

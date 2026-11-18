@@ -12,10 +12,12 @@ import {
 } from "@core/query/b50";
 import { describe, expect, it } from "vitest";
 import { chartKeyOf } from "../../src/catalog/songs";
+import { createRegistry } from "../../src/commands";
 import { openStore } from "../../src/store/store";
 import { replaceUsers } from "../../src/users/repository";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
+import { expectConforms } from "../dataSchema";
 import {
     allFixtureRecords,
     b50User,
@@ -326,6 +328,44 @@ describe("b50", () => {
 });
 
 describe("rating", () => {
+    it.each([
+        ["string current rating", { rating: "15000" }],
+        ["fractional current rating", { rating: 15_000.5 }],
+        [
+            "fractional history rating",
+            {
+                rating: 15_200,
+                ratingHistory: [
+                    { time: 100, rating: 15_000 },
+                    { time: 200, rating: 15_100.5 },
+                    { time: 300, rating: 15_200 },
+                ],
+            },
+        ],
+        ["null history entry", { rating: 15_000, ratingHistory: [null] }],
+        [
+            "string history rating",
+            { rating: 15_000, ratingHistory: [{ time: 100, rating: "15000" }] },
+        ],
+    ])("keeps %s output inside the published schema", async (_name, unusualData) => {
+        const paths = home();
+        seedWithoutCatalog(paths, [
+            user("unusual-rating", "Unusual Rating", unusualData as Record<string, unknown>),
+        ]);
+        const result = await commandIn(paths, "rating", ["--history"], { network: {} });
+        expect(result.code).toBe(0);
+        expectConforms(createRegistry().find("rating")!.spec.dataSchema!, result.json.data);
+        if (unusualData.rating === 15_000.5 || unusualData.rating === "15000") {
+            expect(result.json.data.rating).toBeNull();
+        }
+        if (_name === "fractional history rating") {
+            expect(result.json.data.history).toEqual([
+                { time: "1969-12-31T19:00:00-05:00", rating: 15_000, change: null },
+                { time: "1969-12-31T19:00:00-05:00", rating: 15_200, change: 200 },
+            ]);
+        }
+    });
+
     it("returns current rating or null without metadata or network", async () => {
         const ratedPaths = home();
         seedWithoutCatalog(ratedPaths, [

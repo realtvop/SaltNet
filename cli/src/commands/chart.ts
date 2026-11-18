@@ -278,9 +278,7 @@ export const chart = defineCommand(
 
             let stages: RatingStageEntry[] = [];
             if (constantOf(entry.chart) !== null) {
-                const rawUser = userScores.scores
-                    ? (readUser(ctx.store(), userScores.scores.user.uid) ?? null)
-                    : null;
+                const rawUser = userScores.scores?.raw ?? null;
                 const chartScoreRow = chartScoreOf(entry.chart, userScores.scores);
                 const scoreForTables: ChartScore | null = chartScoreRow
                     ? ({
@@ -325,9 +323,7 @@ export const chart = defineCommand(
             let position: ChartPositionRow | undefined;
             if (wantPosition) {
                 const allCatalogCharts = Object.values(metadata.catalog.music.chartList);
-                const rawUser = userScores.scores
-                    ? (readUser(ctx.store(), userScores.scores.user.uid) ?? null)
-                    : null;
+                const rawUser = userScores.scores?.raw ?? null;
                 const posStr = getChartPositionByDifficulty(
                     entry.chart,
                     entry.chart.info.level,

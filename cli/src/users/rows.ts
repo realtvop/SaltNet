@@ -133,7 +133,9 @@ function convertible(value: unknown): boolean {
     }
 }
 
-function recordCanBeLookedUp(value: ObjectValue): value is DivingFishFullRecord & ObjectValue {
+export function recordCanBeLookedUp(
+    value: ObjectValue
+): value is DivingFishFullRecord & ObjectValue {
     // Core's lookup takes any other values, but calls toUpperCase on `type` and turns `song_id`,
     // `level_index` and `ds` into text or numbers, which throws for a value that cannot be converted.
     return (
@@ -142,6 +144,53 @@ function recordCanBeLookedUp(value: ObjectValue): value is DivingFishFullRecord 
         convertible(value.level_index) &&
         convertible(value.ds)
     );
+}
+
+function lookupRecords(value: unknown): Record<string, DivingFishFullRecord & ObjectValue> {
+    if (!isPlainObject(value)) return {};
+    return Object.fromEntries(
+        Object.entries(value).filter(
+            (entry): entry is [string, DivingFishFullRecord & ObjectValue] =>
+                isPlainObject(entry[1]) && recordCanBeLookedUp(entry[1])
+        )
+    );
+}
+
+function lookupRecordList(value: unknown): (DivingFishFullRecord & ObjectValue)[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter(
+        (entry): entry is DivingFishFullRecord & ObjectValue =>
+            isPlainObject(entry) && recordCanBeLookedUp(entry)
+    );
+}
+
+/**
+ * Makes the token-free raw user safe for core score helpers without changing the stored/exported
+ * source. Web-written users remain deeply equal; unusual records core cannot inspect are omitted.
+ */
+export function userForCoreScores(input: User): User {
+    const root = input as unknown as ObjectValue;
+    const sourceData = isPlainObject(root.data) ? root.data : {};
+    const data: ObjectValue = { ...sourceData };
+
+    if (Object.hasOwn(sourceData, "detailed")) {
+        data.detailed = lookupRecords(sourceData.detailed);
+    }
+    if (Object.hasOwn(sourceData, "b50")) {
+        const sourceB50 = isPlainObject(sourceData.b50) ? sourceData.b50 : {};
+        data.b50 = {
+            ...sourceB50,
+            sd: lookupRecordList(sourceB50.sd),
+            dx: lookupRecordList(sourceB50.dx),
+        };
+    }
+    if (Object.hasOwn(sourceData, "ratingHistory")) {
+        data.ratingHistory = Array.isArray(sourceData.ratingHistory)
+            ? sourceData.ratingHistory.filter(isPlainObject)
+            : [];
+    }
+
+    return { ...root, data } as unknown as User;
 }
 
 /** The key the web app's `convertDetailed` gives a record: its SaltNet music id and `level_index`. */

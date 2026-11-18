@@ -15,11 +15,12 @@ import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
 
-function madeUser(uid: string) {
+function madeUser(uid: string, lxnsId?: number | null) {
     return {
         uid,
         remark: null,
         divingFish: { name: `fish-${uid}`, importToken: null },
+        ...(lxnsId === undefined ? {} : { lxns: { id: lxnsId, name: null, auth: null } }),
         inGame: { id: 100, name: `game-${uid}`, enabled: true, useFastUpdate: true },
         settings: { manuallyUpdate: false },
         data: { updateTime: null, name: null, rating: null },
@@ -283,6 +284,33 @@ describe("withCredentialsLock and updateCredentials", () => {
 });
 
 describe("pruning in updateCredentials", () => {
+    it.each([
+        ["equal ids", 7, true, 7, true],
+        ["different ids", 7, true, 8, false],
+        ["null and null", undefined, true, null, true],
+        ["missing lxnsAccountId", 7, false, undefined, false],
+    ])(
+        "%s: prunes LXNS by its recorded account while keeping Diving Fish",
+        async (_name, userId, hasMember, recordedId, keepsAuthorization) => {
+            const paths = makeHome();
+            const store = openStore(paths);
+            saveUser(store, madeUser("u1", userId));
+            const entry = {
+                divingFishImportToken: "fake-diving-fish-token",
+                lxnsAuthorization: { accessToken: "fake-lxns-token" },
+                ...(hasMember ? { lxnsAccountId: recordedId } : {}),
+            };
+            const result = await updateCredentials(paths, store, () => ({
+                version: 1,
+                users: { u1: entry },
+            }));
+            expect(result.users.u1.divingFishImportToken).toBe("fake-diving-fish-token");
+            expect(result.users.u1.lxnsAuthorization !== undefined).toBe(keepsAuthorization);
+            expect(Object.hasOwn(result.users.u1, "lxnsAccountId")).toBe(keepsAuthorization);
+            store.close();
+        }
+    );
+
     it("drops a pending authorization that expires at now and keeps one that expires 1 min later", async () => {
         const paths = makeHome();
         const store = openStore(paths);
@@ -391,7 +419,7 @@ describe("pruning in updateCredentials", () => {
             version: 1,
             users: {
                 u1: { divingFishImportToken: "token" },
-                u2: { lxnsAuthorization: { accessToken: "token" } },
+                u2: { lxnsAuthorization: { accessToken: "token" }, lxnsAccountId: null },
                 u3: {},
             },
         }));

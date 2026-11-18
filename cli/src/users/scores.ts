@@ -9,6 +9,7 @@ import { createMusicChartMap, getSourceRecords, selectB50Charts } from "@core/qu
 import { calculateUserPlayCountEstimates } from "@core/user/scoreHistory/estimate";
 import { chartKeyOf } from "../catalog/songs";
 import { readScoreEvents, readUser } from "./repository";
+import { userForCoreScores } from "./rows";
 
 export type ScoreSource = "detailed" | "b50" | "none";
 
@@ -151,16 +152,17 @@ export function readUserScores(
     return store.read(() => {
         const raw = readUser(store, user.uid);
         if (!raw) throw new Error(`user disappeared while reading scores: ${user.uid}`);
-        const source = scoreSource(raw);
+        const safe = userForCoreScores(raw);
+        const source = scoreSource(safe);
         const rows = scoreRows(store, user.uid, source);
         const events = readScoreEvents(store, user.uid);
-        const b50 = selectNormalB50(raw, charts);
+        const b50 = selectNormalB50(safe, charts);
         return {
             user,
-            raw,
+            raw: safe,
             source,
             byChartKey: new Map(rows.map(row => [row.chartKey, row])),
-            playCountByRecordKey: calculateUserPlayCountEstimates(events, raw.data.detailed),
+            playCountByRecordKey: calculateUserPlayCountEstimates(events, safe.data.detailed),
             b50ByChartKey: b50Places(b50),
             b50,
         };

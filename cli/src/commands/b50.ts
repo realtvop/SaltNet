@@ -15,6 +15,7 @@ import { buildSongCatalog, chartKeyOf } from "../catalog/songs";
 import { paginate } from "../output/paging";
 import { extend, int, list, nullable, num, object, strEnum } from "../output/schema";
 import { readUser } from "../users/repository";
+import { userForCoreScores } from "../users/rows";
 import { USER_OPTION } from "./describe";
 import { listOptions } from "./listOptions";
 import { METADATA_ERRORS, useMetadata } from "./metadata";
@@ -198,8 +199,9 @@ export const b50 = defineCommand(
         const userScores = useUserScores(args, ctx, charts);
         const selectedUser = userScores.scores?.user;
         if (!selectedUser) throw new Error("b50 requires a selected user");
-        const user = readUser(ctx.store(), selectedUser.uid);
-        if (!user) throw new Error(`selected user disappeared: ${selectedUser.uid}`);
+        const rawUser = readUser(ctx.store(), selectedUser.uid);
+        if (!rawUser) throw new Error(`selected user disappeared: ${selectedUser.uid}`);
+        const user = userForCoreScores(rawUser);
 
         const mode = args.options.mode;
         const selected = selectB50Charts(user.data, createMusicChartMap(charts), optionsFor(mode));

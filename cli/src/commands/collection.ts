@@ -74,7 +74,7 @@ export const collectionList = defineCommand(
             },
             { command: "collection list --owned", description: "当前用户已经拥有的收藏品" },
         ],
-        errors: ["USAGE", "NO_USER", ...METADATA_ERRORS],
+        errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
         dataSchema: object(
             { items: list(collectionRowSchema, "符合条件的收藏品列表") },
             { description: "收藏品列表" }

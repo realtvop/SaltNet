@@ -949,3 +949,15 @@
         - `assertNoSync` 报错时的用户名，原来自己用 SQL 的 `coalesce(remark, data_name, …)` 取，和别的命令显示的名字不一定一样。改成和 `user list` 一样用 core 的 `getUserDisplayName`，用户不在了就写 uid。
     - 测试：变异 45 处，第一轮杀掉 36 处。存活的 9 处都补了测试：默认 3 分钟的租期和每 60 秒一次的续约；检查所有用户时也不算过期的锁；锁名按整个名字比较（uid 里的 `_`、`%` 不当通配符，大小写有别，`metadata` 和 `SYNC:` 开头的锁不算同步锁）；两种检查报错里的用户名都和 `user list` 一样，用户不在了写 uid；循环引用的摘要报 `INTERNAL`，同一个对象出现两次不算循环；`import` 带着锁开始会被拒绝；不写版本时记下的是这个 CLI 的版本。重跑这 9 处全部杀掉。
     - 按决定 66 不单独送审，并入 P3 的整体审查。
+87. **P2 整体审查的修复（2026-11-17）**：P2 的整体审查（Codex GPT 6.1 Sol，`REVIEW_BASE=91c0892`）提了 11 条，我逐条核实都成立，写成一份修复 brief 交给 Codex（GPT 5.6 Sol）一次改完：
+    - `import` 的确认码原来只绑定备份内容和选项。现在还绑定按顺序的每个被替换用户的完整指纹（备注、成绩、成绩事件、默认用户的位置），以及导入后会留下哪些凭据（只记有没有、来自哪里，不记值）。core 解码 v0 备份时给用户随机 uid，两次一样的预览会得到不同的确认码，所以 CLI 改用备份的 SHA-256 前缀加用户位置生成稳定的 uid。
+    - `export` 在一个 `Store.read` 里读用户和成绩事件，两次读取之间不再可能夹着别的写入。
+    - `users.raw` 原样保存的网页数据里，core 查不到的异常成绩会让成绩命令崩溃。`rows.ts` 的 `userForCoreScores` 先滤掉它们再交给 core；`users.raw` 和导入导出不变。
+    - `rating` 只在当前 rating 是安全整数时输出它，否则为 null；历史里不是对象或 rating 不是安全整数的条目先去掉，再算变化，输出因此总符合 schema。
+    - P3-3 之后网页端的 SaltNet 包装器抛出 core 的 `SaltNetError`，网页端原来抛普通 `Error`。包装器把它转回同样消息的普通 `Error`，网页行为不变。
+    - 落雪授权没有绑定落雪账号：凭据文件改名失败后重试导入，旧账号的授权可能挂到换了落雪账号的用户上。现在每个授权都记下存入时的落雪 id（`lxnsAccountId`），导入、导出和每次 `updateCredentials` 只保留 id 一致的授权。Codex 在三处各写了一遍这个判断，我把它收成 `credentials.ts` 的 `lxnsAccountIdOf` 和 `matchingLxnsAuthorization`，后面的同步、刷新和绑定都用它。
+    - 三个放得过错误实现的测试改写了：KALEIDXSCOPE 的成绩用真实的门票曲目和两个成绩不同的用户；收藏品进度按曲目计数（一首歌三个难度）；备份里的未知字段用独立读取的原始 JSON 检查。
+    - `collection list` 补上 `NOT_FOUND`、`AMBIGUOUS_REF`；注册表测试要求所有带 `--user` 的命令都列出三种解析错误。
+    - 确认命令的路径以 `-` 开头时，`fix` 原来不能直接运行：现在选项在前，路径前加 `--`，测试直接执行打印出的 `fix`。
+    - Codex 说明了它在每处修复上临时恢复错误实现、确认测试会失败。AGENTS.md 按它的建议补了这些行为。
+    - 测试：我对这些修复做了 17 个变异（16 个 CLI，1 个网页包装器），杀掉 15 个。活下来的两个都等价：导入时暂存凭据里的 `lxnsAccountId` 之后不会被读取，`applyCredentialPolicy` 会从导入的用户重新算出它（保留这次写入，是为了遵守「写授权就同时写账号 id」的约定）；确认状态里的 `lxnsAuthorization` 总等于 `lxnsAuthorizationSource` 不为 null。

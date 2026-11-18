@@ -26,6 +26,13 @@ function unreadableResponse(status = 200, ok = true): Response {
     } as unknown as Response;
 }
 
+function expectPlainError(error: unknown, message: string): void {
+    expect(Object.getPrototypeOf(error)).toBe(Error.prototype);
+    expect(error).toMatchObject({ message });
+    expect(error).not.toHaveProperty("kind");
+    expect(error).not.toHaveProperty("status");
+}
+
 describe("saltNet web wrappers (index.ts)", () => {
     let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -97,8 +104,7 @@ describe("saltNet web wrappers (index.ts)", () => {
         const ep = SaltAPIEndpoints.CheckLogin;
         const error = await postAPI(ep, { qr: "test" }).catch(err => err);
 
-        expect(error).toBeInstanceOf(Error);
-        expect(String(error)).toBe("Error: 请求游戏API失败，请稍候重试");
+        expectPlainError(error, "请求游戏API失败，请稍候重试");
         expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
         expect(consoleErrorSpy).toHaveBeenNthCalledWith(1, FAIL_LOG, ep, networkError);
         expect(consoleErrorSpy).toHaveBeenNthCalledWith(2, FAIL_LOG, ep, networkError);
@@ -114,8 +120,7 @@ describe("saltNet web wrappers (index.ts)", () => {
         const ep = SaltAPIEndpoints.ClearIllegalTickets;
         const error = await postAPIJSON(ep, {}).catch(err => err);
 
-        expect(error).toBeInstanceOf(Error);
-        expect(String(error)).toBe("Error: 请求游戏API失败，请稍候重试");
+        expectPlainError(error, "请求游戏API失败，请稍候重试");
         expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
         expect(consoleErrorSpy).toHaveBeenNthCalledWith(1, FAIL_LOG, ep, networkError);
         expect(consoleErrorSpy).toHaveBeenNthCalledWith(2, FAIL_LOG, ep, networkError);
@@ -128,8 +133,7 @@ describe("saltNet web wrappers (index.ts)", () => {
         const ep = SaltAPIEndpoints.GetStockedTickets;
         const error = await postAPIJSON(ep, {}).catch(err => err);
 
-        expect(error).toBeInstanceOf(Error);
-        expect(String(error)).toBe("Error: 请求游戏API失败，请稍候重试");
+        expectPlainError(error, "请求游戏API失败，请稍候重试");
         expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
         expect(consoleErrorSpy).toHaveBeenCalledWith(INVALID_LOG, ep, expect.any(SyntaxError));
     });
@@ -154,7 +158,27 @@ describe("saltNet web wrappers (index.ts)", () => {
 
         const p = postAPIJSON(SaltAPIEndpoints.UpdateUser, { userId: 999 });
         const error = await p.catch(err => err);
-        expect(error).toBeInstanceOf(Error);
-        expect(String(error)).toBe("Error: 账号已被封禁");
+        expectPlainError(error, "账号已被封禁");
+    });
+
+    it.each([
+        [{ error: "上游拒绝请求" }, "上游拒绝请求"],
+        [{ detail: "no string error" }, "请求游戏API失败，请稍候重试"],
+    ])("turns HTTP SaltNetError into a plain Error (%j)", async (payload, message) => {
+        const mockFetch = vi.fn(async () => jsonResponse(payload, 503, false));
+        vi.stubGlobal("fetch", mockFetch);
+        const error = await postAPI(SaltAPIEndpoints.CheckLogin, {}).catch(err => err);
+        expectPlainError(error, message);
+    });
+
+    it.each([
+        ["invalid JSON", () => unreadableResponse(), "请求游戏API失败，请稍候重试"],
+        ["non-object JSON", () => jsonResponse("text"), "请求游戏API失败，请稍候重试"],
+        ["error object", () => jsonResponse({ error: "账号不存在" }), "账号不存在"],
+    ])("turns %s response failures into plain Errors", async (_name, response, message) => {
+        const mockFetch = vi.fn(async () => response());
+        vi.stubGlobal("fetch", mockFetch);
+        const error = await postAPIJSON(SaltAPIEndpoints.UpdateUser, {}).catch(err => err);
+        expectPlainError(error, message);
     });
 });

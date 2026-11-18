@@ -14,6 +14,31 @@ import { ensureRuntimeDirs } from "./paths";
 export interface UserCredentials {
     divingFishImportToken?: unknown;
     lxnsAuthorization?: unknown;
+    /**
+     * The JSON value of `user.lxns.id` when this authorization was stored. Every future writer or
+     * refresher of `lxnsAuthorization` must update this member in the same credentials change.
+     */
+    lxnsAccountId?: unknown;
+}
+
+/** The LXNS account a stored user's authorization must belong to: its `lxns.id`, or null. */
+export function lxnsAccountIdOf(user: unknown): unknown {
+    return object(object(user)?.lxns)?.id ?? null;
+}
+
+/**
+ * The entry's LXNS authorization when it was stored for `accountId`, otherwise undefined: an
+ * authorization is used only for the LXNS account it was issued for (design 2.4).
+ */
+export function matchingLxnsAuthorization(
+    entry: UserCredentials | undefined,
+    accountId: unknown
+): unknown {
+    const authorization = entry?.lxnsAuthorization;
+    if (!entry || authorization === undefined || authorization === null) return undefined;
+    return Object.hasOwn(entry, "lxnsAccountId") && entry.lxnsAccountId === accountId
+        ? authorization
+        : undefined;
 }
 
 export interface CredentialsFile {
@@ -156,11 +181,17 @@ function pruneCredentials(
     store: Store,
     now?: () => Date | number
 ): CredentialsFile {
-    const validUids = new Set<string>();
+    const lxnsAccountIds = new Map<string, unknown>();
     store.read(() => {
-        const rows = store.db.prepare("SELECT uid FROM users").all() as { uid: string }[];
-        for (const row of rows) validUids.add(row.uid);
+        const rows = store.db.prepare("SELECT uid, raw FROM users").all() as {
+            uid: string;
+            raw: string;
+        }[];
+        for (const row of rows) {
+            lxnsAccountIds.set(row.uid, lxnsAccountIdOf(JSON.parse(row.raw)));
+        }
     });
+    const validUids = new Set(lxnsAccountIds.keys());
 
     const nowMs = (() => {
         if (!now) return Date.now();
@@ -171,11 +202,16 @@ function pruneCredentials(
     const prunedUsers: Record<string, UserCredentials> = {};
     for (const [uid, creds] of Object.entries(credentials.users ?? {})) {
         if (!validUids.has(uid)) continue;
+        const entry = { ...creds };
         const hasDf =
-            creds?.divingFishImportToken !== undefined && creds?.divingFishImportToken !== null;
-        const hasLxns = creds?.lxnsAuthorization !== undefined && creds?.lxnsAuthorization !== null;
+            entry.divingFishImportToken !== undefined && entry.divingFishImportToken !== null;
+        const hasLxns = matchingLxnsAuthorization(entry, lxnsAccountIds.get(uid)) !== undefined;
+        if (!hasLxns) {
+            delete entry.lxnsAuthorization;
+            delete entry.lxnsAccountId;
+        }
         if (!hasDf && !hasLxns) continue;
-        prunedUsers[uid] = creds;
+        prunedUsers[uid] = entry;
     }
 
     const pruned: CredentialsFile = {

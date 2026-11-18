@@ -1,6 +1,7 @@
 import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
 import type { User } from "@core/user/type";
 import type { RuntimePaths } from "../../src/runtime/paths";
+import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { decodeUserDataBackup } from "@core/user/backup";
@@ -69,6 +70,14 @@ async function importFile(
 
 function decodeFile(file: string): ReturnType<typeof decodeUserDataBackup> {
     return decodeUserDataBackup(JSON.parse(readFileSync(file, "utf8")));
+}
+
+function literalUsers(file: string): Record<string, unknown>[] {
+    const source = JSON.parse(readFileSync(file, "utf8")) as { users: string };
+    return JSON.parse(Buffer.from(source.users, "base64").toString("utf8")) as Record<
+        string,
+        unknown
+    >[];
 }
 
 function loadFixture(): { users: User[]; events: ScoreHistoryEventV1[] } {
@@ -209,6 +218,7 @@ describe("backup round trip with web v1 fixture", () => {
 
     it("round-trips with --keep-lxns, preserving exact JSON representations and unknown fields", async () => {
         const { users: fixtureUsers } = loadFixture();
+        const literalFixtureUsers = literalUsers(FIXTURE_PATH);
         const paths = makeHome();
 
         const imported = await importFile(paths, FIXTURE_PATH, ["--keep-lxns"]);
@@ -219,6 +229,11 @@ describe("backup round trip with web v1 fixture", () => {
             divingFishTokenCount: 1,
             lxnsAuthorizationCount: 1,
         });
+        const storedUsers = readState(paths).users as unknown as Record<string, unknown>[];
+        expect(storedUsers[0].futureRoot).toEqual(literalFixtureUsers[0].futureRoot);
+        expect((storedUsers[0].data as Record<string, unknown>).futureData).toEqual(
+            (literalFixtureUsers[0].data as Record<string, unknown>).futureData
+        );
 
         const exportFile = path.join(paths.home, "exported-keep.json");
         const exported = await commandIn(paths, "export", [exportFile, "--keep-lxns"]);
@@ -232,7 +247,12 @@ describe("backup round trip with web v1 fixture", () => {
         });
 
         const decoded = decodeFile(exportFile);
+        const literalExportedUsers = literalUsers(exportFile);
         expect(decoded.users).toEqual(fixtureUsers);
+        expect(literalExportedUsers[0].futureRoot).toEqual(literalFixtureUsers[0].futureRoot);
+        expect((literalExportedUsers[0].data as Record<string, unknown>).futureData).toEqual(
+            (literalFixtureUsers[0].data as Record<string, unknown>).futureData
+        );
         expect(decoded.users).toHaveLength(fixtureUsers.length);
         for (let i = 0; i < fixtureUsers.length; i++) {
             expect(JSON.stringify(decoded.users[i])).toBe(JSON.stringify(fixtureUsers[i]));

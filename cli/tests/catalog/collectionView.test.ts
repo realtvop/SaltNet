@@ -893,10 +893,12 @@ describe("collectionView fixture data", () => {
 describe("collection progress without a difficulty list", () => {
     it("counts each song once and treats any played chart as done", () => {
         const catalog = fixtureSongCatalog();
-        const first = catalog.chartByKey.get("8-0")!;
+        const firstCharts = ["8-0", "8-1", "8-2"].map(key => catalog.chartByKey.get(key)!);
         const second = catalog.chartByKey.get("9-0")!;
         const scoredCharts: Chart[] = [
-            { ...first.chart, score: collectionScore(80) },
+            { ...firstCharts[0].chart, score: undefined },
+            { ...firstCharts[1].chart, score: collectionScore(80) },
+            { ...firstCharts[2].chart, score: undefined },
             { ...second.chart, score: undefined },
         ];
         const raw = {
@@ -907,10 +909,9 @@ describe("collection progress without a difficulty list", () => {
         const context: CollectionUserContext = {
             scores,
             scoredCharts,
-            scoredByChartKey: new Map([
-                ["8-0", scoredCharts[0]],
-                ["9-0", scoredCharts[1]],
-            ]),
+            scoredByChartKey: new Map(
+                ["8-0", "8-1", "8-2", "9-0"].map((key, index) => [key, scoredCharts[index]])
+            ),
             ownedIds: { 1: [], 2: [], 3: [], 9: [], 10: [], 11: [] },
         };
         const collection: Collection = {
@@ -930,7 +931,9 @@ describe("collection progress without a difficulty list", () => {
         const entry: CollectionEntry = { kind: "title", collection };
 
         expect(collectionRow(entry, context).progress).toEqual({ completed: 1, total: 2 });
-        expect(collectionChartDone(collection, first, context)).toBe(true);
+        expect(collectionChartDone(collection, firstCharts[0], context)).toBe(false);
+        expect(collectionChartDone(collection, firstCharts[1], context)).toBe(true);
+        expect(collectionChartDone(collection, firstCharts[2], context)).toBe(false);
         expect(collectionChartDone(collection, second, context)).toBe(false);
     });
 });

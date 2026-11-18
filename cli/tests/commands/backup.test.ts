@@ -7,10 +7,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import path from "node:path";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
 import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
 import { addChartToFavorite, createFavorite, listFavorites } from "../../src/favorites/repository";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
+import * as credentialsModule from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import {
@@ -20,6 +21,7 @@ import {
     replaceUsers,
     saveUser,
 } from "../../src/users/repository";
+import * as userRepository from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn } from "../commandRun";
 import { expectConforms } from "../dataSchema";
@@ -43,6 +45,10 @@ const FAKE_SECRETS = [
     "fake-lxns-access-token-second",
     "fake-lxns-refresh-token-first",
     "fake-lxns-refresh-token-second",
+    "fake-lxns-confirmation-outcome",
+    "fake-lxns-crash-window-old-account",
+    "fake-lxns-account-rule",
+    "fake-lxns-export-mismatch",
 ] as const;
 
 const registry = createRegistry();
@@ -169,7 +175,14 @@ function seed(paths: RuntimePaths, users: User[], events: ScoreHistoryEventV1[])
 
 function seedCredentials(
     paths: RuntimePaths,
-    users: Record<string, { divingFishImportToken?: unknown; lxnsAuthorization?: unknown }>
+    users: Record<
+        string,
+        {
+            divingFishImportToken?: unknown;
+            lxnsAuthorization?: unknown;
+            lxnsAccountId?: unknown;
+        }
+    >
 ): void {
     const staged = stageCredentials(paths, { version: 1, users });
     staged.commit();
@@ -318,6 +331,30 @@ describe("backup import and export", () => {
         expect(withoutUsers[0].lxns?.auth).toBeNull();
     });
 
+    it("exports users and score events from one database snapshot", async () => {
+        const paths = makeHome();
+        const oldUser = storedUser("old-user");
+        const oldEvent = storedEvent("old-user");
+        seed(paths, [oldUser], [oldEvent]);
+        const writer = openStore(paths);
+        const originalReadEvents = userRepository.readScoreEvents;
+        const spy = vi.spyOn(userRepository, "readScoreEvents").mockImplementation((store, uid) => {
+            replaceUsers(writer, [storedUser("new-user")], [storedEvent("new-user")]);
+            return originalReadEvents(store, uid);
+        });
+        const target = path.join(path.dirname(paths.home), "snapshot-export.json");
+        try {
+            const result = await commandIn(paths, "export", [target]);
+            expect(result.code).toBe(0);
+            const decoded = decodeFile(target);
+            expect(decoded.users.map(user => user.uid)).toEqual(["old-user"]);
+            expect(decoded.events.map(event => event.userUid)).toEqual(["old-user"]);
+        } finally {
+            spy.mockRestore();
+            writer.close();
+        }
+    });
+
     it("imports v0 backups, assigns uids and has no score history", async () => {
         const paths = makeHome();
         const users = webUsers().map(user => {
@@ -344,7 +381,29 @@ describe("backup import and export", () => {
         expect(state.events).toEqual([]);
     });
 
-    it("binds confirmation to file bytes, local update times, event count and --keep-lxns", async () => {
+    it("puts -- before an import file beginning with - in the printed confirmation command", async () => {
+        const paths = makeHome();
+        const file = writeBackup(paths, "-backup.json");
+        const cwd = path.dirname(file);
+        const preview = await commandIn(paths, "import", ["--", "-backup.json"], { cwd });
+        expect(preview.code).toBe(6);
+        const words = splitCommandLine(preview.json.error.fix!);
+        expect(words).toEqual([
+            "saltnet",
+            "import",
+            "--yes",
+            preview.json.error.confirmationCode,
+            "--",
+            "-backup.json",
+        ]);
+
+        words.shift();
+        const command = words.shift()!;
+        const confirmed = await commandIn(paths, command, words, { cwd });
+        expect(confirmed.code).toBe(0);
+    });
+
+    it("binds confirmation to file bytes, every overwritten row and --keep-lxns", async () => {
         const paths = makeHome();
         seed(paths, [storedUser()], [storedEvent()]);
         const file = writeBackup(paths, "confirm.json");
@@ -413,6 +472,95 @@ describe("backup import and export", () => {
         expect(confirmed.code).toBe(0);
     });
 
+    it("keeps the same import code with no change and rejects a remark edit or user reorder", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("first"), storedUser("second")], []);
+        const file = writeBackup(paths, "confirmation-user-rows.json");
+
+        const preview = await previewImport(paths, file);
+        const repeated = await previewImport(paths, file);
+        expect(repeated.json.error.confirmationCode).toBe(preview.json.error.confirmationCode);
+
+        const edited = await commandIn(paths, "user", ["edit", "0", "--remark", "changed"]);
+        expect(edited.code).toBe(0);
+        const staleRemark = await previewImport(paths, file, [
+            "--yes",
+            preview.json.error.confirmationCode as string,
+        ]);
+        expect(staleRemark.json.error).toMatchObject({ codeRejected: true });
+
+        const reorderPreview = await previewImport(paths, file);
+        const reordered = await commandIn(paths, "user", ["default", "1"]);
+        expect(reordered.code).toBe(0);
+        const staleOrder = await previewImport(paths, file, [
+            "--yes",
+            reorderPreview.json.error.confirmationCode as string,
+        ]);
+        expect(staleOrder.json.error).toMatchObject({ codeRejected: true });
+    });
+
+    it("rejects an import code after a projected score changes without changing updateTime", async () => {
+        const paths = makeHome();
+        const user = storedUser("scored-user");
+        user.data.detailed = {
+            "1-0": {
+                song_id: 1,
+                type: "SD",
+                level_index: 0,
+                ds: 1,
+                achievements: 90,
+            },
+        } as unknown as User["data"]["detailed"];
+        seed(paths, [user], []);
+        const file = writeBackup(paths, "confirmation-score-row.json");
+        const preview = await previewImport(paths, file);
+
+        const store = openStore(paths);
+        try {
+            const current = readUsers(store)[0];
+            const record = current.data.detailed!["1-0"];
+            saveUser(store, {
+                ...current,
+                data: {
+                    ...current.data,
+                    detailed: {
+                        ...current.data.detailed,
+                        "1-0": { ...record, achievements: 91 },
+                    },
+                },
+            });
+        } finally {
+            store.close();
+        }
+
+        const stale = await previewImport(paths, file, [
+            "--yes",
+            preview.json.error.confirmationCode as string,
+        ]);
+        expect(stale.json.error).toMatchObject({ codeRejected: true });
+    });
+
+    it("binds import confirmation to whether a matching LXNS authorization will be kept", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("same-user", 900)], []);
+        const incoming = storedUser("same-user", 900);
+        const file = writeBackup(paths, "confirmation-credentials.json", [incoming], []);
+        const preview = await previewImport(paths, file);
+
+        seedCredentials(paths, {
+            "same-user": {
+                lxnsAuthorization: { accessToken: "fake-lxns-confirmation-outcome" },
+                lxnsAccountId: 900,
+            },
+        });
+        const stale = await previewImport(paths, file, [
+            "--yes",
+            preview.json.error.confirmationCode as string,
+        ]);
+        expect(stale.json.error).toMatchObject({ codeRejected: true });
+        expectNoSecrets(stale.stdout, stale.stderr);
+    });
+
     it.each([
         {
             name: "keeps the CLI authorization when uid and LXNS id match",
@@ -441,6 +589,7 @@ describe("backup import and export", () => {
                     accessToken: "fake-lxns-access-token-own",
                     refreshToken: "fake-lxns-refresh-token-own",
                 },
+                lxnsAccountId: 900,
             },
         });
         const incoming = storedUser("same-user", importedId) as User;
@@ -460,6 +609,42 @@ describe("backup import and export", () => {
         if (process.platform !== "win32") {
             expect(statSync(paths.credentials).mode & 0o777).toBe(0o600);
         }
+    });
+
+    it.each([
+        ["keeps null for an imported user whose LXNS id is also null", true, null, true],
+        ["does not trust an old entry without lxnsAccountId", false, undefined, false],
+    ])("%s", async (_name, hasMember, accountId, expectedKept) => {
+        const paths = makeHome();
+        seed(paths, [storedUser("same-user", null)], []);
+        seedCredentials(paths, {
+            "same-user": {
+                lxnsAuthorization: { accessToken: "fake-lxns-account-rule" },
+                ...(hasMember ? { lxnsAccountId: accountId } : {}),
+            },
+        });
+        const source = writeBackup(paths, "account-rule.json", [storedUser("same-user", null)], []);
+        const imported = await importFile(paths, source);
+        expect(imported.code).toBe(0);
+        expect(readCredentials(paths).users["same-user"]?.lxnsAuthorization !== undefined).toBe(
+            expectedKept
+        );
+    });
+
+    it("exports LXNS only when its recorded account matches the stored user", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("same-user", 900)], []);
+        seedCredentials(paths, {
+            "same-user": {
+                lxnsAuthorization: { accessToken: "fake-lxns-export-mismatch" },
+                lxnsAccountId: 901,
+            },
+        });
+        const target = path.join(path.dirname(paths.home), "mismatched-lxns-export.json");
+        const result = await commandIn(paths, "export", [target, "--keep-lxns"]);
+        expect(result.code).toBe(0);
+        expect(result.json.data.lxnsAuthorizationCount).toBe(0);
+        expect(decodeFile(target).users[0].lxns?.auth).toBeNull();
     });
 
     it("rejects malformed backups without changing users, events or credentials", async () => {
@@ -574,6 +759,7 @@ describe("backup import and export", () => {
                     accessToken: "fake-lxns-access-token-own",
                     refreshToken: "fake-lxns-refresh-token-own",
                 },
+                lxnsAccountId: null,
             },
         });
         const target = path.join(path.dirname(paths.home), "later-bound.json");
@@ -678,12 +864,14 @@ describe("backup import and export", () => {
                     accessToken: "fake-lxns-access-token-first",
                     refreshToken: "fake-lxns-refresh-token-first",
                 },
+                lxnsAccountId: 900,
             },
             "second-user": {
                 lxnsAuthorization: {
                     accessToken: "fake-lxns-access-token-second",
                     refreshToken: "fake-lxns-refresh-token-second",
                 },
+                lxnsAccountId: 901,
             },
         });
         const incoming1 = storedUser("first-user", 900);
@@ -711,6 +899,7 @@ describe("backup import and export", () => {
                     accessToken: "fake-lxns-access-token-own",
                     refreshToken: "fake-lxns-refresh-token-own",
                 },
+                lxnsAccountId: 900,
             },
         });
         const incomingSameId = storedUser("same-user", 900);
@@ -730,6 +919,7 @@ describe("backup import and export", () => {
                     accessToken: "fake-lxns-access-token-own",
                     refreshToken: "fake-lxns-refresh-token-own",
                 },
+                lxnsAccountId: 900,
             },
         });
         const incomingDiffId = storedUser("same-user", 901);
@@ -995,5 +1185,52 @@ describe("backup import and export", () => {
 
         const credsAfter = readCredentials(paths);
         expect(credsAfter.pendingLxnsAuthorizations).toBeUndefined();
+    });
+
+    it("does not reattach an old account authorization when a failed credentials rename is retried", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("same-user", 900)], []);
+        seedCredentials(paths, {
+            "same-user": {
+                lxnsAuthorization: { accessToken: "fake-lxns-crash-window-old-account" },
+                lxnsAccountId: 900,
+            },
+        });
+        const incoming = storedUser("same-user", 901);
+        const source = writeBackup(paths, "crash-window.json", [incoming], []);
+
+        const realStage = credentialsModule.stageCredentials;
+        const stageSpy = vi
+            .spyOn(credentialsModule, "stageCredentials")
+            .mockImplementationOnce((runtimePaths, content) => {
+                const staged = realStage(runtimePaths, content);
+                return {
+                    ...staged,
+                    commit() {
+                        staged.discard();
+                        throw new Error("made-up credentials rename failure");
+                    },
+                };
+            });
+        try {
+            const preview = await previewImport(paths, source);
+            const failed = await confirmFrom(paths, preview);
+            expect(failed.code).toBe(1);
+            expect(readState(paths).users[0].lxns?.id).toBe(901);
+            expect(readCredentials(paths).users["same-user"]?.lxnsAccountId).toBe(900);
+        } finally {
+            stageSpy.mockRestore();
+        }
+
+        const retried = await importFile(paths, source);
+        expect(retried.code).toBe(0);
+        expect(readCredentials(paths).users["same-user"]?.lxnsAuthorization).toBeUndefined();
+        expect(readCredentials(paths).users["same-user"]?.lxnsAccountId).toBeUndefined();
+
+        const target = path.join(path.dirname(paths.home), "crash-window-export.json");
+        const exported = await commandIn(paths, "export", [target, "--keep-lxns"]);
+        expect(exported.code).toBe(0);
+        expect(exported.json.data.lxnsAuthorizationCount).toBe(0);
+        expect(decodeFile(target).users[0].lxns?.auth).toBeNull();
     });
 });

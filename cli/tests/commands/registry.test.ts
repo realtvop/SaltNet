@@ -186,6 +186,15 @@ describe("registry validation", () => {
         ).toBe("");
     });
 
+    it("publishes every failure produced by the shared --user resolver", () => {
+        for (const command of COMMANDS) {
+            if (!Object.hasOwn(command.spec.options ?? {}, "user")) continue;
+            expect(command.spec.errors, command.spec.name).toEqual(
+                expect.arrayContaining(["NOT_FOUND", "AMBIGUOUS_REF", "NO_USER"])
+            );
+        }
+    });
+
     it("rejects enums that cannot be told apart", () => {
         const enumError = (values: readonly (string | { value: string; aliases?: string[] })[]) =>
             registryError({ options: { e: { kind: "enum", values, description: "x" } } });

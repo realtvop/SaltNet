@@ -13,7 +13,8 @@ SaltNet is a three-package pnpm workspace:
 - `src/stores/` owns global Pinia state, currently including router layout and dialog-history coordination.
 - `src/components/data/` contains domain logic: `music/` for the loaded chart metadata (IndexedDB cache and Vue state around the shared SaltMeta fetch), `chart/` for score/rating UI and calculations (`chart/chartPosition.ts` only reads the songs page's old position cache), `kaleidxscope/` for the songs-page overview component backed by the shared `ScoreSection` (its gate data lives in `shared/core/kaleidxscope/`), `user/` for profiles, updates, backups, rating history, and the IndexedDB-backed per-chart score event history, and `collection/` for the IndexedDB cache and Vue arrays around the shared LXNS collection mapping, shared collection visuals, combined requirement/progress display, collection dialogs, and the reactive wrapper (`relatedCollections.ts`) around the shared reverse-association index used by ChartInfo.
 - `src/components/integrations/` contains external-service adapters for Diving Fish, LXNS, Nearcade, SaltNet, and asset loading. Keep service-specific API types and token logic inside the relevant folder.
-  SaltNet's `postAPI` and `postAPIJSON` are now web wrappers around it.
+  SaltNet's `postAPI` and `postAPIJSON` are web wrappers around the shared client that turn its
+  `SaltNetError` back into a plain `Error` with the same message.
 - `shared/core/` holds platform-neutral domain logic shared by the web app and the CLI. It must not
   depend on Vue, MDUI, localForage, `import.meta.env`, the DOM, or anything under `src/`; its own
   imports are relative, and web code imports it through the `@core/*` alias. `pnpm check` type-checks
@@ -144,7 +145,9 @@ SaltNet is a three-package pnpm workspace:
           has scores for the normal mode only.
         - `rating.ts` is the `rating` command: the selected user's current rating and, with
           `--history`, the history the web app's rating page shows, oldest first with each entry's
-          change. It reads no catalog and never goes online.
+          change. A rating that is not a safe integer is null, and history entries that are not
+          objects or have no safe-integer rating are left out before the changes are counted. It
+          reads no catalog and never goes online.
         - `history.ts` is the `history` command: the stored score events of every chart or of one,
           newest first, with `--since` (an ISO time, or a positive number of days or hours such as
           `7d`), `--all-changes` (without it, events that change only the play count are hidden, as
@@ -189,7 +192,11 @@ SaltNet is a three-package pnpm workspace:
         - `backup.ts` is the backup interchange: `import` decodes the web v0/v1 format, strips
           credentials and replaces users plus score events under the credentials lock after
           content-bound confirmation, dropping pending authorizations; `export` restores selected
-          credentials and writes a private web-compatible v1 file.
+          credentials and writes a private web-compatible v1 file. The confirmation binds the
+          backup bytes, every replaced user in order, which credentials the import would leave
+          (never their values) and the options; v0 users get stable uids from the file digest and
+          their position. `export` reads users and events in one `Store.read`. Both keep or restore
+          an LXNS authorization only for the LXNS account it was stored for.
     - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
       registry-generated Markdown (`markdown.ts`).
     - `src/output/` turns a command's result into output: the versioned JSON envelope
@@ -216,8 +223,11 @@ SaltNet is a three-package pnpm workspace:
           that names the setting to raise.
         - `credentials.ts` strictly reads the versioned credential file (users and pending OAuth
           authorizations) with a fix on parse failures, serializes modifications with
-          `withCredentialsLock`, prunes expired authorizations and orphaned user entries in
-          `updateCredentials`, and stages mode-0600 whole-file replacements.
+          `withCredentialsLock`, prunes expired authorizations, orphaned user entries and LXNS
+          authorizations whose user now has another LXNS id in `updateCredentials`, and stages
+          mode-0600 whole-file replacements. Each LXNS authorization is stored with the LXNS id it
+          was issued for (`lxnsAccountId`), and `matchingLxnsAuthorization` is the one check that
+          an authorization belongs to a user's LXNS account.
     - `src/util/` has small helpers (edit distance and nearest names, name folding, display width,
       command-line splitting and quoting (`splitCommandLine`, `quoteArg`, `joinCommandLine`), times
       with a UTC offset).
@@ -354,7 +364,9 @@ SaltNet is a three-package pnpm workspace:
       score events, projects their typed copies, assigns catalog chart keys, preserves user order,
       provides raw-user, row-count and event reads, and shapes the credential-free rows used by
       `user` and `status`. Replacing music recomputes every stored user chart key in the catalog
-      transaction.
+      transaction. `rows.ts` also gives `userForCoreScores`, a copy of a user without the raw score
+      and rating-history values core cannot look up, which the score commands pass to core;
+      `users.raw` and exports keep them.
         - `scores.ts` reads one selected user's score source, play-count estimates and B50 positions
           once for chart rows (keeping that normal B50 selection, which every `gain` is computed
           against), and turns a stored score into the core `ChartScore` the collection functions
@@ -379,7 +391,8 @@ SaltNet is a three-package pnpm workspace:
         - `setup.ts` gives each test file a throwaway `SALTNET_HOME` and `HOME`, and `tempHome.ts`
           gives each test its own fresh data directory.
         - `fixtureCatalog.ts` builds the song catalog of the fixed SaltMeta fixture,
-          `madeCatalog.ts` builds made-up songs for tests, and `madeChart.ts` makes one made-up
+          `madeCatalog.ts` builds made-up songs for tests (as a catalog, or as a complete
+          `SaltMetaBuildResult` to store), and `madeChart.ts` makes one made-up
           chart as a catalog entry for the sort and group tests.
         - `madeUsers.ts` inserts made-up users and all their child rows directly with SQL for store
           and view tests, and `scoreUsers.ts` writes made-up score users through the repository for

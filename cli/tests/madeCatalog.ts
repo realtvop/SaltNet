@@ -1,4 +1,5 @@
-import type { Music } from "@core/music/type";
+import type { SaltMetaBuildResult } from "@core/music/fetch";
+import type { Music, SavedMusicList } from "@core/music/type";
 import type { SongCatalog } from "../src/catalog/songs";
 import { ChartType } from "@core/mai/types";
 import { indexMusicSearchData } from "@core/music/search";
@@ -8,18 +9,21 @@ import { buildSongCatalog } from "../src/catalog/songs";
  * A catalog of made-up songs, for the cases the fixed fixture has no example of. A song with a
  * `charter` has one chart by that charter; without one it has no chart.
  */
-export function catalogOf(
-    entries: {
-        id: number;
-        title: string;
-        aliases?: string[];
-        artist?: string;
-        charter?: string;
-        charters?: (string | undefined)[];
-    }[],
+export interface MadeCatalogEntry {
+    id: number;
+    title: string;
+    aliases?: string[];
+    artist?: string;
+    charter?: string;
+    charters?: (string | undefined)[];
+}
+
+function madeMusic(
+    entries: MadeCatalogEntry[],
     options: { indexed?: boolean } = {}
-): SongCatalog {
+): SavedMusicList {
     const musicList: Record<number, Music> = {};
+    const chartList: SavedMusicList["chartList"] = {};
     for (const entry of entries) {
         const music: Music = {
             id: entry.id,
@@ -67,7 +71,27 @@ export function catalogOf(
             });
         }
         musicList[entry.id] = music;
+        for (const chart of music.charts) chartList[chart.id] = chart;
     }
-    const data = { musicList, chartList: {} };
-    return buildSongCatalog(options.indexed === false ? data : indexMusicSearchData(data));
+    const data = { musicList, chartList };
+    return options.indexed === false ? data : indexMusicSearchData(data);
+}
+
+export function catalogOf(
+    entries: MadeCatalogEntry[],
+    options: { indexed?: boolean } = {}
+): SongCatalog {
+    return buildSongCatalog(madeMusic(entries, options));
+}
+
+/** A complete store input for command tests that need a made-up on-disk catalog. */
+export function madeMusicBuild(
+    entries: MadeCatalogEntry[],
+    options: { indexed?: boolean } = {}
+): SaltMetaBuildResult {
+    return {
+        music: madeMusic(entries, options),
+        metadata: { cnVersions: [] },
+        merged: [],
+    };
 }
