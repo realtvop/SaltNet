@@ -185,6 +185,14 @@ SaltNet is a three-package pnpm workspace:
         - `user.ts` holds `user list`, `show`, `add`, `edit`, `remove` and `default`; removal uses
           the shared content-bound confirmation and deletes that user's credentials under the
           credentials lock.
+        - `bind.ts` holds `user bind` and `user unbind` for `ingame`, `df-token`, `df-name` and
+          `lxns`; `user bind ingame` supports `--id` and `--qr -` (GetQRInfo via SaltNet backend
+          without retry), `df-token -` validates through Diving Fish records and stores the token
+          strictly in `credentials.json`, `df-name` sets the name and is rejected if a token is set,
+          and `lxns` bind is deferred to P3-13; identity changes (`hasStrongIdentityChanged`) are
+          refused until P3-15 adds confirmation; unbind removes bindings locally without network;
+          modifications take the credentials lock, staging `credentials.json` before database
+          transactions when credentials change.
         - `fav.ts` holds `fav list`, `create`, `rename`, `delete` (content-bound confirmation),
           `add` and `remove`. As in the web app, a favorite holds songs by the music id of their
           side together with the difficulty each was added at, and `charts --fav` lists every chart

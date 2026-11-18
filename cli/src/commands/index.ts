@@ -1,6 +1,7 @@
 import type { CommandDefinition, Registry } from "./registry";
 import { b50 } from "./b50";
 import { exportBackup, importBackup } from "./backup";
+import { userBind, userUnbind } from "./bind";
 import { calc } from "./calc";
 import { chart } from "./chart";
 import { charts } from "./charts";
@@ -42,6 +43,8 @@ export const COMMANDS: readonly CommandDefinition[] = [
     userEdit,
     userRemove,
     userDefault,
+    userBind,
+    userUnbind,
     favList,
     favCreate,
     favRename,

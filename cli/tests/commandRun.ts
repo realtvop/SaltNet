@@ -52,6 +52,7 @@ export async function commandIn(
         now?: Date;
         network?: Record<string, Route>;
         cwd?: string;
+        stdin?: string;
         /** More variables for the command's environment, after the ones below; `undefined` removes one. */
         env?: Record<string, string | undefined>;
     } = {}
@@ -73,6 +74,7 @@ export async function commandIn(
         fetch,
         now: options.now ?? NOW,
         cwd: options.cwd,
+        stdin: options.stdin,
     });
     const code = await run(createRegistry(), harness, command, ...args);
     const stdout = harness.stdout();

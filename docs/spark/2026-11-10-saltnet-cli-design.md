@@ -571,6 +571,21 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 | `df-token` | `-`，从 stdin 读              | 保存前先用它拉一次成绩，验证能用                                  |
 | `df-name`  | `<用户名>`                    | 用户名不是凭据，直接保存                                          |
 
+**各来源绑定的数据变更（与网页端一致）**
+
+- `ingame`：设置 `inGame.id` 并开启 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。网页端绑定只改 id，「启用」是单独的开关；CLI 没有这个开关，所以绑定时一并打开。
+- `df-token`：通过 Diving Fish 读取成绩验证有效后，保存到 `credentials.json` 的 `divingFishImportToken`（权限 0600）；用户对象上的 `divingFish.name` 与 `divingFish.importToken` 均置为 null，token 绝不落入数据库。
+- `df-name`：设置 `divingFish.name`，清空 `divingFish.importToken`。若已设置 token 则拒绝绑定用户名（需先解绑 token）。
+- `lxns`：暂未开放，返回 `USAGE`（P3-13 接入两步 OAuth）。
+
+**各来源解绑（只改本地数据，无需确认）**
+
+- `ingame`：清除 `inGame.id` 与 `inGame.name`，关闭 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。三者任一不是初始值都算已绑定。
+- `df-token`：只从 `credentials.json` 移除 `divingFishImportToken`；token 从不存进数据库，用户对象不变。
+- `df-name`：用户对象的 `divingFish.name` 置为 null。
+- `lxns`：从 `credentials.json` 移除 `lxnsAuthorization` 与 `lxnsAccountId`，用户对象的 `lxns` 置为空（`{ auth: null, id: null, name: null }`）。
+- 解绑未绑定的来源时成功返回且 `changed: false`，不产生任何写入。
+
 **落雪分两步**
 
 1. 运行 `user bind <用户> lxns`，CLI 返回授权链接 `authorizeUrl` 和过期时间（15 分钟）；PKCE verifier 存在 `credentials.json` 里。
@@ -588,7 +603,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 - 新绑定的游戏 id 或落雪账号和原来的不同，就算换了一个人。
 - 如果两者都没绑定，就比较水鱼用户名。
 
-换人时会清空原来的成绩和历史，换一个新 uid 重新开始记录，所以这一步需要确认（见 5.4）。要判断是不是换人，得先知道新账号是谁：
+换人时会清空原来的成绩和历史，换一个新 uid 重新开始记录，所以这一步需要确认（见 5.4）。在确认机制（P3-15）实现前，若检测到换人，命令直接报错 `USAGE` 拒绝绑定，并提示使用 `saltnet user add` 创建新用户。要判断是不是换人，得先知道新账号是谁：
 
 - `ingame --qr -`：先用二维码查出游戏 id。需要确认时，预览里会给出查到的 id，确认时改用 `--id <id> --yes <确认码>`，不用再扫一次码。
 - `lxns`：换到 token 后先查落雪账号。需要确认时，确认命令是 `user bind <用户> lxns --yes <确认码>`，直接用授权记录里暂存的 token，不用再传回调链接。换到 token 后，授权记录从这时起再保留 15 分钟，过期就得重新授权。

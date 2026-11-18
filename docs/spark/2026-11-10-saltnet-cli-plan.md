@@ -215,7 +215,7 @@
 - [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
-- [ ] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
+- [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
 - [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
 - [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项〔新〕
@@ -961,3 +961,28 @@
     - 确认命令的路径以 `-` 开头时，`fix` 原来不能直接运行：现在选项在前，路径前加 `--`，测试直接执行打印出的 `fix`。
     - Codex 说明了它在每处修复上临时恢复错误实现、确认测试会失败。AGENTS.md 按它的建议补了这些行为。
     - 测试：我对这些修复做了 17 个变异（16 个 CLI，1 个网页包装器），杀掉 15 个。活下来的两个都等价：导入时暂存凭据里的 `lxnsAccountId` 之后不会被读取，`applyCredentialPolicy` 会从导入的用户重新算出它（保留这次写入，是为了遵守「写授权就同时写账号 id」的约定）；确认状态里的 `lxnsAuthorization` 总等于 `lxnsAuthorizationSource` 不为 null。
+88. **P3-12 的实现（2026-11-18）**：
+    - 分工：这一步是〔新〕，原定 Codex 写。Codex 本周额度用完（到 11-19 才恢复），照写细了的 brief 交给 Gemini。
+    - Gemini 写的：`cli/src/commands/bind.ts` 的 `user bind` 和 `user unbind`。
+        - `ingame` 用 `--id <8 位数字>`，或 `--qr -`：从 stdin 读二维码，经 SaltNet 后端 GetQRInfo 换出 UserID，不重试，主地址失败才问备用地址。
+        - `df-token -` 从 stdin 读 Import-Token，先用它拉一次水鱼成绩校验，只写进 `credentials.json`；数据库里的水鱼用户名清空，和网页端保存时一样。
+        - `df-name <名字>` 设水鱼用户名，已有 token 时拒绝（网页端这时名字输入框不能编辑）。`lxns` 留给 P3-13。
+        - 会改变用户身份（`hasStrongIdentityChanged`）的绑定，在 P3-15 加上确认之前一律拒绝。
+        - `user unbind` 只改本地，不联网。写入都拿凭据锁，凭据有变化时先暂存 `credentials.json` 再开数据库事务。
+        - 测试用的 `commandRun.ts` 加了 stdin。
+    - 我改的：
+        - 绑定游戏账号原来顺手打开了「快速更新」。网页端绑定只改 id，「启用」和「快速更新」是两个开关，默认都关。CLI 没有「启用」开关，所以绑定时打开「启用」，「快速更新」保持原样（设计 5.1）。
+        - 水鱼返回 500 原来也报成「token 被拒绝」（`USAGE`）。现在只有 400、401、403 是 `USAGE`；别的状态是 `UPSTREAM_ERROR`，5xx 和 429 标 `retryable`。`ctx.http` 已经对 500 重试过一次。
+        - 用户原来在联网之后才解析，写错用户也会先用掉一个二维码或发一次请求；锁里「请求期间用户被删除」的 `NOT_FOUND` 也因此测不到。改成先解析用户，再读 stdin、联网，写入前在锁里按 uid 重读一次。
+        - 二维码原来又截了一次后 64 位，`normalizeQrCodeFromInput` 已经截过，去掉了。
+        - 绑定 token 时的身份检查永远不会成立（token 绑定不改两个 id，只清名字），去掉了。`df-name` 在锁外的 token 预检查和锁里的重复，只留锁里的。
+        - `unbind df-token` 原来也写数据库。token 只在 `credentials.json` 里（存储的用户从不带 token，`repository.ts` 会拒绝），改成只改凭据，什么都没绑定时不写文件。
+        - `unbind ingame` 原来只看 id：id 已空但「启用」还开着时，说没有变化。现在 id、名字、「启用」任一不是初始值都算绑定，解绑把三者复原，「快速更新」不动。
+        - 指南示例原来给默认用户绑 12345678。种子数据里默认用户已绑游戏账号 10000001，这会改变身份而被拒绝，端到端测试因此失败；改成第二个用户。`df-name` 的示例在种子数据上也会被拒绝（默认用户有 token；第二个用户没有游戏和落雪 id，改水鱼名就算改变身份），先去掉，P3-15 加上确认后再补。
+    - 测试：变异 37 处，第一轮杀掉 28 处。存活的 9 处里：
+        - 两处的代码已按上面去掉（二次截取、token 绑定的身份检查）。
+        - 用户被删的 `NOT_FOUND`，改成先解析用户之后，由原有测试杀掉。
+        - 其余 6 处补了测试：二维码查询不重试（主地址只问一次）；UserID 为 0 报 `UPSTREAM_ERROR`；token 写在命令行上时，即使 stdin 有可用的 token、服务器也能应答，仍报 `USAGE`，不发请求，不回显；什么都没绑定时 `unbind df-token` 不创建凭据文件；只剩「启用」时 `unbind ingame` 也算有变化；授权只留在 `credentials.json` 时 `unbind lxns` 也会清掉。
+        - 重跑这 7 处，全部杀掉。
+    - 留给后面的：P3-14 之后 `unbind lxns` 还要删签发时间；P3-7b 给绑定和解绑的写事务加 `assertNoSync`。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。

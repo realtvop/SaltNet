@@ -39,6 +39,8 @@ describe("schema command", () => {
             "user edit",
             "user remove",
             "user default",
+            "user bind",
+            "user unbind",
             "fav list",
             "fav create",
             "fav rename",
@@ -78,6 +80,8 @@ describe("schema command", () => {
                     "user edit",
                     "user remove",
                     "user default",
+                    "user bind",
+                    "user unbind",
                 ],
             },
             {
