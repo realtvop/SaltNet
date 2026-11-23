@@ -20,10 +20,10 @@
 你负责：判断每一步归谁、做设计决定、写 brief、验补丁（不通读，见下面）、合进工作区、跑完整验证、更新计划和 `AGENTS.md`、提交、最终报告。几行的修正和文档措辞自己直接做。**写代码的主力是下面三个工具**，你用 Bash 直接调用它们（脚本在 `docs/spark/2026-11-10-saltnet-cli-tools/`），不用麻烦用户：
 
 - **简单活**（搬模块、给已有代码补测试、写文档）：Gemini 3.8 Flash (Medium)，经 antigravity 的 `agy`，`delegate-agy.sh`。
-- **新东西**（新命令、新逻辑、数据库迁移、同步和绑定流程）：Codex GPT 5.6 Sol (high)，经 `codex` CLI，`delegate-codex.sh`。
-- **Code review**（每完成一个 part 整体审一遍，不再每一步审，见计划「分工与流程」第 6 条）：Codex GPT 6.1 Sol (high)，经 `codex` CLI，`REVIEW_BASE=<上次审过的提交> review-codex.sh`（范围里有新功能或涉及凭据、账号、数据库的步骤时加 `REVIEW_BUILTIN=1`）。开新的 Codex 任务（写代码或审查）之前先用 `codex-quota.py` 查剩余额度。
+- **新东西**（新命令、新逻辑、数据库迁移、同步和绑定流程）：Codex GPT 6.2 Sol (high)，经 `codex` CLI，`delegate-codex.sh`。
+- **Code review**（每完成一个 part 整体审一遍，不再每一步审，见计划「分工与流程」第 6 条）：Codex GPT 6.2 Sol (high)，经 `codex` CLI，`REVIEW_BASE=<上次审过的提交> review-codex.sh`（范围里有新功能或涉及凭据、账号、数据库的步骤时加 `REVIEW_BUILTIN=1`）。开新的 Codex 任务（写代码或审查）之前先用 `codex-quota.py` 查剩余额度。
 
-两个 Codex 模型的 id 是 `gpt-5.6-sol` 和 `gpt-6.1-sol`（2026-11-15 从 `codex debug models` 查到并试通）。每个新会话第一次用之前仍先试一次：`codex exec -m <id> -s read-only --ephemeral "reply ok"`；试不通就问用户一次，这是唯一可以中途问用户的事。然后 `export CODEX_MODEL_WRITE=<5.6 Sol 的 id> CODEX_MODEL_REVIEW=<6.1 Sol 的 id> SALTNET_WORK=<你的草稿目录>`。
+写代码和审查都用 `gpt-6.2-sol`（2026-11-23 用户的决定，从 `codex debug models` 查到并试通；之前分别是 `gpt-5.6-sol` 和 `gpt-6.1-sol`）。每个新会话第一次用之前仍先试一次：`codex exec -m <id> -s read-only --ephemeral "reply ok"`；试不通就问用户一次，这是唯一可以中途问用户的事。然后 `export CODEX_MODEL_WRITE=gpt-6.2-sol CODEX_MODEL_REVIEW=gpt-6.2-sol SALTNET_WORK=<你的草稿目录>`。
 
 每一步的流程（分类、写 brief、交出去、验补丁、审查、测试够不够、文档、验证并提交）在计划的「分工与流程」里，按它做。步骤行末尾的 `〔简单〕`、`〔新〕`、`〔协调〕` 是建议的分工。工具跑得久（10 到 20 分钟），用后台运行，结束时会通知，不要轮询。互不重叠的步骤可以同时交给不同工具，补丁一个一个合、一个一个验证和提交。
 

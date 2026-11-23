@@ -1,7 +1,7 @@
 #!/bin/zsh
 # usage: review-codex.sh <name> <prompt-file>
 #
-# Asks Codex (GPT 6.1 Sol, reasoning effort high) to review what is uncommitted in the real tree.
+# Asks Codex (GPT 6.2 Sol, reasoning effort high) to review what is uncommitted in the real tree.
 # The reviewer works in a snapshot whose `base` is the last commit with the uncommitted work laid
 # over it (lib.sh, snapshot_candidate; `.env*` left out), so `git diff base` is exactly the change.
 # REVIEW_BASE=<commit> reviews everything after that commit instead (a whole part of the plan: the
@@ -12,7 +12,9 @@
 # Result: $WORK/review/<name>/review.txt (the findings), plus prompt.md, events.jsonl, stderr.log,
 # run.log. Findings are leads, not verdicts: check each one before acting on it.
 #
-# Set CODEX_MODEL_REVIEW to the Codex model id of GPT 6.1 Sol (no default on purpose).
+# Set CODEX_MODEL_REVIEW to the Codex model id of GPT 6.2 Sol (no default on purpose).
+# project_doc_max_bytes is raised because Codex otherwise loads only the first 32768 bytes of
+# AGENTS.md.
 # REVIEW_BUILTIN=1 also runs Codex's own `codex review --uncommitted` in parallel, as a second
 # opinion without the brief (the command accepts no custom instructions together with
 # --uncommitted); its answer goes to review-builtin.txt.
@@ -22,7 +24,7 @@ source "$HERE/lib.sh"
 
 name=${1:?review name}
 prompt_file=${2:?prompt file}
-MODEL=${CODEX_MODEL_REVIEW:?set CODEX_MODEL_REVIEW to the Codex model id of GPT 6.1 Sol}
+MODEL=${CODEX_MODEL_REVIEW:?set CODEX_MODEL_REVIEW to the Codex model id of GPT 6.2 Sol}
 EFFORT=${CODEX_EFFORT:-high}
 CODEX=${CODEX:-$(command -v codex || print -r -- "$HOME/.local/bin/codex")}
 
@@ -60,11 +62,11 @@ snapshot_candidate "$out/work" || exit 2
 start=$(date +%s)
 if [ "${REVIEW_BUILTIN:-0}" = 1 ]; then
     ( cd "$out/work" && "$CODEX" review --uncommitted -c "model=\"$MODEL\"" \
-        -c "model_reasoning_effort=\"$EFFORT\"" -c 'approval_policy="never"' -c 'sandbox_mode="read-only"' \
+        -c "model_reasoning_effort=\"$EFFORT\"" -c 'approval_policy="never"' -c 'project_doc_max_bytes=131072' -c 'sandbox_mode="read-only"' \
         > "$out/review-builtin.txt" 2> "$out/review-builtin.err" ) &
 fi
 "$CODEX" exec -C "$out/work" -m "$MODEL" -s read-only --ephemeral --color never --json \
-    -c "model_reasoning_effort=\"$EFFORT\"" -c 'approval_policy="never"' \
+    -c "model_reasoning_effort=\"$EFFORT\"" -c 'approval_policy="never"' -c 'project_doc_max_bytes=131072' \
     -o "$out/review.txt" - < "$out/prompt.md" > "$out/events.jsonl" 2> "$out/stderr.log"
 code=$?
 wait
