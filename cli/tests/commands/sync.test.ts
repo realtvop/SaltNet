@@ -1,12 +1,13 @@
-import type { User } from "@core/user/type";
+import type { DetailedData, User } from "@core/user/type";
 import type { RuntimePaths } from "../../src/runtime/paths";
-import type { Route } from "../mockHttp";
+import type { RecordedRequest, Route } from "../mockHttp";
+import { Buffer } from "node:buffer";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isUtageGrade } from "@core/chart/difficulty";
 import { describe, expect, it } from "vitest";
 import { createRegistry } from "../../src/commands";
-import { stageCredentials } from "../../src/runtime/credentials";
+import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { readRuns } from "../../src/sync/journal";
@@ -14,7 +15,14 @@ import { readScoreEvents, readUsers } from "../../src/users/repository";
 import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse, textResponse } from "../mockHttp";
-import { allFixtureRecords, recordOf, seedScoreUsers, user } from "../scoreUsers";
+import {
+    allFixtureRecords,
+    b50User,
+    recordOf,
+    scoreEvent,
+    seedScoreUsers,
+    user,
+} from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -30,6 +38,14 @@ const LXNS_SCORES_URL = `${LXNS_URL}/api/v0/user/maimai/player/scores`;
 const SALTNET_API_URL = "https://api.test";
 const SALTNET_DF_URL = `${SALTNET_API_URL}/updateUserFromDF`;
 
+function makeFakeJwt(id: number, name: string, expSeconds: number): string {
+    const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ id, name, exp: expSeconds })).toString(
+        "base64url"
+    );
+    return `${header}.${payload}.FAKE_SIG`;
+}
+
 function seedCredentials(
     paths: RuntimePaths,
     users: Record<
@@ -40,8 +56,11 @@ function seedCredentials(
                 accessToken: string;
                 tokenType: string;
                 expiresAt?: number | null;
+                refreshToken?: string;
+                scope?: string;
             } | null;
             lxnsAccountId?: number | null;
+            lxnsIssuedAt?: number | null;
         }
     >
 ): void {
@@ -603,6 +622,136 @@ describe("saltnet sync", () => {
         expect(result.json.error.fix).toContain("saltnet user bind");
         // No request to LXNS
         expect(result.requests.some(r => r.url.includes("lxns"))).toBe(false);
+
+        const store = openStore(paths);
+        try {
+            const runs = readRuns(store, { userUid: "user-expired-lxns" });
+            expect(runs.total).toBe(1);
+            expect(runs.items[0].outcome).toBe("failed");
+            expect(runs.items[0].errorCode).toBe("LXNS_REAUTH_REQUIRED");
+        } finally {
+            store.close();
+        }
+    });
+
+    it("refreshes expired access token with refresh token under sync lock before making score requests", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-refresh-lxns", "Refresh LXNS Player");
+        const { charts } = allFixtureRecords();
+        const targetChart = charts.find(c => c.music.id < 100_000 && c.info.grade < 5)!;
+        const oldRecord = recordOf(targetChart, 0);
+        oldRecord.achievements = 98.0;
+        u.data = {
+            ...u.data,
+            detailed: { [`${targetChart.music.id}-${targetChart.info.grade}`]: oldRecord },
+        };
+        await seedScoreUsers(paths, [u]);
+
+        const oldExp = Math.floor((NOW.getTime() - 10_000) / 1000);
+        const newExp = Math.floor((NOW.getTime() + 3_600_000) / 1000);
+        const expiredJwt = makeFakeJwt(1001, "lxns-player", oldExp);
+        const newJwt = makeFakeJwt(1001, "lxns-player", newExp);
+        const OLD_REFRESH_TOKEN = "FAKE-LXNS-REFRESH-0001";
+        const NEW_REFRESH_TOKEN = "FAKE-LXNS-REFRESH-0002";
+
+        seedCredentials(paths, {
+            "user-refresh-lxns": {
+                lxnsAccountId: 1001,
+                lxnsAuthorization: {
+                    accessToken: expiredJwt,
+                    refreshToken: OLD_REFRESH_TOKEN,
+                    tokenType: "Bearer",
+                    expiresAt: NOW.getTime() - 10_000,
+                },
+                lxnsIssuedAt: NOW.getTime() - 500_000,
+            },
+        });
+
+        const LXNS_TOKEN_URL = `${LXNS_URL}/api/v0/oauth/token`;
+        const network: Record<string, Route> = {
+            ...routes(),
+            [LXNS_TOKEN_URL]: jsonResponse({
+                access_token: newJwt,
+                refresh_token: NEW_REFRESH_TOKEN,
+                token_type: "Bearer",
+                expires_in: 3600,
+            }),
+            [LXNS_PLAYER_URL]: jsonResponse({
+                success: true,
+                code: 200,
+                data: { name: "LXNS Player", rating: 15000, friend_code: 1234 },
+            }),
+            [LXNS_SCORES_URL]: jsonResponse({
+                success: true,
+                code: 200,
+                data: [
+                    {
+                        id:
+                            targetChart.music.id < 100_000
+                                ? targetChart.music.id % 10_000
+                                : targetChart.music.id,
+                        song_name: targetChart.music.info.title,
+                        level: targetChart.info.level,
+                        level_index: targetChart.info.grade,
+                        achievements: 100.5,
+                        fc: "fc",
+                        fs: "sync",
+                        dx_score: 1200,
+                        dx_rating: 300,
+                        dx_star: 3,
+                        rate: "sss",
+                        type: targetChart.music.info.type === "SD" ? "standard" : "dx",
+                        upload_time: "2026-11-12T00:00:00Z",
+                    },
+                ],
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "lxns"], { network });
+        expect(result.code).toBe(0);
+        expect(result.json.ok).toBe(true);
+        expect(result.json.data.source).toBe("lxns");
+
+        // Verify request order and count
+        const tokenReqs = result.requests.filter(r => r.url === LXNS_TOKEN_URL);
+        expect(tokenReqs).toHaveLength(1);
+        expect((tokenReqs[0] as RecordedRequest).init?.method).toBe("POST");
+
+        const scoreReqs = result.requests.filter(r => r.url === LXNS_SCORES_URL);
+        expect(scoreReqs).toHaveLength(1);
+
+        // Every LXNS player request goes out after the refresh, with the new access token.
+        const tokenAt = result.requests.findIndex(r => r.url === LXNS_TOKEN_URL);
+        const playerRequests = result.requests.filter(
+            r => r.url === LXNS_PLAYER_URL || r.url === LXNS_SCORES_URL
+        );
+        expect(playerRequests.length).toBeGreaterThan(0);
+        for (const request of playerRequests) {
+            expect(result.requests.indexOf(request)).toBeGreaterThan(tokenAt);
+            expect(new Headers(request.init?.headers).get("authorization")).toBe(
+                `Bearer ${newJwt}`
+            );
+        }
+
+        // Verify credentials on disk
+        const creds = readCredentials(paths);
+        const userCred = creds.users["user-refresh-lxns"];
+        const lxnsAuth = userCred.lxnsAuthorization as
+            | { accessToken?: string; refreshToken?: string }
+            | undefined;
+        expect(lxnsAuth?.accessToken).toBe(newJwt);
+        expect(lxnsAuth?.refreshToken).toBe(NEW_REFRESH_TOKEN);
+        expect(userCred.lxnsIssuedAt).toBe(NOW.getTime());
+
+        // Verify no token leak
+        expect(result.stdout).not.toContain(expiredJwt);
+        expect(result.stdout).not.toContain(newJwt);
+        expect(result.stdout).not.toContain(OLD_REFRESH_TOKEN);
+        expect(result.stdout).not.toContain(NEW_REFRESH_TOKEN);
+        expect(result.stderr).not.toContain(expiredJwt);
+        expect(result.stderr).not.toContain(newJwt);
+        expect(result.stderr).not.toContain(OLD_REFRESH_TOKEN);
+        expect(result.stderr).not.toContain(NEW_REFRESH_TOKEN);
     });
 
     it("treats mismatched lxnsAccountId as not bound", async () => {
@@ -888,5 +1037,324 @@ describe("saltnet sync", () => {
         expect(lxns.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
         expect(lxns.json.error.fix).toContain("saltnet user bind user-second lxns");
         expect(lxns.json.error.fix).toContain("saltnet sync --user user-second --source df-token");
+    });
+
+    it("reports rating.before as null when stored rating is not a safe integer", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-float-rating", "Float Rating User");
+        u.data = { ...u.data, rating: 14000.5 };
+        const { charts } = allFixtureRecords();
+        const rec = recordOf(charts[0], 0);
+        await seedScoreUsers(paths, [u]);
+        seedCredentials(paths, { "user-float-rating": { divingFishImportToken: FAKE_DF_TOKEN } });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "DF Nickname",
+                rating: 15000,
+                records: [rec],
+                username: "DF Nickname",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        expect(result.code).toBe(0);
+        expect(result.json.data.rating.before).toBeNull();
+        expect(result.json.data.rating.after).toBe(15000);
+    });
+
+    it("counts both halves of public B50 in counts.charts", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-b50-count", "B50 Count User");
+        const { charts } = allFixtureRecords();
+        const rec1 = recordOf(charts[0], 0);
+        const rec2 = recordOf(charts[1], 1);
+        const rec3 = recordOf(charts[2], 2);
+        await seedScoreUsers(paths, [u]);
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_DF_URL]: textResponse("Server Error", 500),
+            [DF_QUERY_URL]: jsonResponse({
+                additional_rating: 0,
+                charts: {
+                    sd: [rec1, rec2],
+                    dx: [rec3],
+                },
+                nickname: "Public Player",
+                plate: "",
+                rating: 14000,
+                user_data: null,
+                user_id: 1111,
+                username: "df-player",
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-name"], {
+            network,
+            env: { SALTNET_API_URL },
+        });
+        expect(result.code).toBe(0);
+        expect(result.json.data.mode).toBe("public-b50");
+        expect(result.json.data.counts.charts).toBe(3);
+    });
+
+    it("assigns the newest stored event generation to new sync events", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-gen", "Generation User");
+        const { charts } = allFixtureRecords();
+        const chart1 = charts[0];
+        const oldRec = recordOf(chart1, 0);
+        oldRec.achievements = 95.0;
+        u.data = {
+            ...u.data,
+            detailed: { [`${chart1.music.id}-${chart1.info.grade}`]: oldRec },
+        };
+
+        const event1 = scoreEvent("e1", "user-gen", `${chart1.music.id}-${chart1.info.grade}`, 1);
+        event1.generationId = "gen-old";
+        event1.observedAt = 1000;
+
+        const event2 = scoreEvent("e2", "user-gen", `${chart1.music.id}-${chart1.info.grade}`, 1);
+        event2.generationId = "gen-new";
+        event2.observedAt = 2000;
+
+        await seedScoreUsers(paths, [u], [event1, event2]);
+        seedCredentials(paths, { "user-gen": { divingFishImportToken: FAKE_DF_TOKEN } });
+
+        const improved = { ...oldRec, achievements: 99.0 };
+        const network: Record<string, Route> = {
+            ...routes(),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "Gen Nickname",
+                rating: 15000,
+                records: [improved],
+                username: "Gen Nickname",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        expect(result.code).toBe(0);
+        expect(result.json.data.counts.improved).toBe(1);
+
+        const store = openStore(paths);
+        try {
+            const allEvents = readScoreEvents(store, "user-gen");
+            const newEvents = allEvents.filter(e => e.id !== "e1" && e.id !== "e2");
+            expect(newEvents.length).toBeGreaterThan(0);
+            for (const ev of newEvents) {
+                expect(ev.generationId).toBe("gen-new");
+            }
+        } finally {
+            store.close();
+        }
+    });
+
+    it("neither hands core nor merges a stored record core cannot look up", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-bad-rec", "Bad Rec User");
+        const { charts } = allFixtureRecords();
+        const chart1 = charts[0];
+        const key = `${chart1.music.id}-${chart1.info.grade}`;
+        // Stored under the key of the record that comes in. Its song_id survives storage as JSON,
+        // and turning it into text or a number throws, so core must not see it.
+        const badRec = { ...recordOf(chart1, 0), song_id: { toString: 1 }, play_count: 42 };
+        u.data = {
+            ...u.data,
+            detailed: { [key]: badRec as unknown as DetailedData[string] },
+        };
+        await seedScoreUsers(paths, [u]);
+        seedCredentials(paths, { "user-bad-rec": { divingFishImportToken: FAKE_DF_TOKEN } });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "Player",
+                rating: 15000,
+                // Diving Fish sends no play count, so a merge would take the stored one.
+                records: [{ ...recordOf(chart1, 0), play_count: undefined }],
+                username: "Player",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        expect(result.code).toBe(0);
+
+        const store = openStore(paths);
+        try {
+            const saved = readUsers(store).find(stored => stored.uid === "user-bad-rec")!;
+            expect(saved.data.detailed?.[key]?.song_id).toBe(recordOf(chart1, 0).song_id);
+            expect(saved.data.detailed?.[key]?.play_count).toBeUndefined();
+        } finally {
+            store.close();
+        }
+    });
+
+    it("does not suggest --source lxns again when LXNS itself failed", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-both-sources", "Both Sources User");
+        await seedScoreUsers(paths, [u]);
+        seedCredentials(paths, {
+            "user-both-sources": {
+                divingFishImportToken: FAKE_DF_TOKEN,
+                lxnsAccountId: 1001,
+                lxnsAuthorization: {
+                    accessToken: FAKE_LXNS_TOKEN,
+                    tokenType: "Bearer",
+                    expiresAt: NOW.getTime() + 3_600_000,
+                },
+            },
+        });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [LXNS_PLAYER_URL]: textResponse("Internal Error", 500),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "lxns"], { network });
+        expect(result.code).toBe(5);
+        expect(result.json.error.fix).toContain("saltnet sync --source df-token");
+        expect(result.json.error.fix).not.toContain("saltnet sync --source lxns");
+    });
+
+    it("orders changes with equal rating differences by chart key ascending", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-equal-diff", "Equal Diff User");
+        const { charts } = allFixtureRecords();
+        const candidates = charts.filter(c => !isUtageGrade(c.info.grade));
+        const chart1 = candidates[0];
+        const chart2 = candidates[1];
+        const key1 = `${chart1.music.id}-${chart1.info.grade}`;
+        const key2 = `${chart2.music.id}-${chart2.info.grade}`;
+        const [smallerKey, largerKey, chartSmall, chartLarge] =
+            key1 < key2 ? [key1, key2, chart1, chart2] : [key2, key1, chart2, chart1];
+
+        const oldSmall = recordOf(chartSmall, 0);
+        oldSmall.achievements = 90.0;
+        const oldLarge = recordOf(chartLarge, 1);
+        oldLarge.achievements = 90.0;
+
+        u.data = {
+            ...u.data,
+            detailed: {
+                [smallerKey]: oldSmall,
+                [largerKey]: oldLarge,
+            },
+        };
+        await seedScoreUsers(paths, [u]);
+        seedCredentials(paths, { "user-equal-diff": { divingFishImportToken: FAKE_DF_TOKEN } });
+
+        const newSmall = { ...oldSmall, achievements: 95.0 };
+        const newLarge = { ...oldLarge, achievements: 95.0 };
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "Player",
+                rating: 15000,
+                records: [newLarge, newSmall],
+                username: "Player",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        expect(result.code).toBe(0);
+        expect(result.json.data.changes).toHaveLength(2);
+        expect(result.json.data.changes[0].chartKey).toBe(smallerKey);
+        expect(result.json.data.changes[1].chartKey).toBe(largerKey);
+    });
+
+    it("caps changes at 20 while changesTotal counts all changes", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-many-changes", "Many Changes User");
+        const { charts } = allFixtureRecords();
+        const ordinaryCharts = charts.filter(c => !isUtageGrade(c.info.grade)).slice(0, 25);
+        expect(ordinaryCharts.length).toBe(25);
+
+        const detailed: DetailedData = {};
+        const improvedRecords: unknown[] = [];
+        for (let i = 0; i < ordinaryCharts.length; i++) {
+            const chart = ordinaryCharts[i];
+            const key = `${chart.music.id}-${chart.info.grade}`;
+            const oldRec = recordOf(chart, i);
+            oldRec.achievements = 90.0;
+            detailed[key] = oldRec;
+            improvedRecords.push({ ...oldRec, achievements: 95.0 });
+        }
+
+        u.data = { ...u.data, detailed };
+        await seedScoreUsers(paths, [u]);
+        seedCredentials(paths, { "user-many-changes": { divingFishImportToken: FAKE_DF_TOKEN } });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "Player",
+                rating: 15000,
+                records: improvedRecords,
+                username: "Player",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        expect(result.code).toBe(0);
+        expect(result.json.data.changesTotal).toBe(25);
+        expect(result.json.data.changes).toHaveLength(20);
+    });
+
+    it("places changes of a public-b50 sync through b50 snapshot record links with missing 0", async () => {
+        const paths = makeHome();
+        const u = b50User("user-b50-snapshot-links", "B50 Only User");
+        u.divingFish = { name: "df-player", importToken: null };
+        const b50Sd = (u.data.b50 as unknown as { sd: { achievements: number }[] }).sd;
+        expect(b50Sd.length).toBeGreaterThan(0);
+        const targetRec = b50Sd[0];
+        targetRec.achievements = 90.0;
+        await seedScoreUsers(paths, [u]);
+
+        const improvedRec = { ...targetRec, achievements: 99.0 };
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_DF_URL]: textResponse("Server Error", 500),
+            [DF_QUERY_URL]: jsonResponse({
+                additional_rating: 0,
+                charts: {
+                    sd: [improvedRec, ...b50Sd.slice(1)],
+                    dx: (u.data.b50 as unknown as { dx: unknown[] }).dx,
+                },
+                nickname: "B50 Player",
+                plate: "",
+                rating: 15000,
+                user_data: null,
+                user_id: 2222,
+                username: "df-player",
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "df-name"], {
+            network,
+            env: { SALTNET_API_URL },
+        });
+        expect(result.code).toBe(0);
+        expect(result.json.data.mode).toBe("public-b50");
+        expect(result.json.data.missing).toBe(0);
+        expect(result.json.data.changesTotal).toBe(1);
+        expect(result.json.data.changes[0].score.achievements).toBe(99.0);
     });
 });

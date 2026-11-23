@@ -1,4 +1,6 @@
+import type { UserCredentials } from "../runtime/credentials";
 import type { UserCounts, UserListRow } from "./repository";
+import { matchingLxnsAuthorization } from "../runtime/credentials";
 import { formatLocalTime } from "../util/time";
 
 export interface UserRow {
@@ -39,6 +41,59 @@ export interface StatusUserRow {
     scoresState: ScoresState;
 }
 
+export interface UserCredentialState {
+    divingFish: "present" | "missing";
+    lxns: "valid" | "expiring" | "expired" | "unknown" | "missing";
+    lxnsRefreshExpiresAt: string | null;
+}
+
+export interface StatusUserRowWithCredentials extends StatusUserRow {
+    credentials: UserCredentialState;
+}
+
+export function userCredentialState(
+    entry: UserCredentials | undefined,
+    lxnsAccountId: unknown,
+    now: Date,
+    settings: { refreshTokenDays: number; expiringWarnDays: number }
+): UserCredentialState {
+    const nowMs = now.getTime();
+    const divingFish =
+        typeof entry?.divingFishImportToken === "string" && entry.divingFishImportToken.length > 0
+            ? "present"
+            : "missing";
+
+    const auth = matchingLxnsAuthorization(entry, lxnsAccountId);
+    if (!auth) {
+        return {
+            divingFish,
+            lxns: "missing",
+            lxnsRefreshExpiresAt: null,
+        };
+    }
+
+    const issuedAt = entry?.lxnsIssuedAt;
+    if (typeof issuedAt !== "number" || !Number.isFinite(issuedAt)) {
+        return {
+            divingFish,
+            lxns: "unknown",
+            lxnsRefreshExpiresAt: null,
+        };
+    }
+
+    const refreshLifetimeMs = settings.refreshTokenDays * 24 * 60 * 60 * 1000;
+    const expiringWithinMs = settings.expiringWarnDays * 24 * 60 * 60 * 1000;
+    const refreshExpiresAt = issuedAt + refreshLifetimeMs;
+    const timeLeft = refreshExpiresAt - nowMs;
+    const lxns = timeLeft <= 0 ? "expired" : timeLeft < expiringWithinMs ? "expiring" : "valid";
+
+    return {
+        divingFish,
+        lxns,
+        lxnsRefreshExpiresAt: formatLocalTime(new Date(refreshExpiresAt)),
+    };
+}
+
 export function userRow(user: UserListRow): UserRow {
     return {
         index: user.index,
@@ -64,7 +119,12 @@ export function userDetail(user: UserListRow, counts: UserCounts): UserDetail {
     return { ...userRow(user), counts };
 }
 
-export function statusUserRow(user: UserListRow, now: Date, staleDays: number): StatusUserRow {
+export function statusUserRow(
+    user: UserListRow,
+    now: Date,
+    staleDays: number,
+    credentials: UserCredentialState
+): StatusUserRowWithCredentials {
     const updatedAt = user.updatedAt;
     const scoresState: ScoresState =
         updatedAt === null
@@ -78,5 +138,6 @@ export function statusUserRow(user: UserListRow, now: Date, staleDays: number): 
         name: user.displayName,
         scoresUpdatedAt: updatedAt === null ? null : formatLocalTime(new Date(updatedAt)),
         scoresState,
+        credentials,
     };
 }

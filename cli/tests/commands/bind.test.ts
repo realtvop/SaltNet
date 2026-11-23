@@ -859,18 +859,147 @@ describe("user bind and unbind", () => {
         expect(ingame.json.data.changed).toBe(true);
         expect(readUser(store, "u0")!.inGame?.enabled).toBe(false);
 
-        // An LXNS authorization left only in credentials.json is removed.
+        // An LXNS authorization left only in credentials.json is removed, including lxnsIssuedAt.
         writeFileSync(
             paths.credentials,
             JSON.stringify({
                 version: 1,
                 users: {
-                    u0: { lxnsAuthorization: { accessToken: "FAKE-LXNS" }, lxnsAccountId: null },
+                    u0: {
+                        lxnsAuthorization: { accessToken: "FAKE-LXNS" },
+                        lxnsAccountId: null,
+                        lxnsIssuedAt: 123456789,
+                    },
                 },
             })
         );
         const lxns = await commandIn(paths, "user", ["unbind", "u0", "lxns"]);
         expect(lxns.json.data.changed).toBe(true);
         expect(readCredentials(paths).users.u0?.lxnsAuthorization).toBeUndefined();
+        expect(readCredentials(paths).users.u0?.lxnsAccountId).toBeUndefined();
+        expect(readCredentials(paths).users.u0?.lxnsIssuedAt).toBeUndefined();
     });
+
+    it("rejects bind and unbind with SYNC_IN_PROGRESS when target user's sync lock is held", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const user0 = makeUser("u0", {
+            inGame: { id: null, name: null, enabled: false, useFastUpdate: false },
+            divingFish: { name: "df-u0", importToken: null },
+        });
+        const user1 = makeUser("u1", {
+            inGame: { id: null, name: null, enabled: false, useFastUpdate: false },
+        });
+        replaceUsers(store, [user0, user1], []);
+
+        const initialCreds = {
+            version: 1,
+            users: {
+                u0: { divingFishImportToken: "ORIGINAL-TOKEN" },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(initialCreds, null, 2)}\n`, "utf8");
+        const credsBefore = readFileSync(paths.credentials, "utf8");
+
+        // Hold sync lock for u0
+        const lockU0 = acquireLock(store, "sync:u0", { ttlMs: 60_000 });
+        expect(lockU0).not.toBeNull();
+
+        // 1. user bind on u0 fails with SYNC_IN_PROGRESS
+        const bindRes = await commandIn(paths, "user", [
+            "bind",
+            "u0",
+            "ingame",
+            "--id",
+            "87654321",
+        ]);
+        expect(bindRes.code).toBe(7);
+        expect(bindRes.json.error.code).toBe("SYNC_IN_PROGRESS");
+        expect(readUser(store, "u0")!.inGame?.id).toBeNull();
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credsBefore);
+
+        // 2. user unbind on u0 fails with SYNC_IN_PROGRESS
+        const unbindRes = await commandIn(paths, "user", ["unbind", "u0", "df-token"]);
+        expect(unbindRes.code).toBe(7);
+        expect(unbindRes.json.error.code).toBe("SYNC_IN_PROGRESS");
+        expect(readCredentials(paths).users.u0?.divingFishImportToken).toBe("ORIGINAL-TOKEN");
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credsBefore);
+
+        // 3. user bind and unbind on u1 (another user) succeeds even though sync:u0 is held
+        const bindU1 = await commandIn(paths, "user", ["bind", "u1", "ingame", "--id", "12345678"]);
+        expect(bindU1.code).toBe(0);
+        expect(bindU1.json.data.inGame.id).toBe(12345678);
+        expect(readUser(store, "u1")!.inGame?.id).toBe(12345678);
+
+        const unbindU1 = await commandIn(paths, "user", ["unbind", "u1", "ingame"]);
+        expect(unbindU1.code).toBe(0);
+        expect(readUser(store, "u1")!.inGame?.enabled).toBe(false);
+
+        if (lockU0.acquired) {
+            lockU0.lock.release();
+        }
+        store.close();
+    });
+
+    const LXNS_CREDENTIALS = {
+        lxnsAccountId: 1001,
+        lxnsIssuedAt: 1700000000000,
+        lxnsAuthorization: {
+            accessToken: "FAKE-LXNS-ACCESS",
+            refreshToken: "FAKE-LXNS-REFRESH",
+            tokenType: "Bearer",
+            expiresAt: 1700003600000,
+        },
+    };
+
+    it.each([
+        {
+            name: "bind df-token",
+            args: ["bind", "u0", "df-token", "-"],
+            stdin: "NEW-TOKEN",
+            credentials: {},
+        },
+        { name: "bind df-name", args: ["bind", "u0", "df-name", "df-other"], credentials: {} },
+        { name: "unbind ingame", args: ["unbind", "u0", "ingame"], credentials: {} },
+        { name: "unbind df-name", args: ["unbind", "u0", "df-name"], credentials: {} },
+        {
+            name: "unbind lxns with credentials",
+            args: ["unbind", "u0", "lxns"],
+            credentials: { u0: LXNS_CREDENTIALS },
+        },
+        {
+            name: "unbind lxns without credentials",
+            args: ["unbind", "u0", "lxns"],
+            credentials: {},
+        },
+    ])(
+        "refuses $name with SYNC_IN_PROGRESS and changes nothing",
+        async ({ args, stdin, credentials }) => {
+            const paths = makeHome();
+            const store = openStore(paths);
+            replaceUsers(store, [makeUser("u0")], []);
+            writeFileSync(
+                paths.credentials,
+                `${JSON.stringify({ version: 1, users: credentials }, null, 2)}\n`,
+                "utf8"
+            );
+            const credsBefore = readFileSync(paths.credentials, "utf8");
+            const userBefore = JSON.stringify(readUser(store, "u0"));
+
+            const lock = acquireLock(store, "sync:u0", { ttlMs: 60_000 });
+            expect(lock.acquired).toBe(true);
+
+            const result = await commandIn(paths, "user", args, {
+                stdin,
+                network: { [`${DF_BASE_URL}/player/records`]: jsonResponse({ records: [] }) },
+            });
+            expect(result.code).toBe(7);
+            expect(result.json.error.code).toBe("SYNC_IN_PROGRESS");
+            expect(readFileSync(paths.credentials, "utf8")).toBe(credsBefore);
+            expect(JSON.stringify(readUser(store, "u0"))).toBe(userBefore);
+
+            if (lock.acquired) lock.lock.release();
+            store.close();
+        }
+    );
 });

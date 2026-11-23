@@ -299,6 +299,7 @@ describe("pruning in updateCredentials", () => {
                 divingFishImportToken: "fake-diving-fish-token",
                 lxnsAuthorization: { accessToken: "fake-lxns-token" },
                 ...(hasMember ? { lxnsAccountId: recordedId } : {}),
+                lxnsIssuedAt: 123456789,
             };
             const result = await updateCredentials(paths, store, () => ({
                 version: 1,
@@ -307,6 +308,10 @@ describe("pruning in updateCredentials", () => {
             expect(result.users.u1.divingFishImportToken).toBe("fake-diving-fish-token");
             expect(result.users.u1.lxnsAuthorization !== undefined).toBe(keepsAuthorization);
             expect(Object.hasOwn(result.users.u1, "lxnsAccountId")).toBe(keepsAuthorization);
+            expect(Object.hasOwn(result.users.u1, "lxnsIssuedAt")).toBe(keepsAuthorization);
+            if (keepsAuthorization) {
+                expect(result.users.u1.lxnsIssuedAt).toBe(123456789);
+            }
             store.close();
         }
     );

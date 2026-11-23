@@ -17,18 +17,6 @@ import { userForCoreScores } from "../users/rows";
 import { quoteArg } from "../util/shell";
 
 /**
- * Checks whether an LXNS OAuth access token has expired (using expiresAt with 60 s of margin).
- *
- * P3-14 will replace this check with cross-process LXNS token refresh.
- */
-export function isLxnsTokenExpired(auth: unknown, now: number): boolean {
-    if (!auth || typeof auth !== "object") return true;
-    const expiresAt = (auth as { expiresAt?: unknown }).expiresAt;
-    if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt)) return false;
-    return expiresAt - 60_000 <= now;
-}
-
-/**
  * Builds a working copy of the stored user with credentials attached for core.
  * Adheres strictly to the rule that an LXNS authorization is used only for the LXNS
  * account it was issued for (`matchingLxnsAuthorization`).
@@ -67,7 +55,7 @@ export function getOtherBoundSources(
     excludeSource: ResolvedSyncSource | "ingame" | null
 ): ResolvedSyncSource[] {
     const others: ResolvedSyncSource[] = [];
-    if (userForCore.lxns?.auth?.accessToken && excludeSource !== "lxns") {
+    if (userForCore.lxns?.auth && excludeSource !== "lxns") {
         others.push("lxns");
     }
     if (userForCore.divingFish.importToken && excludeSource !== "df-token") {
@@ -102,7 +90,7 @@ export function resolveSyncSource(
     userForCore: User,
     target: { readonly index: number; readonly uid: string },
     requestedSource: CliSyncSource,
-    now: number
+    _now?: number
 ): ResolvedSyncSource {
     const userSummary = { index: target.index, uid: target.uid };
     const userRef = syncUserRef(target);
@@ -124,16 +112,6 @@ export function resolveSyncSource(
             });
         }
         if (picked === "lxns") {
-            if (isLxnsTokenExpired(userForCore.lxns?.auth, now)) {
-                const others = getOtherBoundSources(userForCore, "lxns");
-                throw new CliError("LXNS_REAUTH_REQUIRED", "落雪授权已过期，需要重新授权", {
-                    fix: formatOtherSourcesFix(
-                        userSummary,
-                        others,
-                        `saltnet user bind ${userRef} lxns`
-                    ),
-                });
-            }
             return "lxns";
         }
         if (picked === "divingFishImportToken") {
@@ -148,19 +126,9 @@ export function resolveSyncSource(
     }
 
     if (requestedSource === "lxns") {
-        if (!userForCore.lxns?.auth?.accessToken) {
+        if (!userForCore.lxns?.auth) {
             throw new CliError("NOT_BOUND", `用户 ${displayName} 未绑定落雪账号`, {
                 fix: `saltnet user bind ${userRef} lxns`,
-            });
-        }
-        if (isLxnsTokenExpired(userForCore.lxns.auth, now)) {
-            const others = getOtherBoundSources(userForCore, "lxns");
-            throw new CliError("LXNS_REAUTH_REQUIRED", "落雪授权已过期，需要重新授权", {
-                fix: formatOtherSourcesFix(
-                    userSummary,
-                    others,
-                    `saltnet user bind ${userRef} lxns`
-                ),
             });
         }
         return "lxns";

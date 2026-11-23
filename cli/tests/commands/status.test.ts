@@ -1,8 +1,10 @@
+import type { User } from "@core/user/type";
 import type { PrintedOutput } from "../commandRun";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MIGRATIONS } from "../../src/store/migrations";
 import { openStore } from "../../src/store/store";
+import { saveUser } from "../../src/users/repository";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
 import { useTempHome } from "../tempHome";
@@ -39,6 +41,11 @@ interface StatusData {
             name: string;
             scoresUpdatedAt: string | null;
             scoresState: string;
+            credentials: {
+                divingFish: string;
+                lxns: string;
+                lxnsRefreshExpiresAt: string | null;
+            };
         }[];
     };
     mergedDuplicates: { id: number; title: string; mergedTitles: string[] }[];
@@ -65,6 +72,18 @@ async function statusIn(
 ) {
     const res = await commandIn(paths, "status", args, options);
     return res as unknown as Printed<StatusOutput>;
+}
+
+function makeStatusUser(uid: string, name: string, lxnsId?: number | null): User {
+    return {
+        uid,
+        remark: name,
+        divingFish: { name: `fish-${uid}`, importToken: null },
+        ...(lxnsId === undefined ? {} : { lxns: { id: lxnsId, name: `lxns-${name}`, auth: null } }),
+        inGame: { id: 100, name: `game-${uid}`, enabled: true, useFastUpdate: true },
+        settings: { manuallyUpdate: false },
+        data: { updateTime: null, name: null, rating: null },
+    };
 }
 
 describe("status command", () => {
@@ -349,5 +368,305 @@ describe("status command", () => {
         expect(res.stdout).toContain('\n    "v": 1,');
         expect(res.stdout).toContain('\n        "version": "9.9.9",');
         expect(res.stdout.endsWith("}\n")).toBe(true);
+    });
+
+    it("reports user credential state for every combination, emits warnings for expiring and expired, and leaks no tokens", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+
+        const nowMs = new Date("2026-03-01T12:00:00+08:00").getTime();
+        const testNow = new Date(nowMs);
+
+        // 30 days = 2592000000 ms
+        const lifetimeMs = 30 * 24 * 60 * 60 * 1000;
+
+        // u1: valid (> 3 days left, e.g. issued 10 days ago, 20 days left)
+        const u1Issued = nowMs - 10 * 24 * 60 * 60 * 1000;
+        const u1Expires = u1Issued + lifetimeMs;
+        saveUser(store, makeStatusUser("u1", "Alice", 1001));
+
+        // u2: expiring (< 3 days left, e.g. issued 28 days ago, 2 days left)
+        const u2Issued = nowMs - 28 * 24 * 60 * 60 * 1000;
+        const u2Expires = u2Issued + lifetimeMs;
+        saveUser(store, makeStatusUser("u2", "Bob", 1002));
+
+        // u3: expired (issued 31 days ago, expired 1 day ago)
+        const u3Issued = nowMs - 31 * 24 * 60 * 60 * 1000;
+        const u3Expires = u3Issued + lifetimeMs;
+        saveUser(store, makeStatusUser("u3", "Charlie", 1003));
+
+        // u4: unknown (has valid authorization for account, but no lxnsIssuedAt)
+        saveUser(store, makeStatusUser("u4", "Dave", 1004));
+
+        // u5: missing (has user in db with lxnsId 1005, but credentials has authorization for 9999)
+        saveUser(store, makeStatusUser("u5", "Eve", 1005));
+
+        // u6: missing (no credentials entry at all)
+        saveUser(store, makeStatusUser("u6", "Frank", 1006));
+
+        store.close();
+
+        const fakeDfToken1 = "FAKE-DF-IMPORT-TOKEN-0001";
+        const fakeDfToken4 = "FAKE-DF-IMPORT-TOKEN-0004";
+        const fakeAccessToken = "FAKE-LXNS-ACCESS-TOKEN-0001";
+        const fakeRefreshToken = "FAKE-LXNS-REFRESH-TOKEN-0001";
+
+        const creds = {
+            version: 1,
+            users: {
+                u1: {
+                    divingFishImportToken: fakeDfToken1,
+                    lxnsAuthorization: {
+                        accessToken: fakeAccessToken,
+                        refreshToken: fakeRefreshToken,
+                    },
+                    lxnsAccountId: 1001,
+                    lxnsIssuedAt: u1Issued,
+                },
+                u2: {
+                    divingFishImportToken: "", // empty string -> missing
+                    lxnsAuthorization: {
+                        accessToken: fakeAccessToken,
+                        refreshToken: fakeRefreshToken,
+                    },
+                    lxnsAccountId: 1002,
+                    lxnsIssuedAt: u2Issued,
+                },
+                u3: {
+                    divingFishImportToken: null, // null -> missing
+                    lxnsAuthorization: {
+                        accessToken: fakeAccessToken,
+                        refreshToken: fakeRefreshToken,
+                    },
+                    lxnsAccountId: 1003,
+                    lxnsIssuedAt: u3Issued,
+                },
+                u4: {
+                    divingFishImportToken: fakeDfToken4,
+                    lxnsAuthorization: {
+                        accessToken: fakeAccessToken,
+                        refreshToken: fakeRefreshToken,
+                    },
+                    lxnsAccountId: 1004,
+                    // no lxnsIssuedAt
+                },
+                u5: {
+                    lxnsAuthorization: {
+                        accessToken: fakeAccessToken,
+                        refreshToken: fakeRefreshToken,
+                    },
+                    lxnsAccountId: 9999, // Mismatched account
+                    lxnsIssuedAt: u1Issued,
+                },
+            },
+        };
+
+        writeFileSync(paths.credentials, `${JSON.stringify(creds, null, 2)}\n`, "utf8");
+
+        const res = await statusIn(paths, [], { now: testNow });
+        expect(res.code).toBe(0);
+
+        // Check user credential states
+        const items = res.json.data.users.items;
+        expect(items.length).toBe(6);
+
+        // u1: valid, divingFish: present
+        expect(items[0].uid).toBe("u1");
+        expect(items[0].credentials).toEqual({
+            divingFish: "present",
+            lxns: "valid",
+            lxnsRefreshExpiresAt: formatLocalTime(new Date(u1Expires)),
+        });
+
+        // u2: expiring, divingFish: missing
+        expect(items[1].uid).toBe("u2");
+        expect(items[1].credentials).toEqual({
+            divingFish: "missing",
+            lxns: "expiring",
+            lxnsRefreshExpiresAt: formatLocalTime(new Date(u2Expires)),
+        });
+
+        // u3: expired, divingFish: missing
+        expect(items[2].uid).toBe("u3");
+        expect(items[2].credentials).toEqual({
+            divingFish: "missing",
+            lxns: "expired",
+            lxnsRefreshExpiresAt: formatLocalTime(new Date(u3Expires)),
+        });
+
+        // u4: unknown, divingFish: present
+        expect(items[3].uid).toBe("u4");
+        expect(items[3].credentials).toEqual({
+            divingFish: "present",
+            lxns: "unknown",
+            lxnsRefreshExpiresAt: null,
+        });
+
+        // u5: missing (account mismatch), divingFish: missing
+        expect(items[4].uid).toBe("u5");
+        expect(items[4].credentials).toEqual({
+            divingFish: "missing",
+            lxns: "missing",
+            lxnsRefreshExpiresAt: null,
+        });
+
+        // u6: missing, divingFish: missing
+        expect(items[5].uid).toBe("u6");
+        expect(items[5].credentials).toEqual({
+            divingFish: "missing",
+            lxns: "missing",
+            lxnsRefreshExpiresAt: null,
+        });
+
+        // Verify warnings: exactly 2 warnings for u2 and u3
+        const warnings = res.json.warnings;
+        expect(warnings.length).toBe(2);
+
+        expect(warnings[0].code).toBe("LXNS_EXPIRING");
+        expect(warnings[0].message).toContain("Bob");
+        expect(warnings[0].message).toContain(formatLocalTime(new Date(u2Expires)));
+        expect(warnings[0].fix).toBe("saltnet user bind u2 lxns");
+
+        expect(warnings[1].code).toBe("LXNS_EXPIRING");
+        expect(warnings[1].message).toContain("Charlie");
+        expect(warnings[1].message).toContain(formatLocalTime(new Date(u3Expires)));
+        expect(warnings[1].fix).toBe("saltnet user bind u3 lxns");
+
+        // Verify no secrets appear in output
+        expect(res.stdout).not.toContain(fakeDfToken1);
+        expect(res.stdout).not.toContain(fakeDfToken4);
+        expect(res.stdout).not.toContain(fakeAccessToken);
+        expect(res.stdout).not.toContain(fakeRefreshToken);
+    });
+
+    it("fails with INTERNAL and fix when credentials.json is corrupt", async () => {
+        const paths = makeHome();
+        mkdirSync(paths.home, { recursive: true });
+        writeFileSync(paths.credentials, "{ invalid json", "utf8");
+
+        const res = await commandIn(paths, "status", []);
+        expect(res.code).toBe(1);
+        expect(res.json.error.code).toBe("INTERNAL");
+        expect(res.json.error.fix).toBe(
+            `检查 ${paths.credentials}；修不好时可以把它移走，再重新绑定水鱼和落雪`
+        );
+    });
+
+    it("names default user with 0 in LXNS_EXPIRING warning fix", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeStatusUser("u0", "Alice", 1000));
+        store.close();
+
+        const testNow = new Date("2026-06-01T12:00:00Z");
+        // Issued 29 days ago (expires in 1 day < 3 days warn days -> expiring)
+        const issued = testNow.getTime() - 29 * 24 * 60 * 60 * 1000;
+        const creds = {
+            version: 1,
+            users: {
+                u0: {
+                    lxnsAuthorization: {
+                        accessToken: "FAKE-TOKEN",
+                        refreshToken: "FAKE-REFRESH",
+                    },
+                    lxnsAccountId: 1000,
+                    lxnsIssuedAt: issued,
+                },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(creds, null, 2)}\n`, "utf8");
+
+        const res = await statusIn(paths, [], { now: testNow });
+        expect(res.code).toBe(0);
+        expect(res.json.warnings.length).toBe(1);
+        expect(res.json.warnings[0].code).toBe("LXNS_EXPIRING");
+        expect(res.json.warnings[0].fix).toBe("saltnet user bind 0 lxns");
+    });
+
+    it("respects lxns.refreshTokenDays changed via environment variable or config.json", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeStatusUser("u1", "Alice", 1001));
+        store.close();
+
+        const testNow = new Date("2026-06-01T12:00:00Z");
+        // Issued 15 days ago: under default 30 days, valid (15 days left).
+        const issued = testNow.getTime() - 15 * 24 * 60 * 60 * 1000;
+        const creds = {
+            version: 1,
+            users: {
+                u1: {
+                    lxnsAuthorization: {
+                        accessToken: "FAKE-TOKEN",
+                        refreshToken: "FAKE-REFRESH",
+                    },
+                    lxnsAccountId: 1001,
+                    lxnsIssuedAt: issued,
+                },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(creds, null, 2)}\n`, "utf8");
+
+        // Default 30 days: valid
+        const resDefault = await statusIn(paths, [], { now: testNow });
+        expect(resDefault.json.data.users.items[0].credentials.lxns).toBe("valid");
+
+        // Change refreshTokenDays to 10 via env var: 15 days ago is now expired
+        const resEnv = await statusIn(paths, [], {
+            now: testNow,
+            env: { SALTNET_LXNS_REFRESH_TOKEN_DAYS: "10" },
+        });
+        expect(resEnv.json.data.users.items[0].credentials.lxns).toBe("expired");
+
+        // Change refreshTokenDays to 10 via config.json
+        writeFileSync(paths.config, JSON.stringify({ lxns: { refreshTokenDays: 10 } }), "utf8");
+        const resFile = await statusIn(paths, [], { now: testNow });
+        expect(resFile.json.data.users.items[0].credentials.lxns).toBe("expired");
+    });
+
+    it("respects lxns.expiringWarnDays changed via environment variable or config.json", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeStatusUser("u1", "Alice", 1001));
+        store.close();
+
+        const testNow = new Date("2026-06-01T12:00:00Z");
+        // Issued 25 days ago (5 days left out of 30): under default 3 warn days, valid.
+        const issued = testNow.getTime() - 25 * 24 * 60 * 60 * 1000;
+        const creds = {
+            version: 1,
+            users: {
+                u1: {
+                    lxnsAuthorization: {
+                        accessToken: "FAKE-TOKEN",
+                        refreshToken: "FAKE-REFRESH",
+                    },
+                    lxnsAccountId: 1001,
+                    lxnsIssuedAt: issued,
+                },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(creds, null, 2)}\n`, "utf8");
+
+        // Default 3 warn days: valid, no warning
+        const resDefault = await statusIn(paths, [], { now: testNow });
+        expect(resDefault.json.data.users.items[0].credentials.lxns).toBe("valid");
+        expect(resDefault.json.warnings).toHaveLength(0);
+
+        // Change expiringWarnDays to 7 via env var: 5 days left < 7 -> expiring
+        const resEnv = await statusIn(paths, [], {
+            now: testNow,
+            env: { SALTNET_LXNS_EXPIRING_WARN_DAYS: "7" },
+        });
+        expect(resEnv.json.data.users.items[0].credentials.lxns).toBe("expiring");
+        expect(resEnv.json.warnings.length).toBe(1);
+        expect(resEnv.json.warnings[0].code).toBe("LXNS_EXPIRING");
+
+        // Change expiringWarnDays to 7 via config.json
+        writeFileSync(paths.config, JSON.stringify({ lxns: { expiringWarnDays: 7 } }), "utf8");
+        const resFile = await statusIn(paths, [], { now: testNow });
+        expect(resFile.json.data.users.items[0].credentials.lxns).toBe("expiring");
+        expect(resFile.json.warnings.length).toBe(1);
+        expect(resFile.json.warnings[0].code).toBe("LXNS_EXPIRING");
     });
 });

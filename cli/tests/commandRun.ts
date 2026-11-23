@@ -1,5 +1,5 @@
 import type { RuntimePaths } from "../src/runtime/paths";
-import type { Route } from "./mockHttp";
+import type { RecordedRequest, Route } from "./mockHttp";
 import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
 import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { createRegistry } from "../src/commands";
@@ -61,7 +61,7 @@ export async function commandIn(
     json: PrintedOutput;
     stdout: string;
     stderr: string;
-    requests: { url: string }[];
+    requests: RecordedRequest[];
 }> {
     const fetch = mockFetch(options.network ?? routes());
     const harness = createHarness({

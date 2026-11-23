@@ -25,6 +25,7 @@ import { computeSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
 import { beginRun, finishRun } from "./journal";
 import { withSyncLock } from "./lock";
+import { lxnsAccessToken } from "./lxnsToken";
 import {
     buildUserForCore,
     formatOtherSourcesFix,
@@ -91,6 +92,19 @@ export async function executeSync(
                 },
                 handle
             );
+
+            if (cliSource === "lxns") {
+                const refreshedAuth = await lxnsAccessToken(ctx, store, handle, storedUser);
+                if (userForCore.lxns) {
+                    userForCore.lxns.auth = refreshedAuth;
+                } else {
+                    userForCore.lxns = {
+                        id: null,
+                        name: null,
+                        auth: refreshedAuth,
+                    };
+                }
+            }
 
             // Fetch metadata current before making score requests
             const metaResult = await useMetadata(args, ctx, ["catalog"]);

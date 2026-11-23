@@ -217,7 +217,7 @@
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
-- [ ] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
+- [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
 - [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项〔新〕
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
 - [ ] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
@@ -1010,3 +1010,29 @@
     - 用户让 Codex 写代码和审查都换成新出的模型。用户说的是「5.2 sol」，`codex debug models` 的目录里没有这个 id，最新的 Sol 是 `gpt-6.2-sol`（GPT-6.2-Sol），就用它，`reply ok` 试通。分工表、`coordinator-prompt.md`、脚本说明和两个脚本的提示都改了。
     - 试的时候 Codex 提示 `AGENTS.md`（现在 52 KB）只读进了前 32768 字节。也就是说，`AGENTS.md` 超过这个大小以后交给 Codex 的步骤，它自动读进的项目说明缺了后半截；brief 都让它自己去读文件，影响有限。两个脚本都加了 `-c project_doc_max_bytes=131072`。
     - 草稿目录在 `/private/tmp` 下，macOS 每天清理三天没访问过的文件。11-18 之后停的几天里，草稿目录的脚本、brief 和大部分委托输出被删了。补丁、brief 和脚本都有持久副本，从那里恢复；P3-7b 的汇报（`response.txt`）没有副本，丢了。
+91. **P3-14 的实现（2026-11-23）**：
+    - 分工：这一步是〔新〕，原定 Codex 写。当时 Codex 本周额度用完，交给 Gemini，分两轮。
+    - 第一轮的问题，我没有合进去，写进了第二轮的 brief：
+        - 用常量代替设置项 `lxns.refreshTokenDays`、`lxns.expiringWarnDays`。
+        - `userCredentialState` 按参数的形状猜是哪种用户。`statusUserRow` 有两种参数顺序，靠运行时的类型判断区分。
+        - 时间取 `Date.now`，不是 `ctx.io.now()`。
+        - 刷新成功后，不管存储里还是不是刚刷新的那个授权都写回。`invalid_grant` 时删授权，但不删 `lxnsAccountId`，也不看授权是否已被换掉。
+        - `fix` 里的 uid 没加引号；`status` 列了隐含的 `INTERNAL`；没有接进 `sync`。
+    - 第二轮（Gemini，32 分钟）之后的样子：
+        - `cli/src/sync/lxnsToken.ts` 的 `lxnsAccessToken` 在调用方持有的同步锁下读 `credentials.json`，按账号规则取授权。访问令牌还有一分钟以上就直接用；否则用刷新令牌换新的，不重试。
+        - 写回前在 `updateCredentials` 里确认存储的还是刚刷新的那个授权，三项（授权、落雪 id、签发时间）一起写；被别的进程换掉或删掉时不写，新授权只用于这次运行。
+        - `invalid_grant` 时先重读一次：别的进程已经换了刷新令牌，就用新的再试一次；否则确认存的还是失败的那个授权，把三项一起删掉，报 `LXNS_REAUTH_REQUIRED`。新令牌属于另一个落雪账号时同样处理。core 对后一种只抛普通 `Error`，CLI 按它的消息判断，消息写成一个有注释的常量。
+        - `status` 给每个用户列凭据状态：水鱼 token 有没有；落雪 `valid`、`expiring`、`expired`、`unknown` 或 `missing`，刷新令牌的过期时间按签发时间加 `lxns.refreshTokenDays` 推算。快过期（不到 `lxns.expiringWarnDays` 天）或已过期时给 `LXNS_EXPIRING`。落雪 id 从存储的原始用户取，不用投影出来的列。
+        - `sync` 的落雪来源在锁里、`beginRun` 之后先调用它。`isLxnsTokenExpired` 删掉了：访问令牌过期而有刷新令牌就刷新，没有就在锁里报 `LXNS_REAUTH_REQUIRED`，记一条 failed。
+        - `user bind` 和 `user unbind` 的每个写事务先 `assertNoSync`，公开 `SYNC_IN_PROGRESS`；`unbind lxns` 也删签发时间。这原定由 P3-7b 做（决定 88）。P3-7b 和这一步并行，`bind.ts` 只能归其中一个，就挪到了这里。
+        - 补上了 P3-8 留下的 8 处测试（决定 89）。
+    - 我改的：设计 5.2 解绑落雪的一条补上签发时间。
+    - 我补的测试：
+        - 令牌（`cli/tests/sync/lxnsToken.test.ts`）：访问令牌为空时，即使没过期也去刷新；刷新令牌为空时不发请求，直接报 `LXNS_REAUTH_REQUIRED`；`invalid_grant` 后存的还是失败的那个令牌，只发一次请求；同步锁属于别的用户时报 `INTERNAL`，不发请求，凭据文件不变。
+        - 凭据状态的两个边界（新文件 `cli/tests/users/view.test.ts`）：刷新令牌刚好到期算 `expired`，刚好还剩三天算 `valid`。
+        - `sync` 刷新之后，每个落雪玩家请求都在换令牌之后发出，带的是新的访问令牌。
+        - `user bind df-token`、`bind df-name`、`unbind ingame`、`unbind df-name` 和 `unbind lxns`（有凭据、没有凭据两条路）在同步进行中都报 `SYNC_IN_PROGRESS`，凭据文件和用户都不变。
+        - P3-8 那条「`song_id` 不能转换就过滤掉」的测试原来用 `Object.create(null)`。它存成 JSON 再读回来就是普通对象，测试其实没测到过滤。而且同步合并只按新来的记录的键去查旧记录，从不转换旧记录，就算漏了过滤也不会抛错。改成：在新来的记录对应的键下存一条 `song_id` 为 `{ toString: 1 }` 的记录，带上播放次数；水鱼不给播放次数，同步后新记录没有拿到它，说明 core 没看到这条记录，也就没有合并。
+        - `cli/tests/commandRun.ts` 的 `commandIn` 返回的请求带上 `init`（类型从 `{ url }` 改为 `RecordedRequest`），测试才能检查请求头。
+    - 变异测试：46 个变异，第一次杀掉 29 个。补测试后，17 个幸存的又杀掉 14 个。剩下 3 个是等价的：删授权时漏删签发时间或落雪 id，同一次 `updateCredentials` 的 `pruneCredentials` 会把没有授权的这两项删掉；写回时漏写落雪 id，条目里本来就是同一个 id（按账号规则取到授权的前提就是 id 相同，core 也确认了新令牌属于同一账号）。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。

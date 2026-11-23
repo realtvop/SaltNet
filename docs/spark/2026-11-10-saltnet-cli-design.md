@@ -534,7 +534,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 3. 水鱼 Import-Token
 4. 水鱼用户名（先通过 SaltNet 后端拿详细数据，拿不到再用公开 B50）
 
-和网页端一样，选中的来源失败后不会自动换下一个。错误里的 `fix` 会建议另一个已绑定的来源，例如 `saltnet sync --source lxns`。也可以直接指定来源，取值和 `user bind` 的来源名相同：`ingame`、`lxns`、`df-token`、`df-name`。
+和网页端一样，选中的来源失败后不会自动换下一个。错误里的 `fix` 会建议另一个已绑定的来源，例如 `saltnet sync --source lxns`。也可以直接指定来源，取值和 `user bind` 的来源名相同：`ingame`、`lxns`、`df-token`、`df-name`。当选择落雪来源时，在同步锁（`sync:<uid>`）保护下、发起成绩拉取前，先调用 `lxnsAccessToken` 检查并刷新已过期的 access token；若缺少 refresh token 或 refresh 失败（`invalid_grant`），在锁内报错 `LXNS_REAUTH_REQUIRED`，记录 failed 日志，且 `fix` 推荐其他已绑定来源。
 
 **舞萌账号的两种更新方式**
 
@@ -590,7 +590,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 - `ingame`：清除 `inGame.id` 与 `inGame.name`，关闭 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。三者任一不是初始值都算已绑定。
 - `df-token`：只从 `credentials.json` 移除 `divingFishImportToken`；token 从不存进数据库，用户对象不变。
 - `df-name`：用户对象的 `divingFish.name` 置为 null。
-- `lxns`：从 `credentials.json` 移除 `lxnsAuthorization` 与 `lxnsAccountId`，用户对象的 `lxns` 置为空（`{ auth: null, id: null, name: null }`）。
+- `lxns`：从 `credentials.json` 移除 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`，用户对象的 `lxns` 置为空（`{ auth: null, id: null, name: null }`）。
 - 解绑未绑定的来源时成功返回且 `changed: false`，不产生任何写入。
 
 **落雪分两步**
@@ -621,10 +621,11 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 
 落雪每次刷新都会换发新的 refresh token，旧的随即作废。多个 agent 可能同时运行 CLI，所以刷新这样处理：
 
-- 刷新前先加锁。拿到锁后重新读一遍凭据，如果别的进程已经刷新过，就直接用新的。
-- 新 token 先原子写入 `credentials.json`（先写临时文件再改名），然后才使用。
-- 刷新返回 `invalid_grant` 时，先确认不是别的进程刚刚刷新过。确实失效才清掉 token，但保留落雪 id 和名字，用于身份判断，然后返回 `LXNS_REAUTH_REQUIRED`。
-- refresh token 剩余不到 3 天（按 30 天有效期算）时，`status` 会给出 `LXNS_EXPIRING` 警告，建议重新授权。轮换后有效期会不会重新计算，还要实测（见待确认）。
+- 刷新在调用方持有的该用户同步锁（`sync:<uid>`）下进行，这把锁保证了同一用户同一时刻只有一个进程刷新落雪 token。拿到锁后重新读一遍凭据，如果别的进程已经刷新过，就直接用新的。
+- 配置项：通过设置 `lxns.refreshTokenDays`（默认 30 天）控制 refresh token 有效期，`lxns.expiringWarnDays`（默认 3 天）控制临期预警阈值。
+- 条件写：新 token 写入 `credentials.json` 时，在 `updateCredentials` 更新函数内仅当存储记录仍与刷新前的授权匹配（同账号、同 `refreshToken`）时，才原子写入 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`（毫秒时间戳）；若中途被并发修改或移除则保留当前文件内容不变，本次运行仍返回新换取的 token。
+- 刷新返回 `invalid_grant` 或身份变化时，同样在匹配失效授权时才原子清除 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`，保留落雪 id、名字与其他来源凭据，并返回 `LXNS_REAUTH_REQUIRED`。
+- `status` 会展示每个用户的凭据状态 `credentials`：水鱼 `divingFish` 为 `present` 或 `missing`；落雪 `lxns` 为 `valid`、`expiring`、`expired`、`unknown` 或 `missing`，以及刷新令牌过期时间 `lxnsRefreshExpiresAt`。refresh token 剩余时间小于 `lxns.expiringWarnDays` 或已过期时，`status` 会给出 `LXNS_EXPIRING` 警告（`fix` 指向 `syncUserRef` 用户），建议重新授权。
 
 ### 5.4 副作用级别与确认
 

@@ -19,6 +19,7 @@ import {
     updateCredentials,
     withCredentialsLock,
 } from "../runtime/credentials";
+import { assertNoSync } from "../sync/lock";
 import { listUsers, readUser, readUserCounts, saveUser } from "../users/repository";
 import { userDetail } from "../users/view";
 import { defineCommand } from "./registry";
@@ -100,7 +101,14 @@ export const userBind = defineCommand(
                 description: "用游戏 UserID 给第二个用户绑定舞萌账号",
             },
         ],
-        errors: ["USAGE", ...USER_REFERENCE_ERRORS, "QR_INVALID", "NETWORK", "UPSTREAM_ERROR"],
+        errors: [
+            "USAGE",
+            ...USER_REFERENCE_ERRORS,
+            "QR_INVALID",
+            "NETWORK",
+            "UPSTREAM_ERROR",
+            "SYNC_IN_PROGRESS",
+        ],
         dataSchema: boundUserSchema,
     },
     async (args, ctx) => {
@@ -295,6 +303,7 @@ export const userBind = defineCommand(
 
                 if (changed) {
                     store.transaction(() => {
+                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                         saveUser(store, nextUser);
                     });
                 }
@@ -333,6 +342,7 @@ export const userBind = defineCommand(
                     let userSaved = false;
                     try {
                         store.transaction(() => {
+                            assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                             saveUser(store, nextUser);
                         });
                         userSaved = true;
@@ -383,6 +393,7 @@ export const userBind = defineCommand(
                 changed = freshUser.divingFish?.name !== dfNameToStore;
                 if (changed) {
                     store.transaction(() => {
+                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                         saveUser(store, nextUser);
                     });
                 }
@@ -417,7 +428,7 @@ export const userUnbind = defineCommand(
             { command: "user unbind 0 df-name", description: "解绑水鱼用户名" },
             { command: "user unbind 0 lxns", description: "解绑落雪账号" },
         ],
-        errors: ["USAGE", ...USER_REFERENCE_ERRORS],
+        errors: ["USAGE", ...USER_REFERENCE_ERRORS, "SYNC_IN_PROGRESS"],
         dataSchema: boundUserSchema,
     },
     async (args, ctx) => {
@@ -434,6 +445,9 @@ export const userUnbind = defineCommand(
             // credentials.json changes, and nothing is written when no token is bound.
             let changed = false;
             if (readCredentials(ctx.paths).users[targetUid]?.divingFishImportToken !== undefined) {
+                store.transaction(() => {
+                    assertNoSync(store, targetUid, () => ctx.io.now().getTime());
+                });
                 await updateCredentials(ctx.paths, store, current => {
                     const entry = current.users[targetUid];
                     if (entry?.divingFishImportToken === undefined) return current;
@@ -479,6 +493,7 @@ export const userUnbind = defineCommand(
                         },
                     };
                     store.transaction(() => {
+                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                         saveUser(store, nextUser);
                     });
                 }
@@ -494,17 +509,17 @@ export const userUnbind = defineCommand(
                         },
                     };
                     store.transaction(() => {
+                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                         saveUser(store, nextUser);
                     });
                 }
             } else if (source === "lxns") {
                 const currentCreds = readCredentials(ctx.paths);
-                const userCreds = currentCreds.users[targetUid] as
-                    | (UserCredentials & { lxnsAccountId?: unknown })
-                    | undefined;
+                const userCreds = currentCreds.users[targetUid];
                 const hasLxnsCreds =
                     userCreds?.lxnsAuthorization !== undefined ||
-                    userCreds?.lxnsAccountId !== undefined;
+                    userCreds?.lxnsAccountId !== undefined ||
+                    userCreds?.lxnsIssuedAt !== undefined;
                 const lxns = freshUser.lxns;
                 const hasLxnsDb = Boolean(
                     lxns && (lxns.auth !== null || lxns.name !== null || lxns.id !== null)
@@ -524,9 +539,10 @@ export const userUnbind = defineCommand(
                         if (nextUsers[targetUid]) {
                             const credsCopy = {
                                 ...nextUsers[targetUid],
-                            } as UserCredentials & { lxnsAccountId?: unknown };
+                            };
                             delete credsCopy.lxnsAuthorization;
                             delete credsCopy.lxnsAccountId;
+                            delete credsCopy.lxnsIssuedAt;
                             nextUsers[targetUid] = credsCopy;
                         }
                         const staged = stageCredentials(ctx.paths, {
@@ -536,6 +552,7 @@ export const userUnbind = defineCommand(
                         let userSaved = false;
                         try {
                             store.transaction(() => {
+                                assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                                 saveUser(store, nextUser);
                             });
                             userSaved = true;
@@ -560,6 +577,7 @@ export const userUnbind = defineCommand(
                         }
                     } else {
                         store.transaction(() => {
+                            assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                             saveUser(store, nextUser);
                         });
                     }

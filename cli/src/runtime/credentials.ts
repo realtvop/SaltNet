@@ -16,9 +16,12 @@ export interface UserCredentials {
     lxnsAuthorization?: unknown;
     /**
      * The JSON value of `user.lxns.id` when this authorization was stored. Every future writer or
-     * refresher of `lxnsAuthorization` must update this member in the same credentials change.
+     * refresher of `lxnsAuthorization` must update this member and `lxnsIssuedAt` in the same
+     * credentials change.
      */
     lxnsAccountId?: unknown;
+    /** Milliseconds since the epoch when the current refresh token was issued. */
+    lxnsIssuedAt?: unknown;
 }
 
 /** The LXNS account a stored user's authorization must belong to: its `lxns.id`, or null. */
@@ -209,6 +212,7 @@ function pruneCredentials(
         if (!hasLxns) {
             delete entry.lxnsAuthorization;
             delete entry.lxnsAccountId;
+            delete entry.lxnsIssuedAt;
         }
         if (!hasDf && !hasLxns) continue;
         prunedUsers[uid] = entry;
