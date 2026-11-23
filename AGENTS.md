@@ -221,7 +221,10 @@ SaltNet is a three-package pnpm workspace:
           a full game update. A fast game update uses the stored ID and supplements the game
           records with LXNS or the Diving Fish import token. The sync lock protects the SQLite
           transaction and the `sync_runs` journal. The result reports counts, rating before and
-          after, and up to 20 changes ordered by rating gain. Uploads are deferred to P3-10.
+          after, and up to 20 changes ordered by rating gain. After committing an in-game sync,
+          it uploads the raw game records to the bound Diving Fish and LXNS accounts in that order.
+          `--no-upload` disables uploads. Failures appear in `uploads` and as `UPLOAD_FAILED`
+          warnings while the local sync remains successful.
     - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
       registry-generated Markdown (`markdown.ts`).
     - `src/output/` turns a command's result into output: the versioned JSON envelope
@@ -409,7 +412,7 @@ SaltNet is a three-package pnpm workspace:
           `chart --with history`.
     - `src/favorites/repository.ts` is the only writer of the favorite tables and keeps their
       positions contiguous.
-    - `src/sync/` holds score syncing, the `sync_runs` journal, sync locks and token refresh.
+    - `src/sync/` holds score syncing, uploads, the `sync_runs` journal, sync locks and token refresh.
         - `types.ts` defines sync options, result data shapes, change items, sources and modes.
         - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`)
           and builds credential-bearing user working copies for core.
@@ -427,7 +430,11 @@ SaltNet is a three-package pnpm workspace:
         - `execute.ts` checks the QR account before taking `withSyncLock` and checks it again
           against the user read under the lock. It starts the journal with `beginRun`, fetches
           scores, and writes the update, score events and successful `finishRun` in one
-          transaction using `applySyncToStoredUser` and `buildScoreHistoryBatchEvents`.
+          transaction using `applySyncToStoredUser` and `buildScoreHistoryBatchEvents`. Core's
+          upload callbacks queue raw game records, which are sent after that transaction commits.
+        - `uploads.ts` sends each upload once without following redirects, under the same sync
+          lock. It refreshes LXNS authorization when needed and journals each target separately
+          with the record count and credential-free diagnostics.
         - `journal.ts` is the sole writer of the `sync_runs` table (`beginRun`, `finishRun`,
           `recordRun`, `readRuns`). It checks summaries recursively against credential keywords and
           rejects non-plain JSON values, ensuring no token or secret is ever recorded.

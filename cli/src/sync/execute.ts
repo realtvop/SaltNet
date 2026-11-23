@@ -1,10 +1,12 @@
 /**
  * Execution of saltnet sync (design 5.1).
  */
+import type { SyncOptions } from "@core/sync/type";
 import type { ScoreHistoryCandidate } from "@core/user/scoreHistory/type";
 import type { CommandContext, GlobalOptions } from "../commands/registry";
 import type { Warning } from "../output/warning";
 import type { CliSyncSource, SyncData, SyncMode } from "./types";
+import type { PendingUpload } from "./uploads";
 import { randomUUID } from "node:crypto";
 import {
     syncFromDivingFishImportToken,
@@ -36,6 +38,7 @@ import {
     syncUserRef,
 } from "./sources";
 import { applySyncToStoredUser } from "./storedUser";
+import { runSyncUploads } from "./uploads";
 
 export interface SyncExecutionResult {
     readonly data: SyncData;
@@ -48,6 +51,7 @@ export interface SyncCommandArgs {
         readonly user?: string;
         readonly source?: CliSyncSource;
         readonly qr?: "-";
+        readonly upload?: boolean;
     };
     readonly global: GlobalOptions;
 }
@@ -111,6 +115,9 @@ export async function executeSync(
               ]
             : [];
         let runId: number | undefined;
+        // Set once the sync is written: a later failure (the lock lost during an upload) must not
+        // read as a failed sync or suggest another source.
+        let committed = false;
         let lastReportMsg: string | null = null;
 
         try {
@@ -174,7 +181,8 @@ export async function executeSync(
                     : undefined
             );
 
-            const syncOptions = {
+            const pendingUploads: PendingUpload[] = [];
+            const syncOptions: SyncOptions = {
                 clients: clientWrapper.clients,
                 report: (message: string, errorMsg?: string) => {
                     if (inGameMode) {
@@ -189,6 +197,15 @@ export async function executeSync(
                 },
                 now: () => ctx.io.now().getTime(),
             };
+            if (inGameMode && args.options.upload !== false) {
+                // Core selects the bound targets and hands back the raw game records.
+                syncOptions.uploadToDivingFish = (records, importToken) => {
+                    pendingUploads.push({ target: "diving-fish", records, importToken });
+                };
+                syncOptions.uploadToLXNS = records => {
+                    pendingUploads.push({ target: "lxns", records });
+                };
+            }
 
             let update = null;
             if (cliSource === "ingame") {
@@ -327,6 +344,17 @@ export async function executeSync(
                     },
                 });
             });
+            runId = undefined;
+            committed = true;
+
+            const { uploads, warnings: uploadWarnings } = await runSyncUploads(
+                ctx,
+                store,
+                handle,
+                storedUser,
+                userRef,
+                pendingUploads
+            );
 
             // Read user scores AFTER the write
             const scoresAfter = readUserScores(store, targetUserRow, catalogCharts);
@@ -358,7 +386,7 @@ export async function executeSync(
                 changes: changesResult.changes,
                 changesTotal: changesResult.changesTotal,
                 missing: changesResult.missing,
-                uploads: [],
+                uploads,
             };
 
             const meta: Record<string, unknown> = {
@@ -373,7 +401,7 @@ export async function executeSync(
                 },
             };
 
-            const warnings: Warning[] = [...metaResult.warnings];
+            const warnings: Warning[] = [...metaResult.warnings, ...uploadWarnings];
             if (mode === "public-b50") {
                 warnings.push({
                     code: "PUBLIC_B50_ONLY",
@@ -392,14 +420,17 @@ export async function executeSync(
                     ? err
                     : mapSyncError(err, lastReportMsg, cliSource, userRef);
 
-            const otherSources = getOtherBoundSources(userForCore, cliSource);
+            const otherSources = committed ? [] : getOtherBoundSources(userForCore, cliSource);
             const fixWithOthers = formatOtherSourcesFix(
                 { index: targetUserRow.index, uid: targetUserRow.uid },
                 otherSources,
                 mappedErr.fix
             );
+            const message = committed
+                ? `同步结果已写入本地，之后出错：${mappedErr.message}`
+                : mappedErr.message;
 
-            const finalError = new CliError(mappedErr.code, mappedErr.message, {
+            const finalError = new CliError(mappedErr.code, message, {
                 candidates: mappedErr.candidates,
                 fix: fixWithOthers,
                 retryable: mappedErr.retryable,

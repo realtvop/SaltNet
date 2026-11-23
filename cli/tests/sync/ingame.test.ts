@@ -155,7 +155,7 @@ describe("in-game sync", () => {
 
         const result = await gameSync(
             paths,
-            ["--source", "ingame", "--qr", "-"],
+            ["--source", "ingame", "--qr", "-", "--no-upload"],
             { [getQr]: jsonResponse({ errorID: 0, userID: gameId }), [update]: gameResult() },
             `  ${qrLink}\n`
         );
@@ -414,7 +414,7 @@ describe("in-game sync", () => {
             },
         }).commit();
 
-        const result = await gameSync(paths, [], {
+        const result = await gameSync(paths, ["--no-upload"], {
             [update]: gameResult(),
             [lxnsToken]: () => {
                 const store = openStore(paths);
@@ -530,7 +530,7 @@ describe("in-game sync", () => {
             },
         }).commit();
 
-        const result = await gameSync(paths, [], {
+        const result = await gameSync(paths, ["--no-upload"], {
             [update]: gameResult(),
             [lxnsPlayer]: jsonResponse({ success: false, message: access }, 403),
             [lxnsToken]: jsonResponse(

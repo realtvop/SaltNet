@@ -213,7 +213,7 @@
 - [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
 - [x] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [x] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
-- [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
+- [x] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
@@ -1091,3 +1091,18 @@
     - P4-1 的范围改了：只做 `ingame check-login`，不做 `clear-tickets`。网页端在 1667dd2d（2026-01-12）把「清理补偿倍券」和「预览倍券」的菜单都注释掉了，CLI 不再提供网页端已经隐藏的账号操作。所以 `ingame` 命令组的说明只写 `check-login` 随后加入，计划里 P4-1 的标题也改了。设计 3.2 和 5.4 由 P4-1 修改。
     - 我还改了 `--overwrite` 的 fix：以 `-` 开头的文件名写成 `./<文件>`，以 `-` 开头的 `--user` 值写成 `--user=`，这样打印出的命令能直接运行。测试会把 fix 拆开再跑一遍。
     - 变异测试：CLI 19 个，core 8 个。第一轮 CLI 有 4 个存活：路径中间是文件（`ENOTDIR`）、没有角色列表、fix 里的 `--user`、按字节算大小。core 有 3 个存活：成绩率四舍五入、道具种类取列表位置、`detailed ?? {}`。前 6 个补了测试，连同上一条新加的 2 个变异都被杀掉。`detailed ?? {}` 是等价变异。
+
+96. **P3-10 的实现（2026-11-23）**：
+    - 分工：Codex（gpt-6.2-sol）写，我应用、检查并做变异测试。
+    - 舞萌全量或快速更新在本地事务提交后，仍在同一把用户同步锁下，按水鱼、落雪的顺序上传游戏成绩。和网页端一样：只在舞萌更新后上传；快速更新补全的成绩不上传，两边收到的都是补全前的游戏记录；水鱼用 Import-Token 收原始记录，落雪收转换后的 `{ scores }`。上传给谁由 core 决定（有 Import-Token 才传水鱼，有落雪访问令牌才传落雪），CLI 把 core 的回调先排进队列，提交后再发。落雪用 `credentials.json` 里与该落雪账号匹配的授权，访问令牌过期时先刷新。
+    - 每个目标单独写一条 `sync_runs`（kind 为 `upload`，source 为目标），摘要只有记录条数。
+    - 上传失败不影响同步结果：`data.uploads` 记 `{target, ok, error}`，并加一条 `UPLOAD_FAILED` 警告。401 和 403 换成重新绑定的 fix：水鱼报 `NOT_BOUND`，落雪报 `LXNS_REAUTH_REQUIRED`。错误里只带状态码和结构化的错误码，不带响应正文或原因。
+    - 上传请求只发一次，不重试，也不跟随重定向（重定向可能把带凭据的请求转给别处）。落雪令牌刷新同样不跟随重定向。
+    - `--no-upload` 关闭上传，这时 `uploads` 是空数组。命令的副作用级别仍是 `account`，因为带二维码时会登录账号；上传本身属于 5.4 的「远端」。
+    - 我改的：同步写入本地之后再出错（例如上传时同步锁失效），失败处理不再附上「尝试其他已绑定来源」，错误信息前面加上「同步结果已写入本地，之后出错：」。原来的写法会让人以为同步失败、换个来源重来。
+    - 上传时同步锁失效：不再发后面的请求，命令报 `INTERNAL`。这条上传的 `sync_runs` 留在 `running`，下一个拿到这把锁的进程会把它标成 `interrupted`。本地同步已经提交，不受影响。
+    - 变异测试：30 个，第一轮 11 个存活。补了 5 组测试（401 和 403 改成重新绑定、网络错误的信息、本地错误保留原来的错误码、落雪授权缺 `tokenType`、上传时锁失效），杀掉其中 8 个。上一条改动加的 3 个变异也都被杀掉。剩下 3 个：
+        - 非舞萌来源也注册上传回调：等价变异，core 只在 `syncFromInGame` 里调用这两个回调。
+        - 提交后不清空 `runId`：等价变异，失败处理对已经结束的 run 调 `finishRun` 会抛错，那里的错误本来就被忽略。
+        - 每次上传请求前的锁检查：测试触达不到。一个目标里排在上传请求前面的只有落雪令牌刷新，而 `lxnsAccessToken` 刷新后自己会检查锁。保留它作为防御。
+    - 检查时发现：`sync` 和 `user bind` 相关的几条 fix 不能照原样运行。以 `-` 开头的 uid 会被当成选项，`df-token` 少了 `-`，`df-name` 少了用户名，没有来源时只印 `user bind <用户>`。这些在 P4-1 之后单独的一步 P3-10b 里修。

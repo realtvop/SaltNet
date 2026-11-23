@@ -2,11 +2,12 @@
  * The sync command: fetches scores from the game, LXNS or Diving Fish (design 5.1).
  */
 import type { ChartRow } from "../catalog/chartRow";
-import type { SyncChangeItem, SyncData } from "../sync/types";
+import type { SyncChangeItem, SyncData, SyncUploadResult } from "../sync/types";
 import { chartRowSchema, chartScoreSchema } from "../catalog/schemas";
-import { usageError } from "../errors";
-import { anything, extend, int, list, nullable, object, str, strEnum } from "../output/schema";
+import { ERROR_CODES, usageError } from "../errors";
+import { bool, extend, int, list, nullable, object, str, strEnum } from "../output/schema";
 import { executeSync } from "../sync/execute";
+import { UPLOAD_TARGETS } from "../sync/types";
 import { USER_OPTION } from "./describe";
 import { defineCommand } from "./registry";
 
@@ -47,6 +48,18 @@ const syncChangeItemSchema = extend<SyncChangeItem, ChartRow>(
     { description: "一个有成绩变化的谱面及变动前后的成绩" }
 );
 
+const syncUploadSchema = object<SyncUploadResult>(
+    {
+        target: strEnum(UPLOAD_TARGETS, "上传目标"),
+        ok: bool("上传是否成功"),
+        error: nullable(
+            object({ code: strEnum(ERROR_CODES, "上传错误码"), message: str("上传错误说明") }),
+            "上传失败的原因；成功时为 null"
+        ),
+    },
+    { description: "一次自动上传的结果" }
+);
+
 export const syncDataSchema = object<SyncData>(
     {
         user: syncUserSchema,
@@ -60,7 +73,7 @@ export const syncDataSchema = object<SyncData>(
         changes: list(syncChangeItemSchema, "有成绩变化的谱面列表，默认最多 20 条；首次同步时为空"),
         changesTotal: int("有成绩变化的谱面总数"),
         missing: int("曲库中缺少的谱面变化数"),
-        uploads: list(anything("上传目标结果"), "自动上传到第三方服务的结果；本步骤暂为空数组"),
+        uploads: list(syncUploadSchema, "自动上传到已绑定服务的结果，水鱼在前，落雪在后"),
     },
     { description: "成绩同步结果" }
 );
@@ -70,7 +83,7 @@ export const sync = defineCommand(
         name: "sync",
         summary: "从舞萌、落雪或水鱼同步成绩",
         description:
-            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。",
+            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。舞萌更新后会向已绑定的水鱼和落雪上传游戏成绩，可用 --no-upload 关闭。",
         category: "account",
         effect: "account",
         output: "object",
@@ -100,6 +113,11 @@ export const sync = defineCommand(
             qr: {
                 kind: "credential",
                 description: "从 stdin 读取舞萌二维码扫描结果或页面链接，进行全量更新",
+            },
+            upload: {
+                kind: "boolean",
+                default: true,
+                description: "舞萌更新后自动上传到已绑定的服务，用 --no-upload 关闭",
             },
         },
         dataSchema: syncDataSchema,

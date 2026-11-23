@@ -3,12 +3,22 @@
  */
 import type { ChartRow } from "../catalog/chartRow";
 import type { ChartScoreRow } from "../catalog/chartScore";
+import type { ErrorCode } from "../errors";
 
 export type CliSyncSource = "auto" | "ingame" | "lxns" | "df-token" | "df-name";
 
 export type ResolvedSyncSource = Exclude<CliSyncSource, "auto">;
 
 export type SyncMode = "full" | "fast" | "public-b50";
+
+export const UPLOAD_TARGETS = ["diving-fish", "lxns"] as const;
+export type UploadTarget = (typeof UPLOAD_TARGETS)[number];
+
+export interface SyncUploadResult {
+    readonly target: UploadTarget;
+    readonly ok: boolean;
+    readonly error: { readonly code: ErrorCode; readonly message: string } | null;
+}
 
 export interface SyncCounts {
     readonly charts: number;
@@ -40,5 +50,5 @@ export interface SyncData {
     readonly changes: readonly SyncChangeItem[];
     readonly changesTotal: number;
     readonly missing: number;
-    readonly uploads: readonly unknown[];
+    readonly uploads: readonly SyncUploadResult[];
 }
