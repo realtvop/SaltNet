@@ -239,7 +239,8 @@ SaltNet is a three-package pnpm workspace:
           `--no-upload` disables uploads. Failures appear in `uploads` and as `UPLOAD_FAILED`
           warnings while the local sync remains successful.
           `--all` runs the same sync for each user in stored order, skips manual-update users,
-          and includes each user's result or error and warnings. `--dry-run` reports the source,
+          includes each user's result or error and warnings, and warns `SOME_FAILED` when any user
+          fails. `--dry-run` reports the source,
           mode, upload targets and side-effect level without network, stdin or local writes.
     - `src/guide/` has the hand-written parts of the guide (`handwritten.ts`: the rules, where the
       usual questions are answered, the glossary of players' words, and the skill's name and
@@ -422,20 +423,21 @@ SaltNet is a three-package pnpm workspace:
         - `time.ts`: `parseTime` reads ISO 8601 times, in the machine's zone when written without
           one; `parseTimeOption` turns anything else into `USAGE`; `parseSinceOption` also takes a
           positive number of days or hours counted back from now, such as `7d` or `24h`.
-    - `src/users/` is the only writer of the user tables. It validates token-free raw users and
-      score events, projects their typed copies, assigns catalog chart keys, preserves user order,
-      provides raw-user, row-count and event reads, and shapes the credential-free rows used by
-      `user` and `status`. Replacing music recomputes every stored user chart key in the catalog
-      transaction. `rows.ts` also gives `userForCoreScores`, a copy of a user without the raw score
-      and rating-history values core cannot look up, which the score commands pass to core;
-      `users.raw` and exports keep them.
+    - `src/users/` is the only writer of the user tables (`repository.ts`). It validates token-free
+      raw users and score events, projects their typed copies, assigns catalog chart keys,
+      preserves user order, provides raw-user, row-count and event reads, and shapes the
+      credential-free rows used by `user` and `status` (`view.ts`). Replacing music recomputes every
+      stored user chart key in the catalog transaction. `rows.ts` also gives `userForCoreScores`,
+      a copy of a user without the raw score and rating-history values core cannot look up, which
+      the score commands pass to core; `users.raw` and exports keep them.
         - `bindIdentity.ts` previews an identity replacement against the same row fingerprint as
           `user remove` and stages credential changes before the SQLite write. The repository
           replaces the user in its existing slot and cascades deletion of the old user's rows.
         - `lxnsBind.ts` starts the OAuth transaction, checks the callback under the user's sync
-          lock, and saves the checked exchange privately for 15 minutes. `lxns --yes` completes a
-          pending identity change from that exchange. It uses the token's profile claims, like the
-          web app, and creates no `sync_runs` entry.
+          lock, and saves the checked exchange privately for 15 minutes.
+          `user bind <user> lxns --yes <code>` completes a pending identity change from that
+          exchange. It uses the token's profile claims, like the web app, and creates no
+          `sync_runs` entry.
         - `scores.ts` reads one selected user's score source, play-count estimates and B50 positions
           once for chart rows (keeping that normal B50 selection, which every `gain` is computed
           against), and turns a stored score into the core `ChartScore` the collection functions
@@ -447,7 +449,7 @@ SaltNet is a three-package pnpm workspace:
     - `src/favorites/repository.ts` is the only writer of the favorite tables and keeps their
       positions contiguous.
     - `src/sync/` holds score syncing, uploads, the `sync_runs` journal, sync locks and token refresh.
-        - `types.ts` defines sync options, result data shapes, change items, sources and modes.
+        - `types.ts` defines sync result data shapes, change items, sources and modes.
         - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`)
           and builds credential-bearing user working copies for core.
         - `clients.ts` constructs `SyncClients` with core clients and network retries, wraps calls to
@@ -480,10 +482,9 @@ SaltNet is a three-package pnpm workspace:
           It auto-renews while active, marks abandoned runs as interrupted upon taking the lock, and
           protects concurrent mutations.
         - `lxnsToken.ts` refreshes LXNS access tokens under the caller's sync lock (`lxnsAccessToken`),
-          used by `sync` before score requests. It uses settings `lxns.refreshTokenDays` and
-          `lxns.expiringWarnDays`. Under the account rule, it writes refreshed tokens
-          (`lxnsAuthorization`, `lxnsAccountId`, `lxnsIssuedAt`) conditionally only if the stored entry
-          still matches the refreshed authorization's account and refresh token, and on
+          used by `sync` and uploads before requests. Under the account rule, it writes refreshed
+          tokens (`lxnsAuthorization`, `lxnsAccountId`, `lxnsIssuedAt`) conditionally only if the
+          stored entry still matches the refreshed authorization's account and refresh token, and on
           `invalid_grant` or identity change clears credentials only if the entry still matches.
     - `tests/` holds the Vitest suite.
         - `harness.ts` runs a command line in-process with captured output; `createHarness` has no

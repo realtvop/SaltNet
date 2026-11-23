@@ -222,7 +222,7 @@
 - [x] P3-15 `feat(cli): confirm identity changes on bind`：`hasStrongIdentityChanged`；按内容绑定的确认、原位换成新 uid、清空旧成绩和历史、凭据跟着搬（决定 102）〔新〕
 - [x] P3-15b `feat(cli): follow sync.qrOtherAccount on qr sync`：「二维码属于另一个账号」的处理做成配置项〔新〕
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
-- [ ] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
+- [x] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
 
 ### P4 账号操作和收尾
 
@@ -1210,3 +1210,16 @@
     - `ingame check-login` 在两种设置下都拒绝别的账号的二维码（它只核对，不改数据）；`--dry-run` 和 `--all` 不变。
     - 设计 5.1 写了两种设置；待确认 5 改成「已做成配置项，默认和网页端一致，默认值要不要改成 `error` 仍待定」。指南的「更新一下成绩」加了一句。
     - 变异测试：12 个，全部杀掉。它们覆盖：两种设置各自的行为（`error` 不再拒绝、`rewrite` 也拒绝），拿锁前后的两次检查和锁内用哪个 ID，警告是否给出、按哪个 ID 决定、带不带 `fix`，拒绝时的 `fix` 是否带上、是否把默认用户写成 `0`，存下的游戏 ID 是否改写，首次扫码是否被当成换账号。
+
+104. **P3-17 的实现（2026-11-24）**：
+
+
+    - 分工：Gemini 做（〔简单〕），15 分钟，只改 `AGENTS.md`：对照代码核对 `cli/` 那一段里 P3 新增和改过的条目。
+    - 它改了 5 处，我逐条对过代码，都对：
+        - `sync --all` 有用户失败时给 `SOME_FAILED` 警告。
+        - `src/users/` 写明写入在 `repository.ts`，给 `user` 和 `status` 的行在 `view.ts`。
+        - `lxns --yes` 写成完整的命令。Gemini 写的是 `user bind lxns --yes`，我补上了用户和确认码：`user bind <user> lxns --yes <code>`。
+        - `sync/types.ts` 里没有同步选项的类型，去掉了这一说。
+        - `lxnsToken.ts` 也给上传用。`lxns.refreshTokenDays` 和 `lxns.expiringWarnDays` 其实是 `users/view.ts` 给 `status` 算凭据状态时用的（`status` 那条已经写了），从这条里去掉。
+    - Gemini 顺带指出：`user bind` 的说明里「落雪确认只需 lxns --yes <确认码>」没写全，代理可能照着去运行一个并不存在的顶层命令 `lxns`。这是命令说明，不属于 `AGENTS.md`，留到 P3 整体审查的修复里一起改。
+    - 测试：只改文档，按 finish.sh 跑全部检查。
