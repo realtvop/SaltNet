@@ -212,7 +212,7 @@
 - [x] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
 - [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
 - [x] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
-- [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
+- [x] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
@@ -1056,4 +1056,25 @@
     - 没验证：用同一个落雪 client 再授权一次，网页端原来的授权会不会失效（设计 5.2「需要实测」）。列入手动测试清单。
     - 我改的：`user bind` 的错误列表里删掉了多写的 `INTERNAL`（每个命令都隐含它）。
     - 变异测试：38 个变异，第一轮杀掉 20 个。我补了这些测试：invalid_grant、没有 OAuth 正文的 5xx、200 正文里的 OAuth 错误，三种拒绝都恢复原记录；请求不跟随重定向；id 为 0、小数或超出安全整数、名字不是字符串的令牌被拒；开始授权时撞上同步锁；兑换期间丢了凭据锁（要求重新授权）或同步锁（保留 token，同一链接继续）；只缺 `lxns.redirectUri`；`--callback` 用于其他来源、`lxns` 带值参数、离线完成都报 `USAGE`；短到被 `JSON.parse` 整段引用的凭据文件。补完后 35 个被杀。剩下 3 个等价或测不到：暂存的 token 和签发时间总是一起写，`!token` 被签发时间的检查盖住；拿到同步锁后到第一次检查之间没有任何等待，单进程测不到；`validateLXNSOAuthTransaction` 返回的就是原对象。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+94. **P3-9 的实现（2026-11-23）**：
+    - 分工：这一步是〔新〕，由 Codex（gpt-6.2-sol）写，和 P3-13 并行。
+    - `sync --qr -` 从 stdin 读二维码或二维码页面链接，做全量更新。不带 `--qr` 时，存有舞萌 ID 的用户做快速更新。`auto` 优先选启用的舞萌账号。既没有 ID 又没给二维码，报 `QR_REQUIRED`，fix 指向选中的用户。
+    - 二维码先用 `GetQRInfo` 查出所属账号。拿同步锁之前查一次，拿到锁后再和锁内读到的用户比一次；属于另一个舞萌账号就报 `USAGE`（身份确认留给 P3-15）。
+    - 带二维码的请求不走核心的 SaltNet 客户端（它失败后会换备用地址重发），改由 `postQrGameApi` 发：只发一次，不重试，不换备用地址，不跟随重定向。服务端说二维码无效或过期，报 `QR_INVALID`；连接失败或超时报不可重试的 `NETWORK`，超时的 fix 指向对应的超时设置。
+    - 快速更新的 UpdateUser 用 `network.updateTimeoutMs`，可以重试一次，也可以换备用地址（请求里只有 ID）。补全按网页端的顺序：先落雪（需要时在同一把同步锁下刷新 token），失败或没绑再用水鱼 Import-Token，都没有就只存游戏数据。
+    - 返回的账号与本次同步的账号不同，报 `UPSTREAM_ERROR`。返回的成绩里出现任何凭据（二维码、Import-Token、落雪 token，包括同步中刷新得到的新 token），也报 `UPSTREAM_ERROR`，不保存。
+    - 舞萌来源的错误不带 cause 和响应内容，因为里面可能有二维码或玩家 ID。进度只打固定文字的行。显示名就是玩家 ID 的老用户，在进度、错误和日志里改用网页端的 `wmc`。`sync_runs` 的 mode 记 `full` 或 `fast`。命令的副作用等级改为 `account`。
+    - 和网页端的差别：网页端在存有 ID 时，第一次更新也可能要二维码；CLI 按设计只要 ID。上传仍返回 `uploads: []`，留给 P3-10。
+    - 已知不足：快速更新超时时，核心客户端丢掉了原始错误，CLI 只报「连接舞萌服务失败」，不提示调大 `network.updateTimeoutMs`。二维码请求超时会提示。
+    - 变异测试：31 个变异，第一轮杀掉 21 个。我补了这些测试：
+        - 二维码请求超时时，fix 指向的设置（查询用 `network.timeoutMs`，登录用 `network.updateTimeoutMs`）；
+        - 后端返回 `QR_INVALID` 代码、非零 errorID 或英文的过期消息，都报 `QR_INVALID`；
+        - `GetQRInfo` 返回 0、负数、小数、超出安全整数或字符串形式的 ID，或者缺 `errorID`，都在登录前报 `UPSTREAM_ERROR`；
+        - 全量和快速更新返回另一个账号；
+        - 返回的成绩里含同步中刷新得到的落雪 token；
+        - 快速更新按 `network.updateTimeoutMs` 等待，而不是 `network.timeoutMs`；
+        - 快速更新两个地址都返回 503（可重试的 `UPSTREAM_ERROR`），或者都连不上（`NETWORK`）；
+        - 其他来源失败时，fix 建议舞萌来源。
+    - 补完后 30 个被杀。剩下 1 个是等价变异：舞萌来源的错误不带 cause，但 CLI 从不输出 cause（`--verbose` 只给 `INTERNAL` 打印它自己的栈，日志只存错误码和消息），所以去掉这层防护看不出区别。
     - 按决定 66 不单独送审，并入 P3 的整体审查。

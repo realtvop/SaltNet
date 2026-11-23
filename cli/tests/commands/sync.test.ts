@@ -100,27 +100,6 @@ describe("saltnet sync", () => {
         expect(result.requests).toHaveLength(0);
     });
 
-    it("rejects --source ingame as USAGE", async () => {
-        const paths = makeHome();
-        const u = sampleUser("user-1", "Player 1");
-        await seedScoreUsers(paths, [u]);
-        const result = await commandIn(paths, "sync", ["--source", "ingame"]);
-        expect(result.code).toBe(2);
-        expect(result.json.error.code).toBe("USAGE");
-        expect(result.json.error.message).toContain("后续版本");
-    });
-
-    it("rejects auto when user only has inGame configured", async () => {
-        const paths = makeHome();
-        const u = user("user-ig", "InGame Player");
-        u.inGame = { id: 12345, enabled: true, useFastUpdate: false };
-        await seedScoreUsers(paths, [u]);
-        const result = await commandIn(paths, "sync", ["--source", "auto"]);
-        expect(result.code).toBe(2);
-        expect(result.json.error.code).toBe("USAGE");
-        expect(result.json.error.message).toContain("后续版本");
-    });
-
     it("fails with NOT_BOUND when user has no bound credentials or names", async () => {
         const paths = makeHome();
         const u = user("user-unbound", "Unbound Player");
@@ -1013,7 +992,7 @@ describe("saltnet sync", () => {
     it("names a user other than the default one in every command it prints", async () => {
         const paths = makeHome();
         const second = sampleUser("user-second", "Second");
-        second.inGame = { id: 12345678, name: null, enabled: true, useFastUpdate: false };
+        second.inGame.enabled = true;
         await seedScoreUsers(paths, [sampleUser("user-first", "First"), second]);
         seedCredentials(paths, {
             "user-second": {
@@ -1028,9 +1007,9 @@ describe("saltnet sync", () => {
         });
 
         const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"]);
-        expect(ingame.json.error.code).toBe("USAGE");
-        expect(ingame.json.error.fix).toContain(
-            "saltnet sync --user user-second --source df-token"
+        expect(ingame.json.error.code).toBe("QR_REQUIRED");
+        expect(ingame.json.error.fix).toBe(
+            "saltnet sync --user user-second --source ingame --qr -"
         );
 
         const lxns = await commandIn(paths, "sync", ["--user", "Second", "--source", "lxns"]);

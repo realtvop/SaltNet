@@ -211,12 +211,13 @@ SaltNet is a three-package pnpm workspace:
           options; v0 users get stable uids from the file digest and their position. `export` reads
           users and events in one `Store.read`. Both keep or restore an LXNS authorization only for
           the LXNS account it was stored for.
-        - `sync.ts` is the `sync` command: fetches scores from Diving Fish (import token or username
-          with backend fallback to public B50, warning `PUBLIC_B50_ONLY`) or LXNS (matching
-          authorization) and writes them to SQLite (users, scores, b50_snapshot, rating_history,
-          score_events) under the sync lock, records a `sync_runs` journal entry, and reports score
-          counts, rating before/after, and up to 20 score changes ordered by rating gain; in-game source
-          and uploads are deferred to later steps.
+        - `sync.ts` fetches scores from the game, LXNS (matching authorization), or Diving Fish
+          (import token or username with a public B50 fallback and the `PUBLIC_B50_ONLY` warning).
+          Auto picks the enabled game account first. `--qr -` reads a QR code or link from stdin for
+          a full game update. A fast game update uses the stored ID and supplements the game
+          records with LXNS or the Diving Fish import token. The sync lock protects the SQLite
+          transaction and the `sync_runs` journal. The result reports counts, rating before and
+          after, and up to 20 changes ordered by rating gain. Uploads are deferred to P3-10.
     - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
       registry-generated Markdown (`markdown.ts`).
     - `src/output/` turns a command's result into output: the versioned JSON envelope
@@ -404,19 +405,23 @@ SaltNet is a three-package pnpm workspace:
       positions contiguous.
     - `src/sync/` holds score syncing, the `sync_runs` journal, sync locks and token refresh.
         - `types.ts` defines sync options, result data shapes, change items, sources and modes.
-        - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`),
-          builds credential-bearing user working copies for core, and checks expired LXNS tokens.
+        - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`)
+          and builds credential-bearing user working copies for core.
         - `clients.ts` constructs `SyncClients` with core clients and network retries, wraps calls to
-          capture upstream errors, and maps them to `CliError`.
+          capture upstream errors, and maps them to `CliError`. Game score reads use
+          `network.updateTimeoutMs` and the LXNS supplement refreshes authorization on demand.
+        - `ingame.ts` reads and normalizes the QR input, checks its account with `GetQRInfo` before
+          login, and sends QR requests once with safe error messages and no fallback replay.
         - `changes.ts` calculates score change items between before and after, orders by rating
           gain, and computes summary counts (`charts`, `added`, `improved`).
         - `storedUser.ts` (`applySyncToStoredUser`) applies an update to a stored user as the web app
           does: core reads the copy without the records it cannot look up, the update replaces
           `detailed` and `b50` only when it has them, and every other part of the stored data stays
           as it was.
-        - `execute.ts` coordinates sync execution: acquires `withSyncLock`, records `beginRun`,
-          fetches scores, writes transactionally with `applySyncToStoredUser` and
-          `buildScoreHistoryBatchEvents`, records `finishRun`, and formats the returned `data`.
+        - `execute.ts` checks the QR account before taking `withSyncLock` and checks it again
+          against the user read under the lock. It starts the journal with `beginRun`, fetches
+          scores, and writes the update, score events and successful `finishRun` in one
+          transaction using `applySyncToStoredUser` and `buildScoreHistoryBatchEvents`.
         - `journal.ts` is the sole writer of the `sync_runs` table (`beginRun`, `finishRun`,
           `recordRun`, `readRuns`). It checks summaries recursively against credential keywords and
           rejects non-plain JSON values, ensuring no token or secret is ever recorded.

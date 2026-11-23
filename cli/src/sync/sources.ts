@@ -52,9 +52,12 @@ export function buildUserForCore(storedUser: User, paths: Pick<RuntimePaths, "cr
  */
 export function getOtherBoundSources(
     userForCore: User,
-    excludeSource: ResolvedSyncSource | "ingame" | null
+    excludeSource: ResolvedSyncSource | null
 ): ResolvedSyncSource[] {
     const others: ResolvedSyncSource[] = [];
+    if (userForCore.inGame.enabled && userForCore.inGame.id && excludeSource !== "ingame") {
+        others.push("ingame");
+    }
     if (userForCore.lxns?.auth && excludeSource !== "lxns") {
         others.push("lxns");
     }
@@ -89,27 +92,19 @@ export function syncUserRef(target: { readonly index: number; readonly uid: stri
 export function resolveSyncSource(
     userForCore: User,
     target: { readonly index: number; readonly uid: string },
-    requestedSource: CliSyncSource,
-    _now?: number
+    requestedSource: CliSyncSource
 ): ResolvedSyncSource {
-    const userSummary = { index: target.index, uid: target.uid };
     const userRef = syncUserRef(target);
     const displayName = getUserDisplayName(userForCore);
 
     if (requestedSource === "ingame") {
-        const others = getOtherBoundSources(userForCore, "ingame");
-        throw usageError("舞萌账号同步将在后续版本支持", {
-            fix: formatOtherSourcesFix(userSummary, others),
-        });
+        return "ingame";
     }
 
     if (requestedSource === "auto") {
         const picked = chooseSyncSource(userForCore);
         if (picked === "inGame") {
-            const others = getOtherBoundSources(userForCore, "ingame");
-            throw usageError("舞萌账号同步将在后续版本支持", {
-                fix: formatOtherSourcesFix(userSummary, others),
-            });
+            return "ingame";
         }
         if (picked === "lxns") {
             return "lxns";

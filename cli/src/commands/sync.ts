@@ -1,5 +1,5 @@
 /**
- * The sync command: fetches scores from Diving Fish or LXNS and writes them to SQLite (design 5.1).
+ * The sync command: fetches scores from the game, LXNS or Diving Fish (design 5.1).
  */
 import type { ChartRow } from "../catalog/chartRow";
 import type { SyncChangeItem, SyncData } from "../sync/types";
@@ -50,10 +50,10 @@ const syncChangeItemSchema = extend<SyncChangeItem, ChartRow>(
 export const syncDataSchema = object<SyncData>(
     {
         user: syncUserSchema,
-        source: strEnum(["lxns", "df-token", "df-name"], "本次使用的同步来源"),
+        source: strEnum(["ingame", "lxns", "df-token", "df-name"], "本次使用的同步来源"),
         mode: strEnum(
-            ["full", "public-b50"],
-            "同步模式：full 为完整详细数据，public-b50 为水鱼公开 B50"
+            ["full", "fast", "public-b50"],
+            "同步模式：full 为完整更新，fast 为舞萌快速更新，public-b50 为水鱼公开 B50"
         ),
         rating: syncRatingSchema,
         counts: syncCountsSchema,
@@ -68,11 +68,11 @@ export const syncDataSchema = object<SyncData>(
 export const sync = defineCommand(
     {
         name: "sync",
-        summary: "从落雪或水鱼同步成绩",
+        summary: "从舞萌、落雪或水鱼同步成绩",
         description:
-            "从落雪或水鱼拉取最新的成绩、B50 和 rating，写入本地数据库，并记录成绩变动历史。支持按优先级自动选择来源（auto），或指定数据源（lxns、df-token、df-name）。同步成功后记录操作日志，成绩变化按 rating 增幅倒序排列。",
+            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。",
         category: "account",
-        effect: "local",
+        effect: "account",
         output: "object",
         examples: [],
         errors: [
@@ -80,6 +80,8 @@ export const sync = defineCommand(
             "NOT_FOUND",
             "AMBIGUOUS_REF",
             "NOT_BOUND",
+            "QR_REQUIRED",
+            "QR_INVALID",
             "LXNS_REAUTH_REQUIRED",
             "NETWORK",
             "UPSTREAM_ERROR",
@@ -94,6 +96,10 @@ export const sync = defineCommand(
                 default: "auto",
                 valueName: "数据源",
                 description: "从哪个数据源同步成绩：auto 为按优先级自动选择",
+            },
+            qr: {
+                kind: "credential",
+                description: "从 stdin 读取舞萌二维码扫描结果或页面链接，进行全量更新",
             },
         },
         dataSchema: syncDataSchema,

@@ -7,8 +7,7 @@ import type {
     DivingFishRecordsResponse,
     DivingFishResponse,
 } from "@core/integrations/diving-fish/type";
-import type { LXNSScore, LXNSUser } from "@core/integrations/lxns/type";
-import type { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
+import type { LXNSAuth, LXNSScore, LXNSUser } from "@core/integrations/lxns/type";
 import type { SavedMusicList } from "@core/music/type";
 import type { LXNSScoreData, SyncClients } from "@core/sync/type";
 import type { User } from "@core/user/type";
@@ -25,10 +24,16 @@ import {
     LXNSPlayerApiError,
     requestLXNSPlayerApi,
 } from "@core/integrations/lxns/client";
-import { postSaltNetAPIJSON, SaltNetError } from "@core/integrations/saltnet/client";
+import {
+    postSaltNetAPIJSON,
+    SaltAPIEndpoints,
+    SaltNetError,
+} from "@core/integrations/saltnet/client";
 import { convertDetailed } from "@core/user/type";
 import { toHalfWidth } from "@core/util/toHalfWidth";
 import { CliError } from "../errors";
+import { createHttp } from "../runtime/http";
+import { postQrGameApi } from "./ingame";
 
 export interface SyncClientsWrapper {
     readonly clients: SyncClients;
@@ -40,16 +45,37 @@ export interface SyncClientsWrapper {
 export function createSyncClients(
     ctx: CommandContext,
     catalogMusicList: SavedMusicList["musicList"] | undefined,
-    now: () => number
+    now: () => number,
+    inGame?: {
+        readonly useQr: boolean;
+        readonly refreshLxns: (user: User) => Promise<LXNSAuth>;
+    }
 ): SyncClientsWrapper {
     let firstError: unknown = null;
     let lastReportMessage: string | null = null;
 
-    const httpRead: FetchLike = ctx.http({
-        timeoutMs: ctx.config.values.network.timeoutMs,
-        timeoutKey: "network.timeoutMs",
-        retry: true,
-    });
+    const network = ctx.config.values.network;
+    const readHttp = (timeoutKey: "network.timeoutMs" | "network.updateTimeoutMs"): FetchLike => {
+        const options = {
+            timeoutKey,
+            timeoutMs:
+                timeoutKey === "network.updateTimeoutMs"
+                    ? network.updateTimeoutMs
+                    : network.timeoutMs,
+            retry: true,
+        };
+        // An error from a game request can contain the player id in its body or transport details.
+        return inGame
+            ? createHttp({
+                  ...options,
+                  fetch: ctx.io.fetch,
+                  userAgent: network.userAgent,
+                  log: () => ctx.log("成绩读取请求失败，准备重试"),
+              })
+            : ctx.http(options);
+    };
+    const httpRead = readHttp("network.timeoutMs");
+    const httpGame = inGame && !inGame.useQr ? readHttp("network.updateTimeoutMs") : httpRead;
 
     const wrap = <T extends readonly unknown[], R>(
         fn: (...args: T) => Promise<R>
@@ -85,19 +111,23 @@ export function createSyncClients(
     };
 
     const fetchLXNSScore = wrap(async (user: User): Promise<LXNSScoreData> => {
-        const auth = user.lxns?.auth as { accessToken: string; tokenType: string };
+        const auth = inGame ? await inGame.refreshLxns(user) : user.lxns?.auth;
+        if (!auth?.accessToken || !auth.tokenType) {
+            throw new CliError("NOT_BOUND", "缺少落雪访问凭据");
+        }
+        const authHeader = { accessToken: auth.accessToken, tokenType: auth.tokenType };
         const lxnsOptions = {
             config: { lxnsBaseUrl: ctx.config.values.lxns.baseUrl },
             fetch: httpRead,
         };
         const userData = await requestLXNSPlayerApi<LXNSUser>(
-            auth,
+            authHeader,
             undefined,
             undefined,
             lxnsOptions
         );
         const lxScores = await requestLXNSPlayerApi<LXNSScore[]>(
-            auth,
+            authHeader,
             "scores",
             undefined,
             lxnsOptions
@@ -115,12 +145,15 @@ export function createSyncClients(
 
     const postGameAPIJSON = wrap(
         async <T>(endpoint: SaltAPIEndpoints, body: object): Promise<T> => {
+            if (inGame?.useQr && endpoint === SaltAPIEndpoints.UpdateUser) {
+                return (await postQrGameApi(ctx, endpoint, body)) as T;
+            }
             return postSaltNetAPIJSON<T>(endpoint, body, {
                 config: {
                     saltnetApiUrl: ctx.config.values.api.url,
                     saltnetApiFallbackUrl: ctx.config.values.api.fallbackUrl,
                 },
-                fetch: httpRead,
+                fetch: endpoint === SaltAPIEndpoints.UpdateUser ? httpGame : httpRead,
             });
         }
     );
@@ -149,6 +182,22 @@ export function mapSyncError(
 ): CliError {
     if (error instanceof CliError) {
         return error;
+    }
+
+    if (source === "ingame") {
+        if (error instanceof SaltNetError) {
+            if (error.kind === "network") {
+                return new CliError("NETWORK", "连接舞萌服务失败");
+            }
+            const status = error.status;
+            if (status !== undefined) {
+                return new CliError("UPSTREAM_ERROR", `舞萌服务返回了 HTTP ${status}`, {
+                    retryable: status >= 500 || status === 429,
+                    extra: { status },
+                });
+            }
+        }
+        return new CliError("UPSTREAM_ERROR", "舞萌服务返回了无法识别的数据");
     }
 
     if (error instanceof LXNSPlayerApiError) {

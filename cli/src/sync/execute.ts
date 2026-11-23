@@ -4,11 +4,12 @@
 import type { ScoreHistoryCandidate } from "@core/user/scoreHistory/type";
 import type { CommandContext, GlobalOptions } from "../commands/registry";
 import type { Warning } from "../output/warning";
-import type { CliSyncSource, ResolvedSyncSource, SyncData, SyncMode } from "./types";
+import type { CliSyncSource, SyncData, SyncMode } from "./types";
 import { randomUUID } from "node:crypto";
 import {
     syncFromDivingFishImportToken,
     syncFromDivingFishName,
+    syncFromInGame,
     syncFromLXNS,
 } from "@core/sync/sync";
 import { buildScoreHistoryBatchEvents } from "@core/user/scoreHistory/batch";
@@ -16,13 +17,14 @@ import { getUserDisplayName } from "@core/user/type";
 import { allChartEntries } from "../catalog/chartQuery";
 import { buildSongCatalog } from "../catalog/songs";
 import { useMetadata } from "../commands/metadata";
-import { CliError } from "../errors";
+import { CliError, usageError } from "../errors";
 import { resolveUser } from "../refs/user";
 import { appendScoreEvents, listUsers, readUser, saveUser } from "../users/repository";
 import { readRecordChartKeys, readUserScores } from "../users/scores";
 import { formatLocalTime } from "../util/time";
 import { computeSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
+import { assertQrAccount, readVerifiedQr } from "./ingame";
 import { beginRun, finishRun } from "./journal";
 import { withSyncLock } from "./lock";
 import { lxnsAccessToken } from "./lxnsToken";
@@ -45,6 +47,7 @@ export interface SyncCommandArgs {
     readonly options: {
         readonly user?: string;
         readonly source?: CliSyncSource;
+        readonly qr?: "-";
     };
     readonly global: GlobalOptions;
 }
@@ -56,27 +59,57 @@ export async function executeSync(
     const store = ctx.store();
     const users = listUsers(store);
     const targetUserRow = resolveUser(users, args.options.user);
-    const storedUser = readUser(store, targetUserRow.uid);
-    if (!storedUser) {
-        throw new CliError("NOT_FOUND", `找不到用户 ${targetUserRow.uid}`);
-    }
-
     const userRef = syncUserRef(targetUserRow);
-    const nowEpoch = ctx.io.now().getTime();
-    const userForCore = buildUserForCore(storedUser, ctx.paths);
-    const cliSource: ResolvedSyncSource = resolveSyncSource(
-        userForCore,
-        targetUserRow,
-        args.options.source ?? "auto",
-        nowEpoch
-    );
+    const requestedSource = args.options.source ?? "auto";
+    const mayUseInGame =
+        requestedSource === "ingame" || (requestedSource === "auto" && targetUserRow.inGameEnabled);
+    if (args.options.qr && !mayUseInGame) {
+        throw usageError("--qr - 只能用于舞萌同步");
+    }
+    const qr = args.options.qr ? await readVerifiedQr(ctx) : undefined;
+    if (qr) assertQrAccount(targetUserRow.inGameId, qr);
+
+    // Existing users without a name can have their player id as the display name. Keep it out
+    // of progress, errors and the journal for game syncs.
+    const displayName =
+        mayUseInGame && targetUserRow.displayName === String(targetUserRow.inGameId)
+            ? "wmc"
+            : targetUserRow.displayName;
 
     const syncLockUser = {
         uid: targetUserRow.uid,
-        name: targetUserRow.displayName,
+        name: displayName,
     };
 
     return withSyncLock(store, syncLockUser, async handle => {
+        const storedUser = readUser(store, targetUserRow.uid);
+        if (!storedUser) {
+            throw new CliError("NOT_FOUND", `找不到用户 ${targetUserRow.uid}`);
+        }
+        const userForCore = buildUserForCore(storedUser, ctx.paths);
+        const cliSource = resolveSyncSource(userForCore, targetUserRow, requestedSource);
+        if (qr) {
+            if (cliSource !== "ingame") throw usageError("--qr - 只能用于舞萌同步");
+            assertQrAccount(storedUser.inGame.id, qr);
+            userForCore.inGame = { ...userForCore.inGame, id: qr.userId };
+        } else if (cliSource === "ingame" && !userForCore.inGame.id) {
+            const userFlag =
+                targetUserRow.index !== 0 && targetUserRow.uid.startsWith("-")
+                    ? `--user=${userRef}`
+                    : `--user ${userRef}`;
+            throw new CliError("QR_REQUIRED", "首次舞萌同步需要二维码", {
+                fix: `saltnet sync ${userFlag} --source ingame --qr -`,
+            });
+        }
+        const inGameMode = cliSource === "ingame" ? (qr ? "full" : "fast") : null;
+        const gameCredentials = inGameMode
+            ? [
+                  qr?.code,
+                  userForCore.divingFish.importToken,
+                  userForCore.lxns?.auth?.accessToken,
+                  userForCore.lxns?.auth?.refreshToken,
+              ]
+            : [];
         let runId: number | undefined;
         let lastReportMsg: string | null = null;
 
@@ -86,9 +119,9 @@ export async function executeSync(
                 {
                     kind: "sync",
                     userUid: targetUserRow.uid,
-                    userName: targetUserRow.displayName,
+                    userName: displayName,
                     source: cliSource,
-                    mode: null,
+                    mode: inGameMode,
                 },
                 handle
             );
@@ -120,13 +153,34 @@ export async function executeSync(
                     ? storedUser.data.rating
                     : null;
 
-            const clientWrapper = createSyncClients(ctx, metaResult.catalog.music.musicList, () =>
-                ctx.io.now().getTime()
+            const clientWrapper = createSyncClients(
+                ctx,
+                metaResult.catalog.music.musicList,
+                () => ctx.io.now().getTime(),
+                inGameMode
+                    ? {
+                          useQr: qr !== undefined,
+                          refreshLxns: async () => {
+                              const auth = await lxnsAccessToken(
+                                  { ...ctx, log: () => ctx.log("已刷新落雪授权") },
+                                  store,
+                                  handle,
+                                  storedUser
+                              );
+                              gameCredentials.push(auth.accessToken, auth.refreshToken);
+                              return auth;
+                          },
+                      }
+                    : undefined
             );
 
             const syncOptions = {
                 clients: clientWrapper.clients,
                 report: (message: string, errorMsg?: string) => {
+                    if (inGameMode) {
+                        if (errorMsg) ctx.log("第三方成绩补全失败，继续舞萌快速更新");
+                        return;
+                    }
                     ctx.log(message);
                     if (errorMsg) {
                         lastReportMsg = errorMsg;
@@ -137,7 +191,25 @@ export async function executeSync(
             };
 
             let update = null;
-            if (cliSource === "lxns") {
+            if (cliSource === "ingame") {
+                ctx.log("正在同步舞萌成绩");
+                update = await syncFromInGame(userForCore, qr?.input, syncOptions);
+                if (update && update.userId !== userForCore.inGame.id) {
+                    throw new CliError("UPSTREAM_ERROR", "舞萌服务返回的账号与本次同步账号不符");
+                }
+                if (update) {
+                    const encodedUpdate = JSON.stringify(update);
+                    if (
+                        gameCredentials.some(
+                            secret =>
+                                secret &&
+                                encodedUpdate.includes(JSON.stringify(secret).slice(1, -1))
+                        )
+                    ) {
+                        throw new CliError("UPSTREAM_ERROR", "舞萌成绩响应包含凭据，无法保存");
+                    }
+                }
+            } else if (cliSource === "lxns") {
                 update = await syncFromLXNS(userForCore, syncOptions);
             } else if (cliSource === "df-token") {
                 update = await syncFromDivingFishImportToken(userForCore, syncOptions);
@@ -156,7 +228,7 @@ export async function executeSync(
             }
 
             const mode: SyncMode =
-                cliSource === "df-name" && !update.detailed ? "public-b50" : "full";
+                inGameMode ?? (cliSource === "df-name" && !update.detailed ? "public-b50" : "full");
 
             const newScoresCount = update.detailed
                 ? Object.keys(update.detailed).length
@@ -332,7 +404,9 @@ export async function executeSync(
                 fix: fixWithOthers,
                 retryable: mappedErr.retryable,
                 extra: mappedErr.extra,
-                cause: mappedErr.cause ?? (err instanceof Error ? err : undefined),
+                cause: inGameMode
+                    ? undefined
+                    : (mappedErr.cause ?? (err instanceof Error ? err : undefined)),
             });
 
             if (runId !== undefined) {

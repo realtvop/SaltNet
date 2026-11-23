@@ -6,9 +6,9 @@ import type { ChartScoreRow } from "../catalog/chartScore";
 
 export type CliSyncSource = "auto" | "ingame" | "lxns" | "df-token" | "df-name";
 
-export type ResolvedSyncSource = "lxns" | "df-token" | "df-name";
+export type ResolvedSyncSource = Exclude<CliSyncSource, "auto">;
 
-export type SyncMode = "full" | "public-b50";
+export type SyncMode = "full" | "fast" | "public-b50";
 
 export interface SyncCounts {
     readonly charts: number;
