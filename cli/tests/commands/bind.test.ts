@@ -1,5 +1,4 @@
 import type { User } from "@core/user/type";
-import type { Route } from "../mockHttp";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -16,7 +15,7 @@ import {
 } from "../../src/users/repository";
 import { commandIn } from "../commandRun";
 import { expectConforms } from "../dataSchema";
-import { jsonResponse, textResponse } from "../mockHttp";
+import { jsonResponse } from "../mockHttp";
 import { useTempHome } from "../tempHome";
 import { useTimeZone } from "../zone";
 
@@ -73,7 +72,7 @@ function readAllFiles(dir: string): { content: string; path: string }[] {
 }
 
 describe("user bind and unbind", () => {
-    it("binds in-game account with --id and refuses changing identity", async () => {
+    it("binds in-game account with --id and previews a different identity", async () => {
         const paths = makeHome();
         const store = openStore(paths);
         const user0 = makeUser("u0", {
@@ -103,13 +102,21 @@ describe("user bind and unbind", () => {
 
         // Re-binding the same id: changed is false, no write
         const dbMtimeBefore = statSync(paths.database).mtimeMs;
-        const rebind = await commandIn(paths, "user", ["bind", "u0", "ingame", "--id", "87654321"]);
+        const rebind = await commandIn(paths, "user", [
+            "bind",
+            "u0",
+            "ingame",
+            "--id",
+            "87654321",
+            "--yes",
+            "IGNORED",
+        ]);
         expect(rebind.code).toBe(0);
         expect(rebind.json.data.changed).toBe(false);
         expect(statSync(paths.database).mtimeMs).toBe(dbMtimeBefore);
         expectConforms(schemaOf("user bind"), rebind.json.data);
 
-        // Binding a different ID causes identity change -> USAGE error
+        // Binding a different ID requires confirmation
         const idChange = await commandIn(paths, "user", [
             "bind",
             "u0",
@@ -117,9 +124,8 @@ describe("user bind and unbind", () => {
             "--id",
             "12345678",
         ]);
-        expect(idChange.code).toBe(2);
-        expect(idChange.json.error.code).toBe("USAGE");
-        expect(idChange.json.error.message).toContain("绑定这个账号会改变玩家身份");
+        expect(idChange.code).toBe(6);
+        expect(idChange.json.error.code).toBe("CONFIRMATION_REQUIRED");
         // Stored user unchanged
         expect(readUser(store, "u0")!.inGame?.id).toBe(87654321);
     });
@@ -200,36 +206,21 @@ describe("user bind and unbind", () => {
         expect(expiredRes.code).toBe(4);
         expect(expiredRes.json.error.code).toBe("QR_INVALID");
 
-        // 3. Primary fails, fallback succeeds
-        let primaryCalls = 0;
-        let fallbackCalled = false;
-        let capturedBody: unknown;
-
-        const fallbackRoutes: Record<string, Route> = {
-            [`${SALTNET_API_URL}/getQRInfo`]: () => {
-                primaryCalls++;
-                return textResponse("Service Unavailable", 503);
-            },
-            [`${SALTNET_FALLBACK_URL}/getQRInfo`]: req => {
-                fallbackCalled = true;
-                capturedBody = JSON.parse(req.init?.body as string);
-                return jsonResponse({ errorID: 0, userID: 33334444 });
-            },
-        };
-
+        // The lookup sends only the final 64 characters, and never follows a redirect.
         const successRes = await commandIn(paths, "user", ["bind", "u0", "ingame", "--qr", "-"], {
             stdin: fakeQrInput,
-            network: fallbackRoutes,
-            env: {
-                SALTNET_API_URL,
-                SALTNET_API_FALLBACK_URL: SALTNET_FALLBACK_URL,
+            network: {
+                [`${SALTNET_API_URL}/getQRInfo`]: jsonResponse({ errorID: 0, userID: 33334444 }),
             },
+            env: { SALTNET_API_URL, SALTNET_API_FALLBACK_URL: SALTNET_FALLBACK_URL },
         });
         expect(successRes.code).toBe(0);
-        // The lookup is not retried: the primary is asked once, then the fallback.
-        expect(primaryCalls).toBe(1);
-        expect(fallbackCalled).toBe(true);
-        expect(capturedBody).toEqual({ qrCode: fakeQrInput.slice(-64) });
+        expect(successRes.requests).toHaveLength(1);
+        const request = successRes.requests[0];
+        expect(JSON.parse(request.init?.body as string)).toEqual({
+            qrCode: fakeQrInput.slice(-64),
+        });
+        expect(request.init).toMatchObject({ redirect: "manual" });
         expect(successRes.json.data.inGame.id).toBe(33334444);
         expect(readUser(store, "u0")!.inGame?.id).toBe(33334444);
         expectConforms(schemaOf("user bind"), successRes.json.data);
@@ -241,24 +232,24 @@ describe("user bind and unbind", () => {
             expect(file.content).not.toContain(secretText);
         }
 
-        // 5. Both primary and fallback failing -> NETWORK error
-        const bothFailRes = await commandIn(paths, "user", ["bind", "u0", "ingame", "--qr", "-"], {
-            stdin: validQr,
-            network: {
-                [`${SALTNET_API_URL}/getQRInfo`]: () => {
-                    throw new Error("connection failed");
+        const failed = await commandIn(
+            paths,
+            "user",
+            ["bind", "u0", "ingame", "--qr", "-", "--verbose"],
+            {
+                stdin: fakeQrInput,
+                network: {
+                    [`${SALTNET_API_URL}/getQRInfo`]: () => {
+                        throw new Error(fakeQrInput.slice(-64));
+                    },
                 },
-                [`${SALTNET_FALLBACK_URL}/getQRInfo`]: () => {
-                    throw new Error("fallback connection failed");
-                },
-            },
-            env: {
-                SALTNET_API_URL,
-                SALTNET_API_FALLBACK_URL: SALTNET_FALLBACK_URL,
-            },
-        });
-        expect(bothFailRes.code).toBe(5);
-        expect(bothFailRes.json.error.code).toBe("NETWORK");
+                env: { SALTNET_API_URL, SALTNET_API_FALLBACK_URL: SALTNET_FALLBACK_URL },
+            }
+        );
+        expect(failed.code).toBe(5);
+        expect(failed.json.error.code).toBe("NETWORK");
+        expect(failed.requests).toHaveLength(1);
+        expect(failed.stdout + failed.stderr).not.toContain(fakeQrInput.slice(-64));
     });
 
     it("binds diving fish token with df-token -, stores in credentials.json with mode 0600, and does not leak token", async () => {
@@ -796,7 +787,7 @@ describe("user bind and unbind", () => {
         expect(unknownUnbind.json.error.message).toContain("未知的数据来源");
     });
 
-    it("refuses identity change when df-name changes and in-game/lxns are not set", async () => {
+    it("previews identity change when df-name changes and in-game/lxns are not set", async () => {
         const paths = makeHome();
         const store = openStore(paths);
         const user = makeUser("u0", {
@@ -807,9 +798,8 @@ describe("user bind and unbind", () => {
         replaceUsers(store, [user], []);
 
         const res = await commandIn(paths, "user", ["bind", "u0", "df-name", "ChangedDFName"]);
-        expect(res.code).toBe(2);
-        expect(res.json.error.code).toBe("USAGE");
-        expect(res.json.error.message).toContain("绑定这个账号会改变玩家身份");
+        expect(res.code).toBe(6);
+        expect(res.json.error.code).toBe("CONFIRMATION_REQUIRED");
 
         // User df name remained unchanged
         expect(readUser(store, "u0")!.divingFish?.name).toBe("OriginalDFName");

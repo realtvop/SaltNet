@@ -219,7 +219,8 @@
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
 - [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
-- [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项〔新〕
+- [x] P3-15 `feat(cli): confirm identity changes on bind`：`hasStrongIdentityChanged`；按内容绑定的确认、原位换成新 uid、清空旧成绩和历史、凭据跟着搬（决定 102）〔新〕
+- [ ] P3-15b `feat(cli): follow sync.qrOtherAccount on qr sync`：「二维码属于另一个账号」的处理做成配置项〔新〕
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
 - [ ] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
 
@@ -1186,3 +1187,15 @@
     - 指南的例子是 `sync --all --dry-run`，所以 `sync` 不再是没有指南例子的命令。我在指南的「更新一下成绩」里加上了 `--dry-run` 和 `--all`，并改了设计 5.1 里 `--dry-run` 一段的措辞（原文读起来像「会读 stdin、会取锁」）。
     - 我补的测试：迁移 4 之前的布局上预览报 `NO_USER`、不迁移、不改文件；`--all` 里失败的用户保留自己的警告；同步中途抛出的非 CLI 异常带着 token 时，加 `--verbose` 也不会把 token 印出来。
     - 变异测试：25 个，杀掉 24 个。第一轮有 4 个没杀掉，补了上面 3 个测试后杀掉 3 个。剩下的是「immutable 读完后不核对文件有没有被并发写入改过」：它守的是读的同时有别的进程写入，测试没法稳定地造出这种竞争，留作已知缺口。
+
+102. **P3-15 的实现（2026-11-23）**：
+
+
+    - 分工：Codex（gpt-6.2-sol）写，我合入，补丁干净地打上了。计划里原来的 P3-15 拆成两步：这一步只做 `user bind` 换人时的确认；`sync --qr -` 扫到另一个账号的二维码时怎么办（`sync.qrOtherAccount`）放到 P3-15b，两步由 Codex 并行写。
+    - 判断换人和清空数据用网页端的 `hasStrongIdentityChanged` 和 `resetUserForNewIdentity`：游戏 id 或落雪 id 在绑定前后都有值且不同，就算换人；前后都没有这两个 id 时，两个非空的水鱼用户名不同才算。首次绑定和同一身份的绑定不用确认，传了 `--yes` 也照常执行。
+    - 换人要按设计 5.4 确认。确认状态包含来源、uid、和 `user remove` 同一份待删除行的摘要、目标身份；落雪还包含暂存兑换的过期时间，所以一个码只能确认它预览过的那次兑换。预览列出前后身份和要清掉的各表行数，不含凭据。
+    - `error.fix` 用稳定的 uid 指向用户。带 `--yes` 时先按 uid 精确查找，再走普通的用户引用，所以 uid 碰巧像序号（如 `1`）时也不会确认到别的用户身上；重排之后旧码因为 index 变了而失效。`ingame --qr -` 只发一次 `GetQRInfo`，确认命令改用 `--id <8 位 id>`，不用再扫码；以 `-` 开头的水鱼用户名在确认命令里放在 `--` 后面。
+    - 落雪：回调那次兑换完先用回调里的授权码检查账号资料没有回显它，检查过才把兑换结果连同 `profileChecked` 写进授权记录，从兑换起保留 15 分钟。`user bind <用户> lxns --yes <码>` 只认检查过的记录，不联网、不读 stdin；P3-13 写下的、没检查过的记录要重新授权。设计 5.2 的「换到 token 后先写进授权记录，再读取账号资料」相应改成先检查再写入。
+    - 确认后在一个事务里：照网页端清空玩家数据、换新 uid，`replaceUserIdentity` 删掉旧用户（子表级联删除）并在原位置插入新用户，结果带 `oldUid` 和 `newUid`。凭据跟着搬到新 uid，落雪授权只在属于这位用户的落雪账号时保留；旧 uid 待完成的落雪授权一并去掉。凭据文件在 SQLite 提交后才改名到位，这一步失败返回 `INTERNAL`，说明绑定已保存而凭据没更新。有同步在进行时拒绝。
+    - 指南：规则 8 加上「把用户绑定到另一个人的账号」；P3-12 时去掉的 `df-name` 例子补回来，并加上 `user bind 0 ingame --id 99990001` 和 `user bind 0 lxns`。Codex 给 `df-name` 例子起的名字是 `fake-new-diving-fish-name`，我换成了更像用户名的 `example_player`。
+    - 变异测试：19 个。第一轮有 6 个没杀掉：确认码不含目标身份、不含落雪兑换的过期时间，搬凭据时不检查落雪账号、不去掉旧 uid 待完成的授权，确认时接受没检查过的兑换，带 `--yes` 时不先按 uid 精确查找。我补了 6 个测试，对应这 6 处，重跑后全部杀掉。

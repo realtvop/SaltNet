@@ -374,6 +374,19 @@ export function saveUser(store: Store, user: User): void {
     });
 }
 
+/** Replaces one identity in its existing slot, cascading deletion of its child rows. */
+export function replaceUserIdentity(store: Store, oldUid: string, user: User): void {
+    assertStoredUser(user);
+    if (user.uid === oldUid) throw new Error("the replacement needs a new uid");
+    store.transaction(() => {
+        const removed = store.db
+            .prepare("DELETE FROM users WHERE uid = ? RETURNING position")
+            .get(oldUid) as { position: number } | undefined;
+        if (!removed) throw new Error("the identity to replace disappeared");
+        insertUserRows(store, buildUserRows(user, removed.position, loadMusic(store)?.music));
+    });
+}
+
 function setPositions(store: Store, uids: readonly string[]): void {
     if (uids.length === 0) return;
     const maximum = (

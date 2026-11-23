@@ -21,7 +21,6 @@ import {
     validateLXNSOAuthTransaction,
 } from "@core/integrations/lxns/oauth";
 import { applyLXNSAuth, LXNSTokenError } from "@core/integrations/lxns/token";
-import { hasStrongIdentityChanged } from "@core/user/scoreHistory/userIdentity";
 import { CliError, usageError } from "../errors";
 import {
     readCredentials,
@@ -32,8 +31,8 @@ import {
 import { assertNoSync, withSyncLock } from "../sync/lock";
 import { userBindCommand } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
-import { listUsers, readUser, readUserCounts, saveUser } from "./repository";
-import { userDetail } from "./view";
+import { confirmIdentityChange, writeBinding } from "./bindIdentity";
+import { readUser } from "./repository";
 
 export interface LxnsBindStart {
     authorizeUrl: string;
@@ -100,11 +99,13 @@ function readCallback(value: string, fix: string): LXNSOAuthCallback {
     }
 }
 
+type LxnsBindTransaction = PendingLxnsAuthorization & { profileChecked?: true };
+
 function writePending(
     ctx: CommandContext,
     current: CredentialsFile,
     state: string,
-    transaction: PendingLxnsAuthorization
+    transaction: LxnsBindTransaction
 ): CredentialsFile {
     const updated = {
         ...current,
@@ -187,11 +188,80 @@ function assertCredentialLock(lock: Lock, fix: string): void {
     }
 }
 
+function prepareLxnsBinding(
+    ctx: CommandContext,
+    store: Store,
+    uid: string,
+    current: CredentialsFile,
+    state: string,
+    authorization: LxnsBindTransaction,
+    given: string | undefined
+) {
+    const user = readUser(store, uid);
+    if (!user) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+    const { token, issuedAt, expiresAt, codeVerifier } = authorization;
+    const now = ctx.io.now().getTime();
+    const fix = restartBind(uid);
+    if (
+        !token ||
+        !Number.isSafeInteger(issuedAt) ||
+        !validateLXNSOAuthTransaction(authorization, now)
+    ) {
+        throw new CliError("LXNS_REAUTH_REQUIRED", "找不到此用户有效的落雪授权记录", { fix });
+    }
+
+    const lxns = profileFromToken(user, token, now, [codeVerifier], fix);
+    const nextUser = { ...user, lxns };
+    const reset = confirmIdentityChange(store, uid, user, nextUser, "lxns", given, expiresAt);
+    const pending = { ...current.pendingLxnsAuthorizations };
+    delete pending[state];
+    return {
+        user: nextUser,
+        changed: true,
+        reset,
+        credentials: {
+            ...current,
+            pendingLxnsAuthorizations: pending,
+            users: {
+                ...current.users,
+                [uid]: {
+                    ...current.users[uid],
+                    lxnsAuthorization: { ...token.auth, expiresAt: token.expiresAt },
+                    lxnsAccountId: lxns.id,
+                    lxnsIssuedAt: issuedAt,
+                },
+            },
+        },
+    };
+}
+
+/** A checked exchange can be confirmed without reading stdin or making a request. */
+export function confirmLxnsBind(ctx: CommandContext, store: Store, uid: string, given: string) {
+    const now = () => ctx.io.now().getTime();
+    function prepare() {
+        assertNoSync(store, uid, now);
+        const current = readCredentials(ctx.paths);
+        const exchanged = Object.entries<LxnsBindTransaction>(
+            current.pendingLxnsAuthorizations ?? {}
+        ).find(([, record]) => record.userUid === uid && record.profileChecked === true);
+        if (!exchanged) {
+            throw new CliError("LXNS_REAUTH_REQUIRED", "找不到此用户有效的落雪授权记录", {
+                fix: restartBind(uid),
+            });
+        }
+        const [state, authorization] = exchanged;
+        return prepareLxnsBinding(ctx, store, uid, current, state, authorization, given);
+    }
+    store.transaction(prepare);
+    return withCredentialsLock(store, () => writeBinding(ctx.paths, store, uid, "lxns", prepare));
+}
+
 export async function completeLxnsBind(
     ctx: CommandContext,
     store: Store,
     target: UserListRow,
-    value: string
+    value: string,
+    given?: string
 ) {
     const { uid, displayName } = target;
     const fix = restartBind(uid);
@@ -203,7 +273,8 @@ export async function completeLxnsBind(
         const user = readUser(store, uid);
         if (!user) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
         let current = readCredentials(ctx.paths);
-        const transaction = current.pendingLxnsAuthorizations?.[state];
+        const transaction: LxnsBindTransaction | undefined =
+            current.pendingLxnsAuthorizations?.[state];
         if (
             !transaction ||
             !validateLXNSOAuthTransaction(transaction, now()) ||
@@ -225,10 +296,13 @@ export async function completeLxnsBind(
         }
 
         const codeHash = createHash("sha256").update(code).digest("hex");
-        let token = transaction.token;
-        let issuedAt = transaction.issuedAt;
-        if (transaction.codeHash !== undefined || token) {
-            if (transaction.codeHash !== codeHash || !token || !Number.isSafeInteger(issuedAt)) {
+        let exchanged = transaction;
+        if (transaction.codeHash !== undefined || transaction.token) {
+            if (
+                transaction.codeHash !== codeHash ||
+                !transaction.token ||
+                !Number.isSafeInteger(transaction.issuedAt)
+            ) {
                 throw new CliError("LXNS_REAUTH_REQUIRED", "这次落雪授权无法继续，请重新授权", {
                     fix,
                 });
@@ -236,7 +310,7 @@ export async function completeLxnsBind(
         } else {
             sync.assertHeld();
             current = writePending(ctx, current, state, { ...transaction, codeHash });
-            token = await exchangeCode(
+            const token = await exchangeCode(
                 ctx,
                 code,
                 transaction,
@@ -247,53 +321,27 @@ export async function completeLxnsBind(
                 fix
             );
             assertCredentialLock(lock, fix);
-            issuedAt = now();
-            current = writePending(ctx, current, state, {
+            const issuedAt = now();
+            exchanged = {
                 ...transaction,
                 codeHash,
                 token,
                 issuedAt,
                 expiresAt: issuedAt + LXNS_OAUTH_LIFETIME,
-            });
+            };
         }
 
-        const lxns = profileFromToken(user, token, now(), [code, transaction.codeVerifier], fix);
-        const nextUser = { ...user, lxns };
-        if (hasStrongIdentityChanged(user, nextUser)) {
-            throw usageError(
-                "绑定这个账号会改变玩家身份；若要记录新玩家，请使用 saltnet user add 添加新用户"
-            );
+        if (!exchanged.profileChecked) {
+            // Check for a profile that echoes the callback code while the code is still in memory.
+            // A later --yes run can then trust the checked exchange without a copy of the callback.
+            profileFromToken(user, exchanged.token!, now(), [code, transaction.codeVerifier], fix);
+            exchanged = { ...exchanged, profileChecked: true };
+            current = writePending(ctx, current, state, exchanged);
         }
-        const pending = { ...current.pendingLxnsAuthorizations };
-        delete pending[state];
-        const staged = stageCredentials(ctx.paths, {
-            ...current,
-            pendingLxnsAuthorizations: pending,
-            users: {
-                ...current.users,
-                [uid]: {
-                    ...current.users[uid],
-                    lxnsAuthorization: { ...token.auth, expiresAt: token.expiresAt },
-                    lxnsAccountId: lxns.id,
-                    lxnsIssuedAt: issuedAt,
-                },
-            },
+        return writeBinding(ctx.paths, store, uid, "lxns", () => {
+            sync.assertHeld();
+            return prepareLxnsBinding(ctx, store, uid, current, state, exchanged, given);
         });
-        try {
-            store.transaction(() => {
-                sync.assertHeld();
-                saveUser(store, nextUser);
-            });
-            staged.commit();
-        } finally {
-            staged.discard();
-        }
-        const updated = listUsers(store).find(row => row.uid === uid)!;
-        return {
-            ...userDetail(updated, readUserCounts(store, uid)),
-            source: "lxns",
-            changed: true,
-        };
     }
 
     // Reserve the credential file across the single-use request and its checkpoint.

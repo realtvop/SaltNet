@@ -1,15 +1,12 @@
 import type { User } from "@core/user/type";
 import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { Store } from "../store/store";
 import type { LxnsBindStart } from "../users/lxnsBind";
 import type { UserDetail, UserRow } from "../users/view";
+import type { CommandContext } from "./registry";
 import { DivingFishError, fetchDivingFishRecords } from "@core/integrations/diving-fish/client";
-import {
-    postSaltNetAPIJSON,
-    SaltAPIEndpoints,
-    SaltNetError,
-} from "@core/integrations/saltnet/client";
+import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { normalizeQrCodeFromInput } from "@core/sync/qrCode";
-import { hasStrongIdentityChanged } from "@core/user/scoreHistory/userIdentity";
 import { userCountsSchema, userRowSchema } from "../catalog/schemas";
 import { CliError, usageError } from "../errors";
 import { anyOf, bool, extend, object, str } from "../output/schema";
@@ -20,10 +17,13 @@ import {
     updateCredentials,
     withCredentialsLock,
 } from "../runtime/credentials";
+import { postQrGameApi } from "../sync/ingame";
 import { assertNoSync } from "../sync/lock";
-import { completeLxnsBind, startLxnsBind } from "../users/lxnsBind";
+import { confirmIdentityChange, writeBinding } from "../users/bindIdentity";
+import { completeLxnsBind, confirmLxnsBind, startLxnsBind } from "../users/lxnsBind";
 import { listUsers, readUser, readUserCounts, saveUser } from "../users/repository";
 import { userDetail } from "../users/view";
+import { CONFIRM_OPTIONS } from "./confirm";
 import { defineCommand } from "./registry";
 
 const USER_POSITIONAL = {
@@ -55,6 +55,11 @@ export interface BoundUser extends UserDetail {
     changed: boolean;
 }
 
+interface BindResult extends BoundUser {
+    oldUid?: string;
+    newUid?: string;
+}
+
 const userDetailSchema = extend<UserDetail, UserRow>(
     userRowSchema,
     { counts: userCountsSchema },
@@ -76,17 +81,61 @@ function assertValidSource(source: string): asserts source is BindSource {
     }
 }
 
+type LocalBinding = { source: "ingame"; id: number } | { source: "df-name"; name: string };
+
+function bindLocal(
+    ctx: CommandContext,
+    store: Store,
+    uid: string,
+    binding: LocalBinding,
+    given: string | undefined
+) {
+    function prepare() {
+        const current = readUser(store, uid);
+        if (!current) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+
+        let credentials = binding.source === "df-name" ? readCredentials(ctx.paths) : undefined;
+        if (credentials?.users[uid]?.divingFishImportToken !== undefined) {
+            throw usageError(
+                "当前已绑定水鱼 Import-Token；若要改用用户名绑定，请先运行 saltnet user unbind <user> df-token"
+            );
+        }
+        const next: User = { ...current };
+        let changed: boolean;
+        if (binding.source === "ingame") {
+            next.inGame = { ...current.inGame, id: binding.id, enabled: true };
+            changed = current.inGame?.id !== binding.id || current.inGame?.enabled !== true;
+        } else {
+            next.divingFish = { ...current.divingFish, name: binding.name, importToken: null };
+            changed = current.divingFish?.name !== binding.name;
+        }
+
+        if (changed) assertNoSync(store, uid, () => ctx.io.now().getTime());
+        const reset = confirmIdentityChange(store, uid, current, next, binding.source, given);
+        if (reset) credentials ??= readCredentials(ctx.paths);
+        return { user: next, changed, reset, credentials: reset ? credentials : undefined };
+    }
+
+    // Reject a preview before acquiring the credential lock. Check it again in the write
+    // transaction because user edits, reorders, and sync may commit before we get that lock.
+    store.transaction(prepare);
+    return withCredentialsLock(store, () =>
+        writeBinding(ctx.paths, store, uid, binding.source, prepare)
+    );
+}
+
 export const userBind = defineCommand(
     {
         name: "user bind",
         summary: "绑定舞萌账号、水鱼或落雪数据源",
         description:
-            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（先生成授权链接，再用 --callback - 从 stdin 读取回调链接）。绑定账号若改变用户身份则拒绝操作。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
+            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（先生成授权链接，再用 --callback - 从 stdin 读取回调链接）。换人时预览将清除的数据，经用户同意后运行 error.fix。二维码预览的确认命令改用 --id；落雪确认只需 lxns --yes <确认码>。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
         category: "account",
         effect: "local",
         output: "object",
         positionals: [USER_POSITIONAL, SOURCE_POSITIONAL, VALUE_POSITIONAL],
         options: {
+            ...CONFIRM_OPTIONS,
             id: {
                 kind: "string",
                 valueName: "8位数字",
@@ -103,17 +152,23 @@ export const userBind = defineCommand(
         },
         examples: [
             {
-                command: "user bind 1 ingame --id 12345678",
-                description: "用游戏 UserID 给第二个用户绑定舞萌账号",
+                command: "user bind 0 ingame --id 99990001",
+                description: "预览更换舞萌账号；用 --qr - 查出 UserID 后也会打印此形式的确认命令",
+            },
+            {
+                command: "user bind 1 df-name example_player",
+                description: "预览更换水鱼用户名；确认后运行 error.fix",
             },
             {
                 command: "user bind 0 lxns",
-                description: "生成落雪授权链接",
+                description:
+                    "生成落雪授权链接；用 --callback - 提交回调，若预览显示换人则运行 error.fix",
             },
         ],
         errors: [
             "USAGE",
             ...USER_REFERENCE_ERRORS,
+            "CONFIRMATION_REQUIRED",
             "QR_INVALID",
             "NETWORK",
             "UPSTREAM_ERROR",
@@ -122,7 +177,14 @@ export const userBind = defineCommand(
         ],
         dataSchema: anyOf(
             "绑定后的用户，或落雪两步授权的第一步结果",
-            boundUserSchema,
+            extend<BindResult, BoundUser>(
+                boundUserSchema,
+                {
+                    oldUid: str("换人前的本地用户 uid"),
+                    newUid: str("换人后的本地用户 uid"),
+                },
+                { optional: ["oldUid", "newUid"] }
+            ),
             object<LxnsBindStart>(
                 {
                     authorizeUrl: str("落雪 OAuth 授权链接"),
@@ -152,7 +214,12 @@ export const userBind = defineCommand(
         // Resolve the user before reading stdin or asking anyone, so a wrong reference costs no QR
         // code and no request; the user is read again by uid under the lock before the write.
         const store = ctx.store();
-        const target = resolveUser(listUsers(store), args.positionals.user);
+        const rows = listUsers(store);
+        const given = args.options.yes;
+        // A printed fix always uses the exact uid, including a digit-only imported uid.
+        const byUid =
+            given === undefined ? undefined : rows.find(row => row.uid === args.positionals.user);
+        const target = byUid ?? resolveUser(rows, args.positionals.user);
 
         if (source === "lxns") {
             if (args.positionals.value !== undefined) {
@@ -161,143 +228,66 @@ export const userBind = defineCommand(
                 );
             }
             if (args.options.callback === undefined) {
+                if (given !== undefined) {
+                    return { data: await confirmLxnsBind(ctx, store, target.uid, given) };
+                }
                 return { data: await startLxnsBind(ctx, store, target.uid) };
             }
             if (args.global.offline) {
                 throw usageError("离线模式下无法完成落雪授权");
             }
-            return { data: await completeLxnsBind(ctx, store, target, await ctx.io.readStdin()) };
+            return {
+                data: await completeLxnsBind(ctx, store, target, await ctx.io.readStdin(), given),
+            };
         }
-
-        let inGameId: number | undefined;
-        let tokenToStore: string | undefined;
-        let dfNameToStore: string | undefined;
 
         if (source === "ingame") {
             if (args.positionals.value !== undefined) {
                 throw usageError("ingame 来源不需要值参数，请使用 --id 或 --qr");
             }
-            const hasId = args.options.id !== undefined;
-            const hasQr = args.options.qr !== undefined;
-            if ((hasId && hasQr) || (!hasId && !hasQr)) {
+            const rawId = args.options.id;
+            if ((rawId !== undefined) === (args.options.qr !== undefined)) {
                 throw usageError(
                     "user bind <用户> ingame 必须且只能指定 --id <8位数字> 或 --qr - 之一"
                 );
             }
-
-            if (hasId) {
-                const rawId = args.options.id!;
-                if (!/^\d{8}$/.test(rawId)) {
-                    throw usageError("舞萌 UserID 必须是 8 位数字");
-                }
-                inGameId = Number(rawId);
-            } else {
-                if (args.global.offline) {
-                    throw usageError("离线模式下无法通过二维码查找账号");
-                }
-                const raw = await ctx.io.readStdin();
-                const normalized = normalizeQrCodeFromInput(raw);
-                if (normalized === null) {
-                    throw new CliError("QR_INVALID", "二维码内容无效或无法识别");
-                }
-
-                let qrData: { errorID?: number; userID?: number };
-                try {
-                    qrData = await postSaltNetAPIJSON<{ errorID?: number; userID?: number }>(
-                        SaltAPIEndpoints.GetQRInfo,
-                        // Already the last 64 characters, which the web dialog sends.
-                        { qrCode: normalized },
-                        {
-                            config: {
-                                saltnetApiUrl: ctx.config.values.api.url,
-                                saltnetApiFallbackUrl: ctx.config.values.api.fallbackUrl,
-                            },
-                            fetch: ctx.http({ retry: false }),
-                        }
-                    );
-                } catch (error) {
-                    if (error instanceof SaltNetError) {
-                        if (error.kind === "network") {
-                            throw new CliError("NETWORK", error.message, {
-                                retryable: true,
-                                cause: error,
-                            });
-                        }
-                        throw new CliError("UPSTREAM_ERROR", error.message, { cause: error });
-                    }
-                    if (error instanceof CliError) {
-                        throw error;
-                    }
-                    throw new CliError(
-                        "NETWORK",
-                        error instanceof Error ? error.message : "连接后端服务失败",
-                        { retryable: true, cause: error }
-                    );
-                }
-
-                if (qrData.errorID !== 0) {
-                    throw new CliError("QR_INVALID", "二维码无效或已过期");
-                }
-                if (
-                    typeof qrData.userID !== "number" ||
-                    !Number.isSafeInteger(qrData.userID) ||
-                    qrData.userID <= 0
-                ) {
-                    throw new CliError("UPSTREAM_ERROR", "后端返回的用户 ID 无效");
-                }
-                inGameId = qrData.userID;
+            if (rawId !== undefined) {
+                if (!/^\d{8}$/.test(rawId)) throw usageError("舞萌 UserID 必须是 8 位数字");
+                return {
+                    data: await bindLocal(
+                        ctx,
+                        store,
+                        target.uid,
+                        { source, id: Number(rawId) },
+                        given
+                    ),
+                };
             }
-        } else if (source === "df-token") {
-            if (args.positionals.value === undefined) {
-                throw usageError("user bind <用户> df-token - 需要写 - 表示从 stdin 读取凭据");
-            }
-            if (args.positionals.value !== "-") {
-                throw usageError(
-                    "水鱼 Import-Token 只接受 -，表示从 stdin 读取；凭据不能写在命令行里"
-                );
-            }
-
             if (args.global.offline) {
-                throw usageError("离线模式下无法验证并绑定水鱼 Token");
+                throw usageError("离线模式下无法通过二维码查找账号");
             }
+            store.transaction(() => assertNoSync(store, target.uid, () => ctx.io.now().getTime()));
+            const normalized = normalizeQrCodeFromInput(await ctx.io.readStdin());
+            if (normalized === null) {
+                throw new CliError("QR_INVALID", "二维码内容无效或无法识别");
+            }
+            const qrData = await postQrGameApi(ctx, SaltAPIEndpoints.GetQRInfo, {
+                qrCode: normalized,
+            });
+            const id = qrData.userID;
+            if (
+                qrData.errorID !== 0 ||
+                typeof id !== "number" ||
+                !Number.isSafeInteger(id) ||
+                id <= 0 ||
+                id > 99_999_999
+            ) {
+                throw new CliError("UPSTREAM_ERROR", "后端返回的用户 ID 无效");
+            }
+            return { data: await bindLocal(ctx, store, target.uid, { source, id }, given) };
+        }
 
-            const raw = await ctx.io.readStdin();
-            const token = raw.trim();
-            if (!token) {
-                throw usageError("水鱼 Import-Token 不能为空");
-            }
-
-            try {
-                await fetchDivingFishRecords(token, {
-                    fetch: ctx.http({ retry: true }),
-                });
-            } catch (error) {
-                if (error instanceof DivingFishError) {
-                    if (error.status === 400 || error.status === 401 || error.status === 403) {
-                        throw new CliError(
-                            "USAGE",
-                            `水鱼数据拒绝了这个 Import-Token（${error.message}）`,
-                            {
-                                fix: "在水鱼查分器「用户设置」页面重新生成导入 Token 并重试",
-                            }
-                        );
-                    }
-                    throw new CliError("UPSTREAM_ERROR", `水鱼服务返回了 HTTP ${error.status}`, {
-                        retryable: error.status >= 500 || error.status === 429,
-                        extra: { status: error.status },
-                    });
-                }
-                if (error instanceof CliError) {
-                    throw error;
-                }
-                throw new CliError(
-                    "NETWORK",
-                    error instanceof Error ? error.message : "连接水鱼数据失败",
-                    { retryable: true, cause: error }
-                );
-            }
-            tokenToStore = token;
-        } else if (source === "df-name") {
+        if (source === "df-name") {
             if (args.positionals.value === undefined) {
                 throw usageError("user bind <用户> df-name <用户名> 需要提供水鱼用户名");
             }
@@ -305,7 +295,54 @@ export const userBind = defineCommand(
             if (!name) {
                 throw usageError("水鱼用户名不能为空或只有空白");
             }
-            dfNameToStore = name;
+            return { data: await bindLocal(ctx, store, target.uid, { source, name }, given) };
+        }
+
+        if (args.positionals.value === undefined) {
+            throw usageError("user bind <用户> df-token - 需要写 - 表示从 stdin 读取凭据");
+        }
+        if (args.positionals.value !== "-") {
+            throw usageError("水鱼 Import-Token 只接受 -，表示从 stdin 读取；凭据不能写在命令行里");
+        }
+
+        if (args.global.offline) {
+            throw usageError("离线模式下无法验证并绑定水鱼 Token");
+        }
+
+        const raw = await ctx.io.readStdin();
+        const token = raw.trim();
+        if (!token) {
+            throw usageError("水鱼 Import-Token 不能为空");
+        }
+
+        try {
+            await fetchDivingFishRecords(token, {
+                fetch: ctx.http({ retry: true }),
+            });
+        } catch (error) {
+            if (error instanceof DivingFishError) {
+                if (error.status === 400 || error.status === 401 || error.status === 403) {
+                    throw new CliError(
+                        "USAGE",
+                        `水鱼数据拒绝了这个 Import-Token（${error.message}）`,
+                        {
+                            fix: "在水鱼查分器「用户设置」页面重新生成导入 Token 并重试",
+                        }
+                    );
+                }
+                throw new CliError("UPSTREAM_ERROR", `水鱼服务返回了 HTTP ${error.status}`, {
+                    retryable: error.status >= 500 || error.status === 429,
+                    extra: { status: error.status },
+                });
+            }
+            if (error instanceof CliError) {
+                throw error;
+            }
+            throw new CliError(
+                "NETWORK",
+                error instanceof Error ? error.message : "连接水鱼数据失败",
+                { retryable: true, cause: error }
+            );
         }
 
         return withCredentialsLock(store, () => {
@@ -315,123 +352,61 @@ export const userBind = defineCommand(
             }
             const targetUid = freshUser.uid!;
 
-            let nextUser: User;
-            let changed = false;
+            const nextUser = {
+                ...freshUser,
+                divingFish: {
+                    ...freshUser.divingFish,
+                    name: null,
+                    importToken: null,
+                },
+            };
+            // No identity check: a token bind keeps both ids and clears the name, so
+            // hasStrongIdentityChanged can never be true here.
+            const currentCredentials = readCredentials(ctx.paths);
+            const currentToken = currentCredentials.users[targetUid]?.divingFishImportToken;
+            const tokenChanged = currentToken !== token;
+            const userChanged =
+                freshUser.divingFish?.name !== null || freshUser.divingFish?.importToken !== null;
+            const changed = tokenChanged || userChanged;
 
-            if (source === "ingame") {
-                // The web dialog changes only the id and leaves 启用 and 快速更新 to their own
-                // switches. The CLI has no switch for 启用, so binding turns it on; 快速更新 only
-                // decides whether the web app asks for a QR code (design 5.1), so it stays as it was.
-                nextUser = {
-                    ...freshUser,
-                    inGame: {
-                        ...freshUser.inGame,
-                        id: inGameId!,
-                        enabled: true,
-                    },
+            if (changed) {
+                const nextUsers: Record<string, UserCredentials> = {
+                    ...currentCredentials.users,
                 };
-                if (hasStrongIdentityChanged(freshUser, nextUser)) {
-                    throw usageError(
-                        "绑定这个账号会改变玩家身份；若要记录新玩家，请使用 saltnet user add 添加新用户"
-                    );
-                }
-                changed = freshUser.inGame?.id !== inGameId || freshUser.inGame?.enabled !== true;
-
-                if (changed) {
+                nextUsers[targetUid] = {
+                    ...nextUsers[targetUid],
+                    divingFishImportToken: token,
+                };
+                const nextCredentials: CredentialsFile = {
+                    ...currentCredentials,
+                    users: nextUsers,
+                };
+                const staged = stageCredentials(ctx.paths, nextCredentials);
+                let userSaved = false;
+                try {
                     store.transaction(() => {
                         assertNoSync(store, targetUid, () => ctx.io.now().getTime());
                         saveUser(store, nextUser);
                     });
+                    userSaved = true;
+                } catch (error) {
+                    staged.discard();
+                    throw error;
                 }
-            } else if (source === "df-token") {
-                nextUser = {
-                    ...freshUser,
-                    divingFish: {
-                        ...freshUser.divingFish,
-                        name: null,
-                        importToken: null,
-                    },
-                };
-                // No identity check: a token bind keeps both ids and clears the name, so
-                // hasStrongIdentityChanged can never be true here.
-                const currentCredentials = readCredentials(ctx.paths);
-                const currentToken = currentCredentials.users[targetUid]?.divingFishImportToken;
-                const tokenChanged = currentToken !== tokenToStore;
-                const userChanged =
-                    freshUser.divingFish?.name !== null ||
-                    freshUser.divingFish?.importToken !== null;
-                changed = tokenChanged || userChanged;
 
-                if (changed) {
-                    const nextUsers: Record<string, UserCredentials> = {
-                        ...currentCredentials.users,
-                    };
-                    nextUsers[targetUid] = {
-                        ...nextUsers[targetUid],
-                        divingFishImportToken: tokenToStore,
-                    };
-                    const nextCredentials: CredentialsFile = {
-                        ...currentCredentials,
-                        users: nextUsers,
-                    };
-                    const staged = stageCredentials(ctx.paths, nextCredentials);
-                    let userSaved = false;
-                    try {
-                        store.transaction(() => {
-                            assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                            saveUser(store, nextUser);
-                        });
-                        userSaved = true;
-                    } catch (error) {
-                        staged.discard();
-                        throw error;
+                try {
+                    staged.commit();
+                } catch (error) {
+                    if (userSaved) {
+                        const reason = error instanceof Error ? `（${error.message}）` : "";
+                        throw new CliError(
+                            "INTERNAL",
+                            `用户已绑定，但凭据文件未能保存${reason}；请修复文件权限后重新绑定`,
+                            { cause: error }
+                        );
                     }
-
-                    try {
-                        staged.commit();
-                    } catch (error) {
-                        if (userSaved) {
-                            const reason = error instanceof Error ? `（${error.message}）` : "";
-                            throw new CliError(
-                                "INTERNAL",
-                                `用户已绑定，但凭据文件未能保存${reason}；请修复文件权限后重新绑定`,
-                                { cause: error }
-                            );
-                        }
-                        staged.discard();
-                        throw error;
-                    }
-                }
-            } else if (source === "df-name") {
-                // As in the web dialog, a name cannot be set while a token is bound. The stored user
-                // never holds the token (src/users refuses one), so credentials.json decides.
-                if (
-                    readCredentials(ctx.paths).users[targetUid]?.divingFishImportToken !== undefined
-                ) {
-                    throw usageError(
-                        "当前已绑定水鱼 Import-Token；若要改用用户名绑定，请先运行 saltnet user unbind <user> df-token"
-                    );
-                }
-
-                nextUser = {
-                    ...freshUser,
-                    divingFish: {
-                        ...freshUser.divingFish,
-                        name: dfNameToStore!,
-                        importToken: null,
-                    },
-                };
-                if (hasStrongIdentityChanged(freshUser, nextUser)) {
-                    throw usageError(
-                        "绑定这个账号会改变玩家身份；若要记录新玩家，请使用 saltnet user add 添加新用户"
-                    );
-                }
-                changed = freshUser.divingFish?.name !== dfNameToStore;
-                if (changed) {
-                    store.transaction(() => {
-                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                        saveUser(store, nextUser);
-                    });
+                    staged.discard();
+                    throw error;
                 }
             }
 

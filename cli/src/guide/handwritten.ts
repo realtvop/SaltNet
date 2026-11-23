@@ -32,7 +32,7 @@ export const GUIDE_RULES: readonly string[] = [
     "5. **省 token**：列表很长时用 `--fields` 只要需要的字段（点号表示嵌套，例如 `chartKey,title,score.rank`），或者用 `--format tsv`；用 `--limit`、`--offset` 翻页，`meta.page.nextOffset` 为 null 表示没有下一页。问数量时用 `charts --stats` 或 `charts --group-by <分组依据>`，不要拉完整列表再自己数；复杂的问题用 `sql`，视图的列用 `saltnet schema --views` 看。",
     "6. **数据新旧**：`meta.dataAsOf` 是用到的数据各自的时间。曲库和收藏品过期时会自动重新下载，下载失败就用缓存并带 `STALE_METADATA` 警告；`--offline` 不联网、只用缓存，没有缓存时报 `OFFLINE_NO_CACHE`；要马上更新就运行 `saltnet refresh`。成绩不会自己更新：看到 `STALE_SCORES` 或 `NO_SCORES` 就告诉用户，用户同意后再运行 `sync`。不要主动同步：同步可能要用户扫码登录舞萌账号，成功后还会把成绩上传到绑定的水鱼和落雪账号（加 `--no-upload` 就不上传）。",
     "7. **凭据**：二维码、水鱼的 Import-Token 和落雪授权后的回调链接只通过 stdin 传入（`--qr -`、`df-token -`、`--callback -`），不要写进命令行参数，也不要在回复里复述。二维码几分钟就过期，要用的时候再向用户要。不要读或改数据目录里的 `credentials.json`。",
-    "8. **确认**：删除用户、删除收藏夹、导入备份这类会删除或替换本机数据的命令，不带确认码时只返回预览，退出码是 6。把 `error.preview` 原样给用户看，用户明确同意后再运行 `error.fix`（它带着确认码）；不能替用户确认，也不要自己拼确认码。这期间数据变了，确认码就会失效（`error.codeRejected` 为 true），这时把新的预览再给用户看。",
+    "8. **确认**：删除用户、删除收藏夹、导入备份、把用户绑定到另一个人的账号（会清掉这位用户原来的成绩和历史）这类会删除或替换本机数据的命令，不带确认码时只返回预览，退出码是 6。把 `error.preview` 原样给用户看，用户明确同意后再运行 `error.fix`（它带着确认码）；不能替用户确认，也不要自己拼确认码。这期间数据变了，确认码就会失效（`error.codeRejected` 为 true），这时把新的预览再给用户看。",
 ];
 
 /** Where the questions players ask most often are answered (design 6.1), as Markdown list items. */

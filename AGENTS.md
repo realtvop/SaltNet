@@ -204,7 +204,10 @@ SaltNet is a three-package pnpm workspace:
           without retry), `df-token -` validates through Diving Fish records and stores the token
           strictly in `credentials.json`, `df-name` sets the name and is rejected if a token is set,
           and `lxns` starts an offline PKCE authorization or completes it with `--callback -`.
-          Identity changes (`hasStrongIdentityChanged`) are refused until P3-15 adds confirmation.
+          Identity changes (`hasStrongIdentityChanged`) preview the account change and discarded
+          rows, then require a content-bound `--yes` code. The printed fix uses the stable uid and
+          repeats neither QR lookup nor OAuth exchange. Confirming replaces the uid in place,
+          clears player data and score history, and moves the retained credentials.
           Unbind removes bindings locally without network, including `lxnsIssuedAt` for LXNS.
           Writes check for an active sync or hold the user's sync lock during LXNS completion.
           Credential modifications take the credentials lock and stage `credentials.json` before
@@ -423,9 +426,13 @@ SaltNet is a three-package pnpm workspace:
       transaction. `rows.ts` also gives `userForCoreScores`, a copy of a user without the raw score
       and rating-history values core cannot look up, which the score commands pass to core;
       `users.raw` and exports keep them.
+        - `bindIdentity.ts` previews an identity replacement against the same row fingerprint as
+          `user remove` and stages credential changes before the SQLite write. The repository
+          replaces the user in its existing slot and cascades deletion of the old user's rows.
         - `lxnsBind.ts` starts the OAuth transaction, checks the callback under the user's sync
-          lock, and saves the exchanged token before binding the account in SQLite. It uses the
-          token's profile claims, like the web app, and creates no `sync_runs` entry.
+          lock, and saves the checked exchange privately for 15 minutes. `lxns --yes` completes a
+          pending identity change from that exchange. It uses the token's profile claims, like the
+          web app, and creates no `sync_runs` entry.
         - `scores.ts` reads one selected user's score source, play-count estimates and B50 positions
           once for chart rows (keeping that normal B50 selection, which every `gain` is computed
           against), and turns a stored score into the core `ChartScore` the collection functions

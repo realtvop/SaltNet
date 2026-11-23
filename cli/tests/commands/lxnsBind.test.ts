@@ -419,14 +419,17 @@ describe("user bind lxns", () => {
         expectPrivate(resumed, transaction.codeVerifier);
     });
 
-    it("rejects a token profile that echoes a credential in its name", async () => {
+    it.each([
+        { kind: "a refresh token", secret: refreshToken },
+        { kind: "an authorization code", secret: code },
+    ])("rejects a token profile that echoes $kind in its name", async ({ secret }) => {
         const { paths, store, user } = fixture();
         const { link, transaction } = await start(paths);
         const result = await bind(paths, uid, ["--callback", "-"], {
             stdin: link.href,
             network: {
                 [tokenUrl]: jsonResponse({
-                    access_token: jwt(`FAKE-PROFILE ${refreshToken}`),
+                    access_token: jwt(`FAKE-PROFILE ${secret}`),
                     refresh_token: refreshToken,
                     token_type: "Bearer",
                     expires_in: expiresIn,
@@ -436,7 +439,24 @@ describe("user bind lxns", () => {
         expect(result.json.error.code).toBe("UPSTREAM_ERROR");
         expect(readUser(store, uid)).toEqual(user);
         expect(readCredentials(paths).users).toEqual({});
+        const resumed = await bind(paths, uid, ["--yes", "FAKE-CODE"]);
+        expect(resumed.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
+        expect(resumed.requests).toEqual([]);
         expectPrivate(result, transaction.codeVerifier);
+        expectPrivate(resumed, transaction.codeVerifier);
+    });
+
+    it("ignores --yes when reauthorizing the same LXNS account", async () => {
+        const { paths, store, user } = fixture(accountId);
+        const { link } = await start(paths);
+        const result = await bind(paths, uid, ["--callback", "-", "--yes", "IGNORED"], {
+            stdin: link.href,
+            network: { [tokenUrl]: tokenResponse },
+        });
+        expect(result.code).toBe(0);
+        expect(result.json.data.uid).toBe(uid);
+        expect(result.json.data).not.toHaveProperty("oldUid");
+        expect(readUser(store, uid)?.data).toEqual(user.data);
     });
 
     it.each([
@@ -464,7 +484,7 @@ describe("user bind lxns", () => {
         expectPrivate(result, transaction.codeVerifier);
     });
 
-    it("refuses a changed identity and retains the exchanged token for 15 more minutes", async () => {
+    it("previews a changed identity and retains the exchanged token for 15 more minutes", async () => {
         const { paths, store, user } = fixture(accountId + 1);
         const { link, state, transaction } = await start(paths);
         const now = new Date(NOW.getTime() + 60_000);
@@ -474,8 +494,8 @@ describe("user bind lxns", () => {
             network: { [tokenUrl]: tokenResponse },
         });
         expect(result.json.error).toMatchObject({
-            code: "USAGE",
-            message: expect.stringContaining("改变玩家身份"),
+            code: "CONFIRMATION_REQUIRED",
+            codeRejected: false,
         });
         expect(result.requests).toHaveLength(1);
         expect(readUser(store, uid)).toEqual(user);
