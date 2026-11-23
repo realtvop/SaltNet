@@ -1,5 +1,6 @@
 import type { User } from "@core/user/type";
 import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { LxnsBindStart } from "../users/lxnsBind";
 import type { UserDetail, UserRow } from "../users/view";
 import { DivingFishError, fetchDivingFishRecords } from "@core/integrations/diving-fish/client";
 import {
@@ -11,7 +12,7 @@ import { normalizeQrCodeFromInput } from "@core/sync/qrCode";
 import { hasStrongIdentityChanged } from "@core/user/scoreHistory/userIdentity";
 import { userCountsSchema, userRowSchema } from "../catalog/schemas";
 import { CliError, usageError } from "../errors";
-import { bool, extend, str } from "../output/schema";
+import { anyOf, bool, extend, object, str } from "../output/schema";
 import { resolveUser } from "../refs/user";
 import {
     readCredentials,
@@ -20,6 +21,7 @@ import {
     withCredentialsLock,
 } from "../runtime/credentials";
 import { assertNoSync } from "../sync/lock";
+import { completeLxnsBind, startLxnsBind } from "../users/lxnsBind";
 import { listUsers, readUser, readUserCounts, saveUser } from "../users/repository";
 import { userDetail } from "../users/view";
 import { defineCommand } from "./registry";
@@ -79,7 +81,7 @@ export const userBind = defineCommand(
         name: "user bind",
         summary: "绑定舞萌账号、水鱼或落雪数据源",
         description:
-            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（暂未开放）。绑定账号若改变用户身份则拒绝操作。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
+            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（先生成授权链接，再用 --callback - 从 stdin 读取回调链接）。绑定账号若改变用户身份则拒绝操作。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
         category: "account",
         effect: "local",
         output: "object",
@@ -94,11 +96,19 @@ export const userBind = defineCommand(
                 kind: "credential",
                 description: "从 stdin 读取二维码扫描结果或链接",
             },
+            callback: {
+                kind: "credential",
+                description: "从 stdin 读取落雪授权回调链接",
+            },
         },
         examples: [
             {
                 command: "user bind 1 ingame --id 12345678",
                 description: "用游戏 UserID 给第二个用户绑定舞萌账号",
+            },
+            {
+                command: "user bind 0 lxns",
+                description: "生成落雪授权链接",
             },
         ],
         errors: [
@@ -107,16 +117,27 @@ export const userBind = defineCommand(
             "QR_INVALID",
             "NETWORK",
             "UPSTREAM_ERROR",
+            "LXNS_REAUTH_REQUIRED",
             "SYNC_IN_PROGRESS",
         ],
-        dataSchema: boundUserSchema,
+        dataSchema: anyOf(
+            "绑定后的用户，或落雪两步授权的第一步结果",
+            boundUserSchema,
+            object<LxnsBindStart>(
+                {
+                    authorizeUrl: str("落雪 OAuth 授权链接"),
+                    expiresAt: str("本次授权的过期时间，ISO 8601，带本机时区"),
+                },
+                { description: "用浏览器授权所需的链接和过期时间" }
+            )
+        ),
     },
     async (args, ctx) => {
         const source = args.positionals.source.trim();
         assertValidSource(source);
 
-        if (source === "lxns") {
-            throw usageError("落雪账号绑定暂未开放，将在后续版本提供");
+        if (source !== "lxns" && args.options.callback !== undefined) {
+            throw usageError("选项 --callback 只能用于 lxns 来源");
         }
 
         if (source !== "ingame") {
@@ -132,6 +153,21 @@ export const userBind = defineCommand(
         // code and no request; the user is read again by uid under the lock before the write.
         const store = ctx.store();
         const target = resolveUser(listUsers(store), args.positionals.user);
+
+        if (source === "lxns") {
+            if (args.positionals.value !== undefined) {
+                throw usageError(
+                    "lxns 来源不需要值参数；请通过 --callback - 从 stdin 读取回调链接"
+                );
+            }
+            if (args.options.callback === undefined) {
+                return { data: await startLxnsBind(ctx, store, target.uid) };
+            }
+            if (args.global.offline) {
+                throw usageError("离线模式下无法完成落雪授权");
+            }
+            return { data: await completeLxnsBind(ctx, store, target, await ctx.io.readStdin()) };
+        }
 
         let inGameId: number | undefined;
         let tokenToStore: string | undefined;

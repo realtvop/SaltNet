@@ -400,15 +400,56 @@ describe("user bind and unbind", () => {
         expect(failNameRes.json.error.message).toContain("当前已绑定水鱼 Import-Token");
     });
 
-    it("refuses lxns bind with USAGE", async () => {
+    it.each([
+        { missing: "both settings", clientId: "", redirectUri: "" },
+        { missing: "lxns.clientId", clientId: "", redirectUri: "https://callback.test/fake" },
+        { missing: "lxns.redirectUri", clientId: "FAKE-LXNS-CLIENT", redirectUri: "" },
+    ])(
+        "requires OAuth configuration to start lxns bind ($missing)",
+        async ({ clientId, redirectUri }) => {
+            const paths = makeHome();
+            const store = openStore(paths);
+            replaceUsers(store, [makeUser("u0")], []);
+
+            const res = await commandIn(paths, "user", ["bind", "u0", "lxns"], {
+                env: { SALTNET_LXNS_CLIENT_ID: clientId, SALTNET_LXNS_REDIRECT_URI: redirectUri },
+            });
+            expect(res.code).toBe(2);
+            expect(res.json.error.code).toBe("USAGE");
+            expect(res.json.error.message).toContain("lxns.clientId");
+            expect(res.requests).toEqual([]);
+            expect(existsSync(paths.credentials)).toBe(false);
+        }
+    );
+
+    it.each([
+        {
+            kind: "a callback for another source",
+            args: ["bind", "u0", "df-name", "FakeName", "--callback", "-"],
+        },
+        { kind: "a value for lxns", args: ["bind", "u0", "lxns", "FAKE-VALUE"] },
+        {
+            kind: "an offline completion",
+            args: ["bind", "u0", "lxns", "--callback", "-", "--offline"],
+        },
+    ])("refuses $kind before anything is read or sent", async ({ args }) => {
         const paths = makeHome();
         const store = openStore(paths);
-        replaceUsers(store, [makeUser("u0")], []);
+        const user = makeUser("u0");
+        replaceUsers(store, [user], []);
 
-        const res = await commandIn(paths, "user", ["bind", "u0", "lxns"]);
+        const res = await commandIn(paths, "user", args, {
+            // A well-formed link, so that only the refusal stops it.
+            stdin: "https://callback.test/saltnet?lxns_auth_complete&state=FAKE-STATE&code=FAKE-CODE",
+            env: {
+                SALTNET_LXNS_CLIENT_ID: "FAKE-LXNS-CLIENT",
+                SALTNET_LXNS_REDIRECT_URI: "https://callback.test/saltnet?lxns_auth_complete",
+            },
+        });
         expect(res.code).toBe(2);
         expect(res.json.error.code).toBe("USAGE");
-        expect(res.json.error.message).toContain("落雪账号绑定暂未开放");
+        expect(res.requests).toEqual([]);
+        expect(existsSync(paths.credentials)).toBe(false);
     });
 
     it("unbinds each source cleanly and reports changed: false when not bound", async () => {

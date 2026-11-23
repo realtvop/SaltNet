@@ -44,10 +44,17 @@ export function matchingLxnsAuthorization(
         : undefined;
 }
 
+export interface PendingLxnsAuthorization extends LXNSOAuthTransaction {
+    baseUrl?: string;
+    /** Claims a code before sending it, without keeping the callback link or code itself. */
+    codeHash?: string;
+    issuedAt?: number;
+}
+
 export interface CredentialsFile {
     version: 1;
     users: Record<string, UserCredentials>;
-    pendingLxnsAuthorizations?: Record<string, LXNSOAuthTransaction>;
+    pendingLxnsAuthorizations?: Record<string, PendingLxnsAuthorization>;
 }
 
 export interface CredentialsLockOptions {
@@ -59,7 +66,7 @@ export interface CredentialsLockOptions {
 }
 
 export interface UpdateCredentialsOptions extends CredentialsLockOptions {
-    now?: () => Date | number;
+    pruneNow?: () => Date | number;
 }
 
 function object(value: unknown): Record<string, unknown> | undefined {
@@ -90,8 +97,9 @@ export function readCredentials(paths: Pick<RuntimePaths, "credentials">): Crede
     let parsed: unknown;
     try {
         parsed = JSON.parse(text);
-    } catch (error) {
-        throw failure("无法解析", paths.credentials, error);
+    } catch {
+        // JSON.parse errors can quote part of the private file, including in their stack.
+        throw failure("无法解析", paths.credentials, new Error("invalid credentials JSON"));
     }
     const root = object(parsed);
     if (!root || root.version !== 1) {
@@ -99,11 +107,7 @@ export function readCredentials(paths: Pick<RuntimePaths, "credentials">): Crede
     }
     for (const key of Object.keys(root)) {
         if (key !== "version" && key !== "users" && key !== "pendingLxnsAuthorizations") {
-            throw failure(
-                "无法解析",
-                paths.credentials,
-                new Error(`unknown top-level member ${key}`)
-            );
+            throw failure("无法解析", paths.credentials, new Error("unknown credentials member"));
         }
     }
     const users = object(root.users);
@@ -224,12 +228,12 @@ function pruneCredentials(
     };
 
     if (credentials.pendingLxnsAuthorizations !== undefined) {
-        const prunedPending: Record<string, LXNSOAuthTransaction> = {};
+        const prunedPending: Record<string, PendingLxnsAuthorization> = {};
         for (const [state, record] of Object.entries(credentials.pendingLxnsAuthorizations)) {
             const validated = validateLXNSOAuthTransaction(record, nowMs);
             if (!validated) continue;
             if (!validUids.has(validated.userUid)) continue;
-            prunedPending[state] = validated;
+            prunedPending[state] = record;
         }
         pruned.pendingLxnsAuthorizations = prunedPending;
     }
@@ -249,7 +253,7 @@ export async function updateCredentials(
         async () => {
             const current = readCredentials(paths);
             const mutated = await mutate(current);
-            const pruned = pruneCredentials(mutated, store, options.now);
+            const pruned = pruneCredentials(mutated, store, options.pruneNow ?? options.now);
             ensureRuntimeDirs(paths);
             writeFileAtomic(paths.credentials, `${JSON.stringify(pruned, null, 2)}\n`, 0o600);
             return pruned;

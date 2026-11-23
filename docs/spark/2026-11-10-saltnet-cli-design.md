@@ -584,7 +584,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 - `ingame`：设置 `inGame.id` 并开启 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。网页端绑定只改 id，「启用」是单独的开关；CLI 没有这个开关，所以绑定时一并打开。
 - `df-token`：通过 Diving Fish 读取成绩验证有效后，保存到 `credentials.json` 的 `divingFishImportToken`（权限 0600）；用户对象上的 `divingFish.name` 与 `divingFish.importToken` 均置为 null，token 绝不落入数据库。
 - `df-name`：设置 `divingFish.name`，清空 `divingFish.importToken`。若已设置 token 则拒绝绑定用户名（需先解绑 token）。
-- `lxns`：暂未开放，返回 `USAGE`（P3-13 接入两步 OAuth）。
+- `lxns`：从 access token 读取落雪账号的 id 和名字，写入用户对象，`lxns.auth` 为 null。授权、对应的落雪 id 和刷新令牌的签发时间保存在 `credentials.json`。
 
 **各来源解绑（只改本地数据，无需确认）**
 
@@ -596,13 +596,14 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 
 **落雪分两步**
 
-1. 运行 `user bind <用户> lxns`，CLI 返回授权链接 `authorizeUrl` 和过期时间（15 分钟）；PKCE verifier 存在 `credentials.json` 里。
+1. 运行 `user bind <用户> lxns`，CLI 离线生成授权链接 `authorizeUrl` 和本机时区的过期时间 `expiresAt`（15 分钟）。PKCE verifier 存在 `credentials.json` 里。同一个用户重新开始授权会替换先前的记录。
 2. 用户在浏览器里授权后会跳到 SaltNet 网页端。网页端找不到这次授权的记录，会显示「复制回调链接」。用户把链接交给 agent，agent 运行 `user bind <用户> lxns --callback -`（链接从 stdin 读）完成绑定。CLI 先校验 state 和回调地址，再用 verifier 换取 token。
 
 这两步沿用网页端的规则：
 
-- 找不到对应的授权记录就不换 token。
-- 换到 token 后先写进授权记录，之后如果中断或者在等确认，不会重复兑换授权码。
+- 缺少对应用户的有效授权记录时返回 `LXNS_REAUTH_REQUIRED`，`fix` 给出重新开始授权的命令。
+- CLI 在用户同步锁和凭据锁内兑换授权码，不自动重试，也不新增 `sync_runs` 记录。兑换前保存授权码的哈希，服务明确拒绝时恢复原记录。结果不确定时应重新授权。
+- 换到 token 后先写进授权记录，再读取账号资料和保存用户。如果此时中断，可以用同一回调继续。完成绑定后移除授权记录。
 
 **需要实测**：用同一个落雪 client 再授权一次，网页端原来的授权会不会失效？如果会，CLI 就得用单独的 client id（可以在 `config.json` 里配置），否则 CLI 一绑定，网页端就掉线了。
 

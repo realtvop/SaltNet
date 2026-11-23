@@ -192,11 +192,12 @@ SaltNet is a three-package pnpm workspace:
           `lxns`; `user bind ingame` supports `--id` and `--qr -` (GetQRInfo via SaltNet backend
           without retry), `df-token -` validates through Diving Fish records and stores the token
           strictly in `credentials.json`, `df-name` sets the name and is rejected if a token is set,
-          and `lxns` bind is deferred to P3-13; identity changes (`hasStrongIdentityChanged`) are
-          refused until P3-15 adds confirmation; unbind removes bindings locally without network,
-          and unbinding `lxns` removes `lxnsIssuedAt`; every write transaction asserts no active
-          sync (`assertNoSync`, error `SYNC_IN_PROGRESS`); modifications take the credentials lock,
-          staging `credentials.json` before database transactions when credentials change.
+          and `lxns` starts an offline PKCE authorization or completes it with `--callback -`.
+          Identity changes (`hasStrongIdentityChanged`) are refused until P3-15 adds confirmation.
+          Unbind removes bindings locally without network, including `lxnsIssuedAt` for LXNS.
+          Writes check for an active sync or hold the user's sync lock during LXNS completion.
+          Credential modifications take the credentials lock and stage `credentials.json` before
+          database transactions that also change credentials.
         - `fav.ts` holds `fav list`, `create`, `rename`, `delete` (content-bound confirmation),
           `add` and `remove`. As in the web app, a favorite holds songs by the music id of their
           side together with the difficulty each was added at, and `charts --fav` lists every chart
@@ -247,7 +248,8 @@ SaltNet is a three-package pnpm workspace:
           mode-0600 whole-file replacements. Each LXNS authorization is stored with the LXNS id it
           was issued for (`lxnsAccountId`) and the time the refresh token was issued (`lxnsIssuedAt`),
           and `matchingLxnsAuthorization` is the one check that an authorization belongs to a
-          user's LXNS account.
+          user's LXNS account. Pending LXNS binds can hold a hash of the submitted code and the
+          exchanged token with its issue time. Credential parse errors omit file contents.
     - `src/util/` has small helpers (edit distance and nearest names, name folding, display width,
       command-line splitting and quoting (`splitCommandLine`, `quoteArg`, `joinCommandLine`), times
       with a UTC offset).
@@ -387,6 +389,9 @@ SaltNet is a three-package pnpm workspace:
       transaction. `rows.ts` also gives `userForCoreScores`, a copy of a user without the raw score
       and rating-history values core cannot look up, which the score commands pass to core;
       `users.raw` and exports keep them.
+        - `lxnsBind.ts` starts the OAuth transaction, checks the callback under the user's sync
+          lock, and saves the exchanged token before binding the account in SQLite. It uses the
+          token's profile claims, like the web app, and creates no `sync_runs` entry.
         - `scores.ts` reads one selected user's score source, play-count estimates and B50 positions
           once for chart rows (keeping that normal B50 selection, which every `gain` is computed
           against), and turns a stored score into the core `ChartScore` the collection functions

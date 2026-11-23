@@ -216,7 +216,7 @@
 - [ ] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
-- [ ] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
+- [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
 - [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
 - [ ] P3-15 `feat(cli): confirm identity changes on bind and qr sync`：`hasStrongIdentityChanged`；「二维码属于另一个账号」的处理做成配置项〔新〕
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
@@ -1044,4 +1044,16 @@
     - 原定在这一步给 `user bind`/`unbind` 加的检查挪到了 P3-14（决定 91）。
     - 我加的：`cli/tests/commandRun.ts` 的 `commandIn` 现在检查命令失败时的错误码在它公开的错误列表里，不在就让测试失败。这样每个经过 `commandIn` 的测试都顺带检查了公开的错误码；例子测试只在没有用户的数据目录里跑，到不了「有用户在同步」这种状态。加上之后全部 115 个测试文件都通过，说明现有测试里没有命令报出未公开的错误码。
     - 变异测试：11 个变异，杀掉 7 个；从两个命令的错误列表里删掉 `SYNC_IN_PROGRESS` 的 2 个，在 `commandIn` 加了检查后也被杀掉。剩下 2 个是确认之后写入前的第二次检查（导入和删除用户各一处）：单进程的测试里，要求确认之前的第一次检查总会先报错，只有另一个进程恰好在两次检查之间开始同步才走得到第二次，测不到。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+93. **P3-13 的实现（2026-11-23）**：
+    - 分工：这一步是〔新〕，由 Codex（gpt-6.2-sol）写，和 P3-9 并行。
+    - `user bind <用户> lxns` 离线生成 15 分钟有效的 PKCE 授权链接。授权记录（verifier、client id、回调地址、落雪地址）存在 `credentials.json`，同一用户重新开始会替换旧记录。
+    - `--callback -` 从 stdin 读回调链接，在该用户的同步锁和凭据锁内完成绑定。先校验 state、用户、有效期、回调地址和回调结果；兑换前把授权码的哈希写进记录。服务明确拒绝时（非 2xx，或正文里有 OAuth 错误）恢复原记录；结果不明时（连接失败、响应读不出）保留哈希，同一链接再来就要求重新授权，不会再发一次授权码。
+    - 换到 token 后先写进记录，记录从这时起再保留 15 分钟，然后读账号资料、检查身份、保存用户。中途失败可以用同一链接继续，不再发请求。
+    - 账号资料沿用网页端的 JWT 字段：id 必须是正的安全整数，名字必须是字符串，且不能含任何凭据。SQLite 里 `lxns.auth` 为 null；token、落雪 id 和签发时间存在 `credentials.json`。
+    - 身份变化按设计先报 `USAGE`，等 P3-15 加确认；暂存的 token 保留 15 分钟。完成绑定不写 `sync_runs`。
+    - `credentials.ts` 也改了：解析失败的错误和 cause 不再带 `JSON.parse` 的原始消息（V8 的消息会引用文件内容）和未知字段名；`pruneCredentials` 保留授权记录的全部字段；`updateCredentials` 剪枝用的时间参数改名为 `pruneNow`。
+    - 没验证：用同一个落雪 client 再授权一次，网页端原来的授权会不会失效（设计 5.2「需要实测」）。列入手动测试清单。
+    - 我改的：`user bind` 的错误列表里删掉了多写的 `INTERNAL`（每个命令都隐含它）。
+    - 变异测试：38 个变异，第一轮杀掉 20 个。我补了这些测试：invalid_grant、没有 OAuth 正文的 5xx、200 正文里的 OAuth 错误，三种拒绝都恢复原记录；请求不跟随重定向；id 为 0、小数或超出安全整数、名字不是字符串的令牌被拒；开始授权时撞上同步锁；兑换期间丢了凭据锁（要求重新授权）或同步锁（保留 token，同一链接继续）；只缺 `lxns.redirectUri`；`--callback` 用于其他来源、`lxns` 带值参数、离线完成都报 `USAGE`；短到被 `JSON.parse` 整段引用的凭据文件。补完后 35 个被杀。剩下 3 个等价或测不到：暂存的 token 和签发时间总是一起写，`!token` 被签发时间的检查盖住；拿到同步锁后到第一次检查之间没有任何等待，单进程测不到；`validateLXNSOAuthTransaction` 返回的就是原对象。
     - 按决定 66 不单独送审，并入 P3 的整体审查。

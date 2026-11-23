@@ -136,6 +136,30 @@ describe("readCredentials", () => {
         expect(readCredentials(paths)).toEqual(valid);
     });
 
+    it("keeps secret content out of credential parse errors and their causes", () => {
+        const paths = makeHome();
+        mkdirSync(paths.home, { recursive: true });
+        const secret = "FAKE-LXNS-REFRESH-INVALID";
+        // JSON.parse quotes a file this short whole in its message, and a longer one in part.
+        const shortSecret = "FAKE-TOKEN";
+        for (const [content, hidden] of [
+            [shortSecret, shortSecret],
+            [secret, secret],
+            [JSON.stringify({ version: 1, users: {}, [secret]: true }), secret],
+        ]) {
+            writeFileSync(paths.credentials, content, "utf8");
+            expect(() => readCredentials(paths)).toThrow("无法解析");
+            try {
+                readCredentials(paths);
+            } catch (error) {
+                expect(error).toBeInstanceOf(CliError);
+                const failure = error as CliError;
+                expect(failure.stack).not.toContain(hidden);
+                expect(String(failure.cause)).not.toContain(hidden);
+            }
+        }
+    });
+
     it("accepts valid pendingLxnsAuthorizations", () => {
         const paths = makeHome();
         mkdirSync(paths.home, { recursive: true });
