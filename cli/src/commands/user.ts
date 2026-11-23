@@ -9,6 +9,7 @@ import { paginate } from "../output/paging";
 import { extend, int, list, object } from "../output/schema";
 import { resolveUser } from "../refs/user";
 import { readCredentials, stageCredentials, withCredentialsLock } from "../runtime/credentials";
+import { assertNoSync } from "../sync/lock";
 import {
     listUsers,
     makeDefaultUser,
@@ -271,7 +272,13 @@ export const userRemove = defineCommand(
                 description: "预览删除序号为 1 的用户；确认后运行 error.fix",
             },
         ],
-        errors: ["USAGE", ...USER_REFERENCE_ERRORS, "CONFIRMATION_REQUIRED", "DB_LOCKED"],
+        errors: [
+            "USAGE",
+            ...USER_REFERENCE_ERRORS,
+            "CONFIRMATION_REQUIRED",
+            "SYNC_IN_PROGRESS",
+            "DB_LOCKED",
+        ],
         dataSchema: extend<RemovedUser, UserDetail>(
             userDetailSchema,
             { remainingUsers: int("删除后还剩多少个用户") },
@@ -280,6 +287,7 @@ export const userRemove = defineCommand(
     },
     (args, ctx) => {
         const store = ctx.store();
+        const now = () => ctx.io.now().getTime();
         return withCredentialsLock(store, () => {
             const users = listUsers(store);
             const found = removalUser(users, args.positionals.user, args.options.yes);
@@ -287,6 +295,7 @@ export const userRemove = defineCommand(
             const confirmArgs = found.uid.startsWith("-")
                 ? ["user", "remove", "--", found.uid]
                 : ["user", "remove", found.uid];
+            store.transaction(() => assertNoSync(store, found.uid, now));
             requireConfirmation(args.options.yes, {
                 operation: "user.remove",
                 target: `user:${found.uid}`,
@@ -336,6 +345,7 @@ export const userRemove = defineCommand(
             let userDeleted = false;
             try {
                 store.transaction(() => {
+                    assertNoSync(store, found.uid, now);
                     if (!removeUser(store, found.uid))
                         throw new Error("confirmed user disappeared");
                 });

@@ -186,8 +186,8 @@ SaltNet is a three-package pnpm workspace:
         - `refresh.ts` is the `saltnet refresh` command; the downloads themselves are
           `src/catalog/refresh.ts`.
         - `user.ts` holds `user list`, `show`, `add`, `edit`, `remove` and `default`; removal uses
-          the shared content-bound confirmation and deletes that user's credentials under the
-          credentials lock.
+          the shared content-bound confirmation, refuses while that user's sync runs, and deletes
+          that user's credentials under the credentials lock.
         - `bind.ts` holds `user bind` and `user unbind` for `ingame`, `df-token`, `df-name` and
           `lxns`; `user bind ingame` supports `--id` and `--qr -` (GetQRInfo via SaltNet backend
           without retry), `df-token -` validates through Diving Fish records and stores the token
@@ -202,13 +202,14 @@ SaltNet is a three-package pnpm workspace:
           side together with the difficulty each was added at, and `charts --fav` lists every chart
           of those songs.
         - `backup.ts` is the backup interchange: `import` decodes the web v0/v1 format, strips
-          credentials and replaces users plus score events under the credentials lock after
-          content-bound confirmation, dropping pending authorizations; `export` restores selected
-          credentials and writes a private web-compatible v1 file. The confirmation binds the
-          backup bytes, every replaced user in order, which credentials the import would leave
-          (never their values) and the options; v0 users get stable uids from the file digest and
-          their position. `export` reads users and events in one `Store.read`. Both keep or restore
-          an LXNS authorization only for the LXNS account it was stored for.
+          credentials, refuses while any sync runs, replaces users plus score events, and records
+          itself in the sync journal under the credentials lock after content-bound confirmation,
+          dropping pending authorizations; `export` restores selected credentials and writes a
+          private web-compatible v1 file. The confirmation binds the backup bytes, every replaced
+          user in order, which credentials the import would leave (never their values) and the
+          options; v0 users get stable uids from the file digest and their position. `export` reads
+          users and events in one `Store.read`. Both keep or restore an LXNS authorization only for
+          the LXNS account it was stored for.
         - `sync.ts` is the `sync` command: fetches scores from Diving Fish (import token or username
           with backend fallback to public B50, warning `PUBLIC_B50_ONLY`) or LXNS (matching
           authorization) and writes them to SQLite (users, scores, b50_snapshot, rating_history,
@@ -437,7 +438,8 @@ SaltNet is a three-package pnpm workspace:
           and view tests, and `scoreUsers.ts` writes made-up score users through the repository for
           chart-row tests.
         - `commandRun.ts` runs one command through the harness against the mocked network (a test
-          can add or remove environment variables).
+          can add or remove environment variables) and fails the test when the command fails with
+          an error code it does not publish.
         - `dataSchema.ts` checks a value against a published schema with Ajv in strict mode;
           `commands/describe.test.ts`, `schema.test.ts`, `guide.test.ts` and `errorCodes.test.ts`
           cover the generated descriptions and published failures.

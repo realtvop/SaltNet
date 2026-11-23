@@ -23,7 +23,7 @@ import {
 } from "../../src/users/repository";
 import * as userRepository from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
-import { commandIn } from "../commandRun";
+import { commandIn, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { useTempHome } from "../tempHome";
 
@@ -1232,5 +1232,133 @@ describe("backup import and export", () => {
         expect(exported.code).toBe(0);
         expect(exported.json.data.lxnsAuthorizationCount).toBe(0);
         expect(decodeFile(target).users[0].lxns?.auth).toBeNull();
+    });
+
+    it("refuses import while any user sync lock is live and changes nothing", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("u1")], [storedEvent("u1")]);
+        seedCredentials(paths, {
+            u1: { divingFishImportToken: "fake-import-token-1" },
+        });
+        const before = readState(paths);
+        const credentialsBefore = readFileSync(paths.credentials, "utf8");
+        const source = writeBackup(paths, "sync-lock-test.json");
+
+        // 1. Without confirmation: lock held before calling import -> fails with SYNC_IN_PROGRESS immediately
+        const store = openStore(paths);
+        const lock1 = acquireLock(store, "sync:u1", { ttlMs: 60_000 });
+        expect(lock1.acquired).toBe(true);
+
+        const unconfirmed = await commandIn(paths, "import", [source]);
+        expect(unconfirmed.code).toBe(7);
+        expect(unconfirmed.json.error).toMatchObject({
+            code: "SYNC_IN_PROGRESS",
+            retryable: true,
+        });
+
+        // Verify nothing changed
+        expect(readState(paths)).toEqual(before);
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credentialsBefore);
+        const tmpFiles1 = readdirSync(paths.home).filter(name => name.endsWith(".tmp"));
+        expect(tmpFiles1).toEqual([]);
+        expect(store.db.prepare("SELECT count(*) AS n FROM sync_runs").get()).toEqual({ n: 0 });
+
+        // Release the lock
+        if (lock1.acquired) lock1.lock.release();
+
+        // 2. With confirmation: preview first (no lock), then take lock, then confirm
+        const preview = await previewImport(paths, source);
+        expect(preview.code).toBe(6);
+        expect(preview.json.error.code).toBe("CONFIRMATION_REQUIRED");
+
+        // Now acquire lock before confirmation is executed
+        const lock2 = acquireLock(store, "sync:other_user", { ttlMs: 60_000 });
+        expect(lock2.acquired).toBe(true);
+
+        const confirmed = await confirmFrom(paths, preview);
+        expect(confirmed.code).toBe(7);
+        expect(confirmed.json.error).toMatchObject({
+            code: "SYNC_IN_PROGRESS",
+            retryable: true,
+        });
+
+        // Verify nothing changed
+        expect(readState(paths)).toEqual(before);
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credentialsBefore);
+        const tmpFiles2 = readdirSync(paths.home).filter(name => name.endsWith(".tmp"));
+        expect(tmpFiles2).toEqual([]);
+        expect(store.db.prepare("SELECT count(*) AS n FROM sync_runs").get()).toEqual({ n: 0 });
+
+        if (lock2.acquired) lock2.lock.release();
+        store.close();
+    });
+
+    it("does not block import when an expired sync lock exists", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser("u1")], []);
+        const store = openStore(paths);
+        // Acquire lock in the past relative to harness clock (NOW) so it is already expired
+        acquireLock(store, "sync:u1", {
+            ttlMs: 100,
+            now: () => NOW.getTime() - 200_000,
+        });
+        store.close();
+
+        const source = writeBackup(paths, "expired-lock.json");
+        const imported = await importFile(paths, source);
+        expect(imported.code).toBe(0);
+    });
+
+    it("writes exactly one sync_runs row on successful import visible through v_sync_runs", async () => {
+        const paths = makeHome();
+        const incomingUsers = webUsers(); // 2 users
+        const incomingEvents = scoreEvents(); // 2 events
+        const source = writeBackup(paths, "journal-test.json", incomingUsers, incomingEvents);
+
+        const imported = await importFile(paths, source);
+        expect(imported.code).toBe(0);
+
+        const res = await commandIn(paths, "sql", ["SELECT * FROM v_sync_runs"]);
+        expect(res.code).toBe(0);
+        const items = res.json.data.items as Record<string, unknown>[];
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            kind: "import",
+            user_uid: null,
+            user_name: null,
+            source: null,
+            mode: null,
+            outcome: "ok",
+            error_code: null,
+            error_message: null,
+            summary: JSON.stringify({ users: 2, scoreEvents: 2 }),
+            cli_version: "9.9.9",
+        });
+        expect(items[0].started_at).toBeTruthy();
+        expect(items[0].finished_at).toBeTruthy();
+        expect(items[0].started_at).toBe(items[0].finished_at);
+    });
+
+    it("leaves no journal row when import transaction fails", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser()], []);
+        const store = openStore(paths);
+        store.db.exec(
+            "CREATE TRIGGER test_fail_users BEFORE INSERT ON users BEGIN SELECT RAISE(ABORT, 'boom'); END;"
+        );
+        store.close();
+
+        const source = writeBackup(paths, "trigger-journal-fail.json");
+        const preview = await previewImport(paths, source);
+        expect(preview.code).toBe(6);
+
+        const failed = await confirmFrom(paths, preview);
+        expect(failed.code).not.toBe(0);
+
+        const storeAfter = openStore(paths);
+        expect(storeAfter.db.prepare("SELECT count(*) AS n FROM sync_runs").get()).toEqual({
+            n: 0,
+        });
+        storeAfter.close();
     });
 });

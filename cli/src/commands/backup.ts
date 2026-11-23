@@ -17,6 +17,8 @@ import {
     withCredentialsLock,
 } from "../runtime/credentials";
 import { writeFileAtomic } from "../runtime/files";
+import { recordRun } from "../sync/journal";
+import { assertNoSync } from "../sync/lock";
 import {
     assertStoredScoreEvent,
     assertStoredUser,
@@ -282,7 +284,7 @@ export const importBackup = defineCommand(
                 description: "预览导入备份；确认后运行 error.fix",
             },
         ],
-        errors: ["INVALID_BACKUP", "CONFIRMATION_REQUIRED", "DB_LOCKED"],
+        errors: ["INVALID_BACKUP", "CONFIRMATION_REQUIRED", "SYNC_IN_PROGRESS", "DB_LOCKED"],
         dataSchema: object<ImportResult>(
             {
                 path: str("导入文件的绝对路径"),
@@ -301,6 +303,7 @@ export const importBackup = defineCommand(
         const prepared = prepareImport(backup.decoded.users, backup.decoded.events);
         assertImportable(absolutePath, prepared);
         const store = ctx.store();
+        const now = () => ctx.io.now().getTime();
         return withCredentialsLock(store, () => {
             const currentCredentials = readCredentials(ctx.paths);
             const snapshot = store.read(() => {
@@ -332,6 +335,7 @@ export const importBackup = defineCommand(
                 ...(givenPath.startsWith("-") ? ["--"] : []),
                 givenPath,
             ];
+            store.transaction(() => assertNoSync(store, null, now));
             requireConfirmation(args.options.yes, {
                 operation: "backup.import",
                 target: absolutePath,
@@ -377,7 +381,28 @@ export const importBackup = defineCommand(
 
             const staged = stageCredentials(ctx.paths, credentials);
             try {
-                replaceUsers(store, prepared.users, prepared.events);
+                store.transaction(() => {
+                    assertNoSync(store, null, now);
+                    replaceUsers(store, prepared.users, prepared.events);
+                    recordRun(
+                        store,
+                        {
+                            kind: "import",
+                            userUid: null,
+                            userName: null,
+                            source: null,
+                            mode: null,
+                        },
+                        {
+                            outcome: "ok",
+                            summary: {
+                                users: prepared.users.length,
+                                scoreEvents: prepared.events.length,
+                            },
+                        },
+                        { version: ctx.version, now }
+                    );
+                });
             } catch (error) {
                 staged.discard();
                 throw error;

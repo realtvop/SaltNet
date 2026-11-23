@@ -3,6 +3,7 @@ import type { RecordedRequest, Route } from "./mockHttp";
 import { getFixtureLXNSCollections } from "@core/fixtures/lxns";
 import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { createRegistry } from "../src/commands";
+import { commandErrorCodes } from "../src/commands/describe";
 import { createHarness, run } from "./harness";
 import { jsonResponse, mockFetch } from "./mockHttp";
 
@@ -84,5 +85,19 @@ export async function commandIn(
     } catch {
         // Non-JSON output like --format tsv
     }
+    assertPublishedFailure(json);
     return { code, json: json!, stdout, stderr: harness.stderr(), requests: fetch.requests };
+}
+
+/** Every failure a test sees must be one the command publishes, so that agents can rely on the list. */
+function assertPublishedFailure(json: PrintedOutput | undefined): void {
+    if (!json || json.ok !== false || !json.error?.code || !json.command) return;
+    const command = createRegistry().find(json.command);
+    if (!command) return;
+    const published = commandErrorCodes(command.spec) as readonly string[];
+    if (!published.includes(json.error.code)) {
+        throw new Error(
+            `${json.command} failed with ${json.error.code}, which it does not publish (${published.join(", ")})`
+        );
+    }
 }

@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { readCredentials } from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
+import { beginRun, finishRun } from "../../src/sync/journal";
 import { readScoreEvents, readUsers, replaceUsers } from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { formatLocalTime } from "../../src/util/time";
@@ -804,6 +805,92 @@ describe("user remove and default", () => {
         const confirmed = await commandIn(paths, confirmArgs[0], confirmArgs.slice(1));
         expect(confirmed.code).toBe(0);
         expect(readStored(paths)).toEqual([]);
+    });
+
+    it("refuses removal while target user's sync lock is live, permits while another user's lock is live, and preserves journal rows", async () => {
+        const paths = makeHome();
+        seed(paths, [madeUser("one", { remark: "One" }), madeUser("two", { remark: "Two" })]);
+        const initialCreds = {
+            version: 1 as const,
+            users: {
+                one: { divingFishImportToken: "fake-df-token-one" },
+                two: { divingFishImportToken: "fake-df-token-two" },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(initialCreds, null, 2)}\n`, "utf8");
+
+        // Write a journal row for user "one" using the journal API
+        const store = openStore(paths);
+        const at = () => NOW.getTime();
+        const acquisition = acquireLock(store, "sync:one", { ttlMs: 60_000, now: at });
+        if (!acquisition.acquired) throw new Error("expected acquisition");
+        const runId = beginRun(
+            store,
+            { kind: "sync", userUid: "one", userName: "One", source: "lxns", mode: "full" },
+            acquisition.lock,
+            { now: at, version: "9.9.9" }
+        );
+        finishRun(store, runId, { outcome: "ok", summary: { count: 10 } }, { now: at });
+
+        // 1. Without confirmation: while user "one" sync lock is live -> exit code 7, SYNC_IN_PROGRESS
+        const unconfirmed = await commandIn(paths, "user", ["remove", "one"]);
+        expect(unconfirmed.code).toBe(7);
+        expect(unconfirmed.json.error).toMatchObject({
+            code: "SYNC_IN_PROGRESS",
+            retryable: true,
+        });
+        expect(readStored(paths).map(u => u.uid)).toEqual(["one", "two"]);
+        expect(readCredentials(paths).users.one).toBeDefined();
+
+        // Release the lock on "one"
+        acquisition.lock.release();
+
+        // 2. With confirmation: preview first (when lock is free), then acquire lock, then confirm
+        const preview = await commandIn(paths, "user", ["remove", "one"]);
+        expect(preview.code).toBe(6);
+        expect(preview.json.error.code).toBe("CONFIRMATION_REQUIRED");
+        const fix = (preview.json.error as unknown as ConfirmationError).fix;
+        const confirmArgs = splitCommandLine(fix).slice(1);
+
+        // Re-acquire lock on "one"
+        const lockOneAgain = acquireLock(store, "sync:one", { ttlMs: 60_000, now: at });
+        if (!lockOneAgain.acquired) throw new Error("expected lockOneAgain");
+
+        const confirmedWhileLocked = await commandIn(paths, confirmArgs[0], confirmArgs.slice(1));
+        expect(confirmedWhileLocked.code).toBe(7);
+        expect(confirmedWhileLocked.json.error).toMatchObject({
+            code: "SYNC_IN_PROGRESS",
+            retryable: true,
+        });
+        expect(readStored(paths).map(u => u.uid)).toEqual(["one", "two"]);
+        expect(readCredentials(paths).users.one).toBeDefined();
+
+        lockOneAgain.lock.release();
+
+        // 3. While another user's sync lock is live (user "two"), removal of "one" goes through
+        const lockTwo = acquireLock(store, "sync:two", { ttlMs: 60_000, now: at });
+        if (!lockTwo.acquired) throw new Error("expected lockTwo");
+
+        const removed = await commandIn(paths, confirmArgs[0], confirmArgs.slice(1));
+        expect(removed.code).toBe(0);
+        expect(removed.json.data.uid).toBe("one");
+        expect(readStored(paths).map(u => u.uid)).toEqual(["two"]);
+        expect(readCredentials(paths).users.one).toBeUndefined();
+        expect(readCredentials(paths).users.two).toBeDefined();
+
+        lockTwo.lock.release();
+
+        // 4. Removed user's existing journal rows stay in sync_runs
+        const journalRow = store.db
+            .prepare("SELECT user_uid, outcome, summary FROM sync_runs WHERE id = ?")
+            .get(runId) as { user_uid: string; outcome: string; summary: string };
+        expect(journalRow).toEqual({
+            user_uid: "one",
+            outcome: "ok",
+            summary: JSON.stringify({ count: 10 }),
+        });
+
+        store.close();
     });
 });
 

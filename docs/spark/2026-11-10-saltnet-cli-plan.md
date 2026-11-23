@@ -209,7 +209,7 @@
 
 - [x] P3-6 `feat(cli): add credentials file and http client`：`credentials.json` 0600、原子写入；超时、只读请求重试一次、`saltnet-cli/<版本>` UA、主备地址切换〔新〕
 - [x] P3-7 `feat(cli): add sync_runs journal and sync locks`〔新〕
-- [ ] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
+- [x] P3-7b `feat(cli): refuse import and user remove during a sync`：导入和删除用户在写事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功在 `sync_runs` 里记一条 `import`〔新〕
 - [x] P3-8a `refactor(core): move sync result application to shared/core`：网页端收到同步结果后的处理（`applySyncUpdate`）和成绩历史批次生成事件的部分（`buildScoreHistoryBatchEvents`）搬进 core，给 CLI 的同步共用；网页端行为不变〔简单〕
 - [x] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [ ] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
@@ -1035,4 +1035,13 @@
         - P3-8 那条「`song_id` 不能转换就过滤掉」的测试原来用 `Object.create(null)`。它存成 JSON 再读回来就是普通对象，测试其实没测到过滤。而且同步合并只按新来的记录的键去查旧记录，从不转换旧记录，就算漏了过滤也不会抛错。改成：在新来的记录对应的键下存一条 `song_id` 为 `{ toString: 1 }` 的记录，带上播放次数；水鱼不给播放次数，同步后新记录没有拿到它，说明 core 没看到这条记录，也就没有合并。
         - `cli/tests/commandRun.ts` 的 `commandIn` 返回的请求带上 `init`（类型从 `{ url }` 改为 `RecordedRequest`），测试才能检查请求头。
     - 变异测试：46 个变异，第一次杀掉 29 个。补测试后，17 个幸存的又杀掉 14 个。剩下 3 个是等价的：删授权时漏删签发时间或落雪 id，同一次 `updateCredentials` 的 `pruneCredentials` 会把没有授权的这两项删掉；写回时漏写落雪 id，条目里本来就是同一个 id（按账号规则取到授权的前提就是 id 相同，core 也确认了新令牌属于同一账号）。
+    - 按决定 66 不单独送审，并入 P3 的整体审查。
+92. **P3-7b 的实现（2026-11-23）**：
+    - 分工：这一步是〔新〕，原定 Codex 写。当时 Codex 本周额度用完，交给 Gemini，和 P3-14 并行。它的汇报（`response.txt`）在草稿目录被清理时丢了（决定 90），下面按补丁和检查结果记。
+    - `backup import` 在要求确认之前和写事务里各查一次同步锁，任何用户有同步在进行都报 `SYNC_IN_PROGRESS`（导入会替换所有用户）；导入成功时，在替换用户的同一个事务里往 `sync_runs` 记一条 `import`，摘要是导入的用户数和成绩事件数。
+    - `user remove` 同样在要求确认之前和写事务里各查一次，只看被删的那个用户的同步锁。
+    - 两处都在要求确认之前先查一次，这样同步进行中的预览直接报 `SYNC_IN_PROGRESS`，不会先给一个确认口令，确认之后才失败。
+    - 原定在这一步给 `user bind`/`unbind` 加的检查挪到了 P3-14（决定 91）。
+    - 我加的：`cli/tests/commandRun.ts` 的 `commandIn` 现在检查命令失败时的错误码在它公开的错误列表里，不在就让测试失败。这样每个经过 `commandIn` 的测试都顺带检查了公开的错误码；例子测试只在没有用户的数据目录里跑，到不了「有用户在同步」这种状态。加上之后全部 115 个测试文件都通过，说明现有测试里没有命令报出未公开的错误码。
+    - 变异测试：11 个变异，杀掉 7 个；从两个命令的错误列表里删掉 `SYNC_IN_PROGRESS` 的 2 个，在 `commandIn` 加了检查后也被杀掉。剩下 2 个是确认之后写入前的第二次检查（导入和删除用户各一处）：单进程的测试里，要求确认之前的第一次检查总会先报错，只有另一个进程恰好在两次检查之间开始同步才走得到第二次，测不到。
     - 按决定 66 不单独送审，并入 P3 的整体审查。
