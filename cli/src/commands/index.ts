@@ -11,6 +11,7 @@ import { courseList, courseShow } from "./course";
 import { favAdd, favCreate, favDelete, favList, favRemove, favRename } from "./fav";
 import { guide } from "./guide";
 import { history } from "./history";
+import { ingameBackup } from "./ingame";
 import { kaleidxscope } from "./kaleidxscope";
 import { rating } from "./rating";
 import { refresh } from "./refresh";
@@ -47,6 +48,7 @@ export const COMMANDS: readonly CommandDefinition[] = [
     userBind,
     userUnbind,
     sync,
+    ingameBackup,
     favList,
     favCreate,
     favRename,
@@ -72,6 +74,7 @@ export const COMMAND_GROUPS: Readonly<Record<string, string>> = {
     config: "设置：查看和修改 config.json",
     course: "段位：列表和详情",
     fav: "收藏夹：查看和管理本地收藏夹",
+    ingame: "舞萌账号：导出备份（check-login 随后加入）",
     user: "用户：查看和管理本地用户",
 };
 

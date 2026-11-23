@@ -42,6 +42,7 @@ describe("schema command", () => {
             "user bind",
             "user unbind",
             "sync",
+            "ingame backup",
             "fav list",
             "fav create",
             "fav rename",
@@ -84,6 +85,11 @@ describe("schema command", () => {
                     "user bind",
                     "user unbind",
                 ],
+            },
+            {
+                name: "ingame",
+                summary: "舞萌账号：导出备份（check-login 随后加入）",
+                commands: ["ingame backup"],
             },
             {
                 name: "fav",

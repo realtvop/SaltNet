@@ -13,6 +13,7 @@ export const WARNING_CODES = {
     SOME_FAILED: "sync --all 里有用户失败",
     LXNS_EXPIRING: "落雪授权快过期了",
     PUBLIC_B50_ONLY: "只更新了水鱼公开的 B50，详细成绩保留原样",
+    PARTIAL_BACKUP: "游戏格式的备份里没有角色数据，只有成绩和已有的收藏品",
 } as const;
 
 export type WarningCode = keyof typeof WARNING_CODES;

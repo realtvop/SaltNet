@@ -36,7 +36,8 @@ SaltNet is a three-package pnpm workspace:
       (`collection/progress.ts`), version-plate requirement/progress evaluation, and the
       music-to-collection reverse index builder.
     - `user/`: `inGame.ts` (in-game user types), `type.ts` (the stored user profile, detailed score
-      map, favorites and their helpers), `ratingHistory.ts` (normalizing and appending rating
+      map, favorites and their helpers), `gameBackup.ts` (building the in-game format backup: music
+      detail, items, characters), `ratingHistory.ts` (normalizing and appending rating
       history; `normalizeRatingHistory` takes an optional clock), `backup.ts` (the user data backup file: building a v1 backup and reading v0 and v1
       backups, including their score history), `migrateData.ts` (migrating and timestamping updated
       score records and B50 lists, and supplementing record data) and `scoreHistory/`: the score
@@ -188,6 +189,9 @@ SaltNet is a three-package pnpm workspace:
         - `user.ts` holds `user list`, `show`, `add`, `edit`, `remove` and `default`; removal uses
           the shared content-bound confirmation, refuses while that user's sync runs, and deletes
           that user's credentials under the credentials lock.
+        - `ingame.ts` holds `ingame backup` (exporting the in-game format JSON backup for a user with
+          mode 0600; warns `PARTIAL_BACKUP` when characters are missing or empty; `check-login`
+          will follow).
         - `bind.ts` holds `user bind` and `user unbind` for `ingame`, `df-token`, `df-name` and
           `lxns`; `user bind ingame` supports `--id` and `--qr -` (GetQRInfo via SaltNet backend
           without retry), `df-token -` validates through Diving Fish records and stores the token
@@ -235,6 +239,8 @@ SaltNet is a three-package pnpm workspace:
           `configFile.ts` changes one entry of `config.json` for `config set` and `config unset` by
           rewriting the whole file in one step through `files.ts`, which `catalog/snapshots.ts` uses
           too, and leaves a file that is not a JSON object alone.
+        - `outputFile.ts` resolves output file paths against the working directory, checks
+          `FILE_EXISTS` with a fix adding `--overwrite`, and writes files atomically with mode 0600.
         - `io.ts` wraps stdout/stderr/stdin and the network (`fetch`) so tests can inject them.
         - `http.ts` gives commands a `fetch` (`ctx.http()`) that validates header characters before
           sending, redacts header values from error messages and causes, adds the User-Agent and a
@@ -530,7 +536,8 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   association index (core builder and web wrapper), collection ownership and scored collection
   charts, and version-plate tab merging.
 - `pnpm test:score-history` validates score-change detection, building batch events, IndexedDB
-  history, generations, user-backup compatibility, and rating-history normalization.
+  history, generations, user-backup compatibility, in-game format backup generation
+  (`gameBackup.test.ts`), and rating-history normalization.
 - `pnpm test:recent` validates the recent charts tab ordering, score change timestamp sorting, and limits.
 - `pnpm test:music-search` validates music search transliteration, script variants, and metadata indexing.
 - `pnpm test:music-data` validates SaltMeta fetching (success, HTTP, version and network failures), restoration of cached music data, the duplicate-song merge, and the shared SaltMeta and LXNS test fixtures.

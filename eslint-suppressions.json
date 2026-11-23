@@ -1044,15 +1044,6 @@
     }
   },
   "src/components/data/user/exportBackup.ts": {
-    "import/consistent-type-specifier-style": {
-      "count": 1
-    },
-    "perfectionist/sort-imports": {
-      "count": 1
-    },
-    "style/member-delimiter-style": {
-      "count": 19
-    },
     "antfu/if-newline": {
       "count": 1
     },

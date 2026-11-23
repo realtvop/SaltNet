@@ -226,8 +226,8 @@
 
 完成标准：网页端能做的事 CLI 都能做（nearcade 除外）。
 
-- [ ] P4-1 `feat(cli): add ingame check-login and clear-tickets`：`clear-tickets` 要确认；只用模拟 HTTP 测试〔新〕
-- [ ] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
+- [ ] P4-1 `feat(cli): add ingame check-login`：只用模拟 HTTP 测试；不做 `clear-tickets`（决定 95）〔新〕
+- [x] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
 - [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
 - [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
 - [ ] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
@@ -1078,3 +1078,16 @@
         - 其他来源失败时，fix 建议舞萌来源。
     - 补完后 30 个被杀。剩下 1 个是等价变异：舞萌来源的错误不带 cause，但 CLI 从不输出 cause（`--verbose` 只给 `INTERNAL` 打印它自己的栈，日志只存错误码和消息），所以去掉这层防护看不出区别。
     - 按决定 66 不单独送审，并入 P3 的整体审查。
+95. **P4-2 的实现（2026-11-23）**：
+    - 分工：这一步是〔新〕，原定 Codex 写，Codex 额度暂停期间交给了 Gemini，所以比 P4-1 先做：P4-1 的 `check-login` 要加进它建的 `ingame` 命令组。它的汇报在草稿目录被清理时丢了，后来找回。
+    - `ingame backup <文件> [--user] [--overwrite]` 把用户的成绩、收藏品和角色导出成网页端「导出备份」的游戏格式 JSON，以 0600 权限原子写入。不读凭据，不联网。
+        - 用户没有舞萌 ID 时报 `NOT_BOUND`。没更新过或没有完整成绩时报 `NOT_FOUND`，fix 指向 `sync`。
+        - 目标文件已存在时报 `FILE_EXISTS`，fix 加上 `--overwrite`。目录不存在时报 `USAGE`，不建目录。
+        - 没有角色数据时照样导出，并警告 `PARTIAL_BACKUP`。
+    - 转换代码从 `src/components/data/user/exportBackup.ts` 原样移到 `shared/core/user/gameBackup.ts`（`buildGameBackup`），网页端改为调用它。我比对过移走和新增的行：除了加 `export`、新的 `GameBackup` 类型和直接 `return`，只多了 `detailed ?? {}`。两个调用方都先检查过 `detailed`，走不到这一步，所以网页端行为不变。
+    - `cli/src/runtime/outputFile.ts` 是写文件的公共部分（`resolveOutputFile`、`writeOutputFile`），P4-3 的 `b50 --image` 会复用。
+    - `eslint-suppressions.json` 里，`exportBackup.ts` 有 3 条规则（共 21 处）已经不再出现，我手动删掉了，没有用 `--prune-suppressions`。
+    - 我改的：fix 里的 uid 按其他命令的写法加引号；以 `-` 开头的 uid 用 `--user=`，绑定命令把 uid 放在 `--` 后面。为此加了测试，并检查打印出的绑定命令能被解析。
+    - P4-1 的范围改了：只做 `ingame check-login`，不做 `clear-tickets`。网页端在 1667dd2d（2026-01-12）把「清理补偿倍券」和「预览倍券」的菜单都注释掉了，CLI 不再提供网页端已经隐藏的账号操作。所以 `ingame` 命令组的说明只写 `check-login` 随后加入，计划里 P4-1 的标题也改了。设计 3.2 和 5.4 由 P4-1 修改。
+    - 我还改了 `--overwrite` 的 fix：以 `-` 开头的文件名写成 `./<文件>`，以 `-` 开头的 `--user` 值写成 `--user=`，这样打印出的命令能直接运行。测试会把 fix 拆开再跑一遍。
+    - 变异测试：CLI 19 个，core 8 个。第一轮 CLI 有 4 个存活：路径中间是文件（`ENOTDIR`）、没有角色列表、fix 里的 `--user`、按字节算大小。core 有 3 个存活：成绩率四舍五入、道具种类取列表位置、`detailed ?? {}`。前 6 个补了测试，连同上一条新加的 2 个变异都被杀掉。`detailed ?? {}` 是等价变异。

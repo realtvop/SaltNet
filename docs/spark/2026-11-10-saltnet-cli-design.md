@@ -428,6 +428,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
     - `SOME_FAILED`：`sync --all` 里有用户失败（见 5.1）
     - `LXNS_EXPIRING`：落雪授权快过期了（见 5.3）
     - `PUBLIC_B50_ONLY`：只更新了水鱼公开的 B50，详细成绩保留原样（见 5.1）
+    - `PARTIAL_BACKUP`：游戏格式的备份里没有角色数据，只有成绩和已有的收藏品
 
 失败时的例子：`song link`。两首「Link」的别名里都有 link。
 
@@ -665,7 +666,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 `error.fix` 总是用稳定的 uid 再指向这个用户；uid 以 `-` 开头时写成
 `user remove -- <uid>`，确认码仍插在 `--` 前面。
 
-**写文件**：`export`、`ingame backup`、`b50 --image` 遇到同名文件时返回 `FILE_EXISTS`，加 `--overwrite` 才会覆盖。
+**写文件**：`export`、`ingame backup`、`b50 --image` 遇到同名文件时返回 `FILE_EXISTS`，加 `--overwrite` 才会覆盖。`ingame backup` 以 0600 权限写入与游戏格式兼容的 JSON 备份；当用户缺少角色数据时文件仍会导出，并附带 `PARTIAL_BACKUP` 警告。
 
 ### 5.5 网络
 
