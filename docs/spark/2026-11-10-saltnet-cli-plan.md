@@ -220,7 +220,7 @@
 - [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
 - [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
 - [x] P3-15 `feat(cli): confirm identity changes on bind`：`hasStrongIdentityChanged`；按内容绑定的确认、原位换成新 uid、清空旧成绩和历史、凭据跟着搬（决定 102）〔新〕
-- [ ] P3-15b `feat(cli): follow sync.qrOtherAccount on qr sync`：「二维码属于另一个账号」的处理做成配置项〔新〕
+- [x] P3-15b `feat(cli): follow sync.qrOtherAccount on qr sync`：「二维码属于另一个账号」的处理做成配置项〔新〕
 - [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
 - [ ] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
 
@@ -1199,3 +1199,14 @@
     - 确认后在一个事务里：照网页端清空玩家数据、换新 uid，`replaceUserIdentity` 删掉旧用户（子表级联删除）并在原位置插入新用户，结果带 `oldUid` 和 `newUid`。凭据跟着搬到新 uid，落雪授权只在属于这位用户的落雪账号时保留；旧 uid 待完成的落雪授权一并去掉。凭据文件在 SQLite 提交后才改名到位，这一步失败返回 `INTERNAL`，说明绑定已保存而凭据没更新。有同步在进行时拒绝。
     - 指南：规则 8 加上「把用户绑定到另一个人的账号」；P3-12 时去掉的 `df-name` 例子补回来，并加上 `user bind 0 ingame --id 99990001` 和 `user bind 0 lxns`。Codex 给 `df-name` 例子起的名字是 `fake-new-diving-fish-name`，我换成了更像用户名的 `example_player`。
     - 变异测试：19 个。第一轮有 6 个没杀掉：确认码不含目标身份、不含落雪兑换的过期时间，搬凭据时不检查落雪账号、不去掉旧 uid 待完成的授权，确认时接受没检查过的兑换，带 `--yes` 时不先按 uid 精确查找。我补了 6 个测试，对应这 6 处，重跑后全部杀掉。
+
+103. **P3-15b 的实现（2026-11-23）**：
+
+
+    - 分工：Codex（gpt-6.2-sol）写，和 P3-15 并行；补丁基于 87ad751 的内容，在 P3-15 之后干净地打上了。
+    - `sync --qr -` 扫到的二维码属于另一个舞萌账号时，看 `sync.qrOtherAccount`（P1-2 起就有这个设置，但同步一直直接报 `USAGE`）。默认 `rewrite` 和网页端一样：照常登录做全量更新，存下的游戏 ID 改成二维码的账号，成绩历史接在同一个 uid 后面，照常上传；成功后加一条 `GAME_ACCOUNT_CHANGED` 警告，写用户名而不写 id，`fix` 是 `saltnet config set sync.qrOtherAccount error`。首次扫码（原来没有游戏 ID）不算换账号，不警告。
+    - `error`：在拿锁和登录之前返回 `USAGE`，`fix` 是 `user bind <用户> ingame --qr -`，走 P3-15 的换人确认；默认用户写 `0`，其他用户写 uid（决定 98）。
+    - 两次检查共用一次 `GetQRInfo` 的结果：拿锁之前按用户列表里的游戏 ID 查一次，拿到锁后按锁内读到的用户再判断一次；警告也按锁内的 ID 决定。
+    - `ingame check-login` 在两种设置下都拒绝别的账号的二维码（它只核对，不改数据）；`--dry-run` 和 `--all` 不变。
+    - 设计 5.1 写了两种设置；待确认 5 改成「已做成配置项，默认和网页端一致，默认值要不要改成 `error` 仍待定」。指南的「更新一下成绩」加了一句。
+    - 变异测试：12 个，全部杀掉。它们覆盖：两种设置各自的行为（`error` 不再拒绝、`rewrite` 也拒绝），拿锁前后的两次检查和锁内用哪个 ID，警告是否给出、按哪个 ID 决定、带不带 `fix`，拒绝时的 `fix` 是否带上、是否把默认用户写成 `0`，存下的游戏 ID 是否改写，首次扫码是否被当成换账号。

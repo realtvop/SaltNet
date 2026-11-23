@@ -10,6 +10,7 @@ export const WARNING_CODES = {
     NO_PLAY_COUNTS: "没有可用的正数游玩次数，PC50 只能按 rating 排序",
     TRUNCATED: "sql 的结果被截断了",
     UPLOAD_FAILED: "同步成功了，但上传到水鱼或落雪失败",
+    GAME_ACCOUNT_CHANGED: "二维码属于另一个舞萌账号，同步后用户的游戏 ID 已改为该账号",
     SOME_FAILED: "sync --all 里有用户失败",
     LXNS_EXPIRING: "落雪授权快过期了",
     PUBLIC_B50_ONLY: "只更新了水鱼公开的 B50，详细成绩保留原样",

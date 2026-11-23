@@ -184,16 +184,26 @@ describe("saltnet ingame check-login", () => {
         }
     );
 
-    it("rejects another account's QR after GetQRInfo and before CheckLogin", async () => {
-        const paths = makeHome();
-        seed(paths);
-        const result = await checkLogin(paths, ["--qr", "-"], {
-            [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }),
-        });
-        expect(result.code).toBe(2);
-        expect(result.json.error.code).toBe("USAGE");
-        expect(result.requests.map(request => request.url)).toEqual([getQr]);
-    });
+    it.each(["rewrite", "error"])(
+        "rejects another account's QR before CheckLogin with sync policy %s",
+        async policy => {
+            const paths = makeHome();
+            seed(paths);
+            const result = await checkLogin(
+                paths,
+                ["--qr", "-"],
+                { [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }) },
+                qrInput,
+                { SALTNET_SYNC_QR_OTHER_ACCOUNT: policy }
+            );
+            expect(result.code).toBe(2);
+            expect(result.json.error).toMatchObject({
+                code: "USAGE",
+                message: "二维码属于另一个舞萌账号",
+            });
+            expect(result.requests.map(request => request.url)).toEqual([getQr]);
+        }
+    );
 
     it.each([
         { endpoint: getQr, urls: [getQr] },

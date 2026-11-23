@@ -22,6 +22,7 @@ const makeHome = useTempHome();
 const uid = "fake-upload-user";
 const gameId = 99001001;
 const lxnsId = 99001002;
+const otherGameId = 99001003;
 const qrCode = `${"0".repeat(56)}FAKE0002`;
 const qr = `SGWCMAID${qrCode}`;
 const importToken = "FAKE-DF-IMPORT-P3-10";
@@ -100,6 +101,16 @@ async function seed(paths: RuntimePaths, credentials: UserCredentials, playerUid
     stageCredentials(paths, { version: 1, users: { [playerUid]: credentials } }).commit();
 }
 
+function gameUpdateResponse(userId = gameId) {
+    return jsonResponse({
+        userId,
+        userName: "Fake Game Upload",
+        rating: 15000,
+        divingFishData: gameRecords,
+        b50: { sd: [sd], dx: [dx] },
+    });
+}
+
 function sync(
     paths: RuntimePaths,
     args: string[],
@@ -111,13 +122,7 @@ function sync(
         stdin: qr,
         network: routes({
             [qrUrl]: jsonResponse({ errorID: 0, userID: gameId }),
-            [updateUrl]: jsonResponse({
-                userId: gameId,
-                userName: "Fake Game Upload",
-                rating: 15000,
-                divingFishData: gameRecords,
-                b50: { sd: [sd], dx: [dx] },
-            }),
+            [updateUrl]: gameUpdateResponse(),
             ...overrides,
         }),
     });
@@ -167,15 +172,22 @@ function expectPrivate(paths: RuntimePaths, result: { stdout: string; stderr: st
 }
 
 describe("uploads after in-game sync", () => {
-    it.each(["full", "fast"])(
-        "uploads the raw game records to both targets after a %s sync",
-        async mode => {
+    it.each([
+        { mode: "full", qrAccount: gameId },
+        { mode: "full", qrAccount: otherGameId },
+        { mode: "fast", qrAccount: gameId },
+    ])(
+        "uploads the raw game records to both targets after a $mode sync for $qrAccount",
+        async ({ mode, qrAccount }) => {
             const paths = makeHome();
             await seed(paths, { ...authorization(), divingFishImportToken: importToken });
             const full = mode === "full";
             const result = await sync(paths, full ? ["--qr", "-"] : [], {
+                [qrUrl]: jsonResponse({ errorID: 0, userID: qrAccount }),
+                [updateUrl]: gameUpdateResponse(qrAccount),
                 [dfUploadUrl]: () => {
                     expectUploadStarted(paths, "diving-fish");
+                    expect(readState(paths).player?.inGame.id).toBe(qrAccount);
                     return textResponse("ok");
                 },
                 [playerUrl]: jsonResponse({
@@ -235,6 +247,9 @@ describe("uploads after in-game sync", () => {
             expect(result.code).toBe(0);
             expectConforms(syncDataSchema, result.json.data);
             expect(result.json.data).toMatchObject({ mode, source: "ingame" });
+            expect(result.json.warnings.map(w => w.code)).toEqual(
+                qrAccount === otherGameId ? ["GAME_ACCOUNT_CHANGED"] : []
+            );
             expect(result.json.data.uploads).toEqual([
                 { target: "diving-fish", ok: true, error: null },
                 { target: "lxns", ok: true, error: null },

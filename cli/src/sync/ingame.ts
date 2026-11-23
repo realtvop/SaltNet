@@ -100,8 +100,12 @@ export async function readVerifiedQr(ctx: CommandContext): Promise<VerifiedQr> {
     return { input, code, userId: id };
 }
 
-export function assertQrAccount(storedId: number | null, qr: VerifiedQr): void {
-    if (storedId && storedId !== qr.userId) {
-        throw usageError("二维码属于另一个舞萌账号");
+export function isOtherQrAccount(storedId: number | null, qr: VerifiedQr): boolean {
+    return Boolean(storedId) && storedId !== qr.userId;
+}
+
+export function assertQrAccount(storedId: number | null, qr: VerifiedQr, fix?: string): void {
+    if (isOtherQrAccount(storedId, qr)) {
+        throw usageError("二维码属于另一个舞萌账号", { fix });
     }
 }

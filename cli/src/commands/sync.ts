@@ -193,7 +193,8 @@ export const sync = defineCommand(
             },
             qr: {
                 kind: "credential",
-                description: "从 stdin 读取舞萌二维码扫描结果或页面链接，进行全量更新",
+                description:
+                    "从 stdin 读取舞萌二维码扫描结果或页面链接，进行全量更新。二维码属于另一个舞萌账号时，sync.qrOtherAccount 决定改写游戏 ID（默认）或报错",
             },
             upload: {
                 kind: "boolean",

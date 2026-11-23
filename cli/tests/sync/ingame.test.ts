@@ -6,7 +6,7 @@ import { Buffer } from "node:buffer";
 import { readFileSync, statSync } from "node:fs";
 import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { syncDataSchema } from "../../src/commands/sync";
 import { CliError } from "../../src/errors";
 import { resolveConfig } from "../../src/runtime/config";
@@ -15,11 +15,13 @@ import { createHttp } from "../../src/runtime/http";
 import { openStore } from "../../src/store/store";
 import { postQrGameApi } from "../../src/sync/ingame";
 import { readRuns } from "../../src/sync/journal";
-import { readScoreEvents, readUsers } from "../../src/users/repository";
+import * as syncLock from "../../src/sync/lock";
+import { readScoreEvents, readUsers, saveUser } from "../../src/users/repository";
 import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { delayedRoute, jsonResponse, mockFetch } from "../mockHttp";
-import { allFixtureRecords, recordOf, seedScoreUsers, user } from "../scoreUsers";
+import { parsePrintedCommand } from "../printedCommand";
+import { allFixtureRecords, recordOf, scoreEvent, seedScoreUsers, user } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -118,6 +120,7 @@ function persisted(paths: RuntimePaths) {
     try {
         return {
             users: readUsers(store),
+            gameIds: store.db.prepare("SELECT uid, in_game_id FROM users ORDER BY position").all(),
             events: readScoreEvents(store),
             runs: readRuns(store).items,
             scores: store.db.prepare("SELECT * FROM scores").all(),
@@ -135,10 +138,12 @@ function expectPrivate(
     secrets: string[]
 ) {
     const saved = readFileSync(paths.database, "utf8");
+    const journal = JSON.stringify(persisted(paths).runs);
     for (const secret of secrets) {
         expect(result.stdout).not.toContain(secret);
         expect(result.stderr).not.toContain(secret);
         expect(saved).not.toContain(secret);
+        expect(journal).not.toContain(secret);
     }
 }
 
@@ -167,6 +172,7 @@ describe("in-game sync", () => {
         ]);
         expect(result.requests[1].init).toMatchObject({ redirect: "manual" });
         expect(result.code).toBe(0);
+        expect(result.json.warnings).toEqual([]);
         expectConforms(syncDataSchema, result.json.data);
         expect(result.json.data).toMatchObject({
             source: "ingame",
@@ -262,38 +268,191 @@ describe("in-game sync", () => {
             paths,
             ["--qr", "-"],
             {
-                [getQr]: jsonResponse({ errorID: 0, userID: gameId }),
+                [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }),
                 [update]: jsonResponse({ error: `二维码已过期 ${qrCode}` }, 400),
             },
             qrInput
         );
         expect(expiredLogin.requests.map(r => r.url)).toEqual([getQr, update]);
         expect(expiredLogin.json.error.code).toBe("QR_INVALID");
-        expect(persisted(paths).runs).toMatchObject([
+        expect(expiredLogin.json.warnings).toBeUndefined();
+        const state = persisted(paths);
+        expect(state.users[0].inGame.id).toBe(gameId);
+        expect(state.runs).toMatchObject([
             { mode: "full", outcome: "failed", errorCode: "QR_INVALID" },
         ]);
         expectPrivate(paths, expiredLookup, [qrCode]);
         expectPrivate(paths, expiredLogin, [qrCode]);
     });
 
-    it("refuses another account before login, catalog refresh or any persistent write", async () => {
+    it("rewrites the game ID by default and appends score events under the same UID", async () => {
         const paths = makeHome();
-        await seedScoreUsers(paths, [fakePlayer()]);
-        const before = persisted(paths);
+        const player = fakePlayer();
+        const recordKey = `${gameRecord.song_id}-${gameRecord.level_index}`;
+        const previousScore = { ...gameRecord, achievements: 98 };
+        player.data.detailed = { [recordKey]: previousScore };
+        const previousEvent = scoreEvent("fake-existing-event", uid, recordKey, 1);
+        previousEvent.state.achievements = previousScore.achievements;
+        await seedScoreUsers(paths, [player], [previousEvent]);
+        stageCredentials(paths, {
+            version: 1,
+            users: { [uid]: { divingFishImportToken: dfToken } },
+        }).commit();
+
+        const result = await gameSync(
+            paths,
+            ["--qr", "-", "--no-upload"],
+            {
+                [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }),
+                [update]: gameResult(otherGameId),
+            },
+            qrInput
+        );
+        expect(result.code).toBe(0);
+        expect(result.requests.map(r => r.url)).toEqual([getQr, update]);
+        expect(JSON.parse(result.requests[1].init!.body!)).toEqual({
+            userId: otherGameId,
+            importToken: "",
+            qrCode,
+        });
+        expect(result.json.data).toMatchObject({
+            user: { uid },
+            mode: "full",
+            changes: [{ before: { achievements: 98 }, score: { achievements: 100 } }],
+            uploads: [],
+        });
+        expect(result.json.warnings).toEqual([
+            {
+                code: "GAME_ACCOUNT_CHANGED",
+                message:
+                    "二维码属于另一个舞萌账号，已将用户 Fake Local Player 的游戏 ID 改为该账号",
+                fix: "saltnet config set sync.qrOtherAccount error",
+            },
+        ]);
+        expect(parsePrintedCommand(result.json.warnings[0].fix)).toMatchObject({
+            command: "config set",
+            positionals: { key: "sync.qrOtherAccount", value: "error" },
+        });
+        expect(result.stdout + result.stderr).not.toContain(String(gameId));
+        expect(result.stdout + result.stderr).not.toContain(String(otherGameId));
+
+        const state = persisted(paths);
+        expect(state.gameIds).toEqual([{ uid, in_game_id: otherGameId }]);
+        expect(state.users).toMatchObject([
+            { uid, inGame: { id: otherGameId }, data: { userId: otherGameId } },
+        ]);
+        expect(state.events).toMatchObject([
+            previousEvent,
+            {
+                userUid: uid,
+                generationId: previousEvent.generationId,
+                chartKey: recordKey,
+                kind: "change",
+                state: { achievements: 100 },
+            },
+        ]);
+        expect(state.runs).toMatchObject([{ userUid: uid, mode: "full", outcome: "ok" }]);
+        const shown = await commandIn(paths, "user", ["show", uid], { network: {} });
+        expect(shown.json.data).toMatchObject({ uid, inGame: { id: otherGameId } });
+        expectPrivate(paths, result, [qrCode, dfToken]);
+    });
+
+    it.each(["0", "-fake QR player"])(
+        "refuses another account in error mode before locking or writing for %s",
+        async userRef => {
+            const paths = makeHome();
+            const player = { ...fakePlayer(), uid: userRef === "0" ? uid : userRef };
+            const players = userRef === "0" ? [player] : [user(uid, "Fake Default Player"), player];
+            await seedScoreUsers(paths, players);
+            const accessToken = jwt(NOW.getTime() / 1000 + 3600);
+            stageCredentials(paths, {
+                version: 1,
+                users: {
+                    [player.uid]: {
+                        ...lxnsCredentials(accessToken, NOW.getTime() + 3_600_000),
+                        divingFishImportToken: dfToken,
+                    },
+                },
+            }).commit();
+            const before = readFileSync(paths.database);
+            const credentialsBefore = readFileSync(paths.credentials);
+            const lock = vi.spyOn(syncLock, "withSyncLock");
+            const result = await gameSync(
+                paths,
+                [`--user=${userRef}`, "--qr", "-"],
+                { [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }) },
+                qrInput,
+                { SALTNET_SYNC_QR_OTHER_ACCOUNT: "error" }
+            ).finally(() => {
+                const lockCalls = lock.mock.calls.length;
+                lock.mockRestore();
+                expect(lockCalls).toBe(0);
+            });
+            expect(result.code).toBe(2);
+            expect(result.json.error).toMatchObject({
+                code: "USAGE",
+                message: "二维码属于另一个舞萌账号",
+            });
+            expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+                command: "user bind",
+                positionals: { user: userRef, source: "ingame" },
+                options: { qr: "-" },
+            });
+            expect(result.requests.map(r => r.url)).toEqual([getQr]);
+            expect(readFileSync(paths.database)).toEqual(before);
+            expect(readFileSync(paths.credentials)).toEqual(credentialsBefore);
+            expect(statSync(paths.credentials).mode & 0o777).toBe(0o600);
+            expect(persisted(paths).runs).toEqual([]);
+            expectPrivate(paths, result, [qrCode, dfToken, accessToken, refreshToken]);
+        }
+    );
+
+    it.each([
+        { policy: "rewrite", initialId: gameId, lockedId: otherGameId, warned: true },
+        { policy: "rewrite", initialId: otherGameId, lockedId: gameId, warned: false },
+        { policy: "error", initialId: gameId, lockedId: otherGameId, warned: false },
+    ])("uses the locked ID in $policy mode after a binding change", async scenario => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [fakePlayer(scenario.initialId)]);
+        const withSyncLock = syncLock.withSyncLock;
+        const lock = vi.spyOn(syncLock, "withSyncLock").mockImplementationOnce((...args) => {
+            const store = openStore(paths);
+            try {
+                store.transaction(() => saveUser(store, fakePlayer(scenario.lockedId)));
+            } finally {
+                store.close();
+            }
+            return withSyncLock(...args);
+        });
+
         const result = await gameSync(
             paths,
             ["--qr", "-"],
-            { [getQr]: jsonResponse({ errorID: 0, userID: otherGameId }), [update]: gameResult() },
-            qrInput
-        );
-        expect(result.code).toBe(2);
-        expect(result.json.error).toMatchObject({
-            code: "USAGE",
-            message: "二维码属于另一个舞萌账号",
-        });
-        expect(result.requests.map(r => r.url)).toEqual([getQr]);
-        expect(persisted(paths)).toEqual(before);
-        expectPrivate(paths, result, [qrCode, String(otherGameId)]);
+            { [getQr]: jsonResponse({ errorID: 0, userID: gameId }), [update]: gameResult() },
+            qrInput,
+            { SALTNET_SYNC_QR_OTHER_ACCOUNT: scenario.policy }
+        ).finally(() => lock.mockRestore());
+        const state = persisted(paths);
+        if (scenario.policy === "error") {
+            expect(result.code).toBe(2);
+            expect(result.json.error.code).toBe("USAGE");
+            expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+                command: "user bind",
+                positionals: { user: "0", source: "ingame" },
+                options: { qr: "-" },
+            });
+            expect(result.requests.map(r => r.url)).toEqual([getQr]);
+            expect(state.users[0].inGame.id).toBe(scenario.lockedId);
+            expect(state.runs).toEqual([]);
+        } else {
+            expect(result.code).toBe(0);
+            expect(result.requests.map(r => r.url)).toEqual([getQr, update]);
+            expect(state.users[0].inGame.id).toBe(gameId);
+            expect(result.json.warnings.some(w => w.code === "GAME_ACCOUNT_CHANGED")).toBe(
+                scenario.warned
+            );
+        }
+        expectPrivate(paths, result, [qrCode]);
     });
 
     it.each([getQr, update])("does not send a QR again after HTTP 5xx from %s", async endpoint => {

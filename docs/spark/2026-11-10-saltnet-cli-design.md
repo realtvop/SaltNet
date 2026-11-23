@@ -544,7 +544,9 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 
 **舞萌账号的两种更新方式**
 
-- **带二维码**（`--qr -`，从 stdin 读扫码结果或二维码页面链接）会登录账号并进行全量更新。CLI 先通过 `GetQRInfo` 核对已绑定的游戏 id。二维码属于另一个账号时，在登录和写入前返回 `USAGE`，身份变更的确认留给 P3-15。二维码查询和登录各发一次，失败后也不重试或改用备用地址。
+- **带二维码**（`--qr -`，从 stdin 读扫码结果或二维码页面链接）会登录账号并进行全量更新。CLI 用 `GetQRInfo` 查出二维码所属账号，拿同步锁前先和已绑定的游戏 ID 比对，在锁内再和重读的游戏 ID 比对。`GetQRInfo` 和负责登录及全量更新的 `UpdateUser` 各最多请求一次，失败后也不重试或改用备用地址。
+    - `sync.qrOtherAccount` 为 `rewrite`（默认）时，和网页端一样，成功同步时将游戏 ID 改为二维码所属账号，沿用同一用户的 uid 和已有成绩历史，并照常自动上传。原本已绑定其他游戏账号时，返回 `GAME_ACCOUNT_CHANGED`，其 `fix` 是 `saltnet config set sync.qrOtherAccount error`。
+    - `sync.qrOtherAccount` 为 `error` 时，若已有游戏 ID 且与二维码所属账号不同，则在登录和写入同步结果前返回 `USAGE`，`fix` 为 `saltnet user bind <用户> ingame --qr -`。身份变化的确认由 `user bind` 处理。
 - **不带二维码**时执行快速更新，无需登录账号。先从舞萌拿数据，再尝试用落雪补全。落雪不可用或失败时，尝试用水鱼 Import-Token 补全。两者都不可用或失败时，仍保存舞萌返回的成绩。落雪补全在记录同步开始后、发起落雪成绩请求前，在同一用户的同步锁内检查和刷新 access token。没有游戏 id 时返回 `QR_REQUIRED`。
 - 二维码格式不对或已经失效时返回 `QR_INVALID`。命令行上的二维码或在非舞萌来源上使用 `--qr -` 会报 `USAGE`。
 
@@ -784,7 +786,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 2. 落雪：refresh token 轮换后，30 天有效期会不会重新计算？这决定 `LXNS_EXPIRING` 该怎么提示。
 3. SaltNet 后端会不会校验 Origin 或 UA？CLI 的请求会带上 `saltnet-cli/<版本>` 作为 UA。
 4. SaltMeta 上游那两首重复收录的宴谱，要不要顺手修掉？
-5. 带二维码同步时，如果二维码属于另一个舞萌账号，网页端会直接改写游戏 id，新账号的成绩会接在原来的历史后面。CLI 先和网页端保持一致；要不要改成报错，提示改用 `user bind`（会触发身份变化的确认）？
+5. 带二维码同步时，如果二维码属于另一个舞萌账号，网页端会直接改写游戏 id，新账号的成绩会接在原来的历史后面。CLI 把这件事做成了设置项 `sync.qrOtherAccount`（见 5.1）：默认 `rewrite` 和网页端一致，另给一条 `GAME_ACCOUNT_CHANGED` 警告；设成 `error` 就报错，提示改用 `user bind`（会触发身份变化的确认）。默认值要不要改成 `error`？
 
 ## 附录：数据观察
 

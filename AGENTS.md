@@ -228,9 +228,12 @@ SaltNet is a three-package pnpm workspace:
         - `sync.ts` fetches scores from the game, LXNS (matching authorization), or Diving Fish
           (import token or username with a public B50 fallback and the `PUBLIC_B50_ONLY` warning).
           Auto picks the enabled game account first. `--qr -` reads a QR code or link from stdin for
-          a full game update. A fast game update uses the stored ID and supplements the game
-          records with LXNS or the Diving Fish import token. The sync lock protects the SQLite
-          transaction and the `sync_runs` journal. The result reports counts, rating before and
+          a full game update. For a QR code from another game account, `sync.qrOtherAccount`
+          defaults to `rewrite`, which saves the QR account's game ID, continues the same user's
+          score history and reports `GAME_ACCOUNT_CHANGED`. The `error` setting refuses before
+          login and prints a `user bind` command. A fast game update uses the stored ID and
+          supplements the game records with LXNS or the Diving Fish import token. The sync lock
+          protects the SQLite transaction and the `sync_runs` journal. The result reports counts, rating before and
           after, and up to 20 changes ordered by rating gain. After committing an in-game sync,
           it uploads the raw game records to the bound Diving Fish and LXNS accounts in that order.
           `--no-upload` disables uploads. Failures appear in `uploads` and as `UPLOAD_FAILED`
@@ -458,9 +461,9 @@ SaltNet is a three-package pnpm workspace:
           does: core reads the copy without the records it cannot look up, the update replaces
           `detailed` and `b50` only when it has them, and every other part of the stored data stays
           as it was.
-        - `execute.ts` checks the QR account before taking `withSyncLock` and checks it again
-          against the user read under the lock. It starts the journal with `beginRun`, fetches
-          scores, and writes the update, score events and successful `finishRun` in one
+        - `execute.ts` applies the QR account policy before taking `withSyncLock` and compares the
+          QR account again with the user read under the lock. It starts the journal with `beginRun`,
+          fetches scores, and writes the update, score events and successful `finishRun` in one
           transaction using `applySyncToStoredUser` and `buildScoreHistoryBatchEvents`. Core's
           upload callbacks queue raw game records, which are sent after that transaction commits.
         - `all.ts` selects users and collects each sync result. `plan.ts` reads a read-only

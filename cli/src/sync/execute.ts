@@ -24,11 +24,11 @@ import { useMetadata } from "../commands/metadata";
 import { CliError } from "../errors";
 import { appendScoreEvents, readUser, saveUser } from "../users/repository";
 import { readRecordChartKeys, readUserScores } from "../users/scores";
-import { userRefWord } from "../util/printedCommand";
+import { userBindCommand, userRefWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
 import { computeSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
-import { assertQrAccount, readVerifiedQr } from "./ingame";
+import { assertQrAccount, isOtherQrAccount, readVerifiedQr } from "./ingame";
 import { beginRun, finishRun } from "./journal";
 import { withSyncLock } from "./lock";
 import { lxnsAccessToken } from "./lxnsToken";
@@ -77,7 +77,12 @@ export async function executeSync(
     const mayUseInGame = usesGame(targetUserRow, requestedSource);
     assertGameQrSource(mayUseInGame, args.options.qr);
     const qr = args.options.qr ? await readVerifiedQr(context) : undefined;
-    if (qr) assertQrAccount(targetUserRow.inGameId, qr);
+    const assertMatchingQr = (storedId: number | null) => {
+        if (qr && context.config.values.sync.qrOtherAccount === "error") {
+            assertQrAccount(storedId, qr, userBindCommand(userRef, "ingame", [], ["--qr", "-"]));
+        }
+    };
+    assertMatchingQr(targetUserRow.inGameId);
 
     // Existing users without a name can have their player id as the display name. Keep it out
     // of progress, errors and the journal for game syncs.
@@ -96,6 +101,8 @@ export async function executeSync(
         if (!storedUser) {
             throw new CliError("NOT_FOUND", `找不到用户 ${targetUserRow.uid}`);
         }
+        assertMatchingQr(storedUser.inGame.id);
+        const gameAccountChanged = qr !== undefined && isOtherQrAccount(storedUser.inGame.id, qr);
         let userForCore: ReturnType<typeof buildUserForCore>;
         let cliSource: ReturnType<typeof resolveSyncSource>;
         try {
@@ -116,7 +123,6 @@ export async function executeSync(
         }
         if (qr) {
             assertGameQrSource(cliSource === "ingame", args.options.qr);
-            assertQrAccount(storedUser.inGame.id, qr);
             userForCore.inGame = { ...userForCore.inGame, id: qr.userId };
         }
         const secrets = protectSyncSecrets(context, userForCore, qr?.code);
@@ -419,6 +425,15 @@ export async function executeSync(
             };
 
             const warnings: Warning[] = [...metaResult.warnings, ...uploadWarnings];
+            if (gameAccountChanged) {
+                warnings.push({
+                    code: "GAME_ACCOUNT_CHANGED",
+                    message: secrets.redact(
+                        `二维码属于另一个舞萌账号，已将用户 ${displayName} 的游戏 ID 改为该账号`
+                    ),
+                    fix: "saltnet config set sync.qrOtherAccount error",
+                });
+            }
             if (mode === "public-b50") {
                 warnings.push({
                     code: "PUBLIC_B50_ONLY",
