@@ -4,8 +4,16 @@
 import type { LXNSAuth } from "@core/integrations/lxns/type";
 import type { User } from "@core/user/type";
 import type { RuntimePaths } from "../runtime/paths";
+import type { UserListRow } from "../users/repository";
 import type { UserTarget } from "../util/printedCommand";
-import type { CliSyncSource, ResolvedSyncSource } from "./types";
+import type {
+    CliSyncSource,
+    ResolvedSyncSource,
+    SyncPlan,
+    SyncResultError,
+    SyncUserMeta,
+    UploadTarget,
+} from "./types";
 import { chooseSyncSource } from "@core/sync/sync";
 import { getUserDisplayName } from "@core/user/type";
 import { CliError, usageError } from "../errors";
@@ -22,6 +30,75 @@ import {
     userRefWord,
 } from "../util/printedCommand";
 import { joinCommandLine } from "../util/shell";
+import { LXNS_ACCESS_MARGIN_MS } from "./lxnsToken";
+
+export function usesGame(user: UserListRow, source: CliSyncSource = "auto"): boolean {
+    return source === "ingame" || (source === "auto" && user.inGameEnabled);
+}
+
+export function assertGameQrSource(isGame: boolean, qr: "-" | undefined): void {
+    if (qr && !isGame) throw usageError("--qr - 只能用于舞萌同步");
+}
+
+export function syncUserMeta(user: UserListRow): SyncUserMeta {
+    return { uid: user.uid, index: user.index, name: user.displayName };
+}
+
+export function syncResultError({ code, message, fix }: CliError): SyncResultError {
+    return { code, message, ...(fix ? { fix } : {}) };
+}
+
+export function plannedMode(source: ResolvedSyncSource, qr: boolean): SyncPlan["mode"] {
+    if (source === "ingame") return qr ? "full" : "fast";
+    return source === "df-name" ? null : "full";
+}
+
+export function syncUploadTargets(
+    user: User,
+    source: ResolvedSyncSource,
+    upload: boolean
+): UploadTarget[] {
+    if (source !== "ingame" || !upload) return [];
+    const targets: UploadTarget[] = [];
+    if (user.divingFish.importToken) targets.push("diving-fish");
+    if (user.lxns?.auth?.accessToken) targets.push("lxns");
+    return targets;
+}
+
+export function assertGameId(user: User, target: UserTarget): void {
+    if (!user.inGame.id) {
+        throw new CliError("QR_REQUIRED", "首次舞萌同步需要二维码", {
+            fix: joinCommandLine([
+                "saltnet",
+                "sync",
+                ...userOptionWords(target),
+                "--source",
+                "ingame",
+                "--qr",
+                "-",
+            ]),
+        });
+    }
+}
+
+/** The deterministic part of lxnsAccessToken, before it makes a refresh request. */
+export function assertLxnsRefreshAvailable(user: User, target: UserTarget, now: number): void {
+    const auth = user.lxns?.auth;
+    if (!auth) return;
+    const accessValid =
+        typeof auth.expiresAt === "number" &&
+        Number.isFinite(auth.expiresAt) &&
+        auth.expiresAt - now > LXNS_ACCESS_MARGIN_MS &&
+        typeof auth.accessToken === "string" &&
+        auth.accessToken.length > 0;
+    if (!accessValid && !(typeof auth.refreshToken === "string" && auth.refreshToken.length > 0)) {
+        throw new CliError(
+            "LXNS_REAUTH_REQUIRED",
+            `用户 ${getUserDisplayName(user)} 的落雪授权缺少刷新令牌，需要重新授权`,
+            { fix: userBindCommand(userRefWord(target), "lxns") }
+        );
+    }
+}
 
 /**
  * Builds a working copy of the stored user with credentials attached for core.

@@ -232,6 +232,9 @@ SaltNet is a three-package pnpm workspace:
           it uploads the raw game records to the bound Diving Fish and LXNS accounts in that order.
           `--no-upload` disables uploads. Failures appear in `uploads` and as `UPLOAD_FAILED`
           warnings while the local sync remains successful.
+          `--all` runs the same sync for each user in stored order, skips manual-update users,
+          and includes each user's result or error and warnings. `--dry-run` reports the source,
+          mode, upload targets and side-effect level without network, stdin or local writes.
     - `src/guide/` has the hand-written parts of the guide (`handwritten.ts`: the rules, where the
       usual questions are answered, the glossary of players' words, and the skill's name and
       description) and the deterministic registry-generated Markdown (`markdown.ts`, whose
@@ -453,6 +456,10 @@ SaltNet is a three-package pnpm workspace:
           scores, and writes the update, score events and successful `finishRun` in one
           transaction using `applySyncToStoredUser` and `buildScoreHistoryBatchEvents`. Core's
           upload callbacks queue raw game records, which are sent after that transaction commits.
+        - `all.ts` selects users and collects each sync result. `plan.ts` reads a read-only
+          SQLite snapshot and shares source, mode, binding and upload decisions with execution.
+          `secrets.ts` redacts credentials from sync diagnostics and detects echoed credentials
+          before an upstream result is saved.
         - `uploads.ts` sends each upload once without following redirects, under the same sync
           lock. It refreshes LXNS authorization when needed and journals each target separately
           with the record count and credential-free diagnostics.
@@ -488,8 +495,8 @@ SaltNet is a three-package pnpm workspace:
         - `dataSchema.ts` checks a value against a published schema with Ajv in strict mode;
           `commands/describe.test.ts`, `schema.test.ts`, `guide.test.ts` and `errorCodes.test.ts`
           cover the generated descriptions and published failures.
-        - `examples.ts` lists the commands without a guide example (`sync`, which only talks to
-          accounts); every other command needs one.
+        - `examples.ts` lists the commands without a guide example. The `sync` example uses
+          `--all --dry-run` so it can run without network or account access.
         - `caught.ts` returns the `CliError` a call throws, and `zone.ts` (`useTimeZone`) runs a
           test file in a fixed time zone (the commands write times in the machine's own offset).
         - `printedCommand.ts` reads a printed `fix` with the real parser (`parsePrintedCommand`,

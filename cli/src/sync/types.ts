@@ -4,10 +4,13 @@
 import type { ChartRow } from "../catalog/chartRow";
 import type { ChartScoreRow } from "../catalog/chartScore";
 import type { ErrorCode } from "../errors";
+import type { Warning } from "../output/warning";
 
-export type CliSyncSource = "auto" | "ingame" | "lxns" | "df-token" | "df-name";
+export const SYNC_SOURCES = ["ingame", "lxns", "df-token", "df-name"] as const;
 
-export type ResolvedSyncSource = Exclude<CliSyncSource, "auto">;
+export type ResolvedSyncSource = (typeof SYNC_SOURCES)[number];
+
+export type CliSyncSource = "auto" | ResolvedSyncSource;
 
 export type SyncMode = "full" | "fast" | "public-b50";
 
@@ -51,4 +54,41 @@ export interface SyncData {
     readonly changesTotal: number;
     readonly missing: number;
     readonly uploads: readonly SyncUploadResult[];
+}
+
+export interface SyncResultError {
+    readonly code: ErrorCode;
+    readonly message: string;
+    readonly fix?: string;
+}
+
+export interface SyncSkippedUser {
+    readonly user: SyncUserMeta;
+}
+
+export interface SyncAllResult {
+    readonly user: SyncUserMeta;
+    readonly ok: boolean;
+    readonly data: SyncData | null;
+    readonly error: SyncResultError | null;
+    readonly warnings: readonly Warning[];
+}
+
+export interface SyncAllData {
+    readonly results: readonly SyncAllResult[];
+    readonly skipped: readonly SyncSkippedUser[];
+}
+
+export interface SyncPlan {
+    readonly user: SyncUserMeta;
+    readonly source: ResolvedSyncSource | null;
+    readonly mode: "full" | "fast" | null;
+    readonly uploads: readonly UploadTarget[];
+    readonly effect: "local" | "remote" | "account";
+    readonly error: SyncResultError | null;
+}
+
+export interface SyncPlanData {
+    readonly plans: readonly SyncPlan[];
+    readonly skipped: readonly SyncSkippedUser[];
 }

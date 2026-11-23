@@ -5,9 +5,11 @@ import type { SyncOptions } from "@core/sync/type";
 import type { ScoreHistoryCandidate } from "@core/user/scoreHistory/type";
 import type { CommandContext, GlobalOptions } from "../commands/registry";
 import type { Warning } from "../output/warning";
+import type { UserListRow } from "../users/repository";
 import type { CliSyncSource, SyncData, SyncMode } from "./types";
 import type { PendingUpload } from "./uploads";
 import { randomUUID } from "node:crypto";
+import { SaltNetError } from "@core/integrations/saltnet/client";
 import {
     syncFromDivingFishImportToken,
     syncFromDivingFishName,
@@ -19,12 +21,10 @@ import { getUserDisplayName } from "@core/user/type";
 import { allChartEntries } from "../catalog/chartQuery";
 import { buildSongCatalog } from "../catalog/songs";
 import { useMetadata } from "../commands/metadata";
-import { CliError, usageError } from "../errors";
-import { resolveUser } from "../refs/user";
-import { appendScoreEvents, listUsers, readUser, saveUser } from "../users/repository";
+import { CliError } from "../errors";
+import { appendScoreEvents, readUser, saveUser } from "../users/repository";
 import { readRecordChartKeys, readUserScores } from "../users/scores";
-import { userOptionWords, userRefWord } from "../util/printedCommand";
-import { joinCommandLine } from "../util/shell";
+import { userRefWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
 import { computeSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
@@ -32,11 +32,18 @@ import { assertQrAccount, readVerifiedQr } from "./ingame";
 import { beginRun, finishRun } from "./journal";
 import { withSyncLock } from "./lock";
 import { lxnsAccessToken } from "./lxnsToken";
+import { protectSyncSecrets } from "./secrets";
 import {
+    assertGameId,
+    assertGameQrSource,
+    assertLxnsRefreshAvailable,
     buildUserForCore,
     formatOtherSourcesFix,
     getOtherBoundSources,
+    plannedMode,
     resolveSyncSource,
+    syncUploadTargets,
+    usesGame,
 } from "./sources";
 import { applySyncToStoredUser } from "./storedUser";
 import { runSyncUploads } from "./uploads";
@@ -53,25 +60,23 @@ export interface SyncCommandArgs {
         readonly source?: CliSyncSource;
         readonly qr?: "-";
         readonly upload?: boolean;
+        readonly all?: boolean;
+        readonly dryRun?: boolean;
     };
     readonly global: GlobalOptions;
 }
 
 export async function executeSync(
     args: SyncCommandArgs,
-    ctx: CommandContext
+    context: CommandContext,
+    targetUserRow: UserListRow
 ): Promise<SyncExecutionResult> {
-    const store = ctx.store();
-    const users = listUsers(store);
-    const targetUserRow = resolveUser(users, args.options.user);
+    const store = context.store();
     const userRef = userRefWord(targetUserRow);
     const requestedSource = args.options.source ?? "auto";
-    const mayUseInGame =
-        requestedSource === "ingame" || (requestedSource === "auto" && targetUserRow.inGameEnabled);
-    if (args.options.qr && !mayUseInGame) {
-        throw usageError("--qr - 只能用于舞萌同步");
-    }
-    const qr = args.options.qr ? await readVerifiedQr(ctx) : undefined;
+    const mayUseInGame = usesGame(targetUserRow, requestedSource);
+    assertGameQrSource(mayUseInGame, args.options.qr);
+    const qr = args.options.qr ? await readVerifiedQr(context) : undefined;
     if (qr) assertQrAccount(targetUserRow.inGameId, qr);
 
     // Existing users without a name can have their player id as the display name. Keep it out
@@ -91,34 +96,33 @@ export async function executeSync(
         if (!storedUser) {
             throw new CliError("NOT_FOUND", `找不到用户 ${targetUserRow.uid}`);
         }
-        const userForCore = buildUserForCore(storedUser, ctx.paths);
-        const cliSource = resolveSyncSource(userForCore, targetUserRow, requestedSource);
+        let userForCore: ReturnType<typeof buildUserForCore>;
+        let cliSource: ReturnType<typeof resolveSyncSource>;
+        try {
+            userForCore = buildUserForCore(storedUser, context.paths);
+            cliSource = resolveSyncSource(userForCore, targetUserRow, requestedSource);
+        } catch (error) {
+            if (error instanceof CliError) {
+                store.transaction(() => {
+                    const run = beginRun(
+                        store,
+                        { kind: "sync", userUid: targetUserRow.uid, userName: displayName },
+                        handle
+                    );
+                    finishRun(store, run, { outcome: "failed", error });
+                });
+            }
+            throw error;
+        }
         if (qr) {
-            if (cliSource !== "ingame") throw usageError("--qr - 只能用于舞萌同步");
+            assertGameQrSource(cliSource === "ingame", args.options.qr);
             assertQrAccount(storedUser.inGame.id, qr);
             userForCore.inGame = { ...userForCore.inGame, id: qr.userId };
-        } else if (cliSource === "ingame" && !userForCore.inGame.id) {
-            throw new CliError("QR_REQUIRED", "首次舞萌同步需要二维码", {
-                fix: joinCommandLine([
-                    "saltnet",
-                    "sync",
-                    ...userOptionWords(targetUserRow),
-                    "--source",
-                    "ingame",
-                    "--qr",
-                    "-",
-                ]),
-            });
         }
-        const inGameMode = cliSource === "ingame" ? (qr ? "full" : "fast") : null;
-        const gameCredentials = inGameMode
-            ? [
-                  qr?.code,
-                  userForCore.divingFish.importToken,
-                  userForCore.lxns?.auth?.accessToken,
-                  userForCore.lxns?.auth?.refreshToken,
-              ]
-            : [];
+        const secrets = protectSyncSecrets(context, userForCore, qr?.code);
+        const ctx = secrets.ctx;
+        const modeBeforeNetwork = plannedMode(cliSource, qr !== undefined);
+        const inGameMode = cliSource === "ingame" ? modeBeforeNetwork : null;
         let runId: number | undefined;
         // Set once the sync is written: a later failure (the lock lost during an upload) must not
         // read as a failed sync or suggest another source.
@@ -138,8 +142,11 @@ export async function executeSync(
                 handle
             );
 
+            if (cliSource === "ingame" && !qr) assertGameId(userForCore, targetUserRow);
             if (cliSource === "lxns") {
+                assertLxnsRefreshAvailable(userForCore, targetUserRow, ctx.io.now().getTime());
                 const refreshedAuth = await lxnsAccessToken(ctx, store, handle, storedUser);
+                secrets.add(refreshedAuth.accessToken, refreshedAuth.refreshToken);
                 if (userForCore.lxns) {
                     userForCore.lxns.auth = refreshedAuth;
                 } else {
@@ -179,7 +186,7 @@ export async function executeSync(
                                   handle,
                                   storedUser
                               );
-                              gameCredentials.push(auth.accessToken, auth.refreshToken);
+                              secrets.add(auth.accessToken, auth.refreshToken);
                               return auth;
                           },
                       }
@@ -202,11 +209,18 @@ export async function executeSync(
                 },
                 now: () => ctx.io.now().getTime(),
             };
-            if (inGameMode && args.options.upload !== false) {
+            const targets = syncUploadTargets(
+                userForCore,
+                cliSource,
+                args.options.upload !== false
+            );
+            if (targets.includes("diving-fish")) {
                 // Core selects the bound targets and hands back the raw game records.
                 syncOptions.uploadToDivingFish = (records, importToken) => {
                     pendingUploads.push({ target: "diving-fish", records, importToken });
                 };
+            }
+            if (targets.includes("lxns")) {
                 syncOptions.uploadToLXNS = records => {
                     pendingUploads.push({ target: "lxns", records });
                 };
@@ -218,18 +232,6 @@ export async function executeSync(
                 update = await syncFromInGame(userForCore, qr?.input, syncOptions);
                 if (update && update.userId !== userForCore.inGame.id) {
                     throw new CliError("UPSTREAM_ERROR", "舞萌服务返回的账号与本次同步账号不符");
-                }
-                if (update) {
-                    const encodedUpdate = JSON.stringify(update);
-                    if (
-                        gameCredentials.some(
-                            secret =>
-                                secret &&
-                                encodedUpdate.includes(JSON.stringify(secret).slice(1, -1))
-                        )
-                    ) {
-                        throw new CliError("UPSTREAM_ERROR", "舞萌成绩响应包含凭据，无法保存");
-                    }
                 }
             } else if (cliSource === "lxns") {
                 update = await syncFromLXNS(userForCore, syncOptions);
@@ -249,8 +251,23 @@ export async function executeSync(
                 throw mapped;
             }
 
-            const mode: SyncMode =
-                inGameMode ?? (cliSource === "df-name" && !update.detailed ? "public-b50" : "full");
+            const mode: SyncMode = modeBeforeNetwork ?? (update.detailed ? "full" : "public-b50");
+
+            // Core's LXNS update includes the working copy's authorization. No credential may
+            // reach the stored update, including one echoed unexpectedly by a score endpoint.
+            const cleanUpdate = {
+                ...update,
+                lxns: update.lxns ? { ...update.lxns, auth: null } : update.lxns,
+            };
+            if (
+                secrets.contains(cleanUpdate) ||
+                pendingUploads.some(({ records }) => secrets.contains(records))
+            ) {
+                throw new CliError(
+                    "UPSTREAM_ERROR",
+                    `${inGameMode ? "舞萌" : "上游"}成绩响应包含凭据，无法保存`
+                );
+            }
 
             const newScoresCount = update.detailed
                 ? Object.keys(update.detailed).length
@@ -274,11 +291,6 @@ export async function executeSync(
                     );
                 }
 
-                // The LXNS update hands back the working copy's authorization: drop it.
-                const cleanUpdate = {
-                    ...update,
-                    lxns: update.lxns ? { ...update.lxns, auth: null } : update.lxns,
-                };
                 const applyResult = applySyncToStoredUser(freshUser, cleanUpdate, () =>
                     ctx.io.now().getTime()
                 );
@@ -421,43 +433,51 @@ export async function executeSync(
             };
         } catch (err) {
             const mappedErr =
-                err instanceof CliError
-                    ? err
-                    : mapSyncError(err, lastReportMsg, cliSource, userRef);
+                err instanceof SaltNetError
+                    ? mapSyncError(err, lastReportMsg, cliSource, userRef)
+                    : err;
+            if (!(mappedErr instanceof CliError)) {
+                if (runId !== undefined) {
+                    recordFailure(runId, "INTERNAL", "同步时发生内部错误");
+                }
+                throw secrets.withoutCause(mappedErr);
+            }
 
-            const otherSources = committed ? [] : getOtherBoundSources(userForCore, cliSource);
+            const otherSources =
+                committed || mappedErr.code === "QR_REQUIRED"
+                    ? []
+                    : getOtherBoundSources(userForCore, cliSource);
             const fixWithOthers = formatOtherSourcesFix(
                 { index: targetUserRow.index, uid: targetUserRow.uid },
                 otherSources,
                 mappedErr.fix
             );
-            const message = committed
-                ? `同步结果已写入本地，之后出错：${mappedErr.message}`
-                : mappedErr.message;
+            const message = secrets.redact(
+                committed ? `同步结果已写入本地，之后出错：${mappedErr.message}` : mappedErr.message
+            );
 
             const finalError = new CliError(mappedErr.code, message, {
                 candidates: mappedErr.candidates,
                 fix: fixWithOthers,
                 retryable: mappedErr.retryable,
                 extra: mappedErr.extra,
-                cause: inGameMode
-                    ? undefined
-                    : (mappedErr.cause ?? (err instanceof Error ? err : undefined)),
+                meta: mappedErr.meta,
+                warnings: mappedErr.warnings,
             });
 
             if (runId !== undefined) {
-                try {
-                    finishRun(store, runId, {
-                        outcome: "failed",
-                        errorCode: finalError.code,
-                        errorMessage: finalError.message,
-                    });
-                } catch {
-                    // Ignore journal write error on failure to ensure original error is thrown
-                }
+                recordFailure(runId, finalError.code, finalError.message);
             }
 
             throw finalError;
+        }
+
+        function recordFailure(runId: number, errorCode: string, errorMessage: string) {
+            try {
+                finishRun(store, runId, { outcome: "failed", errorCode, errorMessage });
+            } catch {
+                // The command's original failure matters more than a journal write failure.
+            }
         }
     });
 }

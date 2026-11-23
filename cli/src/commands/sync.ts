@@ -2,16 +2,29 @@
  * The sync command: fetches scores from the game, LXNS or Diving Fish (design 5.1).
  */
 import type { ChartRow } from "../catalog/chartRow";
-import type { SyncChangeItem, SyncData, SyncUploadResult } from "../sync/types";
+import type { Warning } from "../output/warning";
+import type {
+    SyncAllData,
+    SyncAllResult,
+    SyncChangeItem,
+    SyncData,
+    SyncPlan,
+    SyncPlanData,
+    SyncResultError,
+    SyncSkippedUser,
+    SyncUploadResult,
+    SyncUserMeta,
+} from "../sync/types";
 import { chartRowSchema, chartScoreSchema } from "../catalog/schemas";
-import { ERROR_CODES, usageError } from "../errors";
-import { bool, extend, int, list, nullable, object, str, strEnum } from "../output/schema";
-import { executeSync } from "../sync/execute";
-import { UPLOAD_TARGETS } from "../sync/types";
+import { ERROR_CODES } from "../errors";
+import { anyOf, bool, extend, int, list, nullable, object, str, strEnum } from "../output/schema";
+import { WARNING_CODES } from "../output/warning";
+import { runSync } from "../sync/all";
+import { SYNC_SOURCES, UPLOAD_TARGETS } from "../sync/types";
 import { USER_OPTION } from "./describe";
 import { defineCommand } from "./registry";
 
-const syncUserSchema = object(
+const syncUserSchema = object<SyncUserMeta>(
     {
         uid: str("用户 uid"),
         index: int("用户从 0 开始的序号"),
@@ -63,7 +76,7 @@ const syncUploadSchema = object<SyncUploadResult>(
 export const syncDataSchema = object<SyncData>(
     {
         user: syncUserSchema,
-        source: strEnum(["ingame", "lxns", "df-token", "df-name"], "本次使用的同步来源"),
+        source: strEnum(SYNC_SOURCES, "本次使用的同步来源"),
         mode: strEnum(
             ["full", "fast", "public-b50"],
             "同步模式：full 为完整更新，fast 为舞萌快速更新，public-b50 为水鱼公开 B50"
@@ -78,16 +91,85 @@ export const syncDataSchema = object<SyncData>(
     { description: "成绩同步结果" }
 );
 
+const syncErrorSchema = object<SyncResultError>(
+    { code: strEnum(ERROR_CODES, "错误码"), message: str("错误说明"), fix: str("建议命令") },
+    { description: "单个用户的同步错误", optional: ["fix"] }
+);
+
+const syncWarningSchema = object<Warning>(
+    {
+        code: strEnum(Object.keys(WARNING_CODES), "警告码"),
+        message: str("警告说明"),
+        fix: str("建议命令"),
+    },
+    { description: "一条同步警告", optional: ["fix"] }
+);
+
+const skippedUsersSchema = list(
+    object<SyncSkippedUser>({ user: syncUserSchema }, { description: "跳过的一个用户" }),
+    "因手动更新设置而跳过的用户"
+);
+
+const syncAllDataSchema = object<SyncAllData>(
+    {
+        results: list(
+            object<SyncAllResult>(
+                {
+                    user: syncUserSchema,
+                    ok: bool("用户同步是否成功"),
+                    data: nullable(syncDataSchema, "用户成绩同步结果，失败时为 null"),
+                    error: nullable(syncErrorSchema, "用户同步错误，成功时为 null"),
+                    warnings: list(syncWarningSchema, "用户同步警告"),
+                },
+                { description: "全部更新中的一项用户结果" }
+            ),
+            "按存储顺序排列的各用户结果"
+        ),
+        skipped: skippedUsersSchema,
+    },
+    { description: "全部更新的结果" }
+);
+
+const syncPlanDataSchema = object<SyncPlanData>(
+    {
+        plans: list(
+            object<SyncPlan>(
+                {
+                    user: syncUserSchema,
+                    source: nullable(
+                        strEnum(SYNC_SOURCES, "将使用的数据源"),
+                        "无可用来源时为 null"
+                    ),
+                    mode: nullable(
+                        strEnum(["full", "fast"], "预计的同步模式"),
+                        "未解析来源或需联网确定时为 null"
+                    ),
+                    uploads: list(
+                        strEnum(UPLOAD_TARGETS, "上传目标"),
+                        "舞萌同步成功后会上传到的服务"
+                    ),
+                    effect: strEnum(["local", "remote", "account"], "实际执行该方案的副作用级别"),
+                    error: nullable(syncErrorSchema, "联网前能确认的绑定错误，没有时为 null"),
+                },
+                { description: "一个用户的同步计划" }
+            ),
+            "按存储顺序排列的各用户同步预览"
+        ),
+        skipped: skippedUsersSchema,
+    },
+    { description: "同步预览的结果" }
+);
+
 export const sync = defineCommand(
     {
         name: "sync",
         summary: "从舞萌、落雪或水鱼同步成绩",
         description:
-            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。舞萌更新后会向已绑定的水鱼和落雪上传游戏成绩，可用 --no-upload 关闭。",
+            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。舞萌更新后会向已绑定的水鱼和落雪上传游戏成绩，可用 --no-upload 关闭。--all 按顺序同步所有未开启手动更新的用户。--dry-run 展示计划，不联网、读取 stdin 或写入本地数据。",
         category: "account",
         effect: "account",
         output: "object",
-        examples: [],
+        examples: [{ command: "sync --all --dry-run", description: "预览全部更新及其副作用" }],
         errors: [
             "NO_USER",
             "NOT_FOUND",
@@ -105,10 +187,9 @@ export const sync = defineCommand(
             ...USER_OPTION,
             source: {
                 kind: "enum",
-                values: ["auto", "ingame", "lxns", "df-token", "df-name"],
-                default: "auto",
+                values: ["auto", ...SYNC_SOURCES],
                 valueName: "数据源",
-                description: "从哪个数据源同步成绩：auto 为按优先级自动选择",
+                description: "从哪个数据源同步成绩：默认 auto，按优先级自动选择",
             },
             qr: {
                 kind: "credential",
@@ -119,13 +200,22 @@ export const sync = defineCommand(
                 default: true,
                 description: "舞萌更新后自动上传到已绑定的服务，用 --no-upload 关闭",
             },
+            all: {
+                kind: "boolean",
+                description:
+                    "依次同步所有未开启手动更新的用户，不能和 --user、--source 或 --qr 一起用",
+            },
+            dryRun: {
+                kind: "boolean",
+                description: "只预览同步的来源、模式、上传与副作用级别",
+            },
         },
-        dataSchema: syncDataSchema,
+        dataSchema: anyOf(
+            "单用户同步、全部更新或同步预览的结果",
+            syncDataSchema,
+            syncAllDataSchema,
+            syncPlanDataSchema
+        ),
     },
-    async (args, ctx) => {
-        if (args.global.offline) {
-            throw usageError("sync 要联网，不能和 --offline 一起用");
-        }
-        return executeSync(args, ctx);
-    }
+    runSync
 );

@@ -215,7 +215,7 @@
 - [x] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [x] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
 - [x] P3-10b `fix(cli): keep printed sync and bind fixes runnable`：以 `-` 开头的 uid 和文件名、`df-token -`、`df-name` 的用户名、没有来源时的绑定命令（决定 96、98）〔新〕
-- [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
+- [x] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
 - [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
@@ -1168,3 +1168,21 @@
     - 手写的部分只用行内代码写命令，不用 ```bash 代码块，因为 `guide.test.ts` 要求代码块的数目等于有示例的命令数，端到端测试也会执行代码块里的每一行。为了让手写的命令和实际行为对得上，新测试用真正的解析器解析每一条完整的命令。带占位符的命令（如 `chart <谱面> --with stages`）不能照原样运行，就只检查命令名和其中每个选项都存在。
     - 端到端测试里，`guide --skill` 的输出去掉 frontmatter 后要和 `guide` 的输出逐字相同。
     - 变异测试：15 个，全部杀掉。它们覆盖：去掉常见问题、术语或其中的行、去掉一条规则（中间的和最后一条）或其中不主动同步的提醒、frontmatter 的名字写死、描述不加引号、frontmatter 后少空行、忽略 `--skill`、完整命令里的选项拼错或取值越界、带占位符的命令里命令名或选项拼错。第一轮「去掉一条规则」没有杀掉，于是加了规则编号连续和三条安全规则必须在的检查。
+
+101. **P3-11 的实现（2026-11-23）**：
+
+
+    - 分工：Codex（gpt-6.2-sol）写，我合入。补丁基于 1c633dd，只有 AGENTS.md 一处因为 P4-4 改了相邻的条目而打不上，我手工合并。
+    - 网页端的「全部更新」跳过开了「手动更新」的用户，其余用户走普通的更新流程，可能要扫码。`sync --all` 也跳过这些用户（列在 `skipped` 里），其余的按存储顺序逐个同步：每个用户用自动来源，有自己的同步锁、`sync_runs` 记录、事务和上传。它读不了二维码，所以舞萌来源只做快速更新，没有游戏 id 的用户在自己的结果里报 `QR_REQUIRED`。
+        - 单个用户的 `CliError`（包括 `SYNC_IN_PROGRESS` 和 `NETWORK`）记进它的结果，再接着同步下一个；不是 `CliError` 的异常仍然结束整个命令。
+        - 命令跑完就是 ok，即使每个用户都失败了。有失败时加一条 `SOME_FAILED`，写明失败的人数、名字和 uid。每个结果保留自己的警告。
+        - `--all` 和 `--user`、`--source`（明写的 `auto` 也算）或 `--qr` 一起用是 `USAGE`。为了认出明写的 `auto`，`--source` 的默认值从选项定义挪进了执行。
+    - `sync --dry-run` 说明每个用户会用哪个来源、哪种方式、上传到哪里、属于哪个副作用级别，不联网、不读 stdin、不取锁、不写入、不刷新曲库，可以和 `--offline` 一起用。
+        - 计划和真正的同步用 `sources.ts` 里的同一套函数（来源、方式、上传目标、绑定检查），所以不会和实际行为不一致。
+        - 读数据库时不打开可写的 store，也不跑迁移。数据库已经检查点时用 `immutable` 只读打开，因为普通的 WAL 读者即使只读也会建 `-wal`/`-shm` 文件；读完核对文件没被并发写入改过，改过就按普通的快照规则重读。迁移 4 之前的布局没有用户，计划为空。
+        - 用户的绑定问题写进它自己计划的 `error`，命令仍然 ok；命令行本身的问题（`--qr -` 配非舞萌的 `--source`、`--all` 配 `--user`）仍然是整个命令的 `USAGE`。
+    - 单人同步原来在取锁前就返回缺少绑定、快速更新缺少游戏 id 这类错误，不写记录。现在先取锁、写 `sync_runs`，再记下失败，和 `--all`「每个尝试过的用户一条记录」一致。取不到锁时不写记录。
+    - Codex 自己加了 `sync/secrets.ts`：同步期间日志里的二维码和 token 被替换掉；不是 `CliError` 的异常不保留可能带着凭据的 cause；上游的成绩响应里如果回显了凭据，就拒绝保存（`UPSTREAM_ERROR`），保证数据库里不会出现凭据。
+    - 指南的例子是 `sync --all --dry-run`，所以 `sync` 不再是没有指南例子的命令。我在指南的「更新一下成绩」里加上了 `--dry-run` 和 `--all`，并改了设计 5.1 里 `--dry-run` 一段的措辞（原文读起来像「会读 stdin、会取锁」）。
+    - 我补的测试：迁移 4 之前的布局上预览报 `NO_USER`、不迁移、不改文件；`--all` 里失败的用户保留自己的警告；同步中途抛出的非 CLI 异常带着 token 时，加 `--verbose` 也不会把 token 印出来。
+    - 变异测试：25 个，杀掉 24 个。第一轮有 4 个没杀掉，补了上面 3 个测试后杀掉 3 个。剩下的是「immutable 读完后不核对文件有没有被并发写入改过」：它守的是读的同时有别的进程写入，测试没法稳定地造出这种竞争，留作已知缺口。

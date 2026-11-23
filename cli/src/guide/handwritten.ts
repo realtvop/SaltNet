@@ -47,7 +47,7 @@ export const GUIDE_QUESTIONS: readonly string[] = [
     "- 「万花筒现在什么情况」：`kaleidxscope`；某一扇门的血量日历、钥匙曲目和曲池用 `kaleidxscope <门>`。",
     "- 「段位有哪些歌」：`course list`，某个段位的曲目用 `course show <段位>`。",
     "- 收藏夹：收藏夹只保存在本机（不在备份里），按曲目收藏；`charts --fav <收藏夹> --diff <难度>` 列出其中的谱面，用 `fav` 下的命令管理。",
-    "- 「更新一下成绩」：用户同意后运行 `sync`，它会自己选数据来源。要扫码时返回 `QR_REQUIRED`（退出码 4）：向用户要玩家二维码（扫码得到的文字或链接都可以），通过 stdin 传给 `sync --qr -`。",
+    "- 「更新一下成绩」：用户同意后运行 `sync`，它会自己选数据来源；拿不准会发生什么时先用 `sync --dry-run`，它只说会用哪个来源、会不会上传，什么都不做。要扫码时返回 `QR_REQUIRED`（退出码 4）：向用户要玩家二维码（扫码得到的文字或链接都可以），通过 stdin 传给 `sync --qr -`。「全部更新」用 `sync --all`：按顺序同步每个没开手动更新的用户，舞萌账号只做不扫码的快速更新；有用户失败时命令仍然成功，失败的人写在各自的结果和 `SOME_FAILED` 警告里。",
     "- 「绑定水鱼」「绑定落雪」：水鱼用 `user bind <用户> df-token -`，Import-Token 从 stdin 传入；只读公开成绩时用 `user bind <用户> df-name <水鱼用户名>`。落雪分两步：`user bind <用户> lxns` 给出授权链接，用户在浏览器里同意后，把跳转到的回调链接通过 stdin 传给 `user bind <用户> lxns --callback -`。`<用户>` 写序号、uid 或名字，默认用户是 `0`。",
     "- 备份：`export <文件>` 导出成网页端能导入的备份，`import <文件>` 导入网页端的备份（会替换本机的用户和成绩，要确认）；`ingame backup <文件>` 导出游戏格式的备份。",
 ];
