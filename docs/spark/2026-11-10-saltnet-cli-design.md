@@ -460,7 +460,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 
 - `code` 是固定不变的英文常量，完整列表在 `schema` 里；`message` 是中文说明。
 - `candidates` 在有歧义或找不到时给出。每个候选的 `ref` 可以直接拿去重试；找不到时列出最接近的几个。
-- `fix` 是可选的建议命令。
+- `fix` 是可选的建议命令，要能照原样运行。`user bind` 里默认用户写 `0`，其他用户写 uid；选默认用户时一般不写 `--user`。以 `-` 开头的值写成 `--user=<uid>`；以 `-` 开头的用户放在 `--` 后面，选项放在 `--` 前面；以 `-` 开头的文件名写成 `./<文件名>`。只有 CLI 不可能知道的值留成占位符，比如 `<水鱼用户名>`。
 - `retryable` 表示原样重试是否可能成功，网络错误和锁冲突时为 true。
 - 出错时如果有 meta 和 warnings，也照样带上。
 
@@ -632,7 +632,7 @@ B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remo
 - 配置项：通过设置 `lxns.refreshTokenDays`（默认 30 天）控制 refresh token 有效期，`lxns.expiringWarnDays`（默认 3 天）控制临期预警阈值。
 - 条件写：新 token 写入 `credentials.json` 时，在 `updateCredentials` 更新函数内仅当存储记录仍与刷新前的授权匹配（同账号、同 `refreshToken`）时，才原子写入 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`（毫秒时间戳）；若中途被并发修改或移除则保留当前文件内容不变，本次运行仍返回新换取的 token。
 - 刷新返回 `invalid_grant` 或身份变化时，同样在匹配失效授权时才原子清除 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`，保留落雪 id、名字与其他来源凭据，并返回 `LXNS_REAUTH_REQUIRED`。
-- `status` 会展示每个用户的凭据状态 `credentials`：水鱼 `divingFish` 为 `present` 或 `missing`；落雪 `lxns` 为 `valid`、`expiring`、`expired`、`unknown` 或 `missing`，以及刷新令牌过期时间 `lxnsRefreshExpiresAt`。refresh token 剩余时间小于 `lxns.expiringWarnDays` 或已过期时，`status` 会给出 `LXNS_EXPIRING` 警告（`fix` 指向 `syncUserRef` 用户），建议重新授权。
+- `status` 会展示每个用户的凭据状态 `credentials`：水鱼 `divingFish` 为 `present` 或 `missing`；落雪 `lxns` 为 `valid`、`expiring`、`expired`、`unknown` 或 `missing`，以及刷新令牌过期时间 `lxnsRefreshExpiresAt`。refresh token 剩余时间小于 `lxns.expiringWarnDays` 或已过期时，`status` 会给出 `LXNS_EXPIRING` 警告（`fix` 是给这个用户重新授权落雪的 `user bind` 命令），建议重新授权。
 
 ### 5.4 副作用级别与确认
 

@@ -175,8 +175,9 @@ SaltNet is a three-package pnpm workspace:
           freshness against `scores.staleDays`, and each user's credential state (`credentials`).
           It reads stored raw users (`lxnsAccountIdOf`) and checks LXNS credentials against
           settings `lxns.refreshTokenDays` and `lxns.expiringWarnDays`.
-          It adds an `LXNS_EXPIRING` warning naming the user with `syncUserRef` for expiring or
-          expired LXNS tokens. It never goes online and never creates the data directory.
+          It adds an `LXNS_EXPIRING` warning, whose fix binds that user to LXNS again (`0` for the
+          default user), for expiring or expired LXNS tokens. It never goes online and never
+          creates the data directory.
         - `config.ts` holds `config list`, `config get`, `config set` and `config unset`: the
           settings as rows with their value, source and default; `set` and `unset` change one entry
           of `config.json`; all four run even when the settings have errors.
@@ -264,7 +265,10 @@ SaltNet is a three-package pnpm workspace:
           exchanged token with its issue time. Credential parse errors omit file contents.
     - `src/util/` has small helpers (edit distance and nearest names, name folding, display width,
       command-line splitting and quoting (`splitCommandLine`, `quoteArg`, `joinCommandLine`), times
-      with a UTC offset).
+      with a UTC offset). `printedCommand.ts` builds the commands printed as a `fix` so that they
+      run as printed: `user bind` names the default user `0`, a `--user` value that starts with `-`
+      is written `--user=<uid>`, such a user of `user bind` goes after `--` with the options before
+      it, and such a file is written `./<file>`.
     - `src/store/` is the SQLite database, opened lazily through `ctx.store()`.
         - `sqlite.ts` loads `node:sqlite` synchronously without its experimental warning, and
           `store.ts` opens it in WAL mode and offers `transaction` and `read` (several queries
@@ -472,6 +476,9 @@ SaltNet is a three-package pnpm workspace:
           accounts); every other command needs one.
         - `caught.ts` returns the `CliError` a call throws, and `zone.ts` (`useTimeZone`) runs a
           test file in a fixed time zone (the commands write times in the machine's own offset).
+        - `printedCommand.ts` reads a printed `fix` with the real parser (`parsePrintedCommand`,
+          and `printedCommands` for a fix that offers several), so a test can check the command,
+          user and options it reaches.
     - `e2e/` builds a bundle with `build.mjs --outfile` in a temporary directory, preloads a
       fixture-only `fetch`, and seeds it with one refresh, an import of the made-up web backup
       (`shared/core/fixtures/web-backup-v1.json`, confirmed through its `error.fix`) and a favorite.

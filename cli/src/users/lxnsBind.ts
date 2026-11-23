@@ -30,7 +30,7 @@ import {
     withCredentialsLock,
 } from "../runtime/credentials";
 import { assertNoSync, withSyncLock } from "../sync/lock";
-import { quoteArg } from "../util/shell";
+import { userBindCommand } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
 import { listUsers, readUser, readUserCounts, saveUser } from "./repository";
 import { userDetail } from "./view";
@@ -41,8 +41,7 @@ export interface LxnsBindStart {
 }
 
 function restartBind(uid: string): string {
-    const separator = uid.startsWith("-") ? "-- " : "";
-    return `saltnet user bind ${separator}${quoteArg(uid)} lxns`;
+    return userBindCommand(uid, "lxns");
 }
 
 export async function startLxnsBind(

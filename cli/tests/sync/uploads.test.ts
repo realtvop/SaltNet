@@ -14,6 +14,7 @@ import { readUsers } from "../../src/users/repository";
 import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse, textResponse } from "../mockHttp";
+import { parsePrintedCommand } from "../printedCommand";
 import { allFixtureRecords, recordOf, seedScoreUsers, user } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
@@ -90,17 +91,22 @@ function authorization(expiry = expiresAt): UserCredentials {
     };
 }
 
-async function seed(paths: RuntimePaths, credentials: UserCredentials) {
-    const player = user(uid, "Fake Upload Player", { rating: 14000 });
+async function seed(paths: RuntimePaths, credentials: UserCredentials, playerUid = uid) {
+    const player = user(playerUid, "Fake Upload Player", { rating: 14000 });
     player.inGame = { id: gameId, enabled: true, useFastUpdate: true };
     player.divingFish = { name: "fake-public-name", importToken: null };
     player.lxns = { id: lxnsId, name: "Fake LXNS Upload", auth: null };
     await seedScoreUsers(paths, [user("fake-default-user", "Fake Default User"), player]);
-    stageCredentials(paths, { version: 1, users: { [uid]: credentials } }).commit();
+    stageCredentials(paths, { version: 1, users: { [playerUid]: credentials } }).commit();
 }
 
-function sync(paths: RuntimePaths, args: string[], overrides: Record<string, Route> = {}) {
-    return commandIn(paths, "sync", ["--user", uid, "--verbose", ...args], {
+function sync(
+    paths: RuntimePaths,
+    args: string[],
+    overrides: Record<string, Route> = {},
+    playerUid = uid
+) {
+    return commandIn(paths, "sync", [`--user=${playerUid}`, "--verbose", ...args], {
         env,
         stdin: qr,
         network: routes({
@@ -475,6 +481,33 @@ describe("uploads after in-game sync", () => {
             expectPrivate(paths, result);
         }
     );
+
+    it("prints upload fixes that run as printed for a uid that starts with -", async () => {
+        const paths = makeHome();
+        const dashUid = "-fake upload user";
+        await seed(paths, { ...authorization(), divingFishImportToken: importToken }, dashUid);
+        const result = await sync(
+            paths,
+            ["--qr", "-"],
+            {
+                [dfUploadUrl]: jsonResponse({ message: accessToken }, 401),
+                [lxnsUploadUrl]: jsonResponse({ message: accessToken }, 401),
+            },
+            dashUid
+        );
+        expect(result.code).toBe(0);
+        const fixes = (result.json.warnings as { code: string; fix: string }[])
+            .filter(warning => warning.code === "UPLOAD_FAILED")
+            .map(warning => parsePrintedCommand(warning.fix));
+        expect(fixes).toMatchObject([
+            {
+                command: "user bind",
+                positionals: { user: dashUid, source: "df-token", value: "-" },
+            },
+            { command: "user bind", positionals: { user: dashUid, source: "lxns" } },
+        ]);
+        expectPrivate(paths, result);
+    });
 
     it("keeps the code of a local failure during an upload", async () => {
         const paths = makeHome();

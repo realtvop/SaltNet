@@ -236,6 +236,14 @@ describe("in-game sync", () => {
             fix: "saltnet sync --user 'fake second user' --source ingame --qr -",
         });
         expect(result.requests).toEqual([]);
+
+        const alone = makeHome();
+        await seedScoreUsers(alone, [fakePlayer(null)]);
+        const own = await gameSync(alone, []);
+        expect(own.json.error).toMatchObject({
+            code: "QR_REQUIRED",
+            fix: "saltnet sync --source ingame --qr -",
+        });
     });
 
     it("reports expiration from the lookup or from the subsequent login", async () => {

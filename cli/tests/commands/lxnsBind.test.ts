@@ -19,6 +19,7 @@ import { commandIn, LXNS_URL, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { createHarness } from "../harness";
 import { jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 import { useTimeZone } from "../zone";
 
@@ -62,7 +63,11 @@ function bind(
     args: string[],
     options: NonNullable<Parameters<typeof commandIn>[3]> = {}
 ) {
-    return commandIn(paths, "user", ["bind", userUid, "lxns", "--verbose", ...args], {
+    // A uid that starts with `-` must follow `--`, after which nothing is read as an option.
+    const words = userUid.startsWith("-")
+        ? ["bind", "--verbose", ...args, "--", userUid, "lxns"]
+        : ["bind", userUid, "lxns", "--verbose", ...args];
+    return commandIn(paths, "user", words, {
         network: {},
         ...options,
         env: { ...env, ...options.env },
@@ -81,12 +86,12 @@ afterEach(() => {
     for (const store of stores.splice(0)) store.close();
 });
 
-function fixture(existingAccountId: number | null = null) {
+function fixture(existingAccountId: number | null = null, userUid = uid) {
     const paths = makeHome();
     const store = openStore(paths);
     stores.push(store);
     const user = {
-        uid,
+        uid: userUid,
         remark: "Fake CLI user",
         lxns: { id: existingAccountId, name: null, auth: null },
         divingFish: { name: "fake-diving-fish-name", importToken: null },
@@ -248,6 +253,23 @@ describe("user bind lxns", () => {
             expectPrivate(result, link.href, transaction.codeVerifier);
         }
     );
+
+    it("restarts with a fix that runs as printed for a uid that starts with -", async () => {
+        const dashUid = "-fake dash user";
+        const { paths } = fixture(null, dashUid);
+        const { link } = await start(paths, dashUid);
+        const result = await bind(paths, dashUid, ["--callback", "-"], {
+            stdin: link.href,
+            now: new Date(NOW.getTime() + LXNS_OAUTH_LIFETIME),
+            network: { [tokenUrl]: tokenResponse },
+        });
+        expect(result.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: dashUid, source: "lxns" },
+        });
+        expect(result.requests).toEqual([]);
+    });
 
     it("keeps the same pending record when the token endpoint returns an explicit error", async () => {
         const { paths, store, user } = fixture();

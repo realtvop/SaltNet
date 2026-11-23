@@ -7,6 +7,8 @@ import { CliError } from "../errors";
 import { resolveUser } from "../refs/user";
 import { listUsers } from "../users/repository";
 import { readUserScores } from "../users/scores";
+import { userOptionWords } from "../util/printedCommand";
+import { joinCommandLine } from "../util/shell";
 import { formatLocalTime } from "../util/time";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,7 +21,7 @@ export interface CommandUserScores {
 }
 
 function syncFix(user: UserScores["user"]): string {
-    return user.index === 0 ? "saltnet sync" : `saltnet sync --user ${user.uid}`;
+    return joinCommandLine(["saltnet", "sync", ...userOptionWords(user)]);
 }
 
 function scoreTime(value: number | null): string | null {

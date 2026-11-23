@@ -10,9 +10,9 @@ import { mergedDuplicatesOf, sourceStatus } from "../catalog/statusView";
 import { readMetaState } from "../catalog/store";
 import { bool, extend, int, list, nullable, num, object, str, strEnumOf } from "../output/schema";
 import { lxnsAccountIdOf, readCredentials } from "../runtime/credentials";
-import { syncUserRef } from "../sync/sources";
 import { listUsers, readUsers } from "../users/repository";
 import { statusUserRow, userCredentialState } from "../users/view";
+import { userBindCommand, userRefWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
 import { defineCommand } from "./registry";
 
@@ -138,7 +138,7 @@ export const status = defineCommand(
                 warnings.push({
                     code: "LXNS_EXPIRING",
                     message: `用户 ${user.displayName} 的落雪授权${credState.lxns === "expired" ? "已于" : "将于"} ${credState.lxnsRefreshExpiresAt} 过期`,
-                    fix: `saltnet user bind ${syncUserRef(user)} lxns`,
+                    fix: userBindCommand(userRefWord(user), "lxns"),
                 });
             }
             return statusUserRow(user, now, ctx.config.values.scores.staleDays, credState);

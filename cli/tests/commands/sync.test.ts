@@ -15,6 +15,7 @@ import { readScoreEvents, readUsers } from "../../src/users/repository";
 import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse, textResponse } from "../mockHttp";
+import { parsePrintedCommand, printedCommands, selectedUser } from "../printedCommand";
 import {
     allFixtureRecords,
     b50User,
@@ -107,7 +108,9 @@ describe("saltnet sync", () => {
         const result = await commandIn(paths, "sync", []);
         expect(result.code).toBe(4);
         expect(result.json.error.code).toBe("NOT_BOUND");
-        expect(result.json.error.fix).toContain("saltnet user bind");
+        expect(result.json.error.fix).toBe(
+            "绑定一个数据来源：saltnet user bind 0 ingame --qr - 或 saltnet user bind 0 lxns 或 saltnet user bind 0 df-token - 或 saltnet user bind 0 df-name <水鱼用户名>"
+        );
     });
 
     it("syncs from lxns successfully, updating user, events, and sync_runs", async () => {
@@ -1016,6 +1019,83 @@ describe("saltnet sync", () => {
         expect(lxns.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
         expect(lxns.json.error.fix).toContain("saltnet user bind user-second lxns");
         expect(lxns.json.error.fix).toContain("saltnet sync --user user-second --source df-token");
+    });
+
+    it("prints commands that run as printed for a uid that starts with -", async () => {
+        const paths = makeHome();
+        const uid = "-second user";
+        const second = sampleUser(uid, "Second");
+        second.inGame.enabled = true;
+        await seedScoreUsers(paths, [
+            sampleUser("user-first", "First"),
+            second,
+            user("-unbound user", "Unbound"),
+        ]);
+        seedCredentials(paths, {
+            [uid]: {
+                divingFishImportToken: FAKE_DF_TOKEN,
+                lxnsAuthorization: {
+                    accessToken: FAKE_LXNS_TOKEN,
+                    tokenType: "Bearer",
+                    expiresAt: NOW.getTime() - 5000,
+                },
+                lxnsAccountId: 1001,
+            },
+        });
+
+        const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"]);
+        expect(ingame.json.error.code).toBe("QR_REQUIRED");
+        expect(parsePrintedCommand(ingame.json.error.fix)).toMatchObject({
+            command: "sync",
+            options: { user: uid, source: "ingame", qr: "-" },
+        });
+
+        const lxns = await commandIn(paths, "sync", ["--user", "1", "--source", "lxns"]);
+        expect(lxns.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
+        const commands = printedCommands(lxns.json.error.fix);
+        expect(commands.map(selectedUser)).toEqual(commands.map(() => uid));
+        expect(commands).toContainEqual(
+            expect.objectContaining({
+                command: "user bind",
+                positionals: expect.objectContaining({ source: "lxns" }),
+            })
+        );
+        expect(commands).toContainEqual(
+            expect.objectContaining({
+                command: "sync",
+                options: expect.objectContaining({ source: "df-token" }),
+            })
+        );
+
+        const unbound = await commandIn(paths, "sync", ["--user", "2"]);
+        expect(unbound.json.error.code).toBe("NOT_BOUND");
+        const user2 = "-unbound user";
+        expect(printedCommands(unbound.json.error.fix)).toMatchObject([
+            {
+                command: "user bind",
+                positionals: { user: user2, source: "ingame" },
+                options: { qr: "-" },
+            },
+            { command: "user bind", positionals: { user: user2, source: "lxns" } },
+            { command: "user bind", positionals: { user: user2, source: "df-token", value: "-" } },
+            {
+                command: "user bind",
+                positionals: { user: user2, source: "df-name", value: "<水鱼用户名>" },
+            },
+        ]);
+
+        for (const [source, words] of [
+            ["lxns", {}],
+            ["df-token", { value: "-" }],
+            ["df-name", { value: "<水鱼用户名>" }],
+        ] as const) {
+            const one = await commandIn(paths, "sync", ["--user", "2", "--source", source]);
+            expect(one.json.error.code).toBe("NOT_BOUND");
+            expect(parsePrintedCommand(one.json.error.fix)).toMatchObject({
+                command: "user bind",
+                positionals: { user: user2, source, ...words },
+            });
+        }
     });
 
     it("reports rating.before as null when stored rating is not a safe integer", async () => {

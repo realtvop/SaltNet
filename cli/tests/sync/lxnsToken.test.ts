@@ -14,6 +14,7 @@ import { withSyncLock } from "../../src/sync/lock";
 import { LXNS_ACCESS_MARGIN_MS, lxnsAccessToken } from "../../src/sync/lxnsToken";
 import { readUser, saveUser } from "../../src/users/repository";
 import { delayedRoute, jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -1041,7 +1042,7 @@ describe("lxnsAccessToken", () => {
         store.close();
     });
 
-    it("names user with syncUserRef in fix: 0 for default user", async () => {
+    it("names the default user 0 in the fix", async () => {
         const paths = makeHome();
         const store = openStore(paths);
         // Default user has index 0
@@ -1096,6 +1097,31 @@ describe("lxnsAccessToken", () => {
         // For non-default user (index 1), fix must be "saltnet user bind u1 lxns"
         expect(err.fix).toBe("saltnet user bind u1 lxns");
 
+        store.close();
+    });
+
+    it("prints a fix that runs as printed for a uid that starts with -", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeUser("u0", 1000));
+        const dash = makeUser("-u1 dash", 1001);
+        saveUser(store, dash);
+        const { ctx } = makeContext(paths, {}, [], () => new Date(1_000_000_000));
+
+        let caught: unknown;
+        try {
+            await withSyncLock(store, { uid: "-u1 dash", name: "Dash" }, handle =>
+                lxnsAccessToken(ctx, store, handle, dash)
+            );
+        } catch (error) {
+            caught = error;
+        }
+
+        expect((caught as CliError).code).toBe("NOT_BOUND");
+        expect(parsePrintedCommand((caught as CliError).fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "-u1 dash", source: "lxns" },
+        });
         store.close();
     });
 

@@ -14,6 +14,7 @@ import { userForCoreScores } from "../../src/users/rows";
 import { commandIn, NOW } from "../commandRun";
 import { fixtureSongCatalog } from "../fixtureCatalog";
 import { madeMusicBuild } from "../madeCatalog";
+import { parsePrintedCommand } from "../printedCommand";
 import {
     allFixtureRecords,
     b50User,
@@ -355,6 +356,25 @@ describe("score meta and warnings", () => {
             code: "NO_SCORES",
             fix: "saltnet sync --user made-friend",
         });
+    });
+
+    it("prints a sync fix that runs as printed for a uid that starts with -", async () => {
+        const paths = home();
+        await seedScoreUsers(paths, [
+            user("made-default", "Made Default"),
+            user("-made friend", "Made Friend"),
+            detailedUser("-made stale", "Made Stale", null),
+        ]);
+        for (const [ref, uid] of [
+            ["1", "-made friend"],
+            ["2", "-made stale"],
+        ]) {
+            const result = await commandIn(paths, "chart", ["146-3", "--user", ref]);
+            expect(parsePrintedCommand(result.json.warnings[0].fix)).toMatchObject({
+                command: "sync",
+                options: { user: uid },
+            });
+        }
     });
 
     it("reports no warning at the exact stale boundary of 3 days", async () => {

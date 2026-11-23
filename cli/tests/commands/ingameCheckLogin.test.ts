@@ -279,7 +279,7 @@ describe("saltnet ingame check-login", () => {
             message: expect.stringContaining("saltnet config set network.timeoutMs 60000"),
             // A request carrying the QR code is never sent twice.
             retryable: false,
-            fix: "saltnet ingame check-login --user='-fake default' --qr -",
+            fix: "saltnet ingame check-login '--user=-fake default' --qr -",
         });
         const [, group, ...args] = splitCommandLine(result.json.error.fix!);
         const retry = await commandIn(paths, group, args, {

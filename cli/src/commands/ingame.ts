@@ -1,4 +1,5 @@
 import type { Warning } from "../output/warning";
+import type { UserTarget } from "../util/printedCommand";
 import type { PositionalSpec } from "./registry";
 import { Buffer } from "node:buffer";
 import { existsSync } from "node:fs";
@@ -10,7 +11,8 @@ import { resolveUser } from "../refs/user";
 import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
 import { assertQrAccount, postQrGameApi, readVerifiedQr } from "../sync/ingame";
 import { listUsers, readUser } from "../users/repository";
-import { quoteArg } from "../util/shell";
+import { fileWord, optionWords, userBindCommand, userOptionWords } from "../util/printedCommand";
+import { joinCommandLine } from "../util/shell";
 import { USER_OPTION } from "./describe";
 import { defineCommand } from "./registry";
 
@@ -20,22 +22,14 @@ const FILE_POSITIONAL: PositionalSpec = {
     description: "导出的备份文件路径；相对路径按当前目录解析",
 };
 
-/** Binds the game account of `uid`; a uid that looks like an option goes after `--`. */
+/** Binds the game account of the user with this uid. */
 export function ingameBindFix(uid: string): string {
-    return uid.startsWith("-")
-        ? `saltnet user bind --qr - -- ${quoteArg(uid)} ingame`
-        : `saltnet user bind ${quoteArg(uid)} ingame --qr -`;
+    return userBindCommand(uid, "ingame", [], ["--qr", "-"]);
 }
 
-/** How a printed command selects a user; callers can also pin the current default. */
-function userFlag(
-    row: { readonly index: number; readonly uid: string },
-    pinDefault = false
-): string {
-    if (row.index === 0 && !pinDefault) return "";
-    return row.uid.startsWith("-")
-        ? ` --user=${quoteArg(row.uid)}`
-        : ` --user ${quoteArg(row.uid)}`;
+/** `saltnet sync` for this user, with more words after it. */
+function syncFix(row: UserTarget, ...words: string[]): string {
+    return joinCommandLine(["saltnet", "sync", ...userOptionWords(row), ...words]);
 }
 
 interface IngameUser {
@@ -129,7 +123,14 @@ export const ingameCheckLogin = defineCommand(
 
             throw new CliError(error.code, `${error.message}。${error.fix}`, {
                 retryable: error.retryable,
-                fix: `saltnet ingame check-login${userFlag(selected, true)} --qr -`,
+                fix: joinCommandLine([
+                    "saltnet",
+                    "ingame",
+                    "check-login",
+                    ...userOptionWords(selected, true),
+                    "--qr",
+                    "-",
+                ]),
             });
         }
         if (typeof result.isLogin !== "boolean") {
@@ -226,23 +227,17 @@ export const ingameBackup = defineCommand(
         ) {
             throw new CliError("NOT_FOUND", `用户 ${selectedRow.displayName} 缺少完整成绩数据`, {
                 retryable: false,
-                fix: `saltnet sync${userFlag(selectedRow)}`,
+                fix: syncFix(selectedRow),
             });
         }
 
-        // A file or user that looks like an option must still give a fix that runs.
-        const givenFile = args.positionals.file;
         const givenUser = args.options.user;
         const retryCommand = [
             "saltnet",
             "ingame",
             "backup",
-            givenFile.startsWith("-") ? `./${givenFile}` : givenFile,
-            ...(givenUser === undefined
-                ? []
-                : givenUser.startsWith("-")
-                  ? [`--user=${givenUser}`]
-                  : ["--user", givenUser]),
+            fileWord(args.positionals.file),
+            ...(givenUser === undefined ? [] : optionWords("--user", givenUser)),
         ];
         const absolutePath = resolveOutputFile(
             ctx,
@@ -261,7 +256,7 @@ export const ingameBackup = defineCommand(
             warnings.push({
                 code: "PARTIAL_BACKUP",
                 message: `用户 ${selectedRow.displayName} 没有角色数据，备份仅包含成绩和已有的收藏品`,
-                fix: `saltnet sync${userFlag(selectedRow)} --source ingame`,
+                fix: syncFix(selectedRow, "--source", "ingame"),
             });
         }
 

@@ -10,6 +10,7 @@ import { uploadDivingFishRecords } from "@core/integrations/diving-fish/client";
 import { convertToLXNSUploadScore, requestLXNSPlayerApi } from "@core/integrations/lxns/client";
 import { CliError } from "../errors";
 import { upstreamStatusError } from "../runtime/http";
+import { userBindCommand } from "../util/printedCommand";
 import { beginRun, finishRun } from "./journal";
 import { lxnsAccessToken } from "./lxnsToken";
 
@@ -31,7 +32,10 @@ function uploadError(target: UploadTarget, cause: unknown, userRef: string): Cli
             target === "diving-fish" ? "NOT_BOUND" : "LXNS_REAUTH_REQUIRED",
             `上传到${service}失败，需要重新授权`,
             {
-                fix: `saltnet user bind ${userRef} ${target === "diving-fish" ? "df-token -" : "lxns"}`,
+                fix:
+                    target === "diving-fish"
+                        ? userBindCommand(userRef, "df-token", ["-"])
+                        : userBindCommand(userRef, "lxns"),
             }
         );
     }

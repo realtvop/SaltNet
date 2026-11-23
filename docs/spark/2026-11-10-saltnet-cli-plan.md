@@ -214,6 +214,7 @@
 - [x] P3-8 `feat(cli): add sync from diving-fish and lxns`：水鱼 Import-Token、水鱼用户名（含公开 B50）、落雪；写入事务〔新〕
 - [x] P3-9 `feat(cli): add in-game sync with qr and fast update`：全量、快速更新、补全、`QR_REQUIRED`/`QR_INVALID`〔新〕
 - [x] P3-10 `feat(cli): upload synced scores to diving-fish and lxns`：`UPLOAD_FAILED`、`--no-upload`〔新〕
+- [x] P3-10b `fix(cli): keep printed sync and bind fixes runnable`：以 `-` 开头的 uid 和文件名、`df-token -`、`df-name` 的用户名、没有来源时的绑定命令（决定 96、98）〔新〕
 - [ ] P3-11 `feat(cli): add sync --all and --dry-run`〔新〕
 - [x] P3-12 `feat(cli): add user bind and unbind for in-game, diving-fish tokens and names`〔新〕
 - [x] P3-13 `feat(cli): add lxns two-step bind`：授权记录、回调链接、暂存 token、`--callback -`〔新〕
@@ -1120,3 +1121,18 @@
     - 变异测试：14 个，杀掉 12 个。剩下 2 个：
         - 出错时 `retryable` 改成 false：等价变异。会走到这里的网络错误都来自带二维码的请求，这些请求本来就不可重试。我给超时用例加了 `retryable: false` 的断言。
         - 把意外的非 `CliError` 原样抛出：测试触达不到。这条路径上的请求和 stdin 读取出错时都会转成 `CliError`。保留它是为了防止意外错误的信息里带出二维码。
+98. **P3-10b 的实现（2026-11-23）**：
+    - 分工：我写。这一步是 P3-10 检查时发现的（决定 96），放在 P4-1 之后单独提交。
+    - 新增 `cli/src/util/printedCommand.ts`，打印出来的 `sync`、`user bind`、`ingame`、`export` 命令都由它拼，按设计 4.3 能照原样运行：
+        - `user bind` 里默认用户写 `0`，其他用户写 uid。它取代了 `sources.ts` 的 `syncUserRef`。
+        - 选默认用户时不写 `--user`。`ingame check-login` 超时的 fix 例外，照旧写明（决定 97）。值以 `-` 开头时写成 `--user=<值>`。
+        - 用户以 `-` 开头时，`user bind` 的选项放在 `--` 前面，用户和来源放在后面。
+        - 以 `-` 开头的文件名写成 `./<文件名>`。
+    - 顺带修了几条原来不能照抄运行或者不完整的 fix：
+        - `df-token` 的 fix 少了 `-`。`df-name` 的少了用户名，现在用占位符 `<水鱼用户名>`。水鱼拒绝按用户名查询时，另外给出绑定 Import-Token 的命令。
+        - 没有任何来源时原来只印 `saltnet user bind <用户>`，现在列出四种绑定命令。
+        - 成绩警告 `NO_SCORES`、`STALE_SCORES` 里的 `--user` 原来没加引号。
+        - `export` 的 `FILE_EXISTS` fix 原来丢了 `--keep-lxns`，照抄会导出不带落雪授权的文件。
+        - `sync` 的 `QR_REQUIRED` 对默认用户原来写 `--user 0`，现在省略，和其他 fix 一致。
+    - 测试：`cli/tests/printedCommand.ts` 用真正的解析器读 fix，检查它到达的命令、用户和选项。每个调用点都加了以 `-` 开头的 uid 或文件名的用例，`export` 的用例还照抄运行了 fix。
+    - 变异测试：31 个，第一轮杀掉 28 个。剩下 3 个都缺测试：没有来源时默认用户的 fix（写 `0`），`--source lxns` 未绑定时以 `-` 开头的 uid，`user bind lxns` 重新开始授权的 fix。补上测试后都杀掉了。

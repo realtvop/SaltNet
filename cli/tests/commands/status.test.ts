@@ -7,6 +7,7 @@ import { openStore } from "../../src/store/store";
 import { saveUser } from "../../src/users/repository";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -581,6 +582,36 @@ describe("status command", () => {
         expect(res.json.warnings.length).toBe(1);
         expect(res.json.warnings[0].code).toBe("LXNS_EXPIRING");
         expect(res.json.warnings[0].fix).toBe("saltnet user bind 0 lxns");
+    });
+
+    it("prints an LXNS_EXPIRING fix that runs as printed for a uid that starts with -", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeStatusUser("u0", "Alice", 1000));
+        saveUser(store, makeStatusUser("-u1 dash", "Bob", 1001));
+        store.close();
+
+        const testNow = new Date("2026-06-01T12:00:00Z");
+        const issued = testNow.getTime() - 29 * 24 * 60 * 60 * 1000;
+        const creds = {
+            version: 1,
+            users: {
+                "-u1 dash": {
+                    lxnsAuthorization: { accessToken: "FAKE-TOKEN", refreshToken: "FAKE-REFRESH" },
+                    lxnsAccountId: 1001,
+                    lxnsIssuedAt: issued,
+                },
+            },
+        };
+        writeFileSync(paths.credentials, `${JSON.stringify(creds, null, 2)}\n`, "utf8");
+
+        const res = await statusIn(paths, [], { now: testNow });
+        expect(res.json.warnings).toHaveLength(1);
+        expect(res.json.warnings[0].fix).toBe("saltnet user bind -- '-u1 dash' lxns");
+        expect(parsePrintedCommand(res.json.warnings[0].fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "-u1 dash", source: "lxns" },
+        });
     });
 
     it("respects lxns.refreshTokenDays changed via environment variable or config.json", async () => {

@@ -25,6 +25,7 @@ import * as userRepository from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -809,6 +810,32 @@ describe("backup import and export", () => {
         expect(noUser.code).toBe(4);
         expect(noUser.json.error.code).toBe("NO_USER");
         expect(() => readFileSync(noUserTarget)).toThrow();
+    });
+
+    it("prints an overwrite fix for a file that starts with - that runs as printed", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser()], []);
+        const cwd = path.dirname(paths.home);
+        const target = path.join(cwd, "-existing.json");
+        writeFileSync(target, "old");
+
+        const exists = await commandIn(paths, "export", ["--keep-lxns", "--", "-existing.json"], {
+            cwd,
+        });
+        expect(exists.json.error.code).toBe("FILE_EXISTS");
+        const fix = exists.json.error.fix!;
+        expect(fix).toBe("saltnet export ./-existing.json --keep-lxns --overwrite");
+        expect(parsePrintedCommand(fix)).toMatchObject({
+            command: "export",
+            positionals: { file: "./-existing.json" },
+            options: { keepLxns: true, overwrite: true },
+        });
+        expect(readFileSync(target, "utf8")).toBe("old");
+
+        const words = splitCommandLine(fix);
+        const rerun = await commandIn(paths, words[1], words.slice(2), { cwd });
+        expect(rerun.code).toBe(0);
+        expect(decodeFile(target).users).toHaveLength(1);
     });
 
     it("treats null credentials as absent during import", async () => {

@@ -4,6 +4,7 @@
 import type { LXNSAuth } from "@core/integrations/lxns/type";
 import type { User } from "@core/user/type";
 import type { RuntimePaths } from "../runtime/paths";
+import type { UserTarget } from "../util/printedCommand";
 import type { CliSyncSource, ResolvedSyncSource } from "./types";
 import { chooseSyncSource } from "@core/sync/sync";
 import { getUserDisplayName } from "@core/user/type";
@@ -14,7 +15,13 @@ import {
     readCredentials,
 } from "../runtime/credentials";
 import { userForCoreScores } from "../users/rows";
-import { quoteArg } from "../util/shell";
+import {
+    dfNameBindCommand,
+    userBindCommand,
+    userOptionWords,
+    userRefWord,
+} from "../util/printedCommand";
+import { joinCommandLine } from "../util/shell";
 
 /**
  * Builds a working copy of the stored user with credentials attached for core.
@@ -71,30 +78,28 @@ export function getOtherBoundSources(
 }
 
 export function formatOtherSourcesFix(
-    user: { index: number; uid: string },
+    user: UserTarget,
     otherSources: readonly ResolvedSyncSource[],
     existingFix?: string
 ): string | undefined {
     if (otherSources.length === 0) return existingFix;
-    const userFlag = user.index === 0 ? "" : ` --user ${quoteArg(user.uid)}`;
-    const commands = otherSources.map(s => `saltnet sync${userFlag} --source ${s}`).join(" 或 ");
+    const commands = otherSources
+        .map(source =>
+            joinCommandLine(["saltnet", "sync", ...userOptionWords(user), "--source", source])
+        )
+        .join(" 或 ");
     if (existingFix) {
         return `${existingFix}；或尝试其他已绑定来源：${commands}`;
     }
     return `尝试其他已绑定来源：${commands}`;
 }
 
-/** How a printed command names the user: `0` for the default user, else the quoted uid. */
-export function syncUserRef(target: { readonly index: number; readonly uid: string }): string {
-    return target.index === 0 ? "0" : quoteArg(target.uid);
-}
-
 export function resolveSyncSource(
     userForCore: User,
-    target: { readonly index: number; readonly uid: string },
+    target: UserTarget,
     requestedSource: CliSyncSource
 ): ResolvedSyncSource {
-    const userRef = syncUserRef(target);
+    const userRef = userRefWord(target);
     const displayName = getUserDisplayName(userForCore);
 
     if (requestedSource === "ingame") {
@@ -116,14 +121,19 @@ export function resolveSyncSource(
             return "df-name";
         }
         throw new CliError("NOT_BOUND", `用户 ${displayName} 尚未绑定任何数据源`, {
-            fix: `saltnet user bind ${userRef}`,
+            fix: `绑定一个数据来源：${[
+                userBindCommand(userRef, "ingame", [], ["--qr", "-"]),
+                userBindCommand(userRef, "lxns"),
+                userBindCommand(userRef, "df-token", ["-"]),
+                dfNameBindCommand(userRef),
+            ].join(" 或 ")}`,
         });
     }
 
     if (requestedSource === "lxns") {
         if (!userForCore.lxns?.auth) {
             throw new CliError("NOT_BOUND", `用户 ${displayName} 未绑定落雪账号`, {
-                fix: `saltnet user bind ${userRef} lxns`,
+                fix: userBindCommand(userRef, "lxns"),
             });
         }
         return "lxns";
@@ -132,7 +142,7 @@ export function resolveSyncSource(
     if (requestedSource === "df-token") {
         if (!userForCore.divingFish.importToken) {
             throw new CliError("NOT_BOUND", `用户 ${displayName} 未绑定水鱼 Import-Token`, {
-                fix: `saltnet user bind ${userRef} df-token`,
+                fix: userBindCommand(userRef, "df-token", ["-"]),
             });
         }
         return "df-token";
@@ -141,7 +151,7 @@ export function resolveSyncSource(
     if (requestedSource === "df-name") {
         if (!userForCore.divingFish.name) {
             throw new CliError("NOT_BOUND", `用户 ${displayName} 未绑定水鱼用户名`, {
-                fix: `saltnet user bind ${userRef} df-name`,
+                fix: dfNameBindCommand(userRef),
             });
         }
         return "df-name";

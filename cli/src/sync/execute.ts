@@ -23,6 +23,8 @@ import { CliError, usageError } from "../errors";
 import { resolveUser } from "../refs/user";
 import { appendScoreEvents, listUsers, readUser, saveUser } from "../users/repository";
 import { readRecordChartKeys, readUserScores } from "../users/scores";
+import { userOptionWords, userRefWord } from "../util/printedCommand";
+import { joinCommandLine } from "../util/shell";
 import { formatLocalTime } from "../util/time";
 import { computeSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
@@ -35,7 +37,6 @@ import {
     formatOtherSourcesFix,
     getOtherBoundSources,
     resolveSyncSource,
-    syncUserRef,
 } from "./sources";
 import { applySyncToStoredUser } from "./storedUser";
 import { runSyncUploads } from "./uploads";
@@ -63,7 +64,7 @@ export async function executeSync(
     const store = ctx.store();
     const users = listUsers(store);
     const targetUserRow = resolveUser(users, args.options.user);
-    const userRef = syncUserRef(targetUserRow);
+    const userRef = userRefWord(targetUserRow);
     const requestedSource = args.options.source ?? "auto";
     const mayUseInGame =
         requestedSource === "ingame" || (requestedSource === "auto" && targetUserRow.inGameEnabled);
@@ -97,12 +98,16 @@ export async function executeSync(
             assertQrAccount(storedUser.inGame.id, qr);
             userForCore.inGame = { ...userForCore.inGame, id: qr.userId };
         } else if (cliSource === "ingame" && !userForCore.inGame.id) {
-            const userFlag =
-                targetUserRow.index !== 0 && targetUserRow.uid.startsWith("-")
-                    ? `--user=${userRef}`
-                    : `--user ${userRef}`;
             throw new CliError("QR_REQUIRED", "首次舞萌同步需要二维码", {
-                fix: `saltnet sync ${userFlag} --source ingame --qr -`,
+                fix: joinCommandLine([
+                    "saltnet",
+                    "sync",
+                    ...userOptionWords(targetUserRow),
+                    "--source",
+                    "ingame",
+                    "--qr",
+                    "-",
+                ]),
             });
         }
         const inGameMode = cliSource === "ingame" ? (qr ? "full" : "fast") : null;

@@ -28,6 +28,7 @@ import {
     readUsers,
     replaceUsers,
 } from "../users/repository";
+import { fileWord } from "../util/printedCommand";
 import { joinCommandLine } from "../util/shell";
 import { formatLocalTime } from "../util/time";
 import { CONFIRM_OPTIONS, requireConfirmation } from "./confirm";
@@ -520,7 +521,13 @@ export const exportBackup = defineCommand(
         if (existsSync(absolutePath) && !args.options.overwrite) {
             throw new CliError("FILE_EXISTS", `文件已经存在：${absolutePath}`, {
                 retryable: false,
-                fix: joinCommandLine(["saltnet", "export", args.positionals.file, "--overwrite"]),
+                fix: joinCommandLine([
+                    "saltnet",
+                    "export",
+                    fileWord(args.positionals.file),
+                    ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+                    "--overwrite",
+                ]),
             });
         }
         const credentials = readCredentials(ctx.paths);

@@ -207,12 +207,12 @@ describe("saltnet ingame backup", () => {
         const noScores = await run("-no scores");
         expect(noScores.json.error).toMatchObject({
             code: "NOT_FOUND",
-            fix: "saltnet sync --user='-no scores'",
+            fix: "saltnet sync '--user=-no scores'",
         });
         const noCharacters = await run("-no characters");
         expect(noCharacters.code).toBe(0);
         expect(noCharacters.json.warnings).toMatchObject([
-            { code: "PARTIAL_BACKUP", fix: "saltnet sync --user='-no characters' --source ingame" },
+            { code: "PARTIAL_BACKUP", fix: "saltnet sync '--user=-no characters' --source ingame" },
         ]);
     });
 

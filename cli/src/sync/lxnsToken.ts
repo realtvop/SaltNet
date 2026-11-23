@@ -24,8 +24,7 @@ import {
     updateCredentials,
 } from "../runtime/credentials";
 import { listUsers } from "../users/repository";
-import { quoteArg } from "../util/shell";
-import { syncUserRef } from "./sources";
+import { userBindCommand, userRefWord } from "../util/printedCommand";
 
 /** Refresh this long before the access token expires, as the web app does. */
 export const LXNS_ACCESS_MARGIN_MS = 60_000;
@@ -84,7 +83,7 @@ export async function lxnsAccessToken(
     }
 
     const targetUserRow = listUsers(store).find(u => u.uid === uid);
-    const userRef = targetUserRow ? syncUserRef(targetUserRow) : quoteArg(uid);
+    const userRef = targetUserRow ? userRefWord(targetUserRow) : uid;
 
     // 2. Read credentials.json now, while the lock is held, never from an earlier read.
     const credentials = readCredentials(ctx.paths);
@@ -95,7 +94,7 @@ export async function lxnsAccessToken(
     const initialAuth = matchingLxnsAuthorization(entry, expectedAccountId) as LXNSAuth | undefined;
     if (!initialAuth) {
         throw new CliError("NOT_BOUND", `用户 ${getUserDisplayName(user)} 尚未绑定落雪账号`, {
-            fix: `saltnet user bind ${userRef} lxns`,
+            fix: userBindCommand(userRef, "lxns"),
         });
     }
 
@@ -121,7 +120,7 @@ export async function lxnsAccessToken(
                 "LXNS_REAUTH_REQUIRED",
                 `用户 ${getUserDisplayName(user)} 的落雪授权缺少刷新令牌，需要重新授权`,
                 {
-                    fix: `saltnet user bind ${userRef} lxns`,
+                    fix: userBindCommand(userRef, "lxns"),
                 }
             );
         }
@@ -172,7 +171,7 @@ export async function lxnsAccessToken(
                     "LXNS_REAUTH_REQUIRED",
                     `用户 ${getUserDisplayName(user)} 的落雪授权已失效或已被撤销，需要重新授权`,
                     {
-                        fix: `saltnet user bind ${userRef} lxns`,
+                        fix: userBindCommand(userRef, "lxns"),
                     }
                 );
             }
@@ -191,7 +190,7 @@ export async function lxnsAccessToken(
                     "LXNS_REAUTH_REQUIRED",
                     `用户 ${getUserDisplayName(user)} 的落雪授权属于另一个落雪账号，需要重新授权`,
                     {
-                        fix: `saltnet user bind ${userRef} lxns`,
+                        fix: userBindCommand(userRef, "lxns"),
                     }
                 );
             }

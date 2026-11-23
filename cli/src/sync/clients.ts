@@ -33,6 +33,7 @@ import { convertDetailed } from "@core/user/type";
 import { toHalfWidth } from "@core/util/toHalfWidth";
 import { CliError } from "../errors";
 import { createHttp } from "../runtime/http";
+import { dfNameBindCommand, userBindCommand } from "../util/printedCommand";
 import { postQrGameApi } from "./ingame";
 
 export interface SyncClientsWrapper {
@@ -206,7 +207,7 @@ export function mapSyncError(
                 "NOT_BOUND",
                 `落雪拒绝了访问凭据（HTTP ${error.status}），需要重新授权`,
                 {
-                    fix: `saltnet user bind ${userRef} lxns`,
+                    fix: userBindCommand(userRef, "lxns"),
                     retryable: false,
                     extra: { status: error.status },
                     cause: error,
@@ -226,7 +227,9 @@ export function mapSyncError(
             const byName = source === "df-name";
             const refused = byName ? "水鱼拒绝了按用户名查询" : "水鱼拒绝了访问凭据";
             return new CliError("NOT_BOUND", `${refused}（${error.message}）`, {
-                fix: `saltnet user bind ${userRef} ${byName ? "df-name" : "df-token"}`,
+                fix: byName
+                    ? `${dfNameBindCommand(userRef)}；或绑定 Import-Token：${userBindCommand(userRef, "df-token", ["-"])}`
+                    : userBindCommand(userRef, "df-token", ["-"]),
                 retryable: false,
                 extra: { status: error.status },
                 cause: error,
