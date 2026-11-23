@@ -18,7 +18,11 @@ export interface StagedFile {
  * Writes a complete temporary file next to `file`, but leaves the final rename to the caller. This
  * is used when another transaction has to commit before the file becomes visible.
  */
-export function stageFileAtomic(file: string, content: string, mode = 0o600): StagedFile {
+export function stageFileAtomic(
+    file: string,
+    content: string | Uint8Array,
+    mode = 0o600
+): StagedFile {
     const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
     let descriptor: number | undefined;
     try {
@@ -58,7 +62,7 @@ export function stageFileAtomic(file: string, content: string, mode = 0o600): St
  * Replaces `file` with `content` in one step. The file ends up with `mode` (private to the user by
  * default), whatever the old one had, because it is a new file that takes the old one's place.
  */
-export function writeFileAtomic(file: string, content: string, mode = 0o600): void {
+export function writeFileAtomic(file: string, content: string | Uint8Array, mode = 0o600): void {
     const staged = stageFileAtomic(file, content, mode);
     try {
         staged.commit();

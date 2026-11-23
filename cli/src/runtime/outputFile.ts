@@ -25,7 +25,11 @@ export function resolveOutputFile(
 }
 
 /** Writes atomically with mode 0600; a missing directory is USAGE naming the command. */
-export function writeOutputFile(absolutePath: string, content: string, commandName: string): void {
+export function writeOutputFile(
+    absolutePath: string,
+    content: string | Uint8Array,
+    commandName: string
+): void {
     try {
         writeFileAtomic(absolutePath, content, 0o600);
     } catch (error) {

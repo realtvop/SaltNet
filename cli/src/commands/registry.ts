@@ -3,11 +3,10 @@
  * examples) from which the parser, `--help`, `schema` and `guide` are all generated, so the
  * documentation cannot disagree with the behavior (design 4.7).
  */
-import type { FetchLike } from "@core/http";
 import type { ErrorCode } from "../errors";
 import type { Warning } from "../output/warning";
 import type { ResolvedConfig } from "../runtime/config";
-import type { TimeoutConfigKey } from "../runtime/http";
+import type { CliFetch, TimeoutConfigKey } from "../runtime/http";
 import type { Io } from "../runtime/io";
 import type { RuntimePaths } from "../runtime/paths";
 import type { Store } from "../store/store";
@@ -302,7 +301,7 @@ export interface CommandContext {
         timeoutKey?: TimeoutConfigKey;
         retry?: boolean;
         retryDelayMs?: number;
-    }) => FetchLike;
+    }) => CliFetch;
     /**
      * Progress and diagnostics, one line each. They go to stderr when a person is watching
      * (stderr is a terminal) or `--verbose` was given, and nowhere otherwise, so an agent's

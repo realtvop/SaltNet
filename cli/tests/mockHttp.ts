@@ -1,6 +1,6 @@
 /** A network for tests: requests are answered from a table, and everything else fails loudly. */
 import type { FetchResponse } from "@core/http";
-import type { HttpFetch, HttpInit } from "../src/runtime/io";
+import type { HttpFetch, HttpInit, HttpResponse } from "../src/runtime/io";
 
 export interface RecordedRequest {
     url: string;
@@ -21,9 +21,25 @@ export function jsonResponse(body: unknown, status = 200): FetchResponse {
     return textResponse(JSON.stringify(body), status);
 }
 
+/**
+ * A binary body (a picture) as real `fetch` gives it: `text()` and `json()` decode it as UTF-8 the
+ * way a real `Response` does, so code that reads a picture as text breaks here as it would against
+ * a real server, and `arrayBuffer()` gives the bytes. Unlike a real response it can be read again.
+ */
+export function binaryResponse(bytes: Uint8Array, status = 200): HttpResponse {
+    const fresh = () => new Response(bytes.slice(), { status });
+    return {
+        ok: status >= 200 && status < 300,
+        status,
+        text: async () => fresh().text(),
+        json: async () => (await fresh().json()) as unknown,
+        arrayBuffer: async () => fresh().arrayBuffer(),
+    };
+}
+
 export type Route =
-    | FetchResponse
-    | ((request: RecordedRequest) => FetchResponse | Promise<FetchResponse>);
+    | HttpResponse
+    | ((request: RecordedRequest) => HttpResponse | Promise<HttpResponse>);
 
 /** Answers after a delay, rejecting like fetch when the request's deadline aborts first. */
 export function delayedRoute(response: FetchResponse, delayMs: number): Route {

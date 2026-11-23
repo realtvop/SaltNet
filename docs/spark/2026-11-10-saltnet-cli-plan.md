@@ -229,7 +229,7 @@
 
 - [x] P4-1 `feat(cli): add ingame check-login`：只用模拟 HTTP 测试；不做 `clear-tickets`（决定 95）〔新〕
 - [x] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
-- [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
+- [x] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
 - [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
 - [ ] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
 - [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
@@ -1136,3 +1136,22 @@
         - `sync` 的 `QR_REQUIRED` 对默认用户原来写 `--user 0`，现在省略，和其他 fix 一致。
     - 测试：`cli/tests/printedCommand.ts` 用真正的解析器读 fix，检查它到达的命令、用户和选项。每个调用点都加了以 `-` 开头的 uid 或文件名的用例，`export` 的用例还照抄运行了 fix。
     - 变异测试：31 个，第一轮杀掉 28 个。剩下 3 个都缺测试：没有来源时默认用户的 fix（写 `0`），`--source lxns` 未绑定时以 `-` 开头的 uid，`user bind lxns` 重新开始授权的 fix。补上测试后都杀掉了。
+99. **P4-3 的实现（2026-11-23）**：
+    - 分工：Gemini 写，我检查、修正并补测试。
+    - `b50 --image <文件>` 照网页端「在线渲染」拼请求体（`buildB50RenderPayload`），发给渲染服务：
+        - 请求体里有玩家名、副名（只有设了备注时才有）、两组完整 rating 之和、模式标签、`--dx-score`，以及两组完整的谱面，不受 `--limit`、`--offset` 影响。
+        - 图片以 0600 原子写入。文件已存在时报 `FILE_EXISTS`，fix 是加上 `--overwrite` 的同一条命令。fix 只保留模式、`--user`、`--dx-score` 和文件名，因为 `--limit`、`--offset`、`--fields` 不影响图片。
+        - `--overwrite`、`--dx-score` 不带 `--image` 时报 `USAGE`，`--image` 和 `--offline` 一起用时也报 `USAGE`。
+        - 只有 `--image` 会联网和写文件，所以 `b50` 的副作用级别从 `none` 变成 `local`。
+        - 渲染请求不改变服务端的任何东西，所以和读请求一样自动重试一次。
+    - 我改的：
+        - Gemini 用 `response.text()` 读 PNG，再用 `Buffer.from(文本, "binary")` 还原成字节。真正的 `fetch` 会按 UTF-8 解码正文，而 PNG 的第一个字节 0x89 不是合法的 UTF-8，所以对真正的渲染服务，这个命令每次都会报「不是有效的 PNG」。它的测试把字节按 latin1 转成文本来模拟响应，所以没发现这个问题。改法如下：
+            - `io.ts` 的响应可以带 `arrayBuffer`。
+            - `createHttp` 返回的响应多了 `bytes()`。带重试时一次读出字节，文本由 `TextDecoder` 从字节解码，和 `Response.text()` 一样去掉 BOM、替换坏字节。不带重试时，读哪种就按需读哪种。
+            - `ctx.http` 的类型随之改成 `CliFetch`。它也满足 core 要的 `FetchLike`。
+            - 测试里新增 `binaryResponse`，用真正的 `Response` 解码，B50 图片测试改用它。样例里有全部 256 个字节值，并逐字节核对写出的文件。`http.test.ts` 在两条读取路径上都和真正的 `Response` 对照。
+        - 渲染服务返回非成功状态时，`retryable` 原来总是 false。现在和 `upstreamStatusError` 一样，5xx 和 429 是 true，并带上 `status`。
+        - Gemini 在 `outputFile.ts` 里另写了 `safeFileArg` 和 `safeUserOption`，和 P3-10b 的 `printedCommand.ts` 重复，已删掉，改用 `fileWord` 和 `optionWords`。
+        - `writeOutputFile` 原来用 `as unknown as string` 把字节传给只收字符串的 `writeFileAtomic`。现在 `files.ts` 的两个写文件函数都直接接受字节。
+    - 没有加指南示例：`--image` 要访问渲染服务，而端到端测试是离线跑的。
+    - 变异测试：16 个，全部杀掉。它们覆盖：按文本读图片、`retryable` 和 `status`、跳过 PNG 检查、两条读取路径各自按文本取字节、解码时保留 BOM 或按 latin1 解码、读字节中断时原样抛错、fix 里的文件名和 `--user` 没有处理开头的 `-`、按字符串写文件。

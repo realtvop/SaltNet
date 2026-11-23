@@ -5,15 +5,26 @@
  * an answer that cannot be read is `UPSTREAM_ERROR`. Messages name the host only, because a URL
  * can carry a token in its query.
  */
-import type { FetchInit, FetchLike, FetchResponse } from "@core/http";
+import type { FetchInit, FetchResponse } from "@core/http";
 import type { ConfigKey } from "./config";
-import type { HttpFetch } from "./io";
+import type { HttpFetch, HttpResponse } from "./io";
 import { CliError } from "../errors";
 
 export type TimeoutConfigKey = Extract<
     ConfigKey,
     "metadata.timeoutMs" | "network.timeoutMs" | "network.updateTimeoutMs"
 >;
+
+/**
+ * A response from `createHttp`: core's response plus `bytes`, the body as it came, for a body that
+ * is not text (a picture). Each response's body is read once: by `text`, `json` or `bytes`.
+ */
+export interface CliResponse extends FetchResponse {
+    bytes: () => Promise<Uint8Array>;
+}
+
+/** What `createHttp` gives. It is a `FetchLike` too, so shared/core takes it as it is. */
+export type CliFetch = (input: string, init?: FetchInit) => Promise<CliResponse>;
 
 export interface HttpOptions {
     /** The real network in production; a test passes its own. */
@@ -174,6 +185,42 @@ function parseJson(host: string, text: string): unknown {
 }
 
 /**
+ * The whole body, as bytes when the response can give them (real `fetch` can) and as text when it
+ * cannot (a test's made-up response).
+ */
+async function readBody(response: HttpResponse): Promise<Uint8Array | string> {
+    return response.arrayBuffer
+        ? new Uint8Array(await response.arrayBuffer())
+        : await response.text();
+}
+
+function bytesOf(body: Uint8Array | string): Uint8Array {
+    return typeof body === "string" ? new TextEncoder().encode(body) : body;
+}
+
+/** The text `Response.text()` gives for these bytes: UTF-8, a BOM dropped, bad bytes replaced. */
+function textOf(body: Uint8Array | string): string {
+    return typeof body === "string" ? body : new TextDecoder().decode(body);
+}
+
+/** A response whose body was read already, so that text, JSON and bytes can all be asked for. */
+function bufferedResponse(
+    host: string,
+    response: FetchResponse,
+    body: Uint8Array | string
+): CliResponse {
+    let text: string | undefined;
+    const readText = (): string => (text ??= textOf(body));
+    return {
+        ok: response.ok,
+        status: response.status,
+        text: async () => readText(),
+        json: async () => parseJson(host, readText()),
+        bytes: async () => bytesOf(body),
+    };
+}
+
+/**
  * The error for an HTTP status that is not a success. A 5xx or 429 may pass by itself, so the same
  * command can be run again; anything else would answer the same way.
  */
@@ -185,15 +232,17 @@ export function upstreamStatusError(url: string, status: number): CliError {
 }
 
 /**
- * A `fetch` for shared/core. It does not judge the status: core reports `!ok` in its own way, and
- * `upstreamStatusError` is there for the callers that turn it into a `CliError`.
+ * A `fetch` for shared/core and the commands. It does not judge the status: core reports `!ok` in
+ * its own way, and `upstreamStatusError` is there for the callers that turn it into a `CliError`.
+ * With `retry` the body is read before the response is returned, so that a body cut short can be
+ * asked for again; without it, the body is read when the caller asks for it.
  */
-export function createHttp(options: HttpOptions): FetchLike {
+export function createHttp(options: HttpOptions): CliFetch {
     const { timeoutMs, timeoutKey, retry = false } = options;
     const retryDelayMs = options.retryDelayMs ?? 500;
     const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
 
-    return async (input: string, init?: FetchInit): Promise<FetchResponse> => {
+    return async (input: string, init?: FetchInit): Promise<CliResponse> => {
         const host = hostOf(input);
         const headers: Record<string, string> = {
             "User-Agent": options.userAgent,
@@ -215,7 +264,7 @@ export function createHttp(options: HttpOptions): FetchLike {
             let lastError: unknown;
             for (let attempt = 1; attempt <= 2; attempt++) {
                 const signal = AbortSignal.timeout(timeoutMs);
-                let rawResponse: FetchResponse;
+                let rawResponse: HttpResponse;
                 try {
                     rawResponse = await options.fetch(input, {
                         ...init,
@@ -247,9 +296,9 @@ export function createHttp(options: HttpOptions): FetchLike {
                     continue;
                 }
 
-                let bodyText: string;
+                let body: Uint8Array | string;
                 try {
-                    bodyText = await rawResponse.text();
+                    body = await readBody(rawResponse);
                 } catch (error) {
                     lastError = networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
                     if (attempt === 1) {
@@ -260,17 +309,12 @@ export function createHttp(options: HttpOptions): FetchLike {
                     throw lastError;
                 }
 
-                return {
-                    ok: rawResponse.ok,
-                    status: rawResponse.status,
-                    text: async () => bodyText,
-                    json: async () => parseJson(host, bodyText),
-                };
+                return bufferedResponse(host, rawResponse, body);
             }
             throw lastError;
         }
 
-        let response: FetchResponse;
+        let response: HttpResponse;
         try {
             response = await options.fetch(input, {
                 ...init,
@@ -289,12 +333,20 @@ export function createHttp(options: HttpOptions): FetchLike {
                 throw networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
             }
         };
+        const readBytes = async (): Promise<Uint8Array> => {
+            try {
+                return bytesOf(await readBody(response));
+            } catch (error) {
+                throw networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
+            }
+        };
 
         return {
             ok: response.ok,
             status: response.status,
             text: readText,
             json: async () => parseJson(host, await readText()),
+            bytes: readBytes,
         };
     };
 }

@@ -143,7 +143,10 @@ SaltNet is a three-package pnpm workspace:
           the whole groups in the chosen mode. Every chart row adds that mode's `rank`, `rating` and
           `ratingConstant`. It needs a user, PC50 orders by the records' own play counts and warns
           `NO_PLAY_COUNTS` when none is positive, and a user with only the Diving Fish public B50
-          has scores for the normal mode only.
+          has scores for the normal mode only. `--image <file>` also draws the whole B50 of that
+          mode as a PNG through the render service, as the web app's online rendering does
+          (`--dx-score` shows the DX scores), and writes it with mode 0600 (`FILE_EXISTS` unless
+          `--overwrite`); `image` is then `{ path, byteSize }`, otherwise null.
         - `rating.ts` is the `rating` command: the selected user's current rating and, with
           `--history`, the history the web app's rating page shows, oldest first with each entry's
           change. A rating that is not a safe integer is null, and history entries that are not
@@ -236,6 +239,10 @@ SaltNet is a three-package pnpm workspace:
       (`fields.ts`), paging (`paging.ts`), the builders for the JSON Schemas of `data` (`schema.ts`;
       an object lists every key it has, so a field that is added or dropped without updating its
       schema fails a test) and the warning codes (`warning.ts`).
+    - `src/render/b50Image.ts` builds the render request body as the web app's B50 page does
+      (`buildB50RenderPayload`, `toRenderChartPayload`, `getPlayerSecondaryName`), checks it with
+      `parseB50Payload`, posts it to `<render.url>/render/b50` with one retry, and takes the answer's
+      bytes (`bytes()`, never the text) only when they start with the PNG signature.
     - `src/errors.ts` defines `CliError` and the error-code/exit-code table, and `src/toCliError.ts`
       turns anything thrown into a `CliError`.
     - `src/runtime/` resolves the data directory (`SALTNET_HOME`, default `~/.saltnet`) and layers
@@ -246,14 +253,17 @@ SaltNet is a three-package pnpm workspace:
           rewriting the whole file in one step through `files.ts`, which `catalog/snapshots.ts` uses
           too, and leaves a file that is not a JSON object alone.
         - `outputFile.ts` resolves output file paths against the working directory, checks
-          `FILE_EXISTS` with a fix adding `--overwrite`, and writes files atomically with mode 0600.
-        - `io.ts` wraps stdout/stderr/stdin and the network (`fetch`) so tests can inject them.
+          `FILE_EXISTS` with a fix adding `--overwrite`, and writes text or bytes atomically with
+          mode 0600.
+        - `io.ts` wraps stdout/stderr/stdin and the network (`fetch`, whose responses may have
+          `arrayBuffer`) so tests can inject them.
         - `http.ts` gives commands a `fetch` (`ctx.http()`) that validates header characters before
           sending, redacts header values from error messages and causes, adds the User-Agent and a
           deadline (`network.timeoutMs` unless the caller names another timeout setting), retries
           read requests once on connection failures, timeouts, body-read errors or 429/5xx statuses
           when requested, and reports failures as `NETWORK`/`UPSTREAM_ERROR`, a timeout with a `fix`
-          that names the setting to raise.
+          that names the setting to raise. Its responses also have `bytes()`, the body as it came,
+          for a binary body that `text()` would destroy by decoding it as UTF-8.
         - `credentials.ts` strictly reads the versioned credential file (users and pending OAuth
           authorizations) with a fix on parse failures, serializes modifications with
           `withCredentialsLock`, prunes expired authorizations, orphaned user entries and LXNS
@@ -455,8 +465,9 @@ SaltNet is a three-package pnpm workspace:
           `invalid_grant` or identity change clears credentials only if the entry still matches.
     - `tests/` holds the Vitest suite.
         - `harness.ts` runs a command line in-process with captured output; `createHarness` has no
-          network unless a test brings one. `mockHttp.ts` answers requests from a table, and
-          `delayedRoute` answers late and honors the request's signal.
+          network unless a test brings one. `mockHttp.ts` answers requests from a table,
+          `delayedRoute` answers late and honors the request's signal, and `binaryResponse` answers
+          with bytes whose `text()` decodes UTF-8 as real `fetch` does.
         - `setup.ts` gives each test file a throwaway `SALTNET_HOME` and `HOME`, and `tempHome.ts`
           gives each test its own fresh data directory.
         - `fixtureCatalog.ts` builds the song catalog of the fixed SaltMeta fixture,

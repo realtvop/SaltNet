@@ -1,5 +1,5 @@
 import type { FetchResponse } from "@core/http";
-import type { HttpFetch } from "../../src/runtime/io";
+import type { HttpFetch, HttpResponse } from "../../src/runtime/io";
 import { describe, expect, it } from "vitest";
 import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { CliError } from "../../src/errors";
@@ -94,6 +94,92 @@ describe("the response", () => {
         expect(error.code).toBe("UPSTREAM_ERROR");
         expect(error.message).toContain("meta.example.com");
         expect(error.message).not.toContain("captive portal");
+    });
+});
+
+describe("binary bodies", () => {
+    // Not UTF-8: the PNG signature (0x89 cannot start a character), a lone continuation byte and a
+    // character cut short.
+    const PICTURE = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0x80, 0xc3,
+    ]);
+    // UTF-8 text after a byte order mark, which `Response.text()` drops.
+    const BOM_TEXT = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode('{"a":"é"}')]);
+    const BOTH_PATHS = [
+        ["without retry", false],
+        ["with retry", true],
+    ] as const;
+
+    function httpWith(fetch: HttpFetch, retry: boolean) {
+        return createHttp({
+            fetch,
+            userAgent: "saltnet-cli/1.2.3",
+            timeoutMs: 5000,
+            timeoutKey: "network.timeoutMs",
+            retry,
+            retryDelayMs: 0,
+        });
+    }
+
+    /** What real `fetch` answers: a fresh `Response` each time, whose body can be read once. */
+    function realFetch(bytes: Uint8Array): HttpFetch {
+        return async () => new Response(bytes.slice(), { status: 200 });
+    }
+
+    it.each(BOTH_PATHS)("gives the bytes of a real response as they came, %s", async (_, retry) => {
+        const response = await httpWith(realFetch(PICTURE), retry)(URL_WITH_TOKEN);
+        expect([...(await response.bytes())]).toEqual([...PICTURE]);
+    });
+
+    it.each(BOTH_PATHS)("decodes text as Response.text() does, %s", async (_, retry) => {
+        for (const bytes of [PICTURE, BOM_TEXT]) {
+            const response = await httpWith(realFetch(bytes), retry)(URL_WITH_TOKEN);
+            expect(await response.text()).toBe(await new Response(bytes.slice()).text());
+        }
+    });
+
+    it("reads a retried body once, so text, json and bytes can all be asked for", async () => {
+        const response = await httpWith(realFetch(BOM_TEXT), true)(URL_WITH_TOKEN);
+        expect(await response.text()).toBe('{"a":"é"}');
+        expect(await response.json()).toEqual({ a: "é" });
+        expect([...(await response.bytes())]).toEqual([...BOM_TEXT]);
+    });
+
+    it.each(BOTH_PATHS)("gives the UTF-8 of a body that is only text, %s", async (_, retry) => {
+        const fetch = mockFetch({ [URL_WITH_TOKEN]: textResponse("é☃") });
+        const response = await httpWith(fetch, retry)(URL_WITH_TOKEN);
+        expect([...(await response.bytes())]).toEqual([...new TextEncoder().encode("é☃")]);
+    });
+
+    it("reports bytes that break off while they are read", async () => {
+        const response: HttpResponse = {
+            ok: true,
+            status: 200,
+            text: async () => Promise.reject(new Error("unused")),
+            json: async () => Promise.reject(new Error("unused")),
+            arrayBuffer: async () => Promise.reject(fetchFailed("ECONNRESET")),
+        };
+        const error = await failureOf((await http(async () => response)(URL_WITH_TOKEN)).bytes());
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toBe("读取 meta.example.com 的响应时中断（ECONNRESET）");
+    });
+
+    it("asks again for bytes that broke off while they were read", async () => {
+        let calls = 0;
+        const fetch: HttpFetch = async () => {
+            calls++;
+            if (calls > 1) return new Response(PICTURE.slice(), { status: 200 });
+            return {
+                ok: true,
+                status: 200,
+                text: async () => Promise.reject(new Error("unused")),
+                json: async () => Promise.reject(new Error("unused")),
+                arrayBuffer: async () => Promise.reject(fetchFailed("ECONNRESET")),
+            };
+        };
+        const response = await httpWith(fetch, true)(URL_WITH_TOKEN);
+        expect(calls).toBe(2);
+        expect([...(await response.bytes())]).toEqual([...PICTURE]);
     });
 });
 

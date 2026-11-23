@@ -13,8 +13,17 @@ export interface HttpInit extends FetchInit {
     signal?: AbortSignal;
 }
 
+/**
+ * A response as far as the CLI reads it. Real `fetch` also has `arrayBuffer`, the body as bytes,
+ * which a binary body such as a picture needs: `text()` decodes UTF-8 and destroys it. A test that
+ * only answers with text may leave it out.
+ */
+export interface HttpResponse extends FetchResponse {
+    arrayBuffer?: () => Promise<ArrayBuffer>;
+}
+
 /** `fetch` as far as the CLI uses it. A test passes a function that answers from a table. */
-export type HttpFetch = (input: string, init?: HttpInit) => Promise<FetchResponse>;
+export type HttpFetch = (input: string, init?: HttpInit) => Promise<HttpResponse>;
 
 /**
  * Everything a command reaches the outside world through, so a test can run the whole CLI
