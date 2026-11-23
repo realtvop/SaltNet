@@ -4,7 +4,10 @@ import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { normalizeQrCodeFromInput } from "@core/sync/qrCode";
 import { CliError, usageError } from "../errors";
 
-type QrEndpoint = SaltAPIEndpoints.GetQRInfo | SaltAPIEndpoints.UpdateUser;
+type QrEndpoint =
+    | SaltAPIEndpoints.GetQRInfo
+    | SaltAPIEndpoints.UpdateUser
+    | SaltAPIEndpoints.CheckLogin;
 
 export interface VerifiedQr {
     readonly input: string;

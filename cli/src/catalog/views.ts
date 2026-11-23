@@ -779,12 +779,7 @@ const SYNC_RUNS = view({
             "来源或目标服务：ingame、lxns、df-token、df-name、diving-fish；没有时为 NULL",
             "r.source"
         ),
-        column(
-            "mode",
-            "TEXT",
-            "操作模式或子操作，如 full、fast、public-b50、clear-tickets；没有时为 NULL",
-            "r.mode"
-        ),
+        column("mode", "TEXT", "操作模式，如 full、fast、public-b50；没有时为 NULL", "r.mode"),
         column(
             "outcome",
             "TEXT",

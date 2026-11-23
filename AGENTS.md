@@ -190,8 +190,10 @@ SaltNet is a three-package pnpm workspace:
           the shared content-bound confirmation, refuses while that user's sync runs, and deletes
           that user's credentials under the credentials lock.
         - `ingame.ts` holds `ingame backup` (exporting the in-game format JSON backup for a user with
-          mode 0600; warns `PARTIAL_BACKUP` when characters are missing or empty; `check-login`
-          will follow).
+          mode 0600; warns `PARTIAL_BACKUP` when characters are missing or empty) and
+          `ingame check-login --qr -` (reads a QR code or link from stdin, checks that it belongs
+          to the selected user's bound in-game account, and returns `user` and `isLogin` without
+          logging in or writing local data).
         - `bind.ts` holds `user bind` and `user unbind` for `ingame`, `df-token`, `df-name` and
           `lxns`; `user bind ingame` supports `--id` and `--qr -` (GetQRInfo via SaltNet backend
           without retry), `df-token -` validates through Diving Fish records and stores the token

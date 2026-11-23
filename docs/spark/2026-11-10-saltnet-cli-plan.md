@@ -226,7 +226,7 @@
 
 完成标准：网页端能做的事 CLI 都能做（nearcade 除外）。
 
-- [ ] P4-1 `feat(cli): add ingame check-login`：只用模拟 HTTP 测试；不做 `clear-tickets`（决定 95）〔新〕
+- [x] P4-1 `feat(cli): add ingame check-login`：只用模拟 HTTP 测试；不做 `clear-tickets`（决定 95）〔新〕
 - [x] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
 - [ ] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
 - [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
@@ -1106,3 +1106,17 @@
         - 提交后不清空 `runId`：等价变异，失败处理对已经结束的 run 调 `finishRun` 会抛错，那里的错误本来就被忽略。
         - 每次上传请求前的锁检查：测试触达不到。一个目标里排在上传请求前面的只有落雪令牌刷新，而 `lxnsAccessToken` 刷新后自己会检查锁。保留它作为防御。
     - 检查时发现：`sync` 和 `user bind` 相关的几条 fix 不能照原样运行。以 `-` 开头的 uid 会被当成选项，`df-token` 少了 `-`，`df-name` 少了用户名，没有来源时只印 `user bind <用户>`。这些在 P4-1 之后单独的一步 P3-10b 里修。
+
+97. **P4-1 的实现（2026-11-23）**：
+    - 分工：Codex（gpt-6.2-sol）写，我应用、检查并做变异测试。
+    - `ingame check-login [--user] --qr -` 对应网页端的「查询登录状态」。它从 stdin 读二维码或链接，先用 `GetQRInfo` 确认二维码属于这个用户绑定的舞萌账号（和 `sync --qr -` 一样），再发 `CheckLogin`。
+        - 两个请求各发一次，不重试、不跟随重定向，也不改用备用地址，所以超时错误的 `retryable` 是 false。
+        - 返回所选用户和布尔值 `isLogin`。后端返回的不是布尔值时报 `UPSTREAM_ERROR`；网页端的 worker 只按真假判断。
+        - 不登录账号，副作用级别是「无」，不写 `sync_runs`。用户没有舞萌 ID 时报 `NOT_BOUND`，fix 是 `user bind ... ingame --qr -`。`--offline` 报 `USAGE`。
+        - 超时的 fix 是同一条命令，并且用 `--user` 指定当前用户，即使它是第 0 位，这样默认用户在两次运行之间变了也不会查错人。
+        - 这个命令只和账号打交道，所以没有指南示例。它和 `sync` 一起列在 `cli/tests/examples.ts`。
+    - 我改的：Codex 为了做到「不写入」，用只读方式另外打开数据库，拼了一个只读的 Store，旧版本的库也不升级。我改成和 `status` 一样：数据库不存在时当作没有用户，不建目录；存在时照常用 `ctx.store()` 打开，需要时照常迁移。迁移是每个命令打开数据库时都会做的本地维护，不算这个命令写入的数据，而且少一条特殊的打开路径更好维护。测试「不升级旧库」的那条用例相应删掉了。
+    - `sync_runs.mode` 列的说明去掉了 `clear-tickets`。迁移 6 建表语句里的注释没有改：SQLite 把建表语句原文存进 `sqlite_master`，改历史迁移会让新库和旧库的表定义文本不一致。
+    - 变异测试：14 个，杀掉 12 个。剩下 2 个：
+        - 出错时 `retryable` 改成 false：等价变异。会走到这里的网络错误都来自带二维码的请求，这些请求本来就不可重试。我给超时用例加了 `retryable: false` 的断言。
+        - 把意外的非 `CliError` 原样抛出：测试触达不到。这条路径上的请求和 stdin 读取出错时都会转成 `CliError`。保留它是为了防止意外错误的信息里带出二维码。

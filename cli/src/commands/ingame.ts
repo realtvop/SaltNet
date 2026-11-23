@@ -1,11 +1,14 @@
 import type { Warning } from "../output/warning";
 import type { PositionalSpec } from "./registry";
 import { Buffer } from "node:buffer";
+import { existsSync } from "node:fs";
+import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { buildGameBackup } from "@core/user/gameBackup";
-import { CliError } from "../errors";
-import { int, object, str } from "../output/schema";
+import { CliError, usageError } from "../errors";
+import { bool, int, object, str } from "../output/schema";
 import { resolveUser } from "../refs/user";
 import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
+import { assertQrAccount, postQrGameApi, readVerifiedQr } from "../sync/ingame";
 import { listUsers, readUser } from "../users/repository";
 import { quoteArg } from "../util/shell";
 import { USER_OPTION } from "./describe";
@@ -24,21 +27,127 @@ export function ingameBindFix(uid: string): string {
         : `saltnet user bind ${quoteArg(uid)} ingame --qr -`;
 }
 
-/** How a printed command selects a user: nothing for the default user. */
-function userFlag(row: { readonly index: number; readonly uid: string }): string {
-    if (row.index === 0) return "";
+/** How a printed command selects a user; callers can also pin the current default. */
+function userFlag(
+    row: { readonly index: number; readonly uid: string },
+    pinDefault = false
+): string {
+    if (row.index === 0 && !pinDefault) return "";
     return row.uid.startsWith("-")
         ? ` --user=${quoteArg(row.uid)}`
         : ` --user ${quoteArg(row.uid)}`;
 }
 
+interface IngameUser {
+    index: number;
+    uid: string;
+    name: string;
+}
+
+function ingameUserSchema(description: string) {
+    return object<IngameUser>(
+        {
+            index: int("用户序号（从 0 开始）"),
+            uid: str("用户的稳定 UID"),
+            name: str("用户的显示名称"),
+        },
+        { description }
+    );
+}
+
+interface IngameCheckLoginResult {
+    user: IngameUser;
+    isLogin: boolean;
+}
+
+export const ingameCheckLogin = defineCommand(
+    {
+        name: "ingame check-login",
+        summary: "查询指定用户的舞萌账号登录状态",
+        description: "用属于已绑定舞萌账号的二维码查询当前登录状态。此操作需要联网，不会登录账号。",
+        category: "account",
+        effect: "none",
+        output: "object",
+        options: {
+            user: {
+                ...USER_OPTION.user,
+                description: "用户序号（从 0 开始）、uid 或显示名；默认选择第 0 位",
+            },
+            qr: {
+                kind: "credential",
+                required: true,
+                description: "从 stdin 读取舞萌二维码扫描结果或页面链接",
+            },
+        },
+        errors: [
+            "NO_USER",
+            "NOT_FOUND",
+            "AMBIGUOUS_REF",
+            "NOT_BOUND",
+            "QR_INVALID",
+            "NETWORK",
+            "UPSTREAM_ERROR",
+            "DB_LOCKED",
+        ],
+        dataSchema: object<IngameCheckLoginResult>(
+            {
+                user: ingameUserSchema("查询的用户信息"),
+                isLogin: bool("舞萌账号当前是否已登录"),
+            },
+            { description: "舞萌账号登录状态查询结果" }
+        ),
+    },
+    async (args, ctx) => {
+        if (args.global.offline)
+            throw usageError("ingame check-login 需要联网，不能使用 --offline");
+
+        const selected = resolveUser(
+            // Like `status`, the check never creates the data directory or the database.
+            existsSync(ctx.paths.database) ? listUsers(ctx.store()) : [],
+            args.options.user
+        );
+        if (!selected.inGameId) {
+            throw new CliError(
+                "NOT_BOUND",
+                `用户 ${selected.displayName} 尚未绑定舞萌账号（InGame）`,
+                {
+                    fix: ingameBindFix(selected.uid),
+                }
+            );
+        }
+
+        let result: Record<string, unknown>;
+        try {
+            const qr = await readVerifiedQr(ctx);
+            assertQrAccount(selected.inGameId, qr);
+            result = await postQrGameApi(ctx, SaltAPIEndpoints.CheckLogin, { qrCode: qr.code });
+        } catch (error) {
+            if (!(error instanceof CliError)) {
+                throw new CliError("INTERNAL", "读取二维码或查询舞萌登录状态失败");
+            }
+            if (error.code !== "NETWORK" || !error.fix) throw error;
+
+            throw new CliError(error.code, `${error.message}。${error.fix}`, {
+                retryable: error.retryable,
+                fix: `saltnet ingame check-login${userFlag(selected, true)} --qr -`,
+            });
+        }
+        if (typeof result.isLogin !== "boolean") {
+            throw new CliError("UPSTREAM_ERROR", "舞萌服务返回的登录状态无效");
+        }
+
+        return {
+            data: {
+                user: { index: selected.index, uid: selected.uid, name: selected.displayName },
+                isLogin: result.isLogin,
+            } satisfies IngameCheckLoginResult,
+        };
+    }
+);
+
 interface IngameBackupResult {
     path: string;
-    user: {
-        index: number;
-        uid: string;
-        name: string;
-    };
+    user: IngameUser;
     counts: {
         music: number;
         items: number;
@@ -79,14 +188,7 @@ export const ingameBackup = defineCommand(
         dataSchema: object<IngameBackupResult>(
             {
                 path: str("导出文件的绝对路径"),
-                user: object<{ index: number; uid: string; name: string }>(
-                    {
-                        index: int("用户序号（从 0 开始）"),
-                        uid: str("用户的稳定 UID"),
-                        name: str("用户的显示名称"),
-                    },
-                    { description: "导出的用户信息" }
-                ),
+                user: ingameUserSchema("导出的用户信息"),
                 counts: object<{ music: number; items: number; characters: number }>(
                     {
                         music: int("导出的曲目成绩条数"),
