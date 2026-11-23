@@ -1,4 +1,5 @@
 import type { JsonSchema } from "../src/commands/registry";
+import type { ErrorCode } from "../src/errors";
 import { spawnSync } from "node:child_process";
 import {
     cpSync,
@@ -29,6 +30,9 @@ import { allChartEntries } from "../src/catalog/chartQuery";
 import { constantOf } from "../src/catalog/chartRow";
 import { chartKeyOf } from "../src/catalog/songs";
 import { createRegistry } from "../src/commands";
+import { commandErrorCodes } from "../src/commands/describe";
+import { parseArgv } from "../src/commands/parse";
+import { exitCodeOf } from "../src/errors";
 import { splitCommandLine } from "../src/util/shell";
 import { expectConforms } from "../tests/dataSchema";
 import { fixtureSongCatalog } from "../tests/fixtureCatalog";
@@ -318,9 +322,9 @@ afterAll(() => {
     }
 });
 
-it("runs every bundled guide example from seeded fixtures without network", () => {
-    writeFileSync(refusedLog, "");
-
+/** Builds the bundle the first time a test needs it, so that each test can also run on its own. */
+function buildBundle(): void {
+    if (existsSync(bundle)) return;
     const buildHome = processHome();
     const build = spawnSync(process.execPath, ["cli/build.mjs", "--outfile", bundle], {
         cwd: repoRoot,
@@ -336,12 +340,22 @@ it("runs every bundled guide example from seeded fixtures without network", () =
     expect(build.stderr).toBe("");
     expect(build.stdout.trimEnd().split("\n").at(-1)).toMatch(/saltnet\.mjs$/);
     expect(existsSync(bundle)).toBe(true);
+}
 
+/** Runs `schema` and keeps the envelope schema it publishes, which `success` checks against. */
+function readEnvelopeSchema(): RunResult {
     const index = runBundle(["schema", "--offline"], "deny");
     expect(index.status, index.stderr).toBe(0);
     const indexData = (JSON.parse(index.stdout) as { data: { envelope: { schema: JsonSchema } } })
         .data;
     envelopeSchema = indexData.envelope.schema;
+    return index;
+}
+
+it("runs every bundled guide example from seeded fixtures without network", () => {
+    writeFileSync(refusedLog, "");
+    buildBundle();
+    const index = readEnvelopeSchema();
     success(index, "schema");
 
     const schemas = new Map<string, JsonSchema>();
@@ -851,4 +865,117 @@ it("runs every bundled guide example from seeded fixtures without network", () =
         expectConforms(schemaOf(name), envelope.data);
     }
     expect(projectedRows).toBeGreaterThan(0);
+});
+
+/**
+ * An agent's first commands run on a machine with nothing set up, and each failure there must tell
+ * it what to do next with a command that runs as printed.
+ */
+it("runs every guide example on an empty data directory and fails only with published errors", () => {
+    buildBundle();
+    if (!envelopeSchema) readEnvelopeSchema();
+
+    const guide = runBundle(["guide", "--offline"], "deny");
+    expect(guide.status, "guide").toBe(0);
+    expect(guide.stderr, "guide").toBe("");
+    expect(guide.stdout.startsWith("# ")).toBe(true);
+    const examples = guideExamples(guide.stdout);
+    const expectedExamples = registry.commands.reduce(
+        (count, command) => count + (command.spec.examples?.length ?? 0),
+        0
+    );
+    expect(examples).toHaveLength(expectedExamples);
+
+    let succeededCount = 0;
+    const failureCodes = new Set<ErrorCode>();
+
+    function checkOutcome(
+        result: RunResult,
+        args: readonly string[],
+        line: string,
+        mode: "serve" | "deny"
+    ): { status: number; errorCode?: ErrorCode } {
+        const name = commandName(args);
+        const format = requestedFormat(args);
+
+        if (result.status === 0) {
+            if (name === "guide") {
+                expect(result.stderr, line).toBe("");
+                const frontmatter = args.includes("--skill")
+                    ? /^---\nname: saltnet\ndescription: "[^\n]*"\n---\n\n/.exec(result.stdout)
+                    : null;
+                if (args.includes("--skill")) expect(frontmatter, line).not.toBeNull();
+                expect(result.stdout.slice(frontmatter?.[0].length ?? 0), line).toBe(guide.stdout);
+            } else if (format === "tsv" || format === "text") {
+                expect(
+                    result.stderr === "" ||
+                        result.stderr
+                            .split("\n")
+                            .filter(Boolean)
+                            .every(comment => comment.startsWith("# ")),
+                    line
+                ).toBe(true);
+            } else {
+                success(result, line);
+            }
+            return { status: 0 };
+        }
+
+        expect(result.stderr, line).toBe("");
+        const failed = JSON.parse(result.stdout) as {
+            v: number;
+            ok: boolean;
+            command: string | null;
+            error: { code: ErrorCode; fix?: string; [key: string]: unknown };
+        };
+        expect(failed.v, line).toBe(1);
+        expect(failed.ok, line).toBe(false);
+        if (!envelopeSchema) throw new Error(`${line}: the envelope schema has not been read yet`);
+        expectConforms(envelopeSchema, failed);
+
+        const command = registry.find(name);
+        expect(command, line).toBeDefined();
+        const published = commandErrorCodes(command!.spec);
+        expect(published, line).toContain(failed.error.code);
+        expect(failed.error.code, line).not.toBe("INTERNAL");
+        expect(result.status, line).toBe(exitCodeOf(failed.error.code));
+
+        if (failed.error.fix !== undefined) {
+            expect(failed.error.fix.startsWith("saltnet "), `${line} fix prefix`).toBe(true);
+            const fixWords = splitCommandLine(failed.error.fix);
+            expect(fixWords[0], `${line} fix saltnet`).toBe("saltnet");
+            const fixArgs = fixWords.slice(1);
+            const parsed = parseArgv(registry, fixArgs);
+            expect(parsed.kind, `${line} fix runnable: ${failed.error.fix}`).toBe("run");
+
+            if (failed.error.code === "CONFIRMATION_REQUIRED") {
+                const fixResult = runBundleInPlace(fixArgs, mode, result.saltnetHome, result.cwd);
+                checkOutcome(fixResult, fixArgs, failed.error.fix, mode);
+            }
+        }
+
+        return { status: result.status!, errorCode: failed.error.code };
+    }
+
+    for (const example of examples) {
+        const args = splitCommandLine(example);
+        const name = commandName(args);
+        const line = `saltnet ${example}`;
+        const isRefresh = name === "refresh";
+        const runArgs = isRefresh ? args : [...args, "--offline"];
+        const mode = isRefresh ? "serve" : "deny";
+        const result = runBundle(runArgs, mode);
+        const outcome = checkOutcome(result, args, line, mode);
+        if (outcome.status === 0) succeededCount++;
+        if (outcome.errorCode) failureCodes.add(outcome.errorCode);
+    }
+
+    expect(succeededCount).toBeGreaterThan(0);
+    // With no data, the commands that need the catalog say there is no cache and the commands
+    // that need a user say there is no user.
+    expect(failureCodes).toContain("OFFLINE_NO_CACHE");
+    expect(failureCodes).toContain("NO_USER");
+
+    const refused = existsSync(refusedLog) ? readFileSync(refusedLog, "utf8") : "";
+    expect(refused).toBe("");
 });

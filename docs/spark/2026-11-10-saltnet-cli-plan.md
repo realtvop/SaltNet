@@ -232,7 +232,7 @@
 - [x] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
 - [x] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
 - [x] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
-- [ ] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
+- [x] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
 - [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
 - [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
 
@@ -1223,3 +1223,12 @@
         - `lxnsToken.ts` 也给上传用。`lxns.refreshTokenDays` 和 `lxns.expiringWarnDays` 其实是 `users/view.ts` 给 `status` 算凭据状态时用的（`status` 那条已经写了），从这条里去掉。
     - Gemini 顺带指出：`user bind` 的说明里「落雪确认只需 lxns --yes <确认码>」没写全，代理可能照着去运行一个并不存在的顶层命令 `lxns`。这是命令说明，不属于 `AGENTS.md`，留到 P3 整体审查的修复里一起改。
     - 测试：只改文档，按 finish.sh 跑全部检查。
+
+105. **P4-5 的实现（2026-11-24）**：
+
+
+    - 分工：Gemini 做（〔简单〕），11 分钟。第一次运行什么也没交：脚本的白名单里没有 `pnpm test:cli-e2e`，它跑不了要改的测试就停了。我在临时目录复制了一份加上这条的脚本，没动仓库里正被其他运行使用的那份；第二次运行交了补丁。
+    - `cli/e2e/bundle.test.ts` 新增一个测试：在空数据目录里把指南的 95 条示例各跑一遍，`refresh` 用固定数据回答，其余加 `--offline`，网络一律拒绝。成功的照原来的办法查信封；失败的必须是合乎信封 schema 的 `ok: false`、stderr 为空、错误码在这个命令公布的列表里且不是 `INTERNAL`、退出码就是这个错误码的退出码，带 `fix` 的必须以 `saltnet ` 开头并能被真实的解析器读成一条命令，`CONFIRMATION_REQUIRED` 的 `fix` 当场再跑一遍。现在的结果：26 条成功，36 条 `OFFLINE_NO_CACHE`，27 条 `NO_USER`，5 条 `NOT_FOUND`（示例里的收藏夹「练习」在空目录里不存在），1 条 `INVALID_BACKUP`（`import` 的示例文件不存在）。
+    - 我改的：原来新测试要靠第一个测试先打包、先读信封 schema，单独运行（`-t`）会找不到产物。抽出 `buildBundle()` 和 `readEnvelopeSchema()`，哪个测试先跑就由哪个打包，两个测试都能单独运行。另外要求空目录里既出现 `OFFLINE_NO_CACHE`，也出现 `NO_USER`。
+    - 变异测试：4 个。第一轮全部报「基线失败」，原因就是上面说的单独运行找不到产物；改完重跑，杀掉 3 个：`OFFLINE_NO_CACHE` 改成 `INTERNAL`、它的 `fix` 改成跑不了的命令、`ingame backup` 公布的错误里去掉 `NO_USER`。没杀掉的是 `resolveUser` 把 `NO_USER` 换成 `NOT_FOUND`：这些命令也公布 `NOT_FOUND`，退出码跟着错误码走，而 `export` 自己也会报 `NO_USER`，所以端到端测试分不出来；`tests/refs/user.test.ts` 的「没有用户时每种写法都报 `NO_USER`」能杀掉它，不再加端到端的断言。
+    - `AGENTS.md` 的 `e2e/` 那条加上了这个测试。

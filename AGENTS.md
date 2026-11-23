@@ -523,7 +523,11 @@ SaltNet is a three-package pnpm workspace:
       same command prints without it. Each example has its own working directory containing a seed
       backup for the import example. A confirmation example may return exit code 6; the test
       validates its failure envelope and runs `error.fix` against the same data and working
-      directory.
+      directory. A second test runs every example again on an empty data directory (`refresh`
+      against the fixture `fetch`, the rest with `--offline`): each must succeed or fail with an
+      error code its command publishes (never `INTERNAL`), with that code's exit code and a `fix`
+      that parses as a command, and with no data it must meet both `OFFLINE_NO_CACHE` and
+      `NO_USER`. The bundle is built by whichever test runs first, so either test can run alone.
 
 Static assets belong in `public/`; structured source assets belong in `src/assets/`. Utility and generated-data scripts live in `script/`. Do not edit generated `dist/` files or local `.wrangler/` state.
 
