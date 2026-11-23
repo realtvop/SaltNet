@@ -380,7 +380,11 @@ describe("schema command", () => {
         const configSet = await commandIn(makeHome(), "schema", ["config", "set"]);
         expect(configSet.json.data.effect).toBe("local");
         const guide = await commandIn(makeHome(), "schema", ["guide"]);
-        expect(guide.json.data).toMatchObject({ output: "text", options: [], positionals: [] });
+        expect(guide.json.data).toMatchObject({
+            output: "text",
+            options: [{ flag: "--skill", type: "boolean", default: false }],
+            positionals: [],
+        });
     });
 
     it("reports group ambiguity, typos, extra words, and --views conflicts", async () => {

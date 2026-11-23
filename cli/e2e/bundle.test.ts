@@ -778,7 +778,12 @@ it("runs every bundled guide example from seeded fixtures without network", () =
         }
 
         if (name === "guide") {
-            expect(result.stdout.startsWith("# "), line).toBe(true);
+            // `guide --skill` is the same guide after the skill's frontmatter.
+            const frontmatter = args.includes("--skill")
+                ? /^---\nname: saltnet\ndescription: "[^\n]*"\n---\n\n/.exec(result.stdout)
+                : null;
+            if (args.includes("--skill")) expect(frontmatter, line).not.toBeNull();
+            expect(result.stdout.slice(frontmatter?.[0].length ?? 0), line).toBe(guide.stdout);
             continue;
         }
 

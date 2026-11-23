@@ -98,7 +98,8 @@ SaltNet is a three-package pnpm workspace:
           descriptions; `parse.ts` and `values.ts` are the never-throwing parser, and `help.ts`
           renders help.
         - `schema.ts` (commands, envelopes and public views) and `guide.ts` (the generated Markdown
-          guide) are the self-description commands.
+          guide; `guide --skill` prints the same guide as a Claude Code skill) are the
+          self-description commands.
         - `listOptions.ts` has the `--limit`/`--offset`/`--fields` options every list command
           shares, and `confirm.ts` the shared `--yes` option and content-bound destructive-operation
           confirmation.
@@ -231,8 +232,12 @@ SaltNet is a three-package pnpm workspace:
           it uploads the raw game records to the bound Diving Fish and LXNS accounts in that order.
           `--no-upload` disables uploads. Failures appear in `uploads` and as `UPLOAD_FAILED`
           warnings while the local sync remains successful.
-    - `src/guide/` has the hand-written agent rules (`handwritten.ts`) and deterministic
-      registry-generated Markdown (`markdown.ts`).
+    - `src/guide/` has the hand-written parts of the guide (`handwritten.ts`: the rules, where the
+      usual questions are answered, the glossary of players' words, and the skill's name and
+      description) and the deterministic registry-generated Markdown (`markdown.ts`, whose
+      `renderSkill` puts the skill's frontmatter before it). The hand-written parts name commands in
+      inline code only, and `tests/commands/guide.test.ts` parses each complete one with the real
+      parser and checks the command and options of each one with a placeholder.
     - `src/output/` turns a command's result into output: the versioned JSON envelope
       (`envelope.ts`, whose history is `ENVELOPE_CHANGES`), the choice between json, tsv and text
       (`format.ts`, `render.ts`, `tsv.ts`, `text.ts`, `table.ts`), `--fields` projection
@@ -546,8 +551,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm build` type-checks, builds the frontend, and generates build metadata.
 - `pnpm preview` serves the production frontend build locally.
 - `pnpm build:cli` bundles the CLI into `cli/dist/saltnet.mjs` (run it with
-  `node cli/dist/saltnet.mjs <command>`; `saltnet guide` prints the rules, commands, error codes and
-  views an agent needs, and `saltnet schema` describes the same machine-readably); `pnpm test:cli`
+  `node cli/dist/saltnet.mjs <command>`; `saltnet guide` prints the rules, common questions, glossary,
+  commands, error codes and views an agent needs, `saltnet guide --skill` prints the same as a Claude
+  Code skill, and `saltnet schema` describes the same machine-readably); `pnpm test:cli`
   runs its fast unit suite. `pnpm test:cli-e2e` builds its own bundle into a temporary directory and
   runs every guide example against fixed data without network access. When developing or testing
   the CLI, point `SALTNET_HOME` at a temporary directory so the real `~/.saltnet` is never read or

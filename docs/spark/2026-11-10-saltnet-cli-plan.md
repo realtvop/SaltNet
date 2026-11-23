@@ -230,7 +230,7 @@
 - [x] P4-1 `feat(cli): add ingame check-login`：只用模拟 HTTP 测试；不做 `clear-tickets`（决定 95）〔新〕
 - [x] P4-2 `feat(cli): add ingame backup export`：游戏格式的备份文件，`FILE_EXISTS`/`--overwrite`〔新〕
 - [x] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
-- [ ] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
+- [x] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
 - [ ] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
 - [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
 - [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
@@ -1155,3 +1155,16 @@
         - `writeOutputFile` 原来用 `as unknown as string` 把字节传给只收字符串的 `writeFileAtomic`。现在 `files.ts` 的两个写文件函数都直接接受字节。
     - 没有加指南示例：`--image` 要访问渲染服务，而端到端测试是离线跑的。
     - 变异测试：16 个，全部杀掉。它们覆盖：按文本读图片、`retryable` 和 `status`、跳过 PNG 检查、两条读取路径各自按文本取字节、解码时保留 BOM 或按 latin1 解码、读字节中断时原样抛错、fix 里的文件名和 `--user` 没有处理开头的 `-`、按字符串写文件。
+100. **P4-4 的实现（2026-11-23）**：
+
+
+    - 分工：指南文字和代码都是我写的。计划里手写的文字归协调者，代码只有几十行，就一起写了。
+    - 手写的部分都在 `guide/handwritten.ts`：
+        - 开头的说明从查数据扩展到成绩、同步、用户、绑定和备份。
+        - 「先看这几条」有 8 条：先 `status`、找歌、读结果（`error.fix` 和要转告的警告）、看清是谁的成绩、省 token、数据新旧（不主动同步，同步后会上传，`--no-upload` 不上传）、凭据只走 stdin、确认（退出码 6、`error.preview`、`error.codeRejected`）。设计 6.1 的退出码一条没有单列，因为退出码表每一行已经带着该怎么做。
+        - 「常见问题怎么查」有 13 条。除了设计 6.1 第 8 条的 5 个问题，还加了 B50 和 rating、算分、数数量、段位、收藏夹、更新成绩、绑定水鱼和落雪、备份。
+        - 「术语」是一张三列的表：玩家的说法、意思、在 saltnet 里对应的字段或命令。
+    - `guide --skill` 在同一份指南前面加上 frontmatter：`name: saltnet`，描述按设计 6.1 写，又补上了 rating、其他收藏品、更新成绩、绑定和备份。描述用 JSON 字符串写，它也是合法的 YAML 字符串。命令只打印，不写文件；怎么装写进最终报告。
+    - 手写的部分只用行内代码写命令，不用 ```bash 代码块，因为 `guide.test.ts` 要求代码块的数目等于有示例的命令数，端到端测试也会执行代码块里的每一行。为了让手写的命令和实际行为对得上，新测试用真正的解析器解析每一条完整的命令。带占位符的命令（如 `chart <谱面> --with stages`）不能照原样运行，就只检查命令名和其中每个选项都存在。
+    - 端到端测试里，`guide --skill` 的输出去掉 frontmatter 后要和 `guide` 的输出逐字相同。
+    - 变异测试：15 个，全部杀掉。它们覆盖：去掉常见问题、术语或其中的行、去掉一条规则（中间的和最后一条）或其中不主动同步的提醒、frontmatter 的名字写死、描述不加引号、frontmatter 后少空行、忽略 `--skill`、完整命令里的选项拼错或取值越界、带占位符的命令里命令名或选项拼错。第一轮「去掉一条规则」没有杀掉，于是加了规则编号连续和三条安全规则必须在的检查。

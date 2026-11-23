@@ -3,10 +3,25 @@ import { describe, expect, it } from "vitest";
 import { PUBLIC_VIEWS } from "../../src/catalog/views";
 import { createRegistry } from "../../src/commands";
 import { commandUsage, positionalPlaceholder } from "../../src/commands/describe";
-import { buildRegistry, defineCommand } from "../../src/commands/registry";
+import { parseArgv } from "../../src/commands/parse";
+import {
+    buildRegistry,
+    commandOptionEntries,
+    defineCommand,
+    GLOBAL_OPTION_ENTRIES,
+} from "../../src/commands/registry";
 import { ERROR_CODES } from "../../src/errors";
+import {
+    GUIDE_GLOSSARY,
+    GUIDE_INTRO,
+    GUIDE_QUESTIONS,
+    GUIDE_RULES,
+    SKILL_DESCRIPTION,
+    SKILL_NAME,
+} from "../../src/guide/handwritten";
 import { escapeTableCell, renderGuide } from "../../src/guide/markdown";
 import { WARNING_CODES } from "../../src/output/warning";
+import { splitCommandLine } from "../../src/util/shell";
 import { commandIn } from "../commandRun";
 import { COMMANDS_WITHOUT_EXAMPLES } from "../examples";
 import { useTempHome } from "../tempHome";
@@ -25,6 +40,8 @@ describe("guide command", () => {
 
         const sections = [
             "## 先看这几条",
+            "## 常见问题怎么查",
+            "## 术语",
             "## 退出码",
             "## 命令",
             "## 全局选项",
@@ -38,6 +55,105 @@ describe("guide command", () => {
             expect(index, section).toBeGreaterThan(previous);
             previous = index;
         }
+
+        for (const rule of GUIDE_RULES) expect(first.stdout).toContain(rule);
+        GUIDE_RULES.forEach((rule, index) => expect(rule).toMatch(new RegExp(`^${index + 1}\\. `)));
+        // What an agent must not get wrong: secrets only through stdin, no sync it was not asked
+        // for, never confirming for the user.
+        for (const phrase of ["只通过 stdin 传入", "不要主动同步", "不能替用户确认"]) {
+            expect(GUIDE_RULES.join("\n")).toContain(phrase);
+        }
+        for (const question of GUIDE_QUESTIONS) expect(first.stdout).toContain(question);
+        expect(first.stdout).toContain("| 说法 | 意思 | 在 saltnet 里 |\n| --- | --- | --- |\n");
+        for (const row of GUIDE_GLOSSARY) {
+            expect(first.stdout).toContain(`\n| ${row.map(escapeTableCell).join(" | ")} |\n`);
+        }
+    });
+
+    it("prints the same guide as a Claude Code skill with --skill", async () => {
+        const plain = await commandIn(makeHome(), "guide", []);
+        const skill = await commandIn(makeHome(), "guide", ["--skill"]);
+        expect(skill.code).toBe(0);
+        const frontmatter = /^---\nname: ([^\n]*)\ndescription: ([^\n]*)\n---\n\n/.exec(
+            skill.stdout
+        );
+        expect(frontmatter, skill.stdout.slice(0, 200)).not.toBeNull();
+        expect(frontmatter![1]).toBe(SKILL_NAME);
+        expect(JSON.parse(frontmatter![2]!)).toBe(SKILL_DESCRIPTION);
+        expect(skill.stdout.slice(frontmatter![0].length)).toBe(plain.stdout);
+        // What Claude Code accepts as a skill's name and description.
+        expect(SKILL_NAME).toMatch(/^[a-z0-9-]{1,64}$/);
+        expect(SKILL_DESCRIPTION.length).toBeLessThanOrEqual(1024);
+    });
+
+    it("names only commands and options that exist in the hand-written parts", () => {
+        const registry = createRegistry();
+        const firstWords = new Set(registry.commands.map(command => command.words[0]));
+        const names = new Set(registry.commands.map(command => command.words.join(" ")));
+        // The command a line starts with: the longest name whose words begin it.
+        const commandOf = (words: readonly string[]) =>
+            [...registry.commands]
+                .sort((left, right) => right.words.length - left.words.length)
+                .find(command => command.words.every((word, index) => words[index] === word));
+        const texts = [
+            ...GUIDE_INTRO,
+            ...GUIDE_RULES,
+            ...GUIDE_QUESTIONS,
+            ...GUIDE_GLOSSARY.flat(),
+        ];
+        const parsed: string[] = [];
+        const placeholders: string[] = [];
+        for (const text of texts) {
+            for (const [, span] of text.matchAll(/`([^`]+)`/g)) {
+                if (span!.includes("…")) continue;
+                const words = splitCommandLine(span!);
+                const complete = words[0] === "saltnet";
+                if (complete) words.shift();
+                // Without `saltnet`, one word is a field or an option, unless it is a whole command,
+                // and a command's name such as `collection show` names it without running it.
+                if (!complete && (words.length < 2 || !firstWords.has(words[0]!))) continue;
+                if (!complete && names.has(words.join(" "))) continue;
+                if (span!.includes("<")) {
+                    // `<谱面>` stands for something the agent fills in, so the line cannot run as
+                    // written; its command and every option it names must still exist.
+                    const command = commandOf(words);
+                    expect(command, span).toBeDefined();
+                    const flags = new Set(
+                        [...commandOptionEntries(command!), ...GLOBAL_OPTION_ENTRIES].flatMap(
+                            entry =>
+                                entry.spec.kind === "boolean"
+                                    ? [entry.flag, `no-${entry.flag}`]
+                                    : [entry.flag]
+                        )
+                    );
+                    for (const word of words.filter(word => word.startsWith("--"))) {
+                        expect(flags.has(word.slice(2)), `${span}: ${word}`).toBe(true);
+                    }
+                    placeholders.push(span!);
+                    continue;
+                }
+                const outcome = parseArgv(registry, words);
+                const reason = outcome.kind === "error" ? outcome.error.message : outcome.kind;
+                expect(reason, span).toBe("run");
+                parsed.push(span!);
+            }
+        }
+        expect(parsed).toEqual(
+            expect.arrayContaining([
+                "saltnet status",
+                "charts --plate 熊極 --missing",
+                "charts --group-by rank --limit 1 --fields chartKey",
+                "sync --qr -",
+                "b50 --mode fit",
+            ])
+        );
+        expect(placeholders).toEqual(
+            expect.arrayContaining([
+                "chart <谱面> --with stages",
+                "charts --fav <收藏夹> --diff <难度>",
+                "user bind <用户> lxns --callback -",
+            ])
+        );
     });
 
     it("has a usage heading and executable example block for every command", async () => {

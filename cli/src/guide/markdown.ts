@@ -1,8 +1,9 @@
 /**
- * The Markdown `saltnet guide` prints (design 6.1): the hand-written rules of `handwritten.ts`
- * followed by sections generated from the same registry and tables the parser and `schema` use, so
- * the guide cannot disagree with the behavior. The output depends only on the registry and the
- * version, so the same build always prints the same text.
+ * The Markdown `saltnet guide` prints (design 6.1): the hand-written parts of `handwritten.ts`
+ * (rules, questions, glossary) followed by sections generated from the same registry and tables the
+ * parser and `schema` use, so the guide cannot disagree with the behavior. `guide --skill` prints
+ * the same text as a Claude Code skill. The output depends only on the registry and the version, so
+ * the same build always prints the same text.
  */
 import type { CommandCategory, Registry } from "../commands/registry";
 import type { ErrorCode } from "../errors";
@@ -27,7 +28,16 @@ import {
     isRetryableByDefault,
 } from "../errors";
 import { WARNING_CODES } from "../output/warning";
-import { EXIT_CODE_ADVICE, GUIDE_INTRO, GUIDE_RULES, GUIDE_TITLE } from "./handwritten";
+import {
+    EXIT_CODE_ADVICE,
+    GUIDE_GLOSSARY,
+    GUIDE_INTRO,
+    GUIDE_QUESTIONS,
+    GUIDE_RULES,
+    GUIDE_TITLE,
+    SKILL_DESCRIPTION,
+    SKILL_NAME,
+} from "./handwritten";
 
 export function escapeTableCell(text: string): string {
     return text.replaceAll("|", "\\|").replaceAll("\n", "<br>");
@@ -100,6 +110,14 @@ export function renderGuide(registry: Registry, version: string): string {
     ];
 
     pushSection(lines, "先看这几条", GUIDE_RULES);
+    pushSection(lines, "常见问题怎么查", GUIDE_QUESTIONS);
+
+    const glossaryRows = [
+        "| 说法 | 意思 | 在 saltnet 里 |",
+        "| --- | --- | --- |",
+        ...GUIDE_GLOSSARY.map(row => `| ${row.map(escapeTableCell).join(" | ")} |`),
+    ];
+    pushSection(lines, "术语", glossaryRows);
 
     const exitRows = [
         "| 退出码 | 含义 | 错误码 | 怎么办 |",
@@ -153,4 +171,19 @@ export function renderGuide(registry: Registry, version: string): string {
     pushSection(lines, "只读视图", viewLines);
 
     return `${lines.join("\n").trimEnd()}\n`;
+}
+
+/**
+ * The guide as a Claude Code skill (`guide --skill`): YAML frontmatter with the name and the
+ * description that tells an agent when to use it, then the same text `guide` prints. Saved as
+ * `~/.claude/skills/saltnet/SKILL.md` it is ready to use. A JSON string is also a YAML string.
+ */
+export function renderSkill(registry: Registry, version: string): string {
+    const frontmatter = [
+        "---",
+        `name: ${SKILL_NAME}`,
+        `description: ${JSON.stringify(SKILL_DESCRIPTION)}`,
+        "---",
+    ];
+    return `${frontmatter.join("\n")}\n\n${renderGuide(registry, version)}`;
 }
