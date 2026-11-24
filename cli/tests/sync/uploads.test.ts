@@ -265,6 +265,29 @@ describe("uploads after in-game sync", () => {
         }
     );
 
+    it("refuses sync --qr - when QR belongs to another account and sync.qrOtherAccount is error, leaving user and database unchanged", async () => {
+        const paths = makeHome();
+        await seed(paths, { ...authorization(), divingFishImportToken: importToken });
+        writeFileSync(paths.config, JSON.stringify({ sync: { qrOtherAccount: "error" } }), "utf8");
+        const beforeState = readState(paths);
+
+        const result = await sync(paths, ["--qr", "-"], {
+            [qrUrl]: jsonResponse({ errorID: 0, userID: otherGameId }),
+            [updateUrl]: gameUpdateResponse(otherGameId),
+        });
+
+        expect(result.code).toBe(2);
+        expect(result.json.error.code).toBe("USAGE");
+        expect(result.json.error.message).toContain("二维码属于另一个舞萌账号");
+        expect(result.json.error.fix).toBe(`saltnet user bind ${uid} ingame --qr -`);
+        expect(result.requests.map(r => r.url)).toEqual([qrUrl]);
+
+        const afterState = readState(paths);
+        expect(afterState.player?.inGame.id).toBe(gameId);
+        expect(afterState.player?.data.rating).toBe(beforeState.player?.data.rating);
+        expect(afterState.runs).toEqual(beforeState.runs);
+    });
+
     it.each([503, 307])("reports a Diving Fish HTTP %i once and still tries LXNS", async status => {
         const paths = makeHome();
         await seed(paths, { ...authorization(), divingFishImportToken: importToken });

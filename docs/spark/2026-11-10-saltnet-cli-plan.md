@@ -221,7 +221,7 @@
 - [x] P3-14 `feat(cli): serialize lxns token refresh across processes`：锁、重读、原子写、`invalid_grant`、`LXNS_REAUTH_REQUIRED`、`LXNS_EXPIRING`（由 `status` 给出；同一步给 `status` 加上凭据状态：有没有、是否过期，按本地记录判断，不联网也不输出凭据本身）〔新〕
 - [x] P3-15 `feat(cli): confirm identity changes on bind`：`hasStrongIdentityChanged`；按内容绑定的确认、原位换成新 uid、清空旧成绩和历史、凭据跟着搬（决定 102）〔新〕
 - [x] P3-15b `feat(cli): follow sync.qrOtherAccount on qr sync`：「二维码属于另一个账号」的处理做成配置项〔新〕
-- [ ] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
+- [x] P3-16 `test(cli): cover sync and bind flows with mocked http`：四种来源、全量与快速、上传成败、`invalid_grant`、两个进程同时刷新、撞锁、token 不出现在任何输出里〔简单〕
 - [x] P3-17 `docs: update agents guide for cli phase 3`〔简单〕
 
 ### P4 账号操作和收尾
@@ -1232,3 +1232,12 @@
     - 我改的：原来新测试要靠第一个测试先打包、先读信封 schema，单独运行（`-t`）会找不到产物。抽出 `buildBundle()` 和 `readEnvelopeSchema()`，哪个测试先跑就由哪个打包，两个测试都能单独运行。另外要求空目录里既出现 `OFFLINE_NO_CACHE`，也出现 `NO_USER`。
     - 变异测试：4 个。第一轮全部报「基线失败」，原因就是上面说的单独运行找不到产物；改完重跑，杀掉 3 个：`OFFLINE_NO_CACHE` 改成 `INTERNAL`、它的 `fix` 改成跑不了的命令、`ingame backup` 公布的错误里去掉 `NO_USER`。没杀掉的是 `resolveUser` 把 `NO_USER` 换成 `NOT_FOUND`：这些命令也公布 `NOT_FOUND`，退出码跟着错误码走，而 `export` 自己也会报 `NO_USER`，所以端到端测试分不出来；`tests/refs/user.test.ts` 的「没有用户时每种写法都报 `NO_USER`」能杀掉它，不再加端到端的断言。
     - `AGENTS.md` 的 `e2e/` 那条加上了这个测试。
+
+106. **P3-16 的实现（2026-11-24）**：
+
+
+    - 分工：Gemini 做（〔简单〕），一次跑完，22 分钟。它先把计划这条列的场景逐个对到已有的测试上（`invalid_grant`、两个进程同时刷新、撞锁、上传成败在 P3-9、P3-10、P3-11 的测试里已经有了），只补缺的。
+    - 新的 `cli/tests/sync/secrecy.test.ts`：20 个带 `--verbose` 的场景（四种来源各跑成功、500、网络错误，`sync --all`、`--all --dry-run`、`--dry-run --qr -`、`user show`、`user list`、`status`、解绑落雪、解绑水鱼 token），每个场景都在新的数据目录里放好全部凭据（游戏 ID、水鱼 Import-Token、落雪的访问和刷新令牌，加上 stdin 的二维码），然后查 stdout、stderr、`saltnet.db` 和 `-wal` 的字节（原样和 JSON 转义后）以及 `sync_runs` 里都没有任何一个，`credentials.json` 仍是 0600。
+    - `cli/tests/commands/sync.test.ts` 补了：二维码全量更新；没有游戏 ID 又没给二维码时 `QR_REQUIRED`；快速更新用水鱼 token 补充；两个后端地址都回 500 时退出码 5 的 `UPSTREAM_ERROR`，数据不变；`--source auto` 对每种来源的选择。`cli/tests/sync/uploads.test.ts` 补了 `sync.qrOtherAccount` 为 `error` 时拒绝另一个账号的二维码，用户、数据库和日志都不变。
+    - 我补的：Gemini 的 500 回应只有「Internal Error」，CLI 自己的脱敏从来没被用上，破坏检查里「去掉脱敏」和「保留 cause」两个都没被抓到。加了六个同步场景，上游的错误信息把这次运行拿到的每个秘密都原样念回来；再加 `protectSyncSecrets` 的单元测试（`withoutCause` 去掉 cause 并隐藏所有秘密；后来加进去的秘密也会被隐藏）。第一版在没读二维码的运行里也念了二维码，看上去像泄漏；CLI 隐藏不了一个从没拿到的字符串，所以只在读了二维码的运行里念它。
+    - 变异测试：6 个：去掉脱敏、`--verbose` 时把 token 打进日志、保留 cause、把 token 写进日志摘要、把 token 写进错误信息、`credentials.json` 改成 0644。补之前新测试单独能杀 4 个；补之后 6 个全杀（已有的上传测试也能杀其中 4 个）。没有发现真的泄漏。

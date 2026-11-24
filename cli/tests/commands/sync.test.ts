@@ -38,6 +38,9 @@ const LXNS_PLAYER_URL = `${LXNS_URL}/api/v0/user/maimai/player`;
 const LXNS_SCORES_URL = `${LXNS_URL}/api/v0/user/maimai/player/scores`;
 const SALTNET_API_URL = "https://api.test";
 const SALTNET_DF_URL = `${SALTNET_API_URL}/updateUserFromDF`;
+const SALTNET_QR_URL = `${SALTNET_API_URL}/getQRInfo`;
+const SALTNET_UPDATE_URL = `${SALTNET_API_URL}/updateUser`;
+const FAKE_QR = `SGWCMAID${"0".repeat(56)}FAKE0001`;
 
 function makeFakeJwt(id: number, name: string, expSeconds: number): string {
     const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
@@ -379,6 +382,237 @@ describe("saltnet sync", () => {
         }
 
         expectConforms(syncSchema, result.json.data);
+    });
+
+    it("syncs from ingame with --qr - (mode: full)", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-ingame", "InGame Player");
+        u.inGame = { id: 99001001, enabled: true, useFastUpdate: false };
+        await seedScoreUsers(paths, [u]);
+
+        const { charts } = allFixtureRecords();
+        const rec = recordOf(charts[0], 0);
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_QR_URL]: jsonResponse({ errorID: 0, userID: 99001001 }),
+            [SALTNET_UPDATE_URL]: jsonResponse({
+                userId: 99001001,
+                userName: "InGame User",
+                rating: 15300,
+                divingFishData: [rec],
+                b50: { sd: [rec], dx: [] },
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "ingame", "--qr", "-"], {
+            network,
+            stdin: FAKE_QR,
+            env: { SALTNET_API_URL },
+        });
+
+        expect(result.code).toBe(0);
+        expect(result.json.ok).toBe(true);
+        expect(result.json.data.source).toBe("ingame");
+        expect(result.json.data.mode).toBe("full");
+        expect(result.json.data.rating.after).toBe(15300);
+        expectConforms(syncSchema, result.json.data);
+    });
+
+    it("refuses --source ingame without --qr - when user has no bound game id", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-no-gameid", "No Game ID Player");
+        u.inGame = { id: null, enabled: true, useFastUpdate: false };
+        await seedScoreUsers(paths, [u]);
+
+        const result = await commandIn(paths, "sync", ["--source", "ingame"], {
+            env: { SALTNET_API_URL },
+        });
+
+        expect(result.code).toBe(4);
+        expect(result.json.error.code).toBe("QR_REQUIRED");
+        expect(result.json.error.fix).toBe("saltnet sync --source ingame --qr -");
+        expect(result.requests).toHaveLength(0);
+    });
+
+    it("syncs from ingame fast update without QR code supplemented by DF import token (mode: fast)", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-ingame-fast", "Fast Player");
+        u.inGame = { id: 99001001, enabled: true, useFastUpdate: true };
+        const { charts } = allFixtureRecords();
+        const rec = recordOf(charts[0], 0);
+        await seedScoreUsers(paths, [u]);
+
+        seedCredentials(paths, {
+            "user-ingame-fast": {
+                divingFishImportToken: FAKE_DF_TOKEN,
+            },
+        });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_UPDATE_URL]: jsonResponse({
+                userId: 99001001,
+                userName: "Fast User",
+                rating: 15350,
+                divingFishData: [rec],
+                b50: { sd: [rec], dx: [] },
+            }),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "DF Supplement",
+                rating: 15350,
+                records: [rec],
+                username: "DF Supplement",
+                additional_rating: 0,
+                plate: null,
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "ingame", "--no-upload"], {
+            network,
+            env: { SALTNET_API_URL, SALTNET_API_FALLBACK_URL: SALTNET_API_URL },
+        });
+
+        expect(result.code).toBe(0);
+        expect(result.json.ok).toBe(true);
+        expect(result.json.data.source).toBe("ingame");
+        expect(result.json.data.mode).toBe("fast");
+        expect(result.json.data.rating.after).toBe(15350);
+        expectConforms(syncSchema, result.json.data);
+    });
+
+    it("fails fast in-game update when backend returns 500, leaving user data untouched", async () => {
+        const paths = makeHome();
+        const u = sampleUser("user-ingame-err", "Err Player");
+        u.inGame = { id: 99001001, enabled: true, useFastUpdate: true };
+        u.data.rating = 14000;
+        await seedScoreUsers(paths, [u]);
+
+        seedCredentials(paths, {
+            "user-ingame-err": {
+                divingFishImportToken: FAKE_DF_TOKEN,
+            },
+        });
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_UPDATE_URL]: textResponse("Internal Error", 500),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "ingame", "--no-upload"], {
+            network,
+            env: { SALTNET_API_URL, SALTNET_API_FALLBACK_URL: SALTNET_API_URL },
+        });
+
+        expect(result.code).toBe(5);
+        expect(result.json.error.code).toBe("UPSTREAM_ERROR");
+
+        const store = openStore(paths);
+        try {
+            const saved = readUsers(store).find(row => row.uid === "user-ingame-err")!;
+            expect(saved.data.rating).toBe(14000);
+        } finally {
+            store.close();
+        }
+    });
+
+    it.each([
+        { source: "ingame" as const },
+        { source: "lxns" as const },
+        { source: "df-token" as const },
+        { source: "df-name" as const },
+    ])("chooses $source when --source auto is specified", async ({ source }) => {
+        const paths = makeHome();
+        const u = sampleUser("user-auto", "Auto Player");
+        u.inGame = { id: null, enabled: false, useFastUpdate: false };
+        u.lxns = { id: null, name: null, auth: null };
+        u.divingFish = { name: null, importToken: null };
+
+        const { charts } = allFixtureRecords();
+        const rec = recordOf(charts[0], 0);
+        const credentials: {
+            divingFishImportToken?: string;
+            lxnsAccountId?: number;
+            lxnsAuthorization?: {
+                accessToken: string;
+                tokenType: string;
+                expiresAt: number;
+            };
+        } = {};
+
+        if (source === "ingame") {
+            u.inGame = { id: 99001001, enabled: true, useFastUpdate: true };
+        } else if (source === "lxns") {
+            u.lxns = { id: 1001, name: "lxns-player", auth: null };
+            credentials.lxnsAccountId = 1001;
+            credentials.lxnsAuthorization = {
+                accessToken: FAKE_LXNS_TOKEN,
+                tokenType: "Bearer",
+                expiresAt: NOW.getTime() + 3_600_000,
+            };
+        } else if (source === "df-token") {
+            credentials.divingFishImportToken = FAKE_DF_TOKEN;
+        } else if (source === "df-name") {
+            u.divingFish = { name: "df-player", importToken: null };
+        }
+
+        await seedScoreUsers(paths, [u]);
+        if (Object.keys(credentials).length > 0) {
+            seedCredentials(paths, { "user-auto": credentials });
+        }
+
+        const network: Record<string, Route> = {
+            ...routes(),
+            [SALTNET_UPDATE_URL]: jsonResponse({
+                userId: 99001001,
+                userName: "Auto Game User",
+                rating: 15100,
+                divingFishData: [rec],
+                b50: { sd: [rec], dx: [] },
+            }),
+            [LXNS_PLAYER_URL]: jsonResponse({
+                success: true,
+                code: 200,
+                data: { name: "Auto LXNS", rating: 15100, friend_code: 9999 },
+            }),
+            [LXNS_SCORES_URL]: jsonResponse({
+                success: true,
+                code: 200,
+                data: [],
+            }),
+            [DF_RECORDS_URL]: jsonResponse({
+                message: "success",
+                nickname: "Auto DF Token",
+                rating: 15100,
+                records: [rec],
+                username: "Auto DF Token",
+                additional_rating: 0,
+                plate: null,
+            }),
+            [SALTNET_DF_URL]: jsonResponse({
+                userId: 9876,
+                userName: "Auto DF Name",
+                iconId: 1,
+                rating: 15100,
+                userMusicList: [],
+                divingFishData: [rec],
+                b50: { sd: [rec], dx: [] },
+                isLogin: false,
+                items: [],
+                characters: [],
+                info: {},
+            }),
+        };
+
+        const result = await commandIn(paths, "sync", ["--source", "auto", "--no-upload"], {
+            network,
+            env: { SALTNET_API_URL },
+        });
+
+        expect(result.code).toBe(0);
+        expect(result.json.ok).toBe(true);
+        expect(result.json.data.source).toBe(source);
     });
 
     it("produces empty changes on first sync (no scores before)", async () => {
