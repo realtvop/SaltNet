@@ -233,7 +233,7 @@
 - [x] P4-3 `feat(cli): add b50 --image through the render client`：复用 `shared/rendering`〔新〕
 - [x] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
 - [x] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
-- [ ] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
+- [x] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
 - [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
 
 ## 最终报告要有的内容
@@ -1289,3 +1289,13 @@
         - C 10 个，第一遍漏了一个：不支持硬链接、退回复制时去掉排他标志。原有的测试里目标文件还不存在，补了一条目标文件已存在的测试。
         - `lxnsToken.ts` 找不到用户行时退回 `uid:<uid>` 的那一处原来没有测试，补了一条（没有存下的用户行、只有数字的 uid），加了一个变异。
         - 补的两条测试让这两个变异重跑都被抓到。
+
+108. **P4-6 的实现（2026-11-24）**：
+
+
+    - 分工：协调者自己做（〔协调〕）。
+    - 新的 `cli/README.md`（中文，写给用户）：需要什么（Node.js 24、`pnpm install`），构建和运行，装成全局 `saltnet` 命令的三种办法（链接进 `PATH` 里的目录、在 `cli/` 里运行 `pnpm link`、shell 别名）和怎么撤销，数据目录和设置（`SALTNET_HOME`、`config list`、用环境变量覆盖设置），导入导出网页端备份，把 `guide --skill` 的输出存成 Claude Code 的 skill，以及开发时跑的测试。产物里写进了 `.env` 的默认值，所以 README 提醒不要把产物或 `config list` 的输出贴到公开的地方。
+    - 这些命令我一条也没有运行：没有做全局链接，也没有往 `~/.claude/skills` 里写东西。
+    - 核对过的：pnpm 10 的文档说，在包目录里运行不带参数的 `pnpm link`，会把包链接到全局的 `node_modules`，包有 `bin` 时它的命令全局可用；撤销用 `pnpm uninstall --global <包名>`（就是 `pnpm remove --global`），`pnpm unlink` 只处理当前目录里的链接。本机的 pnpm 是 10.33.2。环境变量的命名规则（`SALTNET_` 加上大写下划线写法的键名）以 `runtime/config.ts` 为准。
+    - `AGENTS.md`：`cli/` 那一条和 `pnpm build:cli` 那一条提到 `cli/README.md`。其余条目在 P3 审查的修复里已经和代码对上了。终稿前用一个小脚本把它提到的 276 个路径逐个对过仓库里的文件：找不到的 10 个都是不进仓库的东西（打包产物、数据目录里的 `config.json`、`credentials.json` 和 `cache/`、`dist/`、`.wrangler/`）或写法（`@core/`、`./`、`*.test.ts`）；它提到的 `pnpm` 脚本在 `package.json` 里都有，`package.json` 的每个 `test:*` 它也都提到了。
+    - 测试：只改文档，按 finish.sh 跑全部检查。

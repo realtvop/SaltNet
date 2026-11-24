@@ -78,7 +78,8 @@ SaltNet is a three-package pnpm workspace:
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
 - `cli/` is the `saltnet` command-line tool for agents (package `saltnet-cli`, Node 24). It imports
   core through the same `@core/*` alias as the web app. The design is in
-  `docs/spark/2026-11-10-saltnet-cli-design.md`.
+  `docs/spark/2026-11-10-saltnet-cli-design.md`, and `cli/README.md` tells users how to build and
+  install it.
     - `src/main.ts` is the entry point (it only connects `runCli` in `src/cli.ts` to the real
       process). `build.mjs` bundles it and the parts of `shared/core` it uses into
       `cli/dist/saltnet.mjs` with esbuild (git-ignored; the `bin` entry points at it), and
@@ -608,7 +609,9 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   runs every guide example against fixed data without network access. When developing or testing
   the CLI, point `SALTNET_HOME` at a temporary directory so the real `~/.saltnet` is never read or
   written. The bundle bakes in the web app's `.env` defaults, so do not paste the output of
-  `config list` or `config get` anywhere public.
+  `config list` or `config get` anywhere public. `cli/README.md` (in Chinese, for users) has the
+  commands that install the bundle as a global `saltnet` command and its guide as a Claude Code
+  skill; nothing in the repository runs them.
 - `pnpm --filter saltnet-render-service dev` starts the Worker with Wrangler.
 - `pnpm --filter saltnet-render-service test` runs its Vitest suite.
 - `pnpm --filter saltnet-render-service check` type-checks the service.
