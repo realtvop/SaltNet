@@ -28,7 +28,7 @@ export const GUIDE_RULES: readonly string[] = [
     "1. **先运行 `saltnet status`**：看有哪些用户、哪一位是默认用户、曲库和收藏品是什么时候下载的、每个用户的成绩有多新、凭据还能不能用。还没有用户时，成绩类的命令都报 `NO_USER`：请用户用 `user add` 添加，或者用 `import` 导入网页端的备份。",
     "2. **找歌**：拿不准时先用 `saltnet search <文本>`，之后的调用都用输出里的曲目 id（`musicId`）和谱面 key（`chartKey`，例如 `834-4`）。遇到 `AMBIGUOUS_REF` 时，能从上下文判断就从 `error.candidates` 里选一个 `ref` 重试；判断不了就问用户（比如有两首「Link」）。标题是纯数字的歌（比如「39」）会被当成曲目 id，要先用 `search` 找。",
     '3. **读结果**：成功时是 `{"v":1,"ok":true,"command":…,"data":…,"meta":…,"warnings":[…]}`，失败时是 `{"v":1,"ok":false,"command":…,"error":{"code":…,"message":…,"retryable":…}}`。按退出码和 `error.code` 决定下一步（见「退出码」一节），不要靠 `message` 的文字判断。`error.fix` 是建议的下一步，多数是一条照原样就能运行的命令。`warnings` 里的提醒（`STALE_METADATA`、`STALE_SCORES`、`NO_SCORES`、`PARTIAL_SCORES` 等）都要转告用户。',
-    "4. **看清是谁的成绩**：带成绩的结果在 `meta.user` 里写明是哪位用户。不写 `--user` 时用默认用户；用户问到朋友时，用 `--user <序号、uid 或名字>` 指定（`saltnet user list` 列出所有用户），不要把朋友的成绩当成用户自己的。",
+    "4. **看清是谁的成绩**：带成绩的结果在 `meta.user` 里写明是哪位用户。不写 `--user` 时用默认用户；用户问到朋友时，用 `--user <序号、uid、精确 uid（uid:<uid>）或名字>` 指定（`saltnet user list` 列出所有用户），不要把朋友的成绩当成用户自己的。",
     "5. **省 token**：列表很长时用 `--fields` 只要需要的字段（点号表示嵌套，例如 `chartKey,title,score.rank`），或者用 `--format tsv`；用 `--limit`、`--offset` 翻页，`meta.page.nextOffset` 为 null 表示没有下一页。问数量时用 `charts --stats` 或 `charts --group-by <分组依据>`，不要拉完整列表再自己数；复杂的问题用 `sql`，视图的列用 `saltnet schema --views` 看。",
     "6. **数据新旧**：`meta.dataAsOf` 是用到的数据各自的时间。曲库和收藏品过期时会自动重新下载，下载失败就用缓存并带 `STALE_METADATA` 警告；`--offline` 不联网、只用缓存，没有缓存时报 `OFFLINE_NO_CACHE`；要马上更新就运行 `saltnet refresh`。成绩不会自己更新：看到 `STALE_SCORES` 或 `NO_SCORES` 就告诉用户，用户同意后再运行 `sync`。不要主动同步：同步可能要用户扫码登录舞萌账号，成功后还会把成绩上传到绑定的水鱼和落雪账号（加 `--no-upload` 就不上传）。",
     "7. **凭据**：二维码、水鱼的 Import-Token 和落雪授权后的回调链接只通过 stdin 传入（`--qr -`、`df-token -`、`--callback -`），不要写进命令行参数，也不要在回复里复述。二维码几分钟就过期，要用的时候再向用户要。不要读或改数据目录里的 `credentials.json`。",
@@ -48,7 +48,7 @@ export const GUIDE_QUESTIONS: readonly string[] = [
     "- 「段位有哪些歌」：`course list`，某个段位的曲目用 `course show <段位>`。",
     "- 收藏夹：收藏夹只保存在本机（不在备份里），按曲目收藏；`charts --fav <收藏夹> --diff <难度>` 列出其中的谱面，用 `fav` 下的命令管理。",
     "- 「更新一下成绩」：用户同意后运行 `sync`，它会自己选数据来源；拿不准会发生什么时先用 `sync --dry-run`，它只说会用哪个来源、会不会上传，什么都不做。要扫码时返回 `QR_REQUIRED`（退出码 4）：向用户要玩家二维码（扫码得到的文字或链接都可以），通过 stdin 传给 `sync --qr -`。二维码属于另一个舞萌账号时，默认像网页端一样把这位用户的游戏 ID 改成那个账号、成绩接着原来的历史记，并给出 `GAME_ACCOUNT_CHANGED` 警告；用户如果其实想换一个人，改用 `user bind <用户> ingame --qr -`，它会先预览要清掉的成绩。「全部更新」用 `sync --all`：按顺序同步每个没开手动更新的用户，舞萌账号只做不扫码的快速更新；有用户失败时命令仍然成功，失败的人写在各自的结果和 `SOME_FAILED` 警告里。",
-    "- 「绑定水鱼」「绑定落雪」：水鱼用 `user bind <用户> df-token -`，Import-Token 从 stdin 传入；只读公开成绩时用 `user bind <用户> df-name <水鱼用户名>`。落雪分两步：`user bind <用户> lxns` 给出授权链接，用户在浏览器里同意后，把跳转到的回调链接通过 stdin 传给 `user bind <用户> lxns --callback -`。`<用户>` 写序号、uid 或名字，默认用户是 `0`。",
+    "- 「绑定水鱼」「绑定落雪」：水鱼用 `user bind <用户> df-token -`，Import-Token 从 stdin 传入；只读公开成绩时用 `user bind <用户> df-name <水鱼用户名>`。落雪分两步：`user bind <用户> lxns` 给出授权链接，用户在浏览器里同意后，把跳转到的回调链接通过 stdin 传给 `user bind <用户> lxns --callback -`。`<用户>` 写序号、uid、精确 uid（uid:<uid>）或名字，默认用户是 `0`。",
     "- 备份：`export <文件>` 导出成网页端能导入的备份，`import <文件>` 导入网页端的备份（会替换本机的用户和成绩，要确认）；`ingame backup <文件>` 导出游戏格式的备份。",
 ];
 

@@ -29,7 +29,7 @@ import {
     withCredentialsLock,
 } from "../runtime/credentials";
 import { assertNoSync, withSyncLock } from "../sync/lock";
-import { userBindCommand } from "../util/printedCommand";
+import { userBindCommand, userUidWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
 import { confirmIdentityChange, writeBinding } from "./bindIdentity";
 import { readUser } from "./repository";
@@ -40,7 +40,7 @@ export interface LxnsBindStart {
 }
 
 function restartBind(uid: string): string {
-    return userBindCommand(uid, "lxns");
+    return userBindCommand(userUidWord(uid), "lxns");
 }
 
 export async function startLxnsBind(
@@ -191,14 +191,13 @@ function assertCredentialLock(lock: Lock, fix: string): void {
 function prepareLxnsBinding(
     ctx: CommandContext,
     store: Store,
-    uid: string,
+    user: User,
     current: CredentialsFile,
     state: string,
     authorization: LxnsBindTransaction,
     given: string | undefined
 ) {
-    const user = readUser(store, uid);
-    if (!user) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+    const uid = user.uid!;
     const { token, issuedAt, expiresAt, codeVerifier } = authorization;
     const now = ctx.io.now().getTime();
     const fix = restartBind(uid);
@@ -236,10 +235,17 @@ function prepareLxnsBinding(
 }
 
 /** A checked exchange can be confirmed without reading stdin or making a request. */
-export function confirmLxnsBind(ctx: CommandContext, store: Store, uid: string, given: string) {
+export function confirmLxnsBind(
+    ctx: CommandContext,
+    store: Store,
+    target: UserListRow,
+    given: string
+) {
+    const { uid, displayName } = target;
     const now = () => ctx.io.now().getTime();
     function prepare() {
-        assertNoSync(store, uid, now);
+        const user = readUser(store, uid);
+        if (!user) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
         const current = readCredentials(ctx.paths);
         const exchanged = Object.entries<LxnsBindTransaction>(
             current.pendingLxnsAuthorizations ?? {}
@@ -250,18 +256,31 @@ export function confirmLxnsBind(ctx: CommandContext, store: Store, uid: string, 
             });
         }
         const [state, authorization] = exchanged;
-        return prepareLxnsBinding(ctx, store, uid, current, state, authorization, given);
+        return prepareLxnsBinding(ctx, store, user, current, state, authorization, given);
     }
-    store.transaction(prepare);
-    return withCredentialsLock(store, () => writeBinding(ctx.paths, store, uid, "lxns", prepare));
+    store.transaction(() => {
+        assertNoSync(store, uid, now);
+        prepare();
+    });
+    return withSyncLock(
+        store,
+        { uid, name: displayName },
+        sync =>
+            withCredentialsLock(store, () =>
+                writeBinding(ctx.paths, store, uid, "lxns", () => {
+                    sync.assertHeld();
+                    return prepare();
+                })
+            ),
+        { now }
+    );
 }
 
 export async function completeLxnsBind(
     ctx: CommandContext,
     store: Store,
     target: UserListRow,
-    value: string,
-    given?: string
+    value: string
 ) {
     const { uid, displayName } = target;
     const fix = restartBind(uid);
@@ -340,7 +359,9 @@ export async function completeLxnsBind(
         }
         return writeBinding(ctx.paths, store, uid, "lxns", () => {
             sync.assertHeld();
-            return prepareLxnsBinding(ctx, store, uid, current, state, exchanged, given);
+            const latest = readUser(store, uid);
+            if (!latest) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+            return prepareLxnsBinding(ctx, store, latest, current, state, exchanged, undefined);
         });
     }
 

@@ -62,15 +62,7 @@ export async function runSyncUploads(
 ): Promise<{ uploads: SyncUploadResult[]; warnings: Warning[] }> {
     const uploads: SyncUploadResult[] = [];
     const warnings: Warning[] = [];
-    const httpWithoutRedirect: CommandContext["http"] = options => {
-        const http = ctx.http(options);
-        return (url, init) => {
-            // A redirect could replay a credential-bearing request.
-            const request = { ...init, redirect: "manual" as const };
-            return http(url, request);
-        };
-    };
-    const http = httpWithoutRedirect({ retry: false });
+    const http = ctx.http({ retry: false });
     const fetchUpload: FetchLike = async (url, init) => {
         handle.assertHeld();
         const response = await http(url, init);
@@ -97,7 +89,7 @@ export async function runSyncUploads(
                 await uploadDivingFishRecords(upload.importToken, records, { fetch: fetchUpload });
             } else {
                 const auth = await lxnsAccessToken(
-                    { ...ctx, http: httpWithoutRedirect, log: () => ctx.log("已刷新落雪授权") },
+                    { ...ctx, log: () => ctx.log("已刷新落雪授权") },
                     store,
                     handle,
                     user

@@ -2,9 +2,11 @@ import type { User } from "@core/user/type";
 import type { PrintedOutput } from "../commandRun";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readCredentials } from "../../src/runtime/credentials";
 import { MIGRATIONS } from "../../src/store/migrations";
 import { openStore } from "../../src/store/store";
 import { saveUser } from "../../src/users/repository";
+import { splitCommandLine } from "../../src/util/shell";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
 import { parsePrintedCommand } from "../printedCommand";
@@ -700,4 +702,53 @@ describe("status command", () => {
         expect(resFile.json.warnings.length).toBe(1);
         expect(resFile.json.warnings[0].code).toBe("LXNS_EXPIRING");
     });
+});
+
+it.each(["2", "uid:2"])("uses exact uid references in the status fix for %s", async uid => {
+    const paths = makeHome();
+    const store = openStore(paths);
+    saveUser(store, makeStatusUser("default", "Alice"));
+    saveUser(store, makeStatusUser(uid, "Bob", 1001));
+    saveUser(store, makeStatusUser("other", "Charlie"));
+    store.close();
+
+    writeFileSync(
+        paths.credentials,
+        JSON.stringify({
+            version: 1,
+            users: {
+                [uid]: {
+                    lxnsAuthorization: {
+                        accessToken: "fake-expiring-access",
+                        refreshToken: "fake-expiring-refresh",
+                    },
+                    lxnsAccountId: 1001,
+                    lxnsIssuedAt: NOW.getTime() - 29 * 86_400_000,
+                },
+            },
+        })
+    );
+    const status = await statusIn(paths, []);
+    const fix = status.json.warnings.find(warning => warning.code === "LXNS_EXPIRING")?.fix;
+    expect(parsePrintedCommand(fix).positionals.user).toBe(`uid:${uid}`);
+    const started = await commandIn(paths, "user", splitCommandLine(fix!).slice(2), {
+        env: {
+            SALTNET_LXNS_CLIENT_ID: "fake-client",
+            SALTNET_LXNS_REDIRECT_URI: "https://callback.test",
+        },
+    });
+    expect(started.code).toBe(0);
+    expect(Object.values(readCredentials(paths).pendingLxnsAuthorizations ?? {})).toMatchObject([
+        { userUid: uid },
+    ]);
+    expect(
+        (await commandIn(paths, "rating", ["--user", `uid:${uid}`])).json.meta.user
+    ).toMatchObject({ uid, index: 1 });
+    expect((await commandIn(paths, "rating", ["--user", "2"])).json.meta.user).toMatchObject({
+        uid: "other",
+        index: 2,
+    });
+    expect((await commandIn(paths, "rating", ["--user", "uid:missing"])).json.error.code).toBe(
+        "NOT_FOUND"
+    );
 });

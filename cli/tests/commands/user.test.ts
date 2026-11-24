@@ -5,12 +5,19 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { CollectionKind } from "@core/collection/type";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as confirmation from "../../src/commands/confirm";
 import { readCredentials } from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { beginRun, finishRun } from "../../src/sync/journal";
-import { readScoreEvents, readUsers, replaceUsers } from "../../src/users/repository";
+import {
+    appendScoreEvents,
+    readScoreEvents,
+    readUsers,
+    replaceUsers,
+    saveUser,
+} from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
@@ -617,7 +624,7 @@ describe("user remove and default", () => {
         ]);
         const preview = await commandIn(paths, "user", ["remove", "Numeric uid"]);
         const fix = (preview.json.error as unknown as ConfirmationError).fix;
-        expect(fix).toMatch(/^saltnet user remove 42 --yes /);
+        expect(fix).toMatch(/^saltnet user remove uid:42 --yes /);
         const args = splitCommandLine(fix).slice(1);
         const removed = await commandIn(paths, args[0], args.slice(1));
         expect(removed.code).toBe(0);
@@ -924,4 +931,42 @@ describe("status user freshness", () => {
         expect(configured.json.data.users.staleDays).toBe(5);
         expect(configured.json.data.users.items[2].scoresState).toBe("fresh");
     });
+});
+
+it.each(["remark", "score event"])("rechecks removal after a concurrent %s", async change => {
+    const paths = makeHome();
+    const original = madeUser("target");
+    seed(paths, [original], []);
+    const preview = await commandIn(paths, "user", ["remove", "target"]);
+    const fix = splitCommandLine(preview.json.error.fix!).slice(2);
+    const writer = openStore(paths);
+    const requireConfirmation = confirmation.requireConfirmation;
+    const spy = vi
+        .spyOn(confirmation, "requireConfirmation")
+        .mockImplementationOnce((given, state) => {
+            requireConfirmation(given, state);
+            if (change === "remark") saveUser(writer, { ...original, remark: "Concurrent edit" });
+            else appendScoreEvents(writer, [event("target")]);
+        });
+    try {
+        const result = await commandIn(paths, "user", fix);
+        expect(result.json.error).toMatchObject({
+            code: "CONFIRMATION_REQUIRED",
+            codeRejected: true,
+        });
+        expect(readUsers(writer)).toEqual([
+            change === "remark" ? { ...original, remark: "Concurrent edit" } : original,
+        ]);
+        expect(readScoreEvents(writer)).toEqual(change === "remark" ? [] : [event("target")]);
+        const updated = await commandIn(
+            paths,
+            "user",
+            splitCommandLine(result.json.error.fix!).slice(2)
+        );
+        expect(updated.code).toBe(0);
+        expect(readUsers(writer)).toEqual([]);
+    } finally {
+        spy.mockRestore();
+        writer.close();
+    }
 });

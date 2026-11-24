@@ -10,8 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { writeFileAtomic } from "../../src/runtime/files";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fileOps, writeFileAtomic } from "../../src/runtime/files";
 
 describe("writeFileAtomic", () => {
     let dir: string;
@@ -98,5 +98,75 @@ describe("writeFileAtomic", () => {
         writeFileAtomic(file, "a very long initial content that spans many characters");
         writeFileAtomic(file, "short");
         expect(readFileSync(file, "utf8")).toBe("short");
+    });
+
+    it("refuses to overwrite an existing file when overwrite is false and removes temporary file", () => {
+        const file = path.join(dir, "no-overwrite.txt");
+        writeFileSync(file, "original content");
+
+        let thrownError: unknown;
+        try {
+            writeFileAtomic(file, "new content", 0o600, { overwrite: false });
+        } catch (error) {
+            thrownError = error;
+        }
+
+        expect((thrownError as NodeJS.ErrnoException)?.code).toBe("EEXIST");
+        expect(readFileSync(file, "utf8")).toBe("original content");
+        const tmpFiles = readdirSync(dir).filter(name => name.endsWith(".tmp"));
+        expect(tmpFiles).toEqual([]);
+    });
+
+    it("writes new file when overwrite is false", () => {
+        const file = path.join(dir, "create-no-overwrite.txt");
+        writeFileAtomic(file, "created content", 0o600, { overwrite: false });
+        expect(readFileSync(file, "utf8")).toBe("created content");
+        if (process.platform !== "win32") {
+            expect(statSync(file).mode & 0o777).toBe(0o600);
+        }
+        const tmpFiles = readdirSync(dir).filter(name => name.endsWith(".tmp"));
+        expect(tmpFiles).toEqual([]);
+    });
+
+    it("falls back to copyFileSync when linkSync fails with EXDEV and removes temporary file", () => {
+        const file = path.join(dir, "fallback-copy.txt");
+        const spy = vi.spyOn(fileOps, "linkSync").mockImplementationOnce(() => {
+            const err = new Error("cross-device link not permitted") as NodeJS.ErrnoException;
+            err.code = "EXDEV";
+            throw err;
+        });
+
+        try {
+            writeFileAtomic(file, "copied content", 0o600, { overwrite: false });
+            expect(readFileSync(file, "utf8")).toBe("copied content");
+            const tmpFiles = readdirSync(dir).filter(name => name.endsWith(".tmp"));
+            expect(tmpFiles).toEqual([]);
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
+    it("keeps a file created before the fallback copy when linkSync fails with EXDEV", () => {
+        const file = path.join(dir, "fallback-existing.txt");
+        writeFileSync(file, "original content");
+        const spy = vi.spyOn(fileOps, "linkSync").mockImplementationOnce(() => {
+            const err = new Error("cross-device link not permitted") as NodeJS.ErrnoException;
+            err.code = "EXDEV";
+            throw err;
+        });
+
+        let thrownError: unknown;
+        try {
+            writeFileAtomic(file, "copied content", 0o600, { overwrite: false });
+        } catch (error) {
+            thrownError = error;
+        } finally {
+            spy.mockRestore();
+        }
+
+        expect((thrownError as NodeJS.ErrnoException)?.code).toBe("EEXIST");
+        expect(readFileSync(file, "utf8")).toBe("original content");
+        const tmpFiles = readdirSync(dir).filter(name => name.endsWith(".tmp"));
+        expect(tmpFiles).toEqual([]);
     });
 });

@@ -71,6 +71,15 @@ export interface ReadRunsResult {
     readonly total: number;
 }
 
+/** A newly acquired sync lock makes this user's previous running rows abandoned. */
+export function interruptRuns(store: Store, userUid: string): void {
+    store.db
+        .prepare(
+            "UPDATE sync_runs SET outcome = 'interrupted' WHERE user_uid = ? AND outcome = 'running'"
+        )
+        .run(userUid);
+}
+
 const FORBIDDEN_SECRET_WORDS = [
     "token",
     "authorization",

@@ -5,7 +5,7 @@ import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { CliError } from "../../src/errors";
 import { createHttp, hostOf, upstreamStatusError } from "../../src/runtime/http";
 import { createHarness, run } from "../harness";
-import { delayedRoute, jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { delayedRoute, jsonResponse, mockFetch, redirectResponse, textResponse } from "../mockHttp";
 
 const URL_WITH_TOKEN = "https://meta.example.com/data/v1.json?token=secret";
 
@@ -37,6 +37,39 @@ async function failureOf(work: Promise<unknown>): Promise<CliError> {
 }
 
 describe("the request", () => {
+    it("follows a public GET redirect and rejects a credential-bearing GET redirect", async () => {
+        const target = "https://redirect-target.test/catalog";
+        const exchange = "https://oauth.example.test/token";
+        const fetch = mockFetch({
+            [URL_WITH_TOKEN]: redirectResponse(target, 302),
+            [target]: textResponse("catalog"),
+            [exchange]: textResponse("", 304),
+        });
+        const request = http(fetch);
+        const publicResponse = await request(URL_WITH_TOKEN);
+        expect(await publicResponse.text()).toBe("catalog");
+        const explicitFollow = { method: "POST", redirect: "follow" as const };
+        expect(await (await request(URL_WITH_TOKEN, explicitFollow)).text()).toBe("catalog");
+        // OAuth needs to see unsuccessful responses with its explicit redirect policy.
+        const rejectedExchange = await request(exchange, { method: "POST", redirect: "error" });
+        expect(rejectedExchange.status).toBe(304);
+        await expect(
+            request(URL_WITH_TOKEN, { headers: { "iMpOrT-ToKeN": "FAKE-IMPORT" } })
+        ).rejects.toMatchObject({
+            code: "UPSTREAM_ERROR",
+            extra: { status: 302 },
+            retryable: false,
+        });
+        expect(fetch.requests.map(request => request.url)).toEqual([
+            URL_WITH_TOKEN,
+            target,
+            URL_WITH_TOKEN,
+            target,
+            exchange,
+            URL_WITH_TOKEN,
+        ]);
+    });
+
     it("sends the user agent and keeps the method, body and other headers", async () => {
         const fetch = mockFetch({ [URL_WITH_TOKEN]: jsonResponse({}) });
         await http(fetch)(URL_WITH_TOKEN, {

@@ -446,16 +446,27 @@ describe("user bind lxns", () => {
         expectPrivate(resumed, transaction.codeVerifier);
     });
 
-    it("ignores --yes when reauthorizing the same LXNS account", async () => {
+    it("rejects --yes when reauthorizing the same LXNS account", async () => {
         const { paths, store, user } = fixture(accountId);
         const { link } = await start(paths);
-        const result = await bind(paths, uid, ["--callback", "-", "--yes", "IGNORED"], {
+        const credentialsBefore = readFileSync(paths.credentials, "utf8");
+        const result = await bind(paths, uid, ["--callback", "-", "--yes", "FAKE-CODE"], {
             stdin: link.href,
             network: { [tokenUrl]: tokenResponse },
         });
-        expect(result.code).toBe(0);
-        expect(result.json.data.uid).toBe(uid);
-        expect(result.json.data).not.toHaveProperty("oldUid");
+        expect(result.json.error.code).toBe("USAGE");
+        expect(result.json.error.fix).toBeUndefined();
+        expect(result.requests).toEqual([]);
+        expect(readUser(store, uid)).toEqual(user);
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credentialsBefore);
+
+        const retried = await bind(paths, uid, ["--callback", "-"], {
+            stdin: link.href,
+            network: { [tokenUrl]: tokenResponse },
+        });
+        expect(retried.code).toBe(0);
+        expect(retried.json.data.uid).toBe(uid);
+        expect(retried.json.data).not.toHaveProperty("oldUid");
         expect(readUser(store, uid)?.data).toEqual(user.data);
     });
 

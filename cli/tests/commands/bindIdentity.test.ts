@@ -574,10 +574,54 @@ it("confirms the user whose uid the fix names, even when that uid looks like an 
         preview: { user: { uid: "1", index: 0 } },
     });
     const fix = preview.json.error.fix!;
-    expect(parsePrintedCommand(fix).positionals.user).toBe("1");
+    expect(parsePrintedCommand(fix).positionals.user).toBe("uid:1");
     const done = await runPrinted(paths, fix);
     expect(done.code).toBe(0);
     expect(done.json.data).toMatchObject({ oldUid: "1", index: 0, changed: true });
     expect(readUser(store, otherUid)).toEqual(other);
     expect(readUser(store, done.json.data.uid)?.inGame?.id).toBe(newGameId);
+});
+
+it("cancels a pending replacement confirmation when LXNS is unbound", async () => {
+    const { paths, store, uid } = fixture("lxns", 1);
+    const pending = await previewCommand(paths, "lxns", uid);
+    const preview = await runPrinted(paths, pending.line, pending.options);
+    expect(preview.json.error?.code).toBe("CONFIRMATION_REQUIRED");
+    const unbound = await commandIn(paths, "user", ["unbind", "--", uid, "lxns"]);
+    expect(unbound.code).toBe(0);
+    const stale = await runPrinted(paths, preview.json.error.fix!);
+    expect(stale.json.error?.code).toBe("LXNS_REAUTH_REQUIRED");
+    expect(readUser(store, uid)?.lxns?.id).toBeNull();
+    expect(readCredentials(paths).users[uid]?.lxnsAuthorization).toBeUndefined();
+    expect(readCredentials(paths).pendingLxnsAuthorizations?.[pending.state!]).toBeUndefined();
+});
+
+it("cannot apply a stale uid-zero bind confirmation to the new default user", async () => {
+    const paths = makeHome();
+    const store = openStore(paths);
+    stores.push(store);
+    const original = user("0", "Original player");
+    original.inGame = { id: 99_980_001, name: null, enabled: true, useFastUpdate: true };
+    const replacement = user("new-default", "New default");
+    replaceUsers(store, [original, replacement], []);
+    const preview = await runPrinted(
+        paths,
+        userBindCommand("0", "ingame", [], ["--id", String(newGameId)])
+    );
+    expect(preview.json.error?.code).toBe("CONFIRMATION_REQUIRED");
+    replaceUsers(store, [replacement], []);
+    const stale = await runPrinted(paths, preview.json.error.fix!);
+    expect(stale.json.error?.code).toBe("NOT_FOUND");
+    const legacy = await runPrinted(
+        paths,
+        userBindCommand(
+            "0",
+            "ingame",
+            [],
+            ["--id", String(newGameId), "--yes", preview.json.error.confirmationCode]
+        )
+    );
+    expect(legacy.json.error?.code).toBe("USAGE");
+    expect(legacy.json.error.fix).toBeUndefined();
+    expect(readUser(store, "new-default")).toEqual(replacement);
 });

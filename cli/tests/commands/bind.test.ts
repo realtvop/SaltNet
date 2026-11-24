@@ -1,8 +1,9 @@
 import type { User } from "@core/user/type";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
+import * as credentialsModule from "../../src/runtime/credentials";
 import { readCredentials } from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
@@ -12,8 +13,10 @@ import {
     readUsers,
     removeUser,
     replaceUsers,
+    saveUser,
 } from "../../src/users/repository";
-import { commandIn } from "../commandRun";
+import * as repository from "../../src/users/repository";
+import { commandIn, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse } from "../mockHttp";
 import { useTempHome } from "../tempHome";
@@ -102,19 +105,24 @@ describe("user bind and unbind", () => {
 
         // Re-binding the same id: changed is false, no write
         const dbMtimeBefore = statSync(paths.database).mtimeMs;
-        const rebind = await commandIn(paths, "user", [
+        const rebind = await commandIn(paths, "user", ["bind", "u0", "ingame", "--id", "87654321"]);
+        expect(rebind.code).toBe(0);
+        expect(rebind.json.data.changed).toBe(false);
+        expect(statSync(paths.database).mtimeMs).toBe(dbMtimeBefore);
+        expectConforms(schemaOf("user bind"), rebind.json.data);
+
+        const unnecessary = await commandIn(paths, "user", [
             "bind",
             "u0",
             "ingame",
             "--id",
             "87654321",
             "--yes",
-            "IGNORED",
+            "FAKECODE",
         ]);
-        expect(rebind.code).toBe(0);
-        expect(rebind.json.data.changed).toBe(false);
-        expect(statSync(paths.database).mtimeMs).toBe(dbMtimeBefore);
-        expectConforms(schemaOf("user bind"), rebind.json.data);
+        expect(unnecessary.json.error?.code).toBe("USAGE");
+        expect(unnecessary.json.error.fix).toBeUndefined();
+        expect(readUser(store, "u0")).toEqual(stored);
 
         // Binding a different ID requires confirmation
         const idChange = await commandIn(paths, "user", [
@@ -1033,4 +1041,196 @@ describe("user bind and unbind", () => {
             store.close();
         }
     );
+});
+
+it.each(["bind df-token", "unbind lxns"])("preserves an edit concurrent with %s", async binding => {
+    const paths = makeHome();
+    const writer = openStore(paths);
+    const original = makeUser("target");
+    saveUser(writer, original);
+    const read = repository.readUser;
+    const credentialsLock = credentialsModule.withCredentialsLock;
+    let edited = false;
+    function edit() {
+        if (edited) return;
+        saveUser(writer, {
+            ...original,
+            remark: "Edited concurrently",
+            settings: { manuallyUpdate: true },
+        });
+        edited = true;
+    }
+    const spy = vi.spyOn(repository, "readUser").mockImplementation((store, uid) => {
+        const current = read(store, uid);
+        if (!store.db.isTransaction) edit();
+        return current;
+    });
+    const lockSpy = vi
+        .spyOn(credentialsModule, "withCredentialsLock")
+        .mockImplementation((store, work, options) =>
+            credentialsLock(
+                store,
+                lock => {
+                    const transaction = store.transaction;
+                    store.transaction = callback => {
+                        edit();
+                        return transaction(callback);
+                    };
+                    return work(lock);
+                },
+                options
+            )
+        );
+    try {
+        const args =
+            binding === "bind df-token"
+                ? ["bind", "target", "df-token", "-"]
+                : ["unbind", "target", "lxns"];
+        const result = await commandIn(paths, "user", args, {
+            stdin: "fake-replacement-token",
+            network: { [`${DF_BASE_URL}/player/records`]: jsonResponse({ records: [] }) },
+        });
+        expect(result.code).toBe(0);
+        expect(edited).toBe(true);
+        expect(read(writer, "target")).toMatchObject({
+            remark: "Edited concurrently",
+            settings: { manuallyUpdate: true },
+        });
+    } finally {
+        spy.mockRestore();
+        lockSpy.mockRestore();
+        writer.close();
+    }
+});
+
+it("excludes a competing sync at the df-token unbind credential lock", async () => {
+    const paths = makeHome();
+    const writer = openStore(paths);
+    saveUser(writer, makeUser("target"));
+    writeFileSync(
+        paths.credentials,
+        JSON.stringify({
+            version: 1,
+            users: { target: { divingFishImportToken: "fake-old-token" } },
+        })
+    );
+    const acquire = credentialsModule.withCredentialsLock;
+    const update = credentialsModule.updateCredentials;
+    const attempts: boolean[] = [];
+    function trySync() {
+        const lock = acquireLock(writer, "sync:target", {
+            ttlMs: 60_000,
+            now: () => NOW.getTime(),
+        });
+        attempts.push(lock.acquired);
+        if (lock.acquired) lock.lock.release();
+    }
+    const lockSpy = vi
+        .spyOn(credentialsModule, "withCredentialsLock")
+        .mockImplementation((...args) => {
+            trySync();
+            return acquire(...args);
+        });
+    const updateSpy = vi
+        .spyOn(credentialsModule, "updateCredentials")
+        .mockImplementation((...args) => {
+            trySync();
+            return update(...args);
+        });
+    try {
+        const unbound = await commandIn(paths, "user", ["unbind", "target", "df-token"]);
+        expect(unbound.code).toBe(0);
+        expect(attempts).toEqual([false]);
+        expect(readCredentials(paths).users.target?.divingFishImportToken).toBeUndefined();
+    } finally {
+        lockSpy.mockRestore();
+        updateSpy.mockRestore();
+        writer.close();
+    }
+});
+
+it("rejects an unnecessary confirmation code before a first bind", async () => {
+    const paths = makeHome();
+    const store = openStore(paths);
+    const original = makeUser("target", {
+        inGame: { id: null, name: null, enabled: false, useFastUpdate: false },
+    });
+    saveUser(store, original);
+    try {
+        const result = await commandIn(paths, "user", [
+            "bind",
+            "target",
+            "ingame",
+            "--id",
+            "12345678",
+            "--yes",
+            "FAKECODE",
+        ]);
+        expect(result.json.error?.code).toBe("USAGE");
+        expect(result.json.error.fix).toBeUndefined();
+        expect(readUser(store, "target")).toEqual(original);
+        expect(existsSync(paths.credentials)).toBe(false);
+    } finally {
+        store.close();
+    }
+});
+
+it.each([{ flags: [] }, { flags: ["--verbose"] }])(
+    "redacts an echoed short Diving Fish Import-Token ($flags)",
+    async ({ flags }) => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        saveUser(store, makeUser("target"));
+        store.close();
+        const token = "fake8TOK";
+        const result = await commandIn(
+            paths,
+            "user",
+            ["bind", "target", "df-token", "-", ...flags],
+            {
+                stdin: token,
+                network: {
+                    [`${DF_BASE_URL}/player/records`]: jsonResponse(
+                        { message: `The service rejected ${token}` },
+                        403
+                    ),
+                },
+            }
+        );
+        expect(result.json.error?.code).toBe("USAGE");
+        expect(result.stdout).not.toContain(token);
+        expect(result.stderr).not.toContain(token);
+    }
+);
+
+it("describes the complete LXNS confirmation command", () => {
+    expect(registry.find("user bind")?.spec.description).toContain(
+        "user bind <用户> lxns --yes <确认码>"
+    );
+});
+
+it("redacts a three-character Import-Token from verbose retry logs", async () => {
+    const paths = makeHome();
+    const store = openStore(paths);
+    saveUser(store, makeUser("target"));
+    store.close();
+    const token = "QXZ";
+    const result = await commandIn(
+        paths,
+        "user",
+        ["bind", "target", "df-token", "-", "--verbose"],
+        {
+            stdin: token,
+            network: {
+                [`${DF_BASE_URL}/player/records`]: () => {
+                    throw new Error(`Upstream echoed ${token}`);
+                },
+            },
+        }
+    );
+    expect(result.json.error?.code).toBe("NETWORK");
+    expect(result.requests).toHaveLength(2);
+    expect(result.stdout).not.toContain(token);
+    expect(result.stderr).toContain("准备重试");
+    expect(result.stderr).not.toContain(token);
 });

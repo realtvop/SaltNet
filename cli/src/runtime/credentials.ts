@@ -183,7 +183,7 @@ export async function withCredentialsLock<T>(
     });
 }
 
-function pruneCredentials(
+export function pruneCredentials(
     credentials: CredentialsFile,
     store: Store,
     now?: () => Date | number
@@ -206,7 +206,7 @@ function pruneCredentials(
         return n instanceof Date ? n.getTime() : n;
     })();
 
-    const prunedUsers: Record<string, UserCredentials> = {};
+    const prunedUsers = Object.create(null) as Record<string, UserCredentials>;
     for (const [uid, creds] of Object.entries(credentials.users ?? {})) {
         if (!validUids.has(uid)) continue;
         const entry = { ...creds };
@@ -228,7 +228,7 @@ function pruneCredentials(
     };
 
     if (credentials.pendingLxnsAuthorizations !== undefined) {
-        const prunedPending: Record<string, PendingLxnsAuthorization> = {};
+        const prunedPending = Object.create(null) as Record<string, PendingLxnsAuthorization>;
         for (const [state, record] of Object.entries(credentials.pendingLxnsAuthorizations)) {
             const validated = validateLXNSOAuthTransaction(record, nowMs);
             if (!validated) continue;

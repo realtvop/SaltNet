@@ -1,10 +1,14 @@
 import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
 import type { User } from "@core/user/type";
 import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { StagedFile } from "../runtime/files";
+import type { RuntimePaths } from "../runtime/paths";
+import type { Store } from "../store/store";
 import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
 import { getUserDisplayName } from "@core/user/type";
 import { CliError } from "../errors";
@@ -16,9 +20,10 @@ import {
     stageCredentials,
     withCredentialsLock,
 } from "../runtime/credentials";
-import { writeFileAtomic } from "../runtime/files";
+import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
+import { acquireLock } from "../store/locks";
 import { recordRun } from "../sync/journal";
-import { assertNoSync } from "../sync/lock";
+import { assertNoSync, DEFAULT_SYNC_LOCK_TTL_MS } from "../sync/lock";
 import {
     assertStoredScoreEvent,
     assertStoredUser,
@@ -29,7 +34,6 @@ import {
     replaceUsers,
 } from "../users/repository";
 import { fileWord } from "../util/printedCommand";
-import { joinCommandLine } from "../util/shell";
 import { formatLocalTime } from "../util/time";
 import { CONFIRM_OPTIONS, requireConfirmation } from "./confirm";
 import { defineCommand } from "./registry";
@@ -104,7 +108,7 @@ function safeDecodeReason(error: unknown): string {
 }
 
 function readBackup(file: string): {
-    bytes: Buffer;
+    digest: string;
     source: Record<string, unknown>;
     decoded: ReturnType<typeof decodeUserDataBackup>;
 } {
@@ -126,14 +130,34 @@ function readBackup(file: string): {
 
     try {
         const decoded = decodeUserDataBackup(source);
-        if ((source as Record<string, unknown>).version === 0) {
-            const digest = createHash("sha256").update(bytes).digest("hex").slice(0, 24);
+        const backup = source as Record<string, unknown>;
+        const digest = createHash("sha256").update(bytes).digest("hex");
+        const prefix = `import-v${backup.version}-${digest.slice(0, 24)}`;
+        if (backup.version === 0) {
             decoded.users = decoded.users.map((user, index) => ({
                 ...user,
-                uid: `import-v0-${digest}-${index}`,
+                uid: `${prefix}-${index}`,
             }));
+        } else if (backup.scoreHistory === undefined) {
+            // Core validates the original data, then assigns random uids when history is absent.
+            // Recover the explicit uids so the CLI can repeat the same preview for these bytes.
+            const originals = JSON.parse(
+                new TextDecoder().decode(Buffer.from(backup.users as string, "base64"))
+            ) as User[];
+            const explicitUids = new Set(originals.map(user => user.uid));
+            const seen = new Set<string>();
+            decoded.users = decoded.users.map((user, index) => {
+                const explicit = originals[index].uid;
+                if (typeof explicit === "string" && explicit.trim() && !seen.has(explicit)) {
+                    seen.add(explicit);
+                    return { ...user, uid: explicit };
+                }
+                let uid = `${prefix}-${index}`;
+                while (explicitUids.has(uid)) uid += "-";
+                return { ...user, uid };
+            });
         }
-        return { bytes, source: source as Record<string, unknown>, decoded };
+        return { digest, source: backup, decoded };
     } catch (error) {
         throw backupError(file, safeDecodeReason(error), error);
     }
@@ -235,13 +259,12 @@ function applyCredentialPolicy(
             entry.lxnsAuthorization = incomingLxns;
             entry.lxnsAccountId = accountId;
         } else {
-            const ownLxns = matchingLxnsAuthorization(
-                credentialsOf(currentCredentials, uid),
-                accountId
-            );
+            const own = credentialsOf(currentCredentials, uid);
+            const ownLxns = matchingLxnsAuthorization(own, accountId);
             if (ownLxns !== undefined) {
                 entry.lxnsAuthorization = ownLxns;
                 entry.lxnsAccountId = accountId;
+                if (own?.lxnsIssuedAt !== undefined) entry.lxnsIssuedAt = own.lxnsIssuedAt;
             }
         }
         if (Object.keys(entry).length > 0) users[uid] = entry;
@@ -259,6 +282,47 @@ function applyCredentialPolicy(
 
 function credentialCount(credentials: CredentialsFile, key: keyof UserCredentials): number {
     return Object.values(credentials.users).filter(entry => present(entry[key])).length;
+}
+
+/** Acquire the whole uid set atomically, without changing sync journal rows. */
+function lockImportUsers(store: Store, uids: readonly string[], now: () => number) {
+    return store.transaction(() => {
+        assertNoSync(store, null, now);
+        return [...new Set(uids)].sort().map(uid => {
+            const result = acquireLock(store, `sync:${uid}`, {
+                ttlMs: DEFAULT_SYNC_LOCK_TTL_MS,
+                now,
+            });
+            // The database write lock excludes other owners after assertNoSync.
+            if (!result.acquired) throw new Error("import could not reserve a sync lock");
+            return result.lock;
+        });
+    });
+}
+
+function removeChangedCredentials(
+    paths: RuntimePaths,
+    current: CredentialsFile,
+    final: CredentialsFile
+): void {
+    const users = Object.fromEntries(
+        Object.entries(current.users).filter(([uid, entry]) =>
+            isDeepStrictEqual(entry, credentialsOf(final, uid))
+        )
+    );
+    if (
+        Object.keys(users).length === Object.keys(current.users).length &&
+        current.pendingLxnsAuthorizations === undefined
+    ) {
+        return;
+    }
+
+    const staged = stageCredentials(paths, { version: 1, users });
+    try {
+        staged.commit();
+    } finally {
+        staged.discard();
+    }
 }
 
 export const importBackup = defineCommand(
@@ -297,7 +361,7 @@ export const importBackup = defineCommand(
             { description: "导入的用户、成绩历史和凭据数量" }
         ),
     },
-    (args, ctx) => {
+    async (args, ctx) => {
         const givenPath = args.positionals.file;
         const absolutePath = path.resolve(ctx.io.cwd, givenPath);
         const backup = readBackup(absolutePath);
@@ -305,25 +369,18 @@ export const importBackup = defineCommand(
         assertImportable(absolutePath, prepared);
         const store = ctx.store();
         const now = () => ctx.io.now().getTime();
-        return withCredentialsLock(store, () => {
-            const currentCredentials = readCredentials(ctx.paths);
-            const snapshot = store.read(() => {
-                const currentRows = listUsers(store);
-                return {
-                    currentRows,
-                    currentEventCount: readScoreEvents(store).length,
-                    fingerprints: currentRows.map(user => ({
-                        uid: user.uid,
-                        digest: readUserRemovalFingerprint(store, user.uid),
-                    })),
-                };
-            });
+        function confirm(currentCredentials: CredentialsFile) {
+            const currentRows = listUsers(store);
+            const currentEventCount = readScoreEvents(store).length;
+            const fingerprints = currentRows.map(user => ({
+                uid: user.uid,
+                digest: readUserRemovalFingerprint(store, user.uid),
+            }));
             const { credentials, outcome } = applyCredentialPolicy(
                 prepared,
                 currentCredentials,
                 args.options.keepLxns
             );
-            const { currentRows, currentEventCount, fingerprints } = snapshot;
             const version = backup.source.version as 0 | 1;
             const importedRows = prepared.users.map((user, index) => ({
                 index,
@@ -336,12 +393,11 @@ export const importBackup = defineCommand(
                 ...(givenPath.startsWith("-") ? ["--"] : []),
                 givenPath,
             ];
-            store.transaction(() => assertNoSync(store, null, now));
             requireConfirmation(args.options.yes, {
                 operation: "backup.import",
                 target: absolutePath,
                 state: {
-                    fileDigest: createHash("sha256").update(backup.bytes).digest("hex"),
+                    fileDigest: backup.digest,
                     currentUsers: fingerprints,
                     credentialOutcome: outcome.map(item => ({
                         uid: item.uid,
@@ -380,53 +436,94 @@ export const importBackup = defineCommand(
                 confirmArgs,
             });
 
-            const staged = stageCredentials(ctx.paths, credentials);
-            try {
-                store.transaction(() => {
-                    assertNoSync(store, null, now);
-                    replaceUsers(store, prepared.users, prepared.events);
-                    recordRun(
-                        store,
-                        {
-                            kind: "import",
-                            userUid: null,
-                            userName: null,
-                            source: null,
-                            mode: null,
-                        },
-                        {
-                            outcome: "ok",
-                            summary: {
-                                users: prepared.users.length,
-                                scoreEvents: prepared.events.length,
-                            },
-                        },
-                        { version: ctx.version, now }
-                    );
-                });
-            } catch (error) {
-                staged.discard();
-                throw error;
-            }
-            try {
-                staged.commit();
-            } catch (error) {
-                throw new Error(
-                    `用户已经导入，但凭据未保存到 ${ctx.paths.credentials}；请修复文件权限后重新导入`,
-                    { cause: error }
-                );
-            }
+            return { currentRows, credentials };
+        }
 
-            return {
-                data: {
-                    path: absolutePath,
-                    userCount: prepared.users.length,
-                    eventCount: prepared.events.length,
-                    divingFishTokenCount: credentialCount(credentials, "divingFishImportToken"),
-                    lxnsAuthorizationCount: credentialCount(credentials, "lxnsAuthorization"),
-                } satisfies ImportResult,
-            };
+        const { currentRows } = await withCredentialsLock(store, () => {
+            store.transaction(() => assertNoSync(store, null, now));
+            return store.read(() => confirm(readCredentials(ctx.paths)));
         });
+        const locks = lockImportUsers(
+            store,
+            [...currentRows.map(user => user.uid), ...prepared.users.map(user => user.uid!)],
+            now
+        );
+        try {
+            return await withCredentialsLock(store, credentialLock => {
+                const current = readCredentials(ctx.paths);
+                function renewLocks() {
+                    for (const lock of locks) {
+                        if (!lock.renew()) throw new Error("import sync lock was lost");
+                    }
+                    if (!credentialLock.renew()) throw new Error("import credential lock was lost");
+                }
+                let staged: StagedFile | undefined;
+                try {
+                    const credentials = store.transaction(() => {
+                        const { credentials } = confirm(current);
+                        renewLocks();
+                        // Only entries valid on both sides can remain visible across the commit.
+                        staged = stageCredentials(ctx.paths, credentials);
+                        removeChangedCredentials(ctx.paths, current, credentials);
+                        replaceUsers(store, prepared.users, prepared.events);
+                        recordRun(
+                            store,
+                            {
+                                kind: "import",
+                                userUid: null,
+                                userName: null,
+                                source: null,
+                                mode: null,
+                            },
+                            {
+                                outcome: "ok",
+                                summary: {
+                                    users: prepared.users.length,
+                                    scoreEvents: prepared.events.length,
+                                },
+                            },
+                            { version: ctx.version, now }
+                        );
+                        renewLocks();
+                        return credentials;
+                    });
+                    try {
+                        staged!.commit();
+                    } catch (error) {
+                        throw new Error(
+                            `用户已经导入，但凭据未保存到 ${ctx.paths.credentials}；请修复文件权限后重新导入`,
+                            { cause: error }
+                        );
+                    }
+
+                    return {
+                        data: {
+                            path: absolutePath,
+                            userCount: prepared.users.length,
+                            eventCount: prepared.events.length,
+                            divingFishTokenCount: credentialCount(
+                                credentials,
+                                "divingFishImportToken"
+                            ),
+                            lxnsAuthorizationCount: credentialCount(
+                                credentials,
+                                "lxnsAuthorization"
+                            ),
+                        } satisfies ImportResult,
+                    };
+                } finally {
+                    staged?.discard();
+                }
+            });
+        } finally {
+            for (const lock of locks.reverse()) {
+                try {
+                    lock.release();
+                } catch {
+                    // A lock that could not be released will expire.
+                }
+            }
+        }
     }
 );
 
@@ -510,7 +607,6 @@ export const exportBackup = defineCommand(
         ),
     },
     (args, ctx) => {
-        const absolutePath = path.resolve(ctx.io.cwd, args.positionals.file);
         const store = ctx.store();
         const snapshot = store.read(() => ({
             users: readUsers(store),
@@ -518,39 +614,27 @@ export const exportBackup = defineCommand(
         }));
         const { users, events } = snapshot;
         if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户可以导出");
-        if (existsSync(absolutePath) && !args.options.overwrite) {
-            throw new CliError("FILE_EXISTS", `文件已经存在：${absolutePath}`, {
-                retryable: false,
-                fix: joinCommandLine([
-                    "saltnet",
-                    "export",
-                    fileWord(args.positionals.file),
-                    ...(args.options.keepLxns ? ["--keep-lxns"] : []),
-                    "--overwrite",
-                ]),
-            });
-        }
+        const retryCommand = [
+            "saltnet",
+            "export",
+            fileWord(args.positionals.file),
+            ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+        ];
+        const output = resolveOutputFile(
+            ctx,
+            args.positionals.file,
+            args.options.overwrite,
+            retryCommand
+        );
         const credentials = readCredentials(ctx.paths);
         const restored = restoreCredentials(users, credentials, args.options.keepLxns);
         const backup = encodeUserDataBackup(restored.users, events, ctx.io.now().getTime());
         const content = `${JSON.stringify(backup, null, 2)}\n`;
-        try {
-            writeFileAtomic(absolutePath, content, 0o600);
-        } catch (error) {
-            const code = (error as NodeJS.ErrnoException).code;
-            if (code === "ENOENT" || code === "ENOTDIR") {
-                throw new CliError(
-                    "USAGE",
-                    `目录不存在：${path.dirname(absolutePath)}；export 不会创建目录`,
-                    { retryable: false, cause: error }
-                );
-            }
-            throw error;
-        }
+        writeOutputFile(output, content, "export");
         const byteSize = Buffer.byteLength(content);
         return {
             data: {
-                path: absolutePath,
+                path: output.path,
                 userCount: restored.users.length,
                 eventCount: events.length,
                 byteSize,

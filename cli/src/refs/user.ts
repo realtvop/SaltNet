@@ -5,10 +5,11 @@ import { CliError } from "../errors";
 import { closestItems } from "../util/closest";
 import { echo } from "../util/echo";
 import { foldName } from "../util/fold";
+import { userUidWord } from "../util/printedCommand";
 import { MAX_AMBIGUOUS_ITEMS, MAX_NEAREST_ITEMS } from "./named";
 
 function candidate(user: UserListRow): ErrorCandidate {
-    return { ref: user.uid, title: user.displayName };
+    return { ref: userUidWord(user.uid), title: user.displayName };
 }
 
 function ambiguous(text: string, users: readonly UserListRow[]): never {
@@ -32,8 +33,11 @@ function notFound(users: readonly UserListRow[], text: string): never {
     });
 }
 
-/** No text selects position 0; text uses index, uid, exact name, then folded exact name. */
+/** uid:<uid> matches only that exact uid. Otherwise use index, uid, then exact or folded name. */
 export function resolveUser(users: readonly UserListRow[], text?: string): UserListRow {
+    if (text?.startsWith("uid:")) {
+        return users.find(user => user.uid === text.slice(4)) ?? notFound(users, text);
+    }
     if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户");
     if (text === undefined) {
         return users.find(user => user.index === 0) ?? users[0];

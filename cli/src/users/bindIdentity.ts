@@ -8,13 +8,13 @@ import {
     resetUserForNewIdentity,
 } from "@core/user/scoreHistory/userIdentity";
 import { requireConfirmation } from "../commands/confirm";
-import { CliError } from "../errors";
+import { CliError, usageError } from "../errors";
 import {
     lxnsAccountIdOf,
     matchingLxnsAuthorization,
     stageCredentials,
 } from "../runtime/credentials";
-import { userBindCommand } from "../util/printedCommand";
+import { userBindCommand, userUidWord } from "../util/printedCommand";
 import { splitCommandLine } from "../util/shell";
 import {
     listUsers,
@@ -37,13 +37,20 @@ function identityOf(user: User) {
 }
 
 function confirmationArgs(uid: string, source: IdentitySource, user: User): string[] {
+    const ref = userUidWord(uid);
     const name = user.divingFish?.name ?? "";
     const words = source === "df-name" ? [name] : [];
-    if (source === "df-name" && name.startsWith("-") && !uid.startsWith("-")) {
+    if (source === "df-name" && name.startsWith("-") && !ref.startsWith("-")) {
         words.unshift("--");
     }
     const options = source === "ingame" ? ["--id", String(user.inGame?.id).padStart(8, "0")] : [];
-    return splitCommandLine(userBindCommand(uid, source, words, options)).slice(1);
+    return splitCommandLine(userBindCommand(ref, source, words, options)).slice(1);
+}
+
+export function rejectUnneededConfirmation(given: string | undefined): void {
+    if (given !== undefined) {
+        throw usageError("此确认码已不适用；请核对目标用户后去掉 --yes 重新运行命令");
+    }
 }
 
 /** Check the current rows and the intended identity in the caller's transaction. */
@@ -56,7 +63,10 @@ export function confirmIdentityChange(
     given: string | undefined,
     authorizationExpiresAt?: number
 ): boolean {
-    if (!hasStrongIdentityChanged(before, after)) return false;
+    if (!hasStrongIdentityChanged(before, after)) {
+        rejectUnneededConfirmation(given);
+        return false;
+    }
 
     const row = listUsers(store).find(user => user.uid === uid)!;
     const user = { uid, index: row.index, name: row.displayName };
@@ -96,9 +106,10 @@ function moveCredentials(
         delete entry.lxnsAccountId;
         delete entry.lxnsIssuedAt;
     }
-    if (Object.keys(entry).length > 0) users[newUid] = entry;
-
-    const result = { ...current, users };
+    const result = {
+        ...current,
+        users: Object.keys(entry).length > 0 ? { ...users, [newUid]: entry } : users,
+    };
     if (current.pendingLxnsAuthorizations !== undefined) {
         result.pendingLxnsAuthorizations = Object.fromEntries(
             Object.entries(current.pendingLxnsAuthorizations).filter(
@@ -113,6 +124,7 @@ interface Binding {
     user: User;
     changed: boolean;
     reset: boolean;
+    userChanged?: boolean;
     credentials?: CredentialsFile;
 }
 
@@ -121,13 +133,13 @@ export function writeBinding(
     paths: RuntimePaths,
     store: Store,
     uid: string,
-    source: IdentitySource,
+    source: IdentitySource | "df-token",
     prepare: () => Binding
 ) {
     let staged: StagedFile | undefined;
     try {
         const result = store.transaction(() => {
-            const { user, changed, reset, credentials } = prepare();
+            const { user, changed, reset, credentials, userChanged = changed } = prepare();
             const nextUser = reset ? resetUserForNewIdentity(user) : user;
             const nextUid = nextUser.uid!;
             if (credentials) {
@@ -137,7 +149,7 @@ export function writeBinding(
                 staged = stageCredentials(paths, next);
             }
             if (reset) replaceUserIdentity(store, uid, nextUser);
-            else if (changed) saveUser(store, nextUser);
+            else if (userChanged) saveUser(store, nextUser);
 
             const row = listUsers(store).find(item => item.uid === nextUid)!;
             return {
@@ -150,13 +162,9 @@ export function writeBinding(
         try {
             staged?.commit();
         } catch (error) {
-            throw new CliError(
-                "INTERNAL",
-                "用户绑定已保存，但凭据文件未能更新；请修复文件权限后重新绑定凭据",
-                {
-                    cause: error,
-                }
-            );
+            throw new CliError("INTERNAL", "凭据文件未能更新；请修复文件权限后重试", {
+                cause: error,
+            });
         }
         return result;
     } finally {

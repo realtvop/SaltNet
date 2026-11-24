@@ -11,9 +11,14 @@ export interface UserTarget {
     readonly uid: string;
 }
 
+/** A stable uid as a user reference, escaped when it overlaps another reference form. */
+export function userUidWord(uid: string): string {
+    return /^\d+$/.test(uid) || uid.startsWith("uid:") ? `uid:${uid}` : uid;
+}
+
 /** How a printed command names a stored user: `0` for the default user, else its stable uid. */
 export function userRefWord(user: UserTarget): string {
-    return user.index === 0 ? "0" : user.uid;
+    return user.index === 0 ? "0" : userUidWord(user.uid);
 }
 
 /** `name value`, or `name=value` when the parser would read the value as an option. */
@@ -27,7 +32,7 @@ export function optionWords(name: string, value: string): string[] {
  */
 export function userOptionWords(user: UserTarget, pinDefault = false): string[] {
     if (user.index === 0 && !pinDefault) return [];
-    return optionWords("--user", user.uid);
+    return optionWords("--user", userUidWord(user.uid));
 }
 
 /** A file name as a positional word: `./<name>` when the parser would read it as an option. */

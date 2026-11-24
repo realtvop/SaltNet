@@ -39,14 +39,11 @@ export async function postQrGameApi(
     let response: FetchResponse;
     let data: unknown;
     try {
-        // Following a 307 or 308 would send the QR in a second POST.
-        const request = {
+        response = await fetch(`${base}/${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
-            redirect: "manual" as const,
-        };
-        response = await fetch(`${base}/${endpoint}`, request);
+        });
         if (
             response.ok ||
             (response.status >= 400 && response.status < 500 && response.status !== 429)
@@ -59,6 +56,9 @@ export async function postQrGameApi(
                 fix: error.fix,
                 retryable: false,
             });
+        }
+        if (error instanceof CliError && typeof error.extra?.status === "number") {
+            throw new CliError("UPSTREAM_ERROR", `舞萌服务返回了 HTTP ${error.extra.status}`);
         }
         throw new CliError("UPSTREAM_ERROR", "舞萌服务返回了无法识别的数据");
     }

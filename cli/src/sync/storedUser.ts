@@ -3,9 +3,16 @@
  * scores).
  */
 import type { SyncUpdate } from "@core/sync/type";
-import type { ScoreHistoryCandidate, ScoreHistorySource } from "@core/user/scoreHistory/type";
+import type {
+    ScoreHistoryBatch,
+    ScoreHistoryCandidate,
+    ScoreHistoryEventV1,
+    ScoreHistorySource,
+} from "@core/user/scoreHistory/type";
 import type { User } from "@core/user/type";
 import { applySyncUpdate } from "@core/sync/apply";
+import { buildScoreHistoryBatchEvents } from "@core/user/scoreHistory/batch";
+import { assertStoredScoreEvent } from "../users/repository";
 import { userForCoreScores } from "../users/rows";
 
 export interface StoredSyncResult {
@@ -14,6 +21,33 @@ export interface StoredSyncResult {
     readonly candidates: ScoreHistoryCandidate[];
     readonly observedAt: number;
     readonly source: ScoreHistorySource;
+}
+
+export function buildStoredSyncEvents(
+    batch: ScoreHistoryBatch,
+    generationId: string,
+    existingChartKeys: ReadonlySet<string>
+): ScoreHistoryEventV1[] {
+    const events = buildScoreHistoryBatchEvents(batch, generationId, existingChartKeys);
+    const withoutBaseline = new Set<string>();
+    const stored: ScoreHistoryEventV1[] = [];
+    for (const event of events) {
+        if (event.id.endsWith(":baseline")) {
+            try {
+                assertStoredScoreEvent(event);
+            } catch {
+                withoutBaseline.add(event.chartKey);
+                continue;
+            }
+        }
+        // The first usable state is a full snapshot so history can display every field.
+        stored.push(
+            withoutBaseline.has(event.chartKey)
+                ? { ...event, kind: "initial", changedMask: 0, sequence: 0 }
+                : event
+        );
+    }
+    return stored;
 }
 
 /**

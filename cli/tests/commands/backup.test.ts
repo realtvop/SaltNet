@@ -7,13 +7,16 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import path from "node:path";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
 import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
+import * as backupModule from "@core/user/backup";
 import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
+import * as confirmation from "../../src/commands/confirm";
 import { addChartToFavorite, createFavorite, listFavorites } from "../../src/favorites/repository";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import * as credentialsModule from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
+import { buildUserForCore } from "../../src/sync/sources";
 import {
     appendScoreEvents,
     readScoreEvents,
@@ -182,6 +185,7 @@ function seedCredentials(
             divingFishImportToken?: unknown;
             lxnsAuthorization?: unknown;
             lxnsAccountId?: unknown;
+            lxnsIssuedAt?: unknown;
         }
     >
 ): void {
@@ -838,6 +842,37 @@ describe("backup import and export", () => {
         expect(decodeFile(target).users).toHaveLength(1);
     });
 
+    it("refuses to overwrite a file created after the early check without --overwrite", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser()], []);
+        const cwd = path.dirname(paths.home);
+        const filePath = path.join(cwd, "late-export.json");
+
+        const spy = vi
+            .spyOn(backupModule, "encodeUserDataBackup")
+            .mockImplementationOnce((users, events, time) => {
+                writeFileSync(filePath, "created after early check");
+                return backupModule.encodeUserDataBackup(users, events, time);
+            });
+
+        try {
+            const resFail = await commandIn(paths, "export", [filePath], { cwd });
+            expect(resFail.code).toBe(2);
+            expect(resFail.json.error.code).toBe("FILE_EXISTS");
+            expect(resFail.json.error.fix).toBe(`saltnet export ${filePath} --overwrite`);
+            expect(readFileSync(filePath, "utf8")).toBe("created after early check");
+            const tmpFiles = readdirSync(cwd).filter(f => f.endsWith(".tmp"));
+            expect(tmpFiles).toEqual([]);
+        } finally {
+            spy.mockRestore();
+        }
+
+        const resSuccess = await commandIn(paths, "export", [filePath, "--overwrite"], { cwd });
+        expect(resSuccess.code).toBe(0);
+        expect(readFileSync(filePath, "utf8")).not.toBe("created after early check");
+        expect(statSync(filePath).mode & 0o777).toBe(0o600);
+    });
+
     it("treats null credentials as absent during import", async () => {
         const paths = makeHome();
         const user = storedUser("user-null-cred", 900);
@@ -1064,7 +1099,6 @@ describe("backup import and export", () => {
             "stored-user": { divingFishImportToken: "fake-import-token-1" },
         });
         const before = readState(paths);
-        const credentialsBefore = readFileSync(paths.credentials, "utf8");
 
         const store = openStore(paths);
         try {
@@ -1084,7 +1118,7 @@ describe("backup import and export", () => {
         expect(confirmation.code).toBe(1);
         expect(confirmation.json.error.code).toBe("INTERNAL");
 
-        expect(readFileSync(paths.credentials, "utf8")).toBe(credentialsBefore);
+        expect(readCredentials(paths).users).toEqual({});
         const tmpFiles = readdirSync(paths.home).filter(name => name.endsWith(".tmp"));
         expect(tmpFiles).toEqual([]);
         expect(readState(paths)).toEqual(before);
@@ -1226,16 +1260,18 @@ describe("backup import and export", () => {
         const incoming = storedUser("same-user", 901);
         const source = writeBackup(paths, "crash-window.json", [incoming], []);
 
+        let renames = 0;
         const realStage = credentialsModule.stageCredentials;
         const stageSpy = vi
             .spyOn(credentialsModule, "stageCredentials")
-            .mockImplementationOnce((runtimePaths, content) => {
+            .mockImplementation((runtimePaths, content) => {
                 const staged = realStage(runtimePaths, content);
                 return {
                     ...staged,
                     commit() {
-                        staged.discard();
-                        throw new Error("made-up credentials rename failure");
+                        if (++renames === 2)
+                            throw new Error("made-up final credentials rename failure");
+                        staged.commit();
                     },
                 };
             });
@@ -1244,7 +1280,7 @@ describe("backup import and export", () => {
             const failed = await confirmFrom(paths, preview);
             expect(failed.code).toBe(1);
             expect(readState(paths).users[0].lxns?.id).toBe(901);
-            expect(readCredentials(paths).users["same-user"]?.lxnsAccountId).toBe(900);
+            expect(readCredentials(paths).users["same-user"]?.lxnsAccountId).toBeUndefined();
         } finally {
             stageSpy.mockRestore();
         }
@@ -1389,3 +1425,238 @@ describe("backup import and export", () => {
         storeAfter.close();
     });
 });
+
+it.each(["remark", "score event"])("rechecks import after a concurrent %s", async change => {
+    const paths = makeHome();
+    const oldUser = storedUser();
+    seed(paths, [oldUser], []);
+    const source = writeBackup(paths, "racing-import.json", webUsers(), []);
+    const preview = await previewImport(paths, source);
+    const writer = openStore(paths);
+    const requireConfirmation = confirmation.requireConfirmation;
+    const spy = vi
+        .spyOn(confirmation, "requireConfirmation")
+        .mockImplementationOnce((given, state) => {
+            requireConfirmation(given, state);
+            if (change === "remark")
+                userRepository.saveUser(writer, { ...oldUser, remark: "Concurrent edit" });
+            else userRepository.appendScoreEvents(writer, [storedEvent()]);
+        });
+    try {
+        const result = await confirmFrom(paths, preview);
+        expect(result.json.error).toMatchObject({
+            code: "CONFIRMATION_REQUIRED",
+            codeRejected: true,
+        });
+        expect(readState(paths)).toEqual({
+            users: [change === "remark" ? { ...oldUser, remark: "Concurrent edit" } : oldUser],
+            events: change === "remark" ? [] : [storedEvent()],
+        });
+        expect(existsSync(paths.credentials)).toBe(false);
+        expect((await confirmFrom(paths, result)).code).toBe(0);
+        expect(readState(paths).users.map(user => user.uid)).toEqual(
+            webUsers().map(user => user.uid)
+        );
+    } finally {
+        spy.mockRestore();
+        writer.close();
+    }
+});
+
+it("holds every stored and incoming sync lock through the final credential rename", async () => {
+    const paths = makeHome();
+    seed(paths, [storedUser("same-user"), storedUser("removed-user")], []);
+    seedCredentials(paths, { "same-user": { divingFishImportToken: "fake-old-import-token" } });
+    const replacement = storedUser("same-user");
+    replacement.divingFish = { name: null, importToken: "fake-new-import-token" };
+    const source = writeBackup(paths, "new-users.json", [replacement, storedUser("new-user")], []);
+    const writer = openStore(paths);
+    const attempts: boolean[] = [];
+    const now = new Date();
+    let syncAttempt: ReturnType<typeof commandIn> | undefined;
+    const realStage = credentialsModule.stageCredentials;
+    const spy = vi
+        .spyOn(credentialsModule, "stageCredentials")
+        .mockImplementation((runtimePaths, content) => {
+            const staged = realStage(runtimePaths, content);
+            return {
+                ...staged,
+                commit() {
+                    if (
+                        content.users["same-user"]?.divingFishImportToken ===
+                        "fake-new-import-token"
+                    ) {
+                        syncAttempt = commandIn(
+                            paths,
+                            "sync",
+                            ["--user", "same-user", "--source", "df-token"],
+                            { now, network: {} }
+                        );
+                        for (const uid of ["same-user", "removed-user", "new-user"]) {
+                            const lock = acquireLock(writer, `sync:${uid}`, {
+                                ttlMs: 60_000,
+                                now: () => now.getTime(),
+                            });
+                            attempts.push(lock.acquired);
+                            if (lock.acquired) lock.lock.release();
+                        }
+                    }
+                    staged.commit();
+                },
+            };
+        });
+    try {
+        const preview = await previewImport(paths, source);
+        const fix = splitCommandLine(preview.json.error.fix!).slice(2);
+        expect((await commandIn(paths, "import", fix, { now })).code).toBe(0);
+        expect(attempts).toEqual([false, false, false]);
+        const sync = await syncAttempt;
+        expect(sync?.json.error.code).toBe("SYNC_IN_PROGRESS");
+        expect(sync?.requests).toEqual([]);
+        expect(readCredentials(paths).users["same-user"]?.divingFishImportToken).toBe(
+            "fake-new-import-token"
+        );
+    } finally {
+        spy.mockRestore();
+        writer.close();
+    }
+});
+
+it.each(["credential removal", "database replacement", "final credentials"])(
+    "leaves matching credentials or none when import stops before %s",
+    async stop => {
+        const paths = makeHome();
+        const before = { ...storedUser("same-user"), remark: "Previous profile" };
+        const after = {
+            ...before,
+            remark: "Replacement profile",
+            divingFish: { name: null, importToken: "fake-new-import-token" },
+        };
+        seed(paths, [before], []);
+        seedCredentials(paths, { "same-user": { divingFishImportToken: "fake-old-import-token" } });
+        const source = writeBackup(paths, "stopped.json", [after], []);
+        const preview = await previewImport(paths, source);
+        const realStage = credentialsModule.stageCredentials;
+        const stageSpy = vi
+            .spyOn(credentialsModule, "stageCredentials")
+            .mockImplementation((runtimePaths, content) => {
+                const staged = realStage(runtimePaths, content);
+                const final =
+                    content.users["same-user"]?.divingFishImportToken === "fake-new-import-token";
+                return {
+                    ...staged,
+                    commit() {
+                        if (
+                            (stop === "credential removal" && !final) ||
+                            (stop === "final credentials" && final)
+                        ) {
+                            throw new Error("made-up stopped rename");
+                        }
+                        staged.commit();
+                    },
+                };
+            });
+        const replaceSpy =
+            stop === "database replacement"
+                ? vi.spyOn(userRepository, "replaceUsers").mockImplementationOnce(() => {
+                      throw new Error("made-up stopped transaction");
+                  })
+                : undefined;
+        try {
+            const result = await confirmFrom(paths, preview);
+            expect(result.json.error?.code).toBe("INTERNAL");
+            const [stored] = readState(paths).users;
+            expect(stored.remark).toBe(stop === "final credentials" ? after.remark : before.remark);
+            const expected = stop === "credential removal" ? "fake-old-import-token" : undefined;
+            expect(readCredentials(paths).users["same-user"]?.divingFishImportToken).toBe(expected);
+            expect(buildUserForCore(stored, paths).divingFish?.importToken).toBe(expected ?? null);
+            expect(readdirSync(paths.home).filter(name => name.endsWith(".tmp"))).toEqual([]);
+        } finally {
+            stageSpy.mockRestore();
+            replaceSpy?.mockRestore();
+        }
+    }
+);
+
+it("keeps the status and warning for a retained LXNS authorization", async () => {
+    const paths = makeHome();
+    const original = storedUser("same-user", 900);
+    seed(paths, [original], []);
+    seedCredentials(paths, {
+        "same-user": {
+            lxnsAccountId: 900,
+            lxnsAuthorization: {
+                accessToken: "fake-access-for-status",
+                refreshToken: "fake-refresh-for-status",
+            },
+            lxnsIssuedAt: NOW.getTime() - 28 * 86_400_000,
+        },
+    });
+    const source = writeBackup(paths, "keep-issued-at.json", [original], []);
+    const before = await commandIn(paths, "status", []);
+    expect(before.json.warnings).toEqual([expect.objectContaining({ code: "LXNS_EXPIRING" })]);
+    expect((await importFile(paths, source)).code).toBe(0);
+    const after = await commandIn(paths, "status", []);
+    expect(after.json.data.users.items[0].credentials).toEqual(
+        before.json.data.users.items[0].credentials
+    );
+    expect(after.json.warnings).toEqual(before.json.warnings);
+});
+
+it("confirms a v1 backup without score history when uids are missing or duplicate", async () => {
+    const uids: string[][] = [];
+    for (let run = 0; run < 2; run++) {
+        const paths = makeHome();
+        const missing = storedUser();
+        delete missing.uid;
+        const backup = encodeUserDataBackup(
+            [missing, storedUser("duplicate"), storedUser("duplicate")],
+            [],
+            123456
+        );
+        const source = path.join(path.dirname(paths.home), "no-history.json");
+        const { scoreHistory: _history, ...withoutHistory } = backup;
+        writeFileSync(source, JSON.stringify(withoutHistory));
+        expect((await importFile(paths, source)).code).toBe(0);
+        uids.push(readState(paths).users.map(user => user.uid!));
+    }
+    expect(uids[0]).toEqual(uids[1]);
+    expect(new Set(uids[0]).size).toBe(3);
+    expect(uids[0][1]).toBe("duplicate");
+});
+
+it.each(["bind", "remove"])(
+    "preserves a __proto__ credential during an unrelated %s",
+    async operation => {
+        const paths = makeHome();
+        const uid = "__proto__";
+        const special = storedUser(uid);
+        special.divingFish = { name: null, importToken: "fake-token-for-proto" };
+        const source = writeBackup(paths, "proto.json", [special, storedUser("other-user")], []);
+        expect((await importFile(paths, source)).code).toBe(0);
+        expect(Object.hasOwn(readCredentials(paths).users, uid)).toBe(true);
+        if (operation === "bind") {
+            const bound = await commandIn(paths, "user", ["bind", "other-user", "lxns"], {
+                env: {
+                    SALTNET_LXNS_CLIENT_ID: "fake-client",
+                    SALTNET_LXNS_REDIRECT_URI: "https://callback.test",
+                },
+            });
+            expect(bound.code).toBe(0);
+        } else {
+            const preview = await commandIn(paths, "user", ["remove", "other-user"]);
+            const removed = await commandIn(
+                paths,
+                "user",
+                splitCommandLine(preview.json.error.fix!).slice(2)
+            );
+            expect(removed.code).toBe(0);
+        }
+        const credentials = readCredentials(paths);
+        expect(Object.hasOwn(credentials.users, uid)).toBe(true);
+        expect(credentials.users[uid]?.divingFishImportToken).toBe("fake-token-for-proto");
+        const output = path.join(path.dirname(paths.home), "proto-export.json");
+        expect((await commandIn(paths, "export", [output])).code).toBe(0);
+        expect(decodeFile(output).users[0].divingFish?.importToken).toBe("fake-token-for-proto");
+    }
+);

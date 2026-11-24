@@ -68,10 +68,10 @@ const supplement = {
 const expiresAt = NOW.getTime() + 3_600_000;
 const expiredAt = NOW.getTime() - 3_600_000;
 
-function jwt(expires: number) {
+function jwt(expires: number, id = lxnsId) {
     const header = Buffer.from('{"alg":"none","typ":"JWT"}').toString("base64url");
     const payload = Buffer.from(
-        JSON.stringify({ id: lxnsId, name: "Fake LXNS Upload", exp: expires / 1000 })
+        JSON.stringify({ id, name: "Fake LXNS Upload", exp: expires / 1000 })
     ).toString("base64url");
     return `${header}.${payload}.FAKE_SIG`;
 }
@@ -328,6 +328,38 @@ describe("uploads after in-game sync", () => {
             { kind: "sync", outcome: "ok" },
         ]);
         expectPrivate(paths, result);
+    });
+
+    it("keeps the game sync but refuses to upload with another account's LXNS token", async () => {
+        const paths = makeHome();
+        await seed(paths, {
+            lxnsAccountId: lxnsId,
+            lxnsIssuedAt: expiredAt,
+            lxnsAuthorization: {
+                accessToken: jwt(expiresAt, lxnsId + 1),
+                expiresAt,
+                refreshToken,
+                tokenType: "Bearer",
+            },
+        });
+        const result = await sync(paths, ["--qr", "-"], {
+            [lxnsUploadUrl]: jsonResponse({ success: true }),
+        });
+        expect(result.requests.map(r => r.url)).toEqual([qrUrl, updateUrl]);
+        expect(result.code).toBe(0);
+        expect(result.json.data.uploads).toMatchObject([
+            { target: "lxns", ok: false, error: { code: "LXNS_REAUTH_REQUIRED" } },
+        ]);
+        expect(result.json.warnings).toMatchObject([
+            { code: "UPLOAD_FAILED", fix: `saltnet user bind ${uid} lxns` },
+        ]);
+        expect(readCredentials(paths).users[uid]?.lxnsAuthorization).toBeUndefined();
+        const { player, runs } = readState(paths);
+        expect(player?.data.rating).toBe(15000);
+        expect(runs).toMatchObject([
+            { kind: "upload", outcome: "failed", errorCode: "LXNS_REAUTH_REQUIRED" },
+            { kind: "sync", outcome: "ok" },
+        ]);
     });
 
     it("uses a refreshed LXNS access token for an upload", async () => {

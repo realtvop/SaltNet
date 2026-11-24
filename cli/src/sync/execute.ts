@@ -16,17 +16,17 @@ import {
     syncFromInGame,
     syncFromLXNS,
 } from "@core/sync/sync";
-import { buildScoreHistoryBatchEvents } from "@core/user/scoreHistory/batch";
 import { getUserDisplayName } from "@core/user/type";
 import { allChartEntries } from "../catalog/chartQuery";
 import { buildSongCatalog } from "../catalog/songs";
 import { useMetadata } from "../commands/metadata";
 import { CliError } from "../errors";
 import { appendScoreEvents, readUser, saveUser } from "../users/repository";
-import { readRecordChartKeys, readUserScores } from "../users/scores";
+import { buildUserRows } from "../users/rows";
+import { readUserScores } from "../users/scores";
 import { userBindCommand, userRefWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
-import { computeSyncChanges } from "./changes";
+import { computeSyncChanges, countSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
 import { assertQrAccount, isOtherQrAccount, readVerifiedQr } from "./ingame";
 import { beginRun, finishRun } from "./journal";
@@ -45,7 +45,7 @@ import {
     syncUploadTargets,
     usesGame,
 } from "./sources";
-import { applySyncToStoredUser } from "./storedUser";
+import { applySyncToStoredUser, buildStoredSyncEvents } from "./storedUser";
 import { runSyncUploads } from "./uploads";
 
 export interface SyncExecutionResult {
@@ -185,6 +185,7 @@ export async function executeSync(
                 inGameMode
                     ? {
                           useQr: qr !== undefined,
+                          assertHeld: handle.assertHeld,
                           refreshLxns: async () => {
                               const auth = await lxnsAccessToken(
                                   { ...ctx, log: () => ctx.log("已刷新落雪授权") },
@@ -288,7 +289,7 @@ export async function executeSync(
             let observedAt = ctx.io.now().getTime();
             let updatedUserDisplayName = targetUserRow.displayName;
 
-            store.transaction(() => {
+            const counts = store.transaction(() => {
                 const freshUser = readUser(store, targetUserRow.uid);
                 if (!freshUser) {
                     throw new CliError(
@@ -333,7 +334,7 @@ export async function executeSync(
                 const existingChartKeys = new Set(existingChartKeysRows.map(r => r.record_key));
 
                 const batchId = randomUUID();
-                const events = buildScoreHistoryBatchEvents(
+                const events = buildStoredSyncEvents(
                     {
                         batchId,
                         userUid: freshUid,
@@ -351,8 +352,7 @@ export async function executeSync(
                         ? nextUser.data.rating
                         : null;
 
-                const added = appliedCandidates.filter(c => c.kind === "initial").length;
-                const improved = appliedCandidates.filter(c => c.kind === "change").length;
+                const counts = countSyncChanges(newScoresCount, appliedCandidates);
 
                 finishRun(store, runId!, {
                     outcome: "ok",
@@ -361,11 +361,10 @@ export async function executeSync(
                         mode,
                         ratingBefore,
                         ratingAfter,
-                        charts: newScoresCount,
-                        added,
-                        improved,
+                        ...counts,
                     },
                 });
+                return counts;
             });
             runId = undefined;
             committed = true;
@@ -381,7 +380,11 @@ export async function executeSync(
 
             // Read user scores AFTER the write
             const scoresAfter = readUserScores(store, targetUserRow, catalogCharts);
-            const chartKeyByRecordKey = readRecordChartKeys(store, targetUserRow.uid);
+            const incomingRows = buildUserRows(
+                { ...storedUser, data: cleanUpdate },
+                targetUserRow.index,
+                metaResult.catalog.music
+            );
 
             const changesResult = computeSyncChanges({
                 hadScoresBefore,
@@ -389,8 +392,7 @@ export async function executeSync(
                 songCatalog,
                 scoresBefore,
                 scoresAfter,
-                newScoresCount,
-                chartKeyByRecordKey,
+                incomingRows,
             });
 
             const data: SyncData = {
@@ -405,7 +407,7 @@ export async function executeSync(
                     before: ratingBefore,
                     after: ratingAfter,
                 },
-                counts: changesResult.counts,
+                counts,
                 changes: changesResult.changes,
                 changesTotal: changesResult.changesTotal,
                 missing: changesResult.missing,

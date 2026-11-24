@@ -3,7 +3,7 @@ import type { User } from "@core/user/type";
 import type { B50RenderChart, B50RenderPayload } from "../../../shared/rendering/b50-payload";
 import type { Route } from "../mockHttp";
 import { Buffer } from "node:buffer";
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { createMusicChartMap, selectB50Charts, sumChartRatings } from "@core/query/b50";
@@ -568,5 +568,115 @@ describe("b50 --image", () => {
         expect(called).toBe(false);
         expect(json.data.image).toBeNull();
         expectConforms(schemaOf("b50"), json.data);
+    });
+
+    it("refuses to overwrite an existing file created while the render request is in flight unless --overwrite", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("user-flight", "Flight User")]);
+        const outFile = "flight.png";
+        const outPath = path.resolve(paths.home, outFile);
+
+        let renderCalls = 0;
+        const network = routes({
+            [RENDER_ENDPOINT]: () => {
+                renderCalls++;
+                writeFileSync(outPath, "created while rendering");
+                return pngResponse();
+            },
+        });
+
+        // Without --overwrite: fails with FILE_EXISTS, outPath unchanged, no .tmp files
+        const conflict = await commandIn(paths, "b50", ["--image", outFile], {
+            network,
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(conflict.code).toBe(2);
+        expect(conflict.json.error.code).toBe("FILE_EXISTS");
+        expect(conflict.json.error.fix).toBe(`saltnet b50 --image ${outFile} --overwrite`);
+        expect(readFileSync(outPath, "utf8")).toBe("created while rendering");
+        const tmpFiles = readdirSync(paths.home).filter(f => f.endsWith(".tmp"));
+        expect(tmpFiles).toEqual([]);
+
+        // With --overwrite: replaces the file and sets mode 0600
+        const overwritten = await commandIn(paths, "b50", ["--image", outFile, "--overwrite"], {
+            network,
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(overwritten.code).toBe(0);
+        expect(renderCalls).toBe(2);
+        expect(readFileSync(outPath).equals(SAMPLE_PNG)).toBe(true);
+        expect(statSync(outPath).mode & 0o777).toBe(0o600);
+    });
+
+    it("rejects unknown --fields before calling render service and before creating the image", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("user-fields", "Fields User")]);
+
+        let requestReached = false;
+        const network = routes({
+            [RENDER_ENDPOINT]: () => {
+                requestReached = true;
+                return pngResponse();
+            },
+        });
+
+        const outFile = "fields-out.png";
+        const outPath = path.resolve(paths.home, outFile);
+
+        const result = await commandIn(
+            paths,
+            "b50",
+            ["--image", outFile, "--fields", "nosuchfield"],
+            {
+                network,
+                cwd: paths.home,
+                env: { SALTNET_RENDER_URL: RENDER_URL },
+            }
+        );
+
+        expect(result.code).toBe(2);
+        expect(result.json.error.code).toBe("USAGE");
+        expect(result.json.error.message).toContain("nosuchfield");
+        expect(requestReached).toBe(false);
+        expect(existsSync(outPath)).toBe(false);
+    });
+
+    it("draws no image and warns NO_IMAGE when selected mode has no charts in either group", async () => {
+        const paths = makeHome();
+        // detailedUser has no AP scores (detailed records have fc: FullCombo)
+        const user = detailedUser("user-no-ap", "No AP User");
+        await seedScoreUsers(paths, [user]);
+
+        let requestReached = false;
+        const network = routes({
+            [RENDER_ENDPOINT]: () => {
+                requestReached = true;
+                return pngResponse();
+            },
+        });
+
+        const outFile = "no-ap.png";
+        const outPath = path.resolve(paths.home, outFile);
+
+        const result = await commandIn(paths, "b50", ["--mode", "ap", "--image", outFile], {
+            network,
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+
+        expect(result.code).toBe(0);
+        expect(result.json.ok).toBe(true);
+        expect(result.json.data.image).toBeNull();
+        expect(result.json.warnings).toEqual([
+            {
+                code: "NO_IMAGE",
+                message: "选中的模式里没有谱面，没有画图片",
+            },
+        ]);
+        expect(requestReached).toBe(false);
+        expect(existsSync(outPath)).toBe(false);
+        expectConforms(schemaOf("b50"), result.json.data);
     });
 });

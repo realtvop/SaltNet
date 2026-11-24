@@ -11,9 +11,15 @@ import { resolveUser } from "../refs/user";
 import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
 import { assertQrAccount, postQrGameApi, readVerifiedQr } from "../sync/ingame";
 import { listUsers, readUser } from "../users/repository";
-import { fileWord, optionWords, userBindCommand, userOptionWords } from "../util/printedCommand";
+import {
+    fileWord,
+    optionWords,
+    userBindCommand,
+    userOptionWords,
+    userUidWord,
+} from "../util/printedCommand";
 import { joinCommandLine } from "../util/shell";
-import { USER_OPTION } from "./describe";
+import { USER_OPTION, USER_REFERENCE } from "./describe";
 import { defineCommand } from "./registry";
 
 const FILE_POSITIONAL: PositionalSpec = {
@@ -24,7 +30,7 @@ const FILE_POSITIONAL: PositionalSpec = {
 
 /** Binds the game account of the user with this uid. */
 export function ingameBindFix(uid: string): string {
-    return userBindCommand(uid, "ingame", [], ["--qr", "-"]);
+    return userBindCommand(userUidWord(uid), "ingame", [], ["--qr", "-"]);
 }
 
 /** `saltnet sync` for this user, with more words after it. */
@@ -65,7 +71,7 @@ export const ingameCheckLogin = defineCommand(
         options: {
             user: {
                 ...USER_OPTION.user,
-                description: "用户序号（从 0 开始）、uid 或显示名；默认选择第 0 位",
+                description: `${USER_REFERENCE}；默认选择第 0 位`,
             },
             qr: {
                 kind: "credential",
@@ -239,7 +245,7 @@ export const ingameBackup = defineCommand(
             fileWord(args.positionals.file),
             ...(givenUser === undefined ? [] : optionWords("--user", givenUser)),
         ];
-        const absolutePath = resolveOutputFile(
+        const output = resolveOutputFile(
             ctx,
             args.positionals.file,
             args.options.overwrite,
@@ -248,7 +254,7 @@ export const ingameBackup = defineCommand(
 
         const backup = buildGameBackup(user);
         const content = JSON.stringify(backup, null, 2);
-        writeOutputFile(absolutePath, content, "ingame backup");
+        writeOutputFile(output, content, "ingame backup");
         const byteSize = Buffer.byteLength(content);
 
         const warnings: Warning[] = [];
@@ -262,7 +268,7 @@ export const ingameBackup = defineCommand(
 
         return {
             data: {
-                path: absolutePath,
+                path: output.path,
                 user: {
                     index: selectedRow.index,
                     uid: selectedRow.uid,

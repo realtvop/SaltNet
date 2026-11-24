@@ -2,6 +2,7 @@ import type { Chart } from "@core/music/type";
 import type { ChartRow } from "../catalog/chartRow";
 import type { ChartEntry } from "../catalog/songs";
 import type { Warning } from "../output/warning";
+import type { OutputFileTarget } from "../runtime/outputFile";
 import {
     createMusicChartMap,
     getSourceRecords,
@@ -13,6 +14,7 @@ import { chartRow } from "../catalog/chartRow";
 import { chartRowSchema } from "../catalog/schemas";
 import { buildSongCatalog, chartKeyOf } from "../catalog/songs";
 import { CliError } from "../errors";
+import { selectFields } from "../output/fields";
 import { paginate } from "../output/paging";
 import { extend, int, list, nullable, num, object, str, strEnum } from "../output/schema";
 import { buildB50RenderPayload, requestB50Image } from "../render/b50Image";
@@ -240,7 +242,7 @@ export const b50 = defineCommand(
             }
         }
 
-        let absoluteImagePath: string | undefined;
+        let outputImage: OutputFileTarget | undefined;
         let renderUrl: string | undefined;
         if (image !== undefined) {
             renderUrl = ctx.config.values.render.url.trim().replace(/\/+$/, "");
@@ -268,7 +270,7 @@ export const b50 = defineCommand(
                 "--image",
                 fileWord(image),
             ];
-            absoluteImagePath = resolveOutputFile(ctx, image, args.options.overwrite, retryCommand);
+            outputImage = resolveOutputFile(ctx, image, args.options.overwrite, retryCommand);
         }
 
         requireUserForScores(args, ctx);
@@ -296,26 +298,53 @@ export const b50 = defineCommand(
         const b15 = sumChartRatings(selected.newer);
         const entryByKey = new Map(entries.map(entry => [chartKeyOf(entry.chart), entry]));
 
+        const groups = [
+            groupOf("B35", selected.old, mode, entryByKey, userScores.scores, args.options),
+            groupOf("B15", selected.newer, mode, entryByKey, userScores.scores, args.options),
+        ];
+
+        if (image !== undefined && args.options.fields !== undefined) {
+            selectFields(
+                groups.flatMap(group => group.items),
+                args.options.fields
+            );
+        }
+
+        const isEmpty = selected.old.length === 0 && selected.newer.length === 0;
+
         let imageResult: B50ImageResult | null = null;
-        if (image !== undefined && absoluteImagePath !== undefined && renderUrl !== undefined) {
-            const payload = buildB50RenderPayload({
-                user: rawUser,
-                modeLabel: LABELS[mode],
-                showDxScore: args.options.dxScore,
-                sd: selected.old,
-                dx: selected.newer,
-            });
-            const http = ctx.http({
-                timeoutMs: ctx.config.values.network.timeoutMs,
-                timeoutKey: "network.timeoutMs",
-                retry: true,
-            });
-            const bytes = await requestB50Image({ renderUrl, payload, http });
-            writeOutputFile(absoluteImagePath, bytes, "b50");
-            imageResult = {
-                path: absoluteImagePath,
-                byteSize: bytes.byteLength,
-            };
+        const warnings: Warning[] = [
+            ...metadata.warnings,
+            ...userScores.warnings,
+            ...playCountWarning(mode, user.data),
+        ];
+
+        if (image !== undefined) {
+            if (isEmpty) {
+                warnings.push({
+                    code: "NO_IMAGE",
+                    message: "选中的模式里没有谱面，没有画图片",
+                });
+            } else if (outputImage !== undefined && renderUrl !== undefined) {
+                const payload = buildB50RenderPayload({
+                    user: rawUser,
+                    modeLabel: LABELS[mode],
+                    showDxScore: args.options.dxScore,
+                    sd: selected.old,
+                    dx: selected.newer,
+                });
+                const http = ctx.http({
+                    timeoutMs: ctx.config.values.network.timeoutMs,
+                    timeoutKey: "network.timeoutMs",
+                    retry: true,
+                });
+                const bytes = await requestB50Image({ renderUrl, payload, http });
+                writeOutputFile(outputImage, bytes, "b50");
+                imageResult = {
+                    path: outputImage.path,
+                    byteSize: bytes.byteLength,
+                };
+            }
         }
 
         return {
@@ -323,25 +352,11 @@ export const b50 = defineCommand(
                 mode,
                 label: LABELS[mode],
                 rating: { total: b35 + b15, b35, b15 },
-                groups: [
-                    groupOf("B35", selected.old, mode, entryByKey, userScores.scores, args.options),
-                    groupOf(
-                        "B15",
-                        selected.newer,
-                        mode,
-                        entryByKey,
-                        userScores.scores,
-                        args.options
-                    ),
-                ],
+                groups,
                 image: imageResult,
             },
             meta: scoreMeta(userScores, metadata.dataAsOf),
-            warnings: [
-                ...metadata.warnings,
-                ...userScores.warnings,
-                ...playCountWarning(mode, user.data),
-            ],
+            warnings,
         };
     }
 );

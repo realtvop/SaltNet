@@ -11,6 +11,7 @@ import { CliError } from "../errors";
 import { acquireLock } from "../store/locks";
 import { readUser } from "../users/repository";
 import { formatLocalTime } from "../util/time";
+import { interruptRuns } from "./journal";
 
 export const DEFAULT_SYNC_LOCK_TTL_MS = 180_000;
 export const DEFAULT_SYNC_LOCK_RENEW_INTERVAL_MS = 60_000;
@@ -82,12 +83,7 @@ export async function withSyncLock<T>(
 
     const { lock } = acquisition;
 
-    // Holding this user's lock guarantees that any earlier run of this user was abandoned.
-    store.db
-        .prepare(
-            "UPDATE sync_runs SET outcome = 'interrupted' WHERE user_uid = ? AND outcome = 'running'"
-        )
-        .run(user.uid);
+    interruptRuns(store, user.uid);
 
     let isHeld = true;
     let renewTimer: ReturnType<typeof setInterval> | undefined;

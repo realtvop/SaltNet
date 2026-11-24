@@ -10,12 +10,20 @@ import type {
 import { ERROR_CODES, ERROR_DESCRIPTIONS, exitCodeOf, isRetryableByDefault } from "../errors";
 import { commandOptionEntries, enumMember } from "./registry";
 
+export const USER_REFERENCE = "用户序号（从 0 开始）、uid、精确 uid（uid:<uid>）或显示名";
+
+export const USER_POSITIONAL = {
+    name: "user",
+    valueName: "用户",
+    description: USER_REFERENCE,
+} as const;
+
 /** The user reference shared by every command that prints chart rows with scores. */
 export const USER_OPTION = {
     user: {
         kind: "string",
         valueName: "用户",
-        description: "成绩所属的用户：从 0 开始的序号、uid 或显示名；不写时用默认用户",
+        description: `${USER_REFERENCE}；不写时用默认用户`,
     },
 } as const;
 

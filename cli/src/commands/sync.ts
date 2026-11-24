@@ -48,7 +48,7 @@ const syncCountsSchema = object(
     {
         charts: int("同步后有成绩的谱面总数"),
         added: int("新游玩的谱面数"),
-        improved: int("有成绩提升的谱面数"),
+        improved: int("达成率、DX 分、连击或同步状态至少一项提升且四项均未下降的谱面数"),
     },
     { description: "成绩数量变化" }
 );

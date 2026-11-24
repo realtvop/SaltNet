@@ -4,11 +4,12 @@ import type { RuntimePaths } from "../../src/runtime/paths";
 import type { Route } from "../mockHttp";
 import { Buffer } from "node:buffer";
 import { readFileSync, writeFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CliError, exitCodeOf } from "../../src/errors";
 import { loadConfig } from "../../src/runtime/config";
-import { readCredentials } from "../../src/runtime/credentials";
+import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import { createHttp } from "../../src/runtime/http";
+import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { withSyncLock } from "../../src/sync/lock";
 import { LXNS_ACCESS_MARGIN_MS, lxnsAccessToken } from "../../src/sync/lxnsToken";
@@ -126,6 +127,109 @@ describe("lxnsToken constants", () => {
 });
 
 describe("lxnsAccessToken", () => {
+    it("refuses to refresh an imported authorization without a stored LXNS account", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const user = makeUser("u1");
+        user.lxns!.id = null;
+        try {
+            saveUser(store, user);
+            const now = 1_000_000_000;
+            stageCredentials(paths, {
+                version: 1,
+                users: {
+                    u1: {
+                        lxnsAccountId: null,
+                        lxnsAuthorization: {
+                            accessToken: makeFakeJwt(1001, "FakePlayer", now / 1000),
+                            refreshToken: FAKE_TOKENS[2],
+                            tokenType: "Bearer",
+                            expiresAt: now,
+                        },
+                    },
+                },
+            }).commit();
+            const { ctx, fetch } = makeContext(
+                paths,
+                {
+                    "https://maimai.lxns.net/api/v0/oauth/token": jsonResponse({
+                        access_token: makeFakeJwt(1001, "FakePlayer", (now + 3_600_000) / 1000),
+                        refresh_token: FAKE_TOKENS[3],
+                        token_type: "Bearer",
+                        expires_in: 3600,
+                    }),
+                },
+                [],
+                () => new Date(now)
+            );
+            await expect(
+                withSyncLock(store, { uid: "u1", name: "TestUser" }, handle =>
+                    lxnsAccessToken(ctx, store, handle, user)
+                )
+            ).rejects.toMatchObject({
+                code: "LXNS_REAUTH_REQUIRED",
+                fix: "saltnet user bind 0 lxns",
+            });
+            expect(fetch.requests).toEqual([]);
+            expect(readCredentials(paths).users.u1?.lxnsAuthorization).toBeUndefined();
+        } finally {
+            store.close();
+        }
+    });
+
+    it("saves rotated credentials after the current writer's lease expires", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const user = makeUser("u1");
+        saveUser(store, user);
+        const issuedAt = 1_000_000_000;
+        let now = issuedAt;
+        const newJwt = makeFakeJwt(1001, "FakePlayer", (issuedAt + 3_600_000) / 1000);
+        writeLxnsCredentials(paths, {
+            accessToken: makeFakeJwt(1001, "FakePlayer", issuedAt / 1000),
+            refreshToken: FAKE_TOKENS[2],
+            expiresAt: issuedAt,
+            issuedAt: issuedAt - 1000,
+        });
+        const { ctx } = makeContext(
+            paths,
+            {
+                "https://maimai.lxns.net/api/v0/oauth/token": jsonResponse({
+                    access_token: newJwt,
+                    refresh_token: FAKE_TOKENS[3],
+                    token_type: "Bearer",
+                    expires_in: 3600,
+                }),
+            },
+            [],
+            () => new Date(now)
+        );
+        const holder = acquireLock(store, "credentials", { ttlMs: 50, now: () => now });
+        if (!holder.acquired) throw new Error("test could not take credentials lock");
+
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const sync = withSyncLock(store, { uid: "u1", name: "TestUser" }, handle =>
+            lxnsAccessToken(ctx, store, handle, user)
+        );
+        try {
+            await vi.advanceTimersByTimeAsync(0);
+            expect(readCredentials(paths).users.u1.lxnsIssuedAt).toBe(issuedAt - 1000);
+            now += 100;
+            await vi.advanceTimersByTimeAsync(100);
+            expect(readCredentials(paths).users.u1).toMatchObject({
+                lxnsIssuedAt: issuedAt,
+                lxnsAuthorization: { accessToken: newJwt, refreshToken: FAKE_TOKENS[3] },
+            });
+        } finally {
+            // Drain the waiting sync even when the assertion fails with a frozen clock.
+            holder.lock.release();
+            await vi.advanceTimersByTimeAsync(100);
+            await sync;
+            vi.useRealTimers();
+            store.close();
+        }
+    });
+
     it("returns a fresh access token without network request or modifying credentials", async () => {
         const paths = makeHome();
         const store = openStore(paths);
@@ -289,6 +393,30 @@ describe("lxnsAccessToken", () => {
 
         assertNoSecrets(err.message);
         assertNoSecrets(err.fix);
+
+        store.close();
+    });
+
+    it("writes a digit-only uid without a stored row as uid:<uid> in the bind fix", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const user = makeUser("42", 1001);
+
+        const { ctx, fetch } = makeContext(paths);
+        let caught: unknown;
+        try {
+            await withSyncLock(store, { uid: "42", name: "TestUser" }, handle =>
+                lxnsAccessToken(ctx, store, handle, user)
+            );
+        } catch (error) {
+            caught = error;
+        }
+
+        expect(caught).toBeInstanceOf(CliError);
+        const err = caught as CliError;
+        expect(err.code).toBe("NOT_BOUND");
+        expect(err.fix).toBe("saltnet user bind uid:42 lxns");
+        expect(fetch.requests.length).toBe(0);
 
         store.close();
     });

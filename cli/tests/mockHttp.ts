@@ -2,9 +2,11 @@
 import type { FetchResponse } from "@core/http";
 import type { HttpFetch, HttpInit, HttpResponse } from "../src/runtime/io";
 
+type RequestInitOptions = HttpInit & Pick<RequestInit, "redirect">;
+
 export interface RecordedRequest {
     url: string;
-    init?: HttpInit;
+    init?: RequestInitOptions;
 }
 
 /** A response with a text body, the way `fetch` gives it; `json()` fails on text that is not JSON. */
@@ -37,9 +39,52 @@ export function binaryResponse(bytes: Uint8Array, status = 200): HttpResponse {
     };
 }
 
+type RouteResponse = HttpResponse & { headers?: Headers };
 export type Route =
-    | HttpResponse
-    | ((request: RecordedRequest) => HttpResponse | Promise<HttpResponse>);
+    | RouteResponse
+    | ((request: RecordedRequest) => RouteResponse | Promise<RouteResponse>);
+
+export function redirectResponse(location: string, status: number): RouteResponse {
+    return { ...textResponse("", status), headers: new Headers({ Location: location }) };
+}
+
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+function redirectedInit(
+    init: RequestInitOptions | undefined,
+    status: number,
+    crossOrigin: boolean
+) {
+    const method = init?.method?.toUpperCase() ?? "GET";
+    const toGet =
+        ((status === 301 || status === 302) && method === "POST") ||
+        (status === 303 && method !== "GET" && method !== "HEAD");
+    const headers = new Headers(init?.headers);
+    if (crossOrigin) {
+        for (const name of ["authorization", "proxy-authorization", "cookie", "host"]) {
+            headers.delete(name);
+        }
+    }
+    if (toGet) {
+        for (const name of [
+            "content-encoding",
+            "content-language",
+            "content-location",
+            "content-type",
+        ]) {
+            headers.delete(name);
+        }
+    }
+    // Preserve spelling so callers inspecting the mock see the original request header names.
+    const keptHeaders = Object.fromEntries(
+        Object.entries(init?.headers ?? {}).filter(([name]) => headers.has(name))
+    );
+    return {
+        ...init,
+        headers: keptHeaders,
+        ...(toGet ? { method: "GET", body: undefined } : {}),
+    };
+}
 
 /** Answers after a delay, rejecting like fetch when the request's deadline aborts first. */
 export function delayedRoute(response: FetchResponse, delayMs: number): Route {
@@ -78,14 +123,32 @@ export interface MockFetch extends HttpFetch {
  */
 export function mockFetch(routes: Readonly<Record<string, Route>> = {}): MockFetch {
     const requests: RecordedRequest[] = [];
-    const fetch: HttpFetch = async (url, init) => {
+    const send = async (
+        url: string,
+        init: RequestInitOptions | undefined,
+        redirects: number
+    ): Promise<HttpResponse> => {
         const request: RecordedRequest = { url, init };
         requests.push(request);
         const route = routes[url];
         if (route === undefined) {
             throw new Error(`测试没有模拟这个地址的网络请求：${url}`);
         }
-        return typeof route === "function" ? route(request) : route;
+        const response = typeof route === "function" ? await route(request) : route;
+        if (!REDIRECT_STATUSES.has(response.status) || init?.redirect === "manual") {
+            return response;
+        }
+        if (init?.redirect === "error") throw new TypeError("Unexpected redirect");
+        const location = response.headers?.get("location");
+        if (location == null) return response;
+        if (redirects >= 20) throw new TypeError("Too many redirects");
+        const nextUrl = new URL(location, url);
+        return send(
+            nextUrl.href,
+            redirectedInit(init, response.status, nextUrl.origin !== new URL(url).origin),
+            redirects + 1
+        );
     };
+    const fetch: HttpFetch = (url, init) => send(url, init, 0);
     return Object.assign(fetch, { requests });
 }

@@ -492,6 +492,7 @@ describe("sync --dry-run", () => {
                     lxnsAccountId: lxnsId + 1,
                     lxnsAuthorization: credentials.lxnsAuthorization,
                 },
+                "fake-qr-needed": { divingFishImportToken: importToken },
                 "fake-df-token": { divingFishImportToken: importToken },
                 "fake-lxns": credentials,
                 "-fake expired": {
@@ -548,7 +549,8 @@ describe("sync --dry-run", () => {
             {
                 user: { uid: qrNeeded.uid },
                 source: "ingame",
-                mode: "fast",
+                mode: null,
+                uploads: [],
                 effect: "local",
                 error: { code: "QR_REQUIRED" },
             },
@@ -579,7 +581,7 @@ describe("sync --dry-run", () => {
             {
                 user: { uid: expired.uid },
                 source: "lxns",
-                mode: "full",
+                mode: null,
                 uploads: [],
                 effect: "local",
                 error: { code: "LXNS_REAUTH_REQUIRED" },
@@ -643,6 +645,30 @@ describe("sync --dry-run", () => {
         } finally {
             store.close();
         }
+    });
+
+    it("promises no uploads for a single game user who needs a QR code", async () => {
+        const paths = makeHome();
+        const player = gameUser("fake-needs-qr", null);
+        await seedScoreUsers(paths, [player]);
+        stageCredentials(paths, {
+            version: 1,
+            users: { [player.uid!]: { divingFishImportToken: importToken } },
+        }).commit();
+        const before = filesIn(paths);
+        const result = await commandIn(paths, "sync", ["--dry-run"], { network: {} });
+        expect(result.code).toBe(0);
+        expect(result.requests).toEqual([]);
+        expect(result.json.data.plans).toMatchObject([
+            {
+                source: "ingame",
+                mode: null,
+                uploads: [],
+                effect: "local",
+                error: { code: "QR_REQUIRED" },
+            },
+        ]);
+        expect(filesIn(paths)).toEqual(before);
     });
 
     it("plans nothing from a layout before the user tables and leaves it unmigrated", async () => {

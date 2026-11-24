@@ -2,7 +2,7 @@
  * Refresh LXNS tokens safely under sync lock (design 5.2, 5.3).
  *
  * Returns an LXNS authorization of this user whose access token is valid for at least another
- * minute, refreshing it first when needed. Every caller (sync, upload, the LXNS bind) holds this
+ * minute, checking its account and refreshing it when needed. Every caller holds this
  * user's sync lock, and that lock is what keeps two saltnet processes from using the same refresh
  * token at once: refresh tokens rotate, so the second refresh with the old one would fail with
  * invalid_grant.
@@ -15,6 +15,7 @@ import type { Store } from "../store/store";
 import type { SyncLockHandle } from "./lock";
 import { LXNSTokenError, refreshLXNSOAuthToken } from "@core/integrations/lxns/token";
 import { getUserDisplayName } from "@core/user/type";
+import { jwtDecode } from "jwt-decode";
 import { CliError } from "../errors";
 import { toCoreConfig } from "../runtime/config";
 import {
@@ -24,7 +25,7 @@ import {
     updateCredentials,
 } from "../runtime/credentials";
 import { listUsers } from "../users/repository";
-import { userBindCommand, userRefWord } from "../util/printedCommand";
+import { userBindCommand, userRefWord, userUidWord } from "../util/printedCommand";
 
 /** Refresh this long before the access token expires, as the web app does. */
 export const LXNS_ACCESS_MARGIN_MS = 60_000;
@@ -37,7 +38,7 @@ async function removeUserLxnsAuth(
     store: Store,
     uid: string,
     expectedAccountId: unknown,
-    failedRefreshToken: string,
+    failedAuth: LXNSAuth,
     now: () => number
 ): Promise<void> {
     await updateCredentials(
@@ -48,7 +49,11 @@ async function removeUserLxnsAuth(
             const storedAuth = matchingLxnsAuthorization(storedEntry, expectedAccountId) as
                 | LXNSAuth
                 | undefined;
-            if (!storedAuth || storedAuth.refreshToken !== failedRefreshToken) {
+            if (
+                !storedAuth ||
+                storedAuth.refreshToken !== failedAuth.refreshToken ||
+                storedAuth.accessToken !== failedAuth.accessToken
+            ) {
                 return current;
             }
             const currentEntry = { ...storedEntry };
@@ -67,6 +72,14 @@ async function removeUserLxnsAuth(
     );
 }
 
+function hasAccountClaim(accessToken: string, expectedAccountId: number): boolean {
+    try {
+        return jwtDecode<{ id: unknown }>(accessToken).id === expectedAccountId;
+    } catch {
+        return false;
+    }
+}
+
 export async function lxnsAccessToken(
     ctx: Pick<CommandContext, "paths" | "config" | "http" | "log" | "io">,
     store: Store,
@@ -83,7 +96,7 @@ export async function lxnsAccessToken(
     }
 
     const targetUserRow = listUsers(store).find(u => u.uid === uid);
-    const userRef = targetUserRow ? userRefWord(targetUserRow) : uid;
+    const userRef = targetUserRow ? userRefWord(targetUserRow) : userUidWord(uid);
 
     // 2. Read credentials.json now, while the lock is held, never from an earlier read.
     const credentials = readCredentials(ctx.paths);
@@ -100,10 +113,26 @@ export async function lxnsAccessToken(
 
     let currentAuth = initialAuth;
     let retried = false;
+    const clock = () => ctx.io.now().getTime();
+    const requireReauthorization = async (auth: LXNSAuth, reason: string): Promise<never> => {
+        await removeUserLxnsAuth(ctx.paths, store, uid, expectedAccountId, auth, clock);
+        throw new CliError(
+            "LXNS_REAUTH_REQUIRED",
+            `用户 ${getUserDisplayName(user)} 的落雪授权${reason}，需要重新授权`,
+            { fix: userBindCommand(userRef, "lxns") }
+        );
+    };
+    if (
+        typeof expectedAccountId !== "number" ||
+        !Number.isSafeInteger(expectedAccountId) ||
+        expectedAccountId <= 0
+    ) {
+        return requireReauthorization(initialAuth, "的账号无法验证");
+    }
 
     while (true) {
         // 4. expiresAt a finite number more than LXNS_ACCESS_MARGIN_MS after now() and an access token present.
-        const nowMs = ctx.io.now().getTime();
+        const nowMs = clock();
         if (
             typeof currentAuth.expiresAt === "number" &&
             Number.isFinite(currentAuth.expiresAt) &&
@@ -111,7 +140,8 @@ export async function lxnsAccessToken(
             typeof currentAuth.accessToken === "string" &&
             currentAuth.accessToken.length > 0
         ) {
-            return currentAuth;
+            if (hasAccountClaim(currentAuth.accessToken, expectedAccountId)) return currentAuth;
+            return requireReauthorization(currentAuth, "的账号无法验证");
         }
 
         // 5. No refresh token: LXNS_REAUTH_REQUIRED.
@@ -159,40 +189,12 @@ export async function lxnsAccessToken(
                     }
                 }
 
-                await removeUserLxnsAuth(
-                    ctx.paths,
-                    store,
-                    uid,
-                    expectedAccountId,
-                    currentAuth.refreshToken,
-                    () => ctx.io.now().getTime()
-                );
-                throw new CliError(
-                    "LXNS_REAUTH_REQUIRED",
-                    `用户 ${getUserDisplayName(user)} 的落雪授权已失效或已被撤销，需要重新授权`,
-                    {
-                        fix: userBindCommand(userRef, "lxns"),
-                    }
-                );
+                return requireReauthorization(currentAuth, "已失效或已被撤销");
             }
 
             // 9. The identity error: new token for another account.
             if (error instanceof Error && error.message === LXNS_IDENTITY_CHANGED_MESSAGE) {
-                await removeUserLxnsAuth(
-                    ctx.paths,
-                    store,
-                    uid,
-                    expectedAccountId,
-                    currentAuth.refreshToken,
-                    () => ctx.io.now().getTime()
-                );
-                throw new CliError(
-                    "LXNS_REAUTH_REQUIRED",
-                    `用户 ${getUserDisplayName(user)} 的落雪授权属于另一个落雪账号，需要重新授权`,
-                    {
-                        fix: userBindCommand(userRef, "lxns"),
-                    }
-                );
+                return requireReauthorization(currentAuth, "属于另一个落雪账号");
             }
 
             // 10. Any other error
@@ -209,7 +211,7 @@ export async function lxnsAccessToken(
 
         // 7. Success: assert lock held, write credentials atomically first, then log and return.
         handle.assertHeld();
-        const writeNow = ctx.io.now().getTime();
+        const writeNow = clock();
         await updateCredentials(
             ctx.paths,
             store,
@@ -238,7 +240,7 @@ export async function lxnsAccessToken(
                     },
                 };
             },
-            { now: () => writeNow }
+            { now: clock }
         );
 
         ctx.log(`已刷新用户 ${getUserDisplayName(user)} 的落雪授权`);

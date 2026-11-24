@@ -4,6 +4,7 @@ import type { RuntimePaths } from "../../src/runtime/paths";
 import type { Route } from "../mockHttp";
 import { Buffer } from "node:buffer";
 import { readFileSync, statSync } from "node:fs";
+import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
 import { describe, expect, it, vi } from "vitest";
@@ -12,12 +13,13 @@ import { CliError } from "../../src/errors";
 import { resolveConfig } from "../../src/runtime/config";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import { createHttp } from "../../src/runtime/http";
+import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { postQrGameApi } from "../../src/sync/ingame";
 import { readRuns } from "../../src/sync/journal";
 import * as syncLock from "../../src/sync/lock";
 import { readScoreEvents, readUsers, saveUser } from "../../src/users/repository";
-import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
+import { commandIn, LXNS_URL, META_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { delayedRoute, jsonResponse, mockFetch } from "../mockHttp";
 import { parsePrintedCommand } from "../printedCommand";
@@ -554,7 +556,7 @@ describe("in-game sync", () => {
                 400
             ),
         });
-        expect(result.requests.map(r => r.url)).toEqual([update, update, `${fallback}/updateUser`]);
+        expect(result.requests.map(r => r.url)).toEqual([update, `${fallback}/updateUser`]);
         expect(result.code).toBe(5);
         expect(result.json.error.code).toBe("UPSTREAM_ERROR");
         const state = persisted(paths);
@@ -882,6 +884,62 @@ describe("in-game sync", () => {
         });
     });
 
+    it("does not log in after another owner takes the expired sync lock during metadata refresh", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [fakePlayer()]);
+        const store = openStore(paths);
+        const syncTime = new Date(NOW.getTime() + 2 * 86_400_000);
+        let lockTime = syncTime.getTime();
+        const now = () => lockTime;
+        const original = syncLock.withSyncLock;
+        const lock = vi
+            .spyOn(syncLock, "withSyncLock")
+            .mockImplementationOnce((db, user, work) => original(db, user, work, { now }));
+        try {
+            const result = await commandIn(paths, "sync", ["--qr", "-"], {
+                now: syncTime,
+                stdin: qrInput,
+                env: { SALTNET_API_URL: backend, SALTNET_API_FALLBACK_URL: fallback },
+                network: {
+                    [getQr]: jsonResponse({ errorID: 0, userID: gameId }),
+                    [META_URL]: () => {
+                        lockTime += syncLock.DEFAULT_SYNC_LOCK_TTL_MS + 1;
+                        const nextOwner = acquireLock(store, `sync:${uid}`, { ttlMs: 1000, now });
+                        expect(nextOwner.acquired).toBe(true);
+                        return jsonResponse(getFixtureSaltMetaCompacted());
+                    },
+                    [update]: gameResult(),
+                },
+            });
+            expect(result.requests.map(request => request.url)).toEqual([getQr, META_URL]);
+            expect(result.json.error).toMatchObject({
+                code: "INTERNAL",
+                message: expect.stringContaining("同步锁已失效"),
+            });
+            expect(persisted(paths).scores).toEqual([]);
+        } finally {
+            lock.mockRestore();
+            store.close();
+        }
+    });
+
+    it("retries a fast update once at the primary address when fallback is disabled", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [fakePlayer()]);
+        const result = await gameSync(
+            paths,
+            ["--source", "ingame"],
+            { [update]: jsonResponse({ error: "Busy" }, 503) },
+            undefined,
+            { SALTNET_API_FALLBACK_URL: "" }
+        );
+        expect(result.requests.map(request => request.url)).toEqual([update, update]);
+        expect(result.json.error).toMatchObject({
+            code: "UPSTREAM_ERROR",
+            message: "舞萌服务返回了 HTTP 503",
+        });
+    });
+
     it("waits for a fast update as long as the update timeout allows", async () => {
         const paths = makeHome();
         await seedScoreUsers(paths, [fakePlayer()]);
@@ -910,6 +968,16 @@ describe("in-game sync", () => {
             },
             { code: "NETWORK", message: "连接舞萌服务失败", retryable: true },
         ],
+        [
+            "a response body failure",
+            () => ({
+                ...gameResult(),
+                text: async () => {
+                    throw new Error(`response interrupted for ${gameId}`);
+                },
+            }),
+            { code: "NETWORK", message: "连接舞萌服务失败", retryable: true },
+        ],
     ] as const)(
         "reports a fast update that fails with %s at both addresses",
         async (_kind, route, error) => {
@@ -920,12 +988,7 @@ describe("in-game sync", () => {
                 [update]: route,
                 [fallbackUpdate]: route,
             });
-            expect(result.requests.map(r => r.url)).toEqual([
-                update,
-                update,
-                fallbackUpdate,
-                fallbackUpdate,
-            ]);
+            expect(result.requests.map(r => r.url)).toEqual([update, fallbackUpdate]);
             expect(result.code).toBe(5);
             expect(result.json.error).toMatchObject(error);
             const state = persisted(paths);

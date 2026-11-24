@@ -23,8 +23,10 @@ export interface CliResponse extends FetchResponse {
     bytes: () => Promise<Uint8Array>;
 }
 
+type CliRequestInit = FetchInit & Pick<RequestInit, "redirect">;
+
 /** What `createHttp` gives. It is a `FetchLike` too, so shared/core takes it as it is. */
-export type CliFetch = (input: string, init?: FetchInit) => Promise<CliResponse>;
+export type CliFetch = (input: string, init?: CliRequestInit) => Promise<CliResponse>;
 
 export interface HttpOptions {
     /** The real network in production; a test passes its own. */
@@ -35,6 +37,8 @@ export interface HttpOptions {
     /** The setting to name when this deadline expires. */
     timeoutKey: TimeoutConfigKey;
     retry?: boolean;
+    /** Read the response body within the request, even when the caller handles retries. */
+    buffer?: boolean;
     retryDelayMs?: number;
     sleep?: (ms: number) => Promise<void>;
     log?: (message: string) => void;
@@ -232,17 +236,17 @@ export function upstreamStatusError(url: string, status: number): CliError {
 }
 
 /**
- * A `fetch` for shared/core and the commands. It does not judge the status: core reports `!ok` in
- * its own way, and `upstreamStatusError` is there for the callers that turn it into a `CliError`.
- * With `retry` the body is read before the response is returned, so that a body cut short can be
- * asked for again; without it, the body is read when the caller asks for it.
+ * A `fetch` for shared/core and the commands. Guarded manual redirects are status errors.
+ * Other unsuccessful responses are passed through for the caller to interpret.
+ * With `retry` or `buffer` the body is read before the response is returned. Otherwise the caller
+ * reads the body on demand.
  */
 export function createHttp(options: HttpOptions): CliFetch {
     const { timeoutMs, timeoutKey, retry = false } = options;
     const retryDelayMs = options.retryDelayMs ?? 500;
     const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
 
-    return async (input: string, init?: FetchInit): Promise<CliResponse> => {
+    return async (input: string, init?: CliRequestInit): Promise<CliResponse> => {
         const host = hostOf(input);
         const headers: Record<string, string> = {
             "User-Agent": options.userAgent,
@@ -258,19 +262,31 @@ export function createHttp(options: HttpOptions): CliFetch {
             }
         }
 
+        const method = init?.method?.toUpperCase() ?? "GET";
+        const guarded =
+            (method !== "GET" && method !== "HEAD") ||
+            Object.keys(headers).some(name => {
+                const lower = name.toLowerCase();
+                return lower === "authorization" || lower === "import-token";
+            });
+        const request: CliRequestInit = { ...init, headers };
+        if (guarded) request.redirect ??= "manual";
         const secrets = collectHeaderSecrets(headers);
 
-        if (retry) {
+        function checkRedirect(status: number): void {
+            if (guarded && request.redirect === "manual" && status >= 300 && status < 400) {
+                throw upstreamStatusError(input, status);
+            }
+        }
+
+        if (retry || options.buffer) {
+            const attempts = retry ? 2 : 1;
             let lastError: unknown;
-            for (let attempt = 1; attempt <= 2; attempt++) {
+            for (let attempt = 1; attempt <= attempts; attempt++) {
                 const signal = AbortSignal.timeout(timeoutMs);
                 let rawResponse: HttpResponse;
                 try {
-                    rawResponse = await options.fetch(input, {
-                        ...init,
-                        headers,
-                        signal,
-                    });
+                    rawResponse = await options.fetch(input, { ...request, signal });
                 } catch (error) {
                     lastError = networkError(
                         host,
@@ -280,7 +296,7 @@ export function createHttp(options: HttpOptions): CliFetch {
                         "request",
                         secrets
                     );
-                    if (attempt === 1) {
+                    if (attempt < attempts) {
                         options.log?.(
                             `请求 ${host} 失败（${(lastError as CliError).message}），准备重试`
                         );
@@ -290,7 +306,8 @@ export function createHttp(options: HttpOptions): CliFetch {
                     throw lastError;
                 }
 
-                if (attempt === 1 && RETRYABLE_STATUSES.has(rawResponse.status)) {
+                checkRedirect(rawResponse.status);
+                if (attempt < attempts && RETRYABLE_STATUSES.has(rawResponse.status)) {
                     options.log?.(`请求 ${host} 返回 HTTP ${rawResponse.status}，准备重试`);
                     await sleep(retryDelayMs);
                     continue;
@@ -301,7 +318,7 @@ export function createHttp(options: HttpOptions): CliFetch {
                     body = await readBody(rawResponse);
                 } catch (error) {
                     lastError = networkError(host, error, timeoutMs, timeoutKey, "body", secrets);
-                    if (attempt === 1) {
+                    if (attempt < attempts) {
                         options.log?.(`读取 ${host} 响应中断，准备重试`);
                         await sleep(retryDelayMs);
                         continue;
@@ -317,13 +334,13 @@ export function createHttp(options: HttpOptions): CliFetch {
         let response: HttpResponse;
         try {
             response = await options.fetch(input, {
-                ...init,
-                headers,
+                ...request,
                 signal: AbortSignal.timeout(timeoutMs),
             });
         } catch (error) {
             throw networkError(host, error, timeoutMs, timeoutKey, "request", secrets);
         }
+        checkRedirect(response.status);
 
         // The deadline also covers the body, which is where a slow server usually stalls.
         const readText = async (): Promise<string> => {

@@ -49,43 +49,53 @@ export function createSyncClients(
     now: () => number,
     inGame?: {
         readonly useQr: boolean;
+        readonly assertHeld: () => void;
         readonly refreshLxns: (user: User) => Promise<LXNSAuth>;
     }
 ): SyncClientsWrapper {
     let firstError: unknown = null;
     let lastReportMessage: string | null = null;
 
-    const network = ctx.config.values.network;
-    const readHttp = (timeoutKey: "network.timeoutMs" | "network.updateTimeoutMs"): FetchLike => {
+    const { api, network } = ctx.config.values;
+    const readHttp = (
+        timeoutKey: "network.timeoutMs" | "network.updateTimeoutMs",
+        retry = true
+    ): FetchLike => {
         const options = {
             timeoutKey,
             timeoutMs:
                 timeoutKey === "network.updateTimeoutMs"
                     ? network.updateTimeoutMs
                     : network.timeoutMs,
-            retry: true,
+            retry,
         };
         // An error from a game request can contain the player id in its body or transport details.
-        return inGame
+        return inGame || !retry
             ? createHttp({
                   ...options,
+                  buffer: !retry,
                   fetch: ctx.io.fetch,
                   userAgent: network.userAgent,
-                  log: () => ctx.log("成绩读取请求失败，准备重试"),
+                  log: inGame ? () => ctx.log("成绩读取请求失败，准备重试") : ctx.log,
               })
             : ctx.http(options);
     };
     const httpRead = readHttp("network.timeoutMs");
-    const httpGame = inGame && !inGame.useQr ? readHttp("network.updateTimeoutMs") : httpRead;
+    const hasFallback = Boolean(api.url && api.fallbackUrl);
+    const httpSaltNet = readHttp(
+        inGame && !inGame.useQr ? "network.updateTimeoutMs" : "network.timeoutMs",
+        !hasFallback
+    );
 
     const wrap = <T extends readonly unknown[], R>(
-        fn: (...args: T) => Promise<R>
+        fn: (...args: T) => Promise<R>,
+        preferError?: (error: unknown) => boolean
     ): ((...args: T) => Promise<R>) => {
         return async (...args: T): Promise<R> => {
             try {
                 return await fn(...args);
             } catch (error) {
-                if (!firstError) {
+                if (!firstError || preferError?.(error)) {
                     firstError = error;
                 }
                 throw error;
@@ -93,11 +103,17 @@ export function createSyncClients(
         };
     };
 
-    const fetchDivingFishPlayer = wrap(async (username: string): Promise<DivingFishResponse> => {
-        return queryDivingFishPlayer(username, {
-            fetch: httpRead,
-        });
-    });
+    const fetchDivingFishPlayer = wrap(
+        (username: string): Promise<DivingFishResponse> =>
+            queryDivingFishPlayer(username, { fetch: httpRead }),
+        error =>
+            error instanceof DivingFishError &&
+            (error.status === 400 || error.status === 401 || error.status === 403) &&
+            firstError instanceof SaltNetError &&
+            (firstError.kind === "network" ||
+                firstError.status === 429 ||
+                (firstError.status !== undefined && firstError.status >= 500))
+    );
 
     const fetchDivingFishRecordsClient = wrap(
         async (importToken: string): Promise<DivingFishRecordsResponse> => {
@@ -147,15 +163,46 @@ export function createSyncClients(
     const postGameAPIJSON = wrap(
         async <T>(endpoint: SaltAPIEndpoints, body: object): Promise<T> => {
             if (inGame?.useQr && endpoint === SaltAPIEndpoints.UpdateUser) {
+                inGame.assertHeld();
                 return (await postQrGameApi(ctx, endpoint, body)) as T;
             }
-            return postSaltNetAPIJSON<T>(endpoint, body, {
-                config: {
-                    saltnetApiUrl: ctx.config.values.api.url,
-                    saltnetApiFallbackUrl: ctx.config.values.api.fallbackUrl,
-                },
-                fetch: endpoint === SaltAPIEndpoints.UpdateUser ? httpGame : httpRead,
-            });
+            let firstRequest: ReturnType<FetchLike> | undefined;
+            let redirectError: CliError | undefined;
+            const fetchAddress: FetchLike = (url, init) =>
+                httpSaltNet(url, init).catch((error: unknown) => {
+                    const status = error instanceof CliError ? error.extra?.status : undefined;
+                    if (
+                        error instanceof CliError &&
+                        typeof status === "number" &&
+                        status >= 300 &&
+                        status < 400
+                    ) {
+                        redirectError = error;
+                    }
+                    throw error;
+                });
+
+            try {
+                return await postSaltNetAPIJSON<T>(endpoint, body, {
+                    config: {
+                        saltnetApiUrl: api.url || api.fallbackUrl,
+                        saltnetApiFallbackUrl: api.fallbackUrl,
+                    },
+                    fetch: (url, init) => {
+                        if (!firstRequest) {
+                            firstRequest = fetchAddress(url, init);
+                            return firstRequest;
+                        }
+                        // Core always invokes its fallback on a failed request. A single address
+                        // already spent its retry budget in HTTP, and redirects end the operation.
+                        return hasFallback && !redirectError
+                            ? fetchAddress(url, init)
+                            : firstRequest;
+                    },
+                });
+            } catch (error) {
+                throw redirectError ?? error;
+            }
         }
     );
 

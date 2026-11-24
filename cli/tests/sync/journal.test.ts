@@ -1,8 +1,9 @@
 import type { FinishRunResult } from "../../src/sync/journal";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CliError } from "../../src/errors";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
+import * as journal from "../../src/sync/journal";
 import { beginRun, finishRun, readRuns, recordRun, validateSummary } from "../../src/sync/journal";
 import { withSyncLock } from "../../src/sync/lock";
 import { VERSION } from "../../src/version";
@@ -12,6 +13,29 @@ import { useTempHome } from "../tempHome";
 const makeHome = useTempHome();
 
 describe("sync journal", () => {
+    it("can interrupt a user's abandoned running rows through the journal", async () => {
+        const store = openStore(makeHome());
+        const user = { uid: "fake-abandoned", name: "Fake Player" };
+        try {
+            await withSyncLock(store, user, handle => {
+                beginRun(store, { kind: "sync", userUid: user.uid }, handle);
+            });
+            const interrupt = vi.spyOn(journal, "interruptRuns");
+            try {
+                await withSyncLock(store, user, () => {
+                    expect(interrupt).toHaveBeenCalledWith(store, user.uid);
+                    expect(readRuns(store).items).toMatchObject([
+                        { userUid: user.uid, outcome: "interrupted", finishedAt: null },
+                    ]);
+                });
+            } finally {
+                interrupt.mockRestore();
+            }
+        } finally {
+            store.close();
+        }
+    });
+
     it("begins and finishes a run with outcome ok", async () => {
         const paths = makeHome();
         const store = openStore(paths);

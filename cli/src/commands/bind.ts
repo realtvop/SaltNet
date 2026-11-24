@@ -1,5 +1,5 @@
 import type { User } from "@core/user/type";
-import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { CredentialsFile } from "../runtime/credentials";
 import type { Store } from "../store/store";
 import type { LxnsBindStart } from "../users/lxnsBind";
 import type { UserDetail, UserRow } from "../users/view";
@@ -11,26 +11,20 @@ import { userCountsSchema, userRowSchema } from "../catalog/schemas";
 import { CliError, usageError } from "../errors";
 import { anyOf, bool, extend, object, str } from "../output/schema";
 import { resolveUser } from "../refs/user";
-import {
-    readCredentials,
-    stageCredentials,
-    updateCredentials,
-    withCredentialsLock,
-} from "../runtime/credentials";
+import { pruneCredentials, readCredentials, withCredentialsLock } from "../runtime/credentials";
+import { createHttp } from "../runtime/http";
 import { postQrGameApi } from "../sync/ingame";
-import { assertNoSync } from "../sync/lock";
-import { confirmIdentityChange, writeBinding } from "../users/bindIdentity";
+import { assertNoSync, withSyncLock } from "../sync/lock";
+import {
+    confirmIdentityChange,
+    rejectUnneededConfirmation,
+    writeBinding,
+} from "../users/bindIdentity";
 import { completeLxnsBind, confirmLxnsBind, startLxnsBind } from "../users/lxnsBind";
-import { listUsers, readUser, readUserCounts, saveUser } from "../users/repository";
-import { userDetail } from "../users/view";
+import { listUsers, readUser } from "../users/repository";
 import { CONFIRM_OPTIONS } from "./confirm";
+import { USER_POSITIONAL } from "./describe";
 import { defineCommand } from "./registry";
-
-const USER_POSITIONAL = {
-    name: "user",
-    valueName: "用户",
-    description: "用户序号（从 0 开始）、uid 或显示名",
-} as const;
 
 const SOURCE_POSITIONAL = {
     name: "source",
@@ -83,13 +77,33 @@ function assertValidSource(source: string): asserts source is BindSource {
 
 type LocalBinding = { source: "ingame"; id: number } | { source: "df-name"; name: string };
 
+function withBindingLocks<T>(
+    ctx: CommandContext,
+    store: Store,
+    target: { uid: string; displayName: string },
+    work: () => T
+) {
+    return withSyncLock(
+        store,
+        { uid: target.uid, name: target.displayName },
+        sync =>
+            withCredentialsLock(store, () => {
+                sync.assertHeld();
+                return work();
+            }),
+        { now: () => ctx.io.now().getTime() }
+    );
+}
+
 function bindLocal(
     ctx: CommandContext,
     store: Store,
-    uid: string,
+    target: { uid: string; displayName: string },
     binding: LocalBinding,
     given: string | undefined
 ) {
+    const { uid } = target;
+
     function prepare() {
         const current = readUser(store, uid);
         if (!current) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
@@ -110,16 +124,17 @@ function bindLocal(
             changed = current.divingFish?.name !== binding.name;
         }
 
-        if (changed) assertNoSync(store, uid, () => ctx.io.now().getTime());
         const reset = confirmIdentityChange(store, uid, current, next, binding.source, given);
         if (reset) credentials ??= readCredentials(ctx.paths);
         return { user: next, changed, reset, credentials: reset ? credentials : undefined };
     }
 
-    // Reject a preview before acquiring the credential lock. Check it again in the write
-    // transaction because user edits, reorders, and sync may commit before we get that lock.
-    store.transaction(prepare);
-    return withCredentialsLock(store, () =>
+    // Preview without the credentials lock, then recheck in the transaction that saves.
+    store.transaction(() => {
+        assertNoSync(store, uid, () => ctx.io.now().getTime());
+        prepare();
+    });
+    return withBindingLocks(ctx, store, target, () =>
         writeBinding(ctx.paths, store, uid, binding.source, prepare)
     );
 }
@@ -129,7 +144,7 @@ export const userBind = defineCommand(
         name: "user bind",
         summary: "绑定舞萌账号、水鱼或落雪数据源",
         description:
-            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（先生成授权链接，再用 --callback - 从 stdin 读取回调链接）。换人时预览将清除的数据，经用户同意后运行 error.fix。二维码预览的确认命令改用 --id；落雪确认只需 lxns --yes <确认码>。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
+            "为指定用户绑定数据来源：ingame（--id <8位数字> 或 --qr -）、df-token（- 从 stdin 读取）、df-name（用户名），或 lxns（先生成授权链接，再用 --callback - 从 stdin 读取回调链接）。换人时预览将清除的数据，经用户同意后运行 error.fix。二维码预览的确认命令改用 --id；落雪确认使用 user bind <用户> lxns --yes <确认码>。绑定水鱼 Import-Token 会先联网拉取成绩校验。",
         category: "account",
         effect: "local",
         output: "object",
@@ -218,7 +233,9 @@ export const userBind = defineCommand(
         const given = args.options.yes;
         // A printed fix always uses the exact uid, including a digit-only imported uid.
         const byUid =
-            given === undefined ? undefined : rows.find(row => row.uid === args.positionals.user);
+            given === undefined || args.positionals.user.startsWith("uid:")
+                ? undefined
+                : rows.find(row => row.uid === args.positionals.user);
         const target = byUid ?? resolveUser(rows, args.positionals.user);
 
         if (source === "lxns") {
@@ -229,15 +246,16 @@ export const userBind = defineCommand(
             }
             if (args.options.callback === undefined) {
                 if (given !== undefined) {
-                    return { data: await confirmLxnsBind(ctx, store, target.uid, given) };
+                    return { data: await confirmLxnsBind(ctx, store, target, given) };
                 }
                 return { data: await startLxnsBind(ctx, store, target.uid) };
             }
+            rejectUnneededConfirmation(given);
             if (args.global.offline) {
                 throw usageError("离线模式下无法完成落雪授权");
             }
             return {
-                data: await completeLxnsBind(ctx, store, target, await ctx.io.readStdin(), given),
+                data: await completeLxnsBind(ctx, store, target, await ctx.io.readStdin()),
             };
         }
 
@@ -254,13 +272,7 @@ export const userBind = defineCommand(
             if (rawId !== undefined) {
                 if (!/^\d{8}$/.test(rawId)) throw usageError("舞萌 UserID 必须是 8 位数字");
                 return {
-                    data: await bindLocal(
-                        ctx,
-                        store,
-                        target.uid,
-                        { source, id: Number(rawId) },
-                        given
-                    ),
+                    data: await bindLocal(ctx, store, target, { source, id: Number(rawId) }, given),
                 };
             }
             if (args.global.offline) {
@@ -284,7 +296,7 @@ export const userBind = defineCommand(
             ) {
                 throw new CliError("UPSTREAM_ERROR", "后端返回的用户 ID 无效");
             }
-            return { data: await bindLocal(ctx, store, target.uid, { source, id }, given) };
+            return { data: await bindLocal(ctx, store, target, { source, id }, given) };
         }
 
         if (source === "df-name") {
@@ -295,9 +307,10 @@ export const userBind = defineCommand(
             if (!name) {
                 throw usageError("水鱼用户名不能为空或只有空白");
             }
-            return { data: await bindLocal(ctx, store, target.uid, { source, name }, given) };
+            return { data: await bindLocal(ctx, store, target, { source, name }, given) };
         }
 
+        rejectUnneededConfirmation(given);
         if (args.positionals.value === undefined) {
             throw usageError("user bind <用户> df-token - 需要写 - 表示从 stdin 读取凭据");
         }
@@ -315,16 +328,26 @@ export const userBind = defineCommand(
             throw usageError("水鱼 Import-Token 不能为空");
         }
 
+        // Import-Tokens can be shorter than either HTTP or the shared client redacts.
+        const redact = (message: string) => message.replaceAll(token, "<已隐藏>");
+        const { userAgent, timeoutMs } = ctx.config.values.network;
         try {
             await fetchDivingFishRecords(token, {
-                fetch: ctx.http({ retry: true }),
+                fetch: createHttp({
+                    fetch: ctx.io.fetch,
+                    userAgent,
+                    timeoutMs,
+                    timeoutKey: "network.timeoutMs",
+                    retry: true,
+                    log: message => ctx.log(redact(message)),
+                }),
             });
         } catch (error) {
             if (error instanceof DivingFishError) {
                 if (error.status === 400 || error.status === 401 || error.status === 403) {
                     throw new CliError(
                         "USAGE",
-                        `水鱼数据拒绝了这个 Import-Token（${error.message}）`,
+                        `水鱼数据拒绝了这个 Import-Token（${redact(error.message)}）`,
                         {
                             fix: "在水鱼查分器「用户设置」页面重新生成导入 Token 并重试",
                         }
@@ -336,99 +359,134 @@ export const userBind = defineCommand(
                 });
             }
             if (error instanceof CliError) {
-                throw error;
+                throw new CliError(error.code, redact(error.message), {
+                    fix: error.fix,
+                    retryable: error.retryable,
+                    extra: error.extra,
+                });
             }
-            throw new CliError(
-                "NETWORK",
-                error instanceof Error ? error.message : "连接水鱼数据失败",
-                { retryable: true, cause: error }
-            );
+            throw new CliError("NETWORK", "连接水鱼数据失败", { retryable: true });
         }
 
-        return withCredentialsLock(store, () => {
-            const freshUser = readUser(store, target.uid);
-            if (!freshUser) {
-                throw new CliError("NOT_FOUND", `找不到用户「${target.displayName}」`);
-            }
-            const targetUid = freshUser.uid!;
-
-            const nextUser = {
-                ...freshUser,
-                divingFish: {
-                    ...freshUser.divingFish,
-                    name: null,
-                    importToken: null,
-                },
-            };
-            // No identity check: a token bind keeps both ids and clears the name, so
-            // hasStrongIdentityChanged can never be true here.
-            const currentCredentials = readCredentials(ctx.paths);
-            const currentToken = currentCredentials.users[targetUid]?.divingFishImportToken;
-            const tokenChanged = currentToken !== token;
-            const userChanged =
-                freshUser.divingFish?.name !== null || freshUser.divingFish?.importToken !== null;
-            const changed = tokenChanged || userChanged;
-
-            if (changed) {
-                const nextUsers: Record<string, UserCredentials> = {
-                    ...currentCredentials.users,
-                };
-                nextUsers[targetUid] = {
-                    ...nextUsers[targetUid],
-                    divingFishImportToken: token,
-                };
-                const nextCredentials: CredentialsFile = {
-                    ...currentCredentials,
-                    users: nextUsers,
-                };
-                const staged = stageCredentials(ctx.paths, nextCredentials);
-                let userSaved = false;
-                try {
-                    store.transaction(() => {
-                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                        saveUser(store, nextUser);
-                    });
-                    userSaved = true;
-                } catch (error) {
-                    staged.discard();
-                    throw error;
-                }
-
-                try {
-                    staged.commit();
-                } catch (error) {
-                    if (userSaved) {
-                        const reason = error instanceof Error ? `（${error.message}）` : "";
-                        throw new CliError(
-                            "INTERNAL",
-                            `用户已绑定，但凭据文件未能保存${reason}；请修复文件权限后重新绑定`,
-                            { cause: error }
-                        );
-                    }
-                    staged.discard();
-                    throw error;
-                }
-            }
-
-            const updatedRow = listUsers(store).find(u => u.uid === targetUid);
-            if (!updatedRow) throw new Error("bound user disappeared");
-            return {
-                data: {
-                    ...userDetail(updatedRow, readUserCounts(store, targetUid)),
-                    source,
-                    changed,
-                },
-            };
-        });
+        const { uid } = target;
+        return {
+            data: await withBindingLocks(ctx, store, target, () =>
+                writeBinding(ctx.paths, store, uid, source, () => {
+                    const user = readUser(store, uid);
+                    if (!user) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+                    const current = readCredentials(ctx.paths);
+                    const entry = current.users[uid];
+                    const tokenChanged = entry?.divingFishImportToken !== token;
+                    const userChanged =
+                        user.divingFish?.name !== null || user.divingFish?.importToken !== null;
+                    return {
+                        user: {
+                            ...user,
+                            divingFish: { ...user.divingFish, name: null, importToken: null },
+                        },
+                        changed: tokenChanged || userChanged,
+                        userChanged,
+                        reset: false,
+                        credentials: tokenChanged
+                            ? {
+                                  ...current,
+                                  users: {
+                                      ...current.users,
+                                      [uid]: { ...entry, divingFishImportToken: token },
+                                  },
+                              }
+                            : undefined,
+                    };
+                })
+            ),
+        };
     }
 );
+
+function prepareUnbind(
+    ctx: CommandContext,
+    store: Store,
+    uid: string,
+    user: User,
+    source: BindSource
+) {
+    if (source === "ingame") {
+        const inGame = user.inGame;
+        const changed = Boolean(
+            inGame && (inGame.id !== null || inGame.name !== null || inGame.enabled !== false)
+        );
+        return {
+            user: { ...user, inGame: { ...inGame!, name: null, id: null, enabled: false } },
+            changed,
+            reset: false,
+        };
+    }
+    if (source === "df-name") {
+        return {
+            user: { ...user, divingFish: { ...user.divingFish, name: null } },
+            changed: user.divingFish?.name != null,
+            reset: false,
+        };
+    }
+
+    const current = readCredentials(ctx.paths);
+    const users = { ...current.users };
+    const entry = { ...users[uid] };
+    if (source === "df-token") {
+        const changed = entry.divingFishImportToken !== undefined;
+        delete entry.divingFishImportToken;
+        if (Object.keys(entry).length === 0) delete users[uid];
+        const credentials: CredentialsFile = {
+            ...current,
+            users: Object.keys(entry).length ? { ...users, [uid]: entry } : users,
+        };
+        return {
+            user,
+            changed,
+            reset: false,
+            userChanged: false,
+            credentials: changed ? pruneCredentials(credentials, store) : undefined,
+        };
+    }
+
+    const hasLxnsCredentials =
+        entry.lxnsAuthorization !== undefined ||
+        entry.lxnsAccountId !== undefined ||
+        entry.lxnsIssuedAt !== undefined;
+    const pending = current.pendingLxnsAuthorizations;
+    const otherPending = Object.entries(pending ?? {}).filter(
+        ([, record]) => record.userUid !== uid
+    );
+    const pendingChanged =
+        pending !== undefined && Object.keys(pending).length !== otherPending.length;
+    const userChanged = Boolean(
+        user.lxns && (user.lxns.auth !== null || user.lxns.name !== null || user.lxns.id !== null)
+    );
+    const credentialsChanged = hasLxnsCredentials || pendingChanged;
+    delete entry.lxnsAuthorization;
+    delete entry.lxnsAccountId;
+    delete entry.lxnsIssuedAt;
+    if (Object.keys(entry).length === 0) delete users[uid];
+    const credentials: CredentialsFile = {
+        ...current,
+        users: Object.keys(entry).length ? { ...users, [uid]: entry } : users,
+        ...(pendingChanged ? { pendingLxnsAuthorizations: Object.fromEntries(otherPending) } : {}),
+    };
+    return {
+        user: { ...user, lxns: { auth: null, name: null, id: null } },
+        changed: userChanged || credentialsChanged,
+        userChanged,
+        reset: false,
+        credentials: credentialsChanged ? credentials : undefined,
+    };
+}
 
 export const userUnbind = defineCommand(
     {
         name: "user unbind",
         summary: "解绑舞萌账号、水鱼或落雪数据源",
         description:
-            "解除指定用户的绑定并清除对应凭据：ingame、df-token、df-name 或 lxns。只改动本地数据，不需要联网或确认。若原本未绑定该来源则成功且 changed 为 false。",
+            "解除指定用户的绑定并清除对应凭据：ingame、df-token、df-name 或 lxns。只改动本地数据，不需要联网或确认。解除落雪绑定也会取消此用户进行中的落雪授权。没有绑定或授权记录可清除时，changed 为 false。",
         category: "account",
         effect: "local",
         output: "object",
@@ -449,161 +507,15 @@ export const userUnbind = defineCommand(
         const store = ctx.store();
         const users = listUsers(store);
         const target = resolveUser(users, args.positionals.user);
-        const targetUid = target.uid;
-
-        if (source === "df-token") {
-            // The stored user never holds the token (src/users refuses one), so only
-            // credentials.json changes, and nothing is written when no token is bound.
-            let changed = false;
-            if (readCredentials(ctx.paths).users[targetUid]?.divingFishImportToken !== undefined) {
-                store.transaction(() => {
-                    assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                });
-                await updateCredentials(ctx.paths, store, current => {
-                    const entry = current.users[targetUid];
-                    if (entry?.divingFishImportToken === undefined) return current;
-                    changed = true;
-                    const nextEntry = { ...entry };
-                    delete nextEntry.divingFishImportToken;
-                    return { ...current, users: { ...current.users, [targetUid]: nextEntry } };
-                });
-            }
-            const updatedRow = listUsers(store).find(u => u.uid === targetUid) ?? target;
-            return {
-                data: {
-                    ...userDetail(updatedRow, readUserCounts(store, targetUid)),
-                    source,
-                    changed,
-                },
-            };
-        }
-
-        return withCredentialsLock(store, () => {
-            const freshUser = readUser(store, targetUid);
-            if (!freshUser) {
-                throw new CliError("NOT_FOUND", `找不到用户「${target.displayName}」`);
-            }
-
-            let nextUser: User = freshUser;
-            let changed = false;
-
-            if (source === "ingame") {
-                const inGame = freshUser.inGame;
-                changed = Boolean(
-                    inGame &&
-                    (inGame.id !== null || inGame.name !== null || inGame.enabled !== false)
-                );
-                if (changed) {
-                    nextUser = {
-                        ...freshUser,
-                        inGame: {
-                            ...inGame,
-                            name: null,
-                            id: null,
-                            enabled: false,
-                        },
-                    };
-                    store.transaction(() => {
-                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                        saveUser(store, nextUser);
-                    });
-                }
-            } else if (source === "df-name") {
-                changed =
-                    freshUser.divingFish?.name !== null && freshUser.divingFish?.name !== undefined;
-                if (changed) {
-                    nextUser = {
-                        ...freshUser,
-                        divingFish: {
-                            ...freshUser.divingFish,
-                            name: null,
-                        },
-                    };
-                    store.transaction(() => {
-                        assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                        saveUser(store, nextUser);
-                    });
-                }
-            } else if (source === "lxns") {
-                const currentCreds = readCredentials(ctx.paths);
-                const userCreds = currentCreds.users[targetUid];
-                const hasLxnsCreds =
-                    userCreds?.lxnsAuthorization !== undefined ||
-                    userCreds?.lxnsAccountId !== undefined ||
-                    userCreds?.lxnsIssuedAt !== undefined;
-                const lxns = freshUser.lxns;
-                const hasLxnsDb = Boolean(
-                    lxns && (lxns.auth !== null || lxns.name !== null || lxns.id !== null)
-                );
-                changed = hasLxnsCreds || hasLxnsDb;
-
-                if (changed) {
-                    nextUser = {
-                        ...freshUser,
-                        lxns: { auth: null, name: null, id: null },
-                    };
-
-                    if (hasLxnsCreds) {
-                        const nextUsers: Record<string, UserCredentials> = {
-                            ...currentCreds.users,
-                        };
-                        if (nextUsers[targetUid]) {
-                            const credsCopy = {
-                                ...nextUsers[targetUid],
-                            };
-                            delete credsCopy.lxnsAuthorization;
-                            delete credsCopy.lxnsAccountId;
-                            delete credsCopy.lxnsIssuedAt;
-                            nextUsers[targetUid] = credsCopy;
-                        }
-                        const staged = stageCredentials(ctx.paths, {
-                            ...currentCreds,
-                            users: nextUsers,
-                        });
-                        let userSaved = false;
-                        try {
-                            store.transaction(() => {
-                                assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                                saveUser(store, nextUser);
-                            });
-                            userSaved = true;
-                        } catch (error) {
-                            staged.discard();
-                            throw error;
-                        }
-
-                        try {
-                            staged.commit();
-                        } catch (error) {
-                            if (userSaved) {
-                                const reason = error instanceof Error ? `（${error.message}）` : "";
-                                throw new CliError(
-                                    "INTERNAL",
-                                    `落雪凭据未能清理${reason}；残留凭据将在下次改动凭据文件时自动清理`,
-                                    { cause: error }
-                                );
-                            }
-                            staged.discard();
-                            throw error;
-                        }
-                    } else {
-                        store.transaction(() => {
-                            assertNoSync(store, targetUid, () => ctx.io.now().getTime());
-                            saveUser(store, nextUser);
-                        });
-                    }
-                }
-            }
-
-            const updatedRow = listUsers(store).find(u => u.uid === targetUid);
-            if (!updatedRow) throw new Error("unbound user disappeared");
-            return {
-                data: {
-                    ...userDetail(updatedRow, readUserCounts(store, targetUid)),
-                    source,
-                    changed,
-                },
-            };
-        });
+        const { uid } = target;
+        return {
+            data: await withBindingLocks(ctx, store, target, () =>
+                writeBinding(ctx.paths, store, uid, source, () => {
+                    const user = readUser(store, uid);
+                    if (!user) throw new CliError("NOT_FOUND", "找不到要解绑的用户");
+                    return prepareUnbind(ctx, store, uid, user, source);
+                })
+            ),
+        };
     }
 );

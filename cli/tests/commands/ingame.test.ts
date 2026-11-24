@@ -1,11 +1,12 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { User } from "@core/user/type";
 import { Buffer } from "node:buffer";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { buildGameBackup } from "@core/user/gameBackup";
-import { describe, expect, it } from "vitest";
+import * as gameBackupModule from "@core/user/gameBackup";
+import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
 import { openStore } from "../../src/store/store";
 import { replaceUsers } from "../../src/users/repository";
@@ -172,6 +173,32 @@ describe("saltnet ingame backup", () => {
         expect(json.error.fix).toBe("saltnet user bind user-unbound ingame --qr -");
     });
 
+    it("writes a digit-only uid as uid:<uid> in the bind fix", async () => {
+        const paths = makeHome();
+        const cwd = path.dirname(paths.home);
+        const unbound = { id: null, name: null, enabled: false, useFastUpdate: false };
+        const store = openStore(paths);
+        replaceUsers(
+            store,
+            [
+                makeUser("first", { remark: "First", inGame: unbound }),
+                makeUser("0", { remark: "Digits", inGame: unbound }),
+            ],
+            []
+        );
+        store.close();
+
+        const { json } = await commandIn(
+            paths,
+            "ingame",
+            ["backup", "backup.json", "--user", "Digits"],
+            { cwd }
+        );
+
+        expect(json.error.code).toBe("NOT_BOUND");
+        expect(json.error.fix).toBe("saltnet user bind uid:0 ingame --qr -");
+    });
+
     it("quotes a uid that looks like an option in every fix", async () => {
         const paths = makeHome();
         const cwd = path.dirname(paths.home);
@@ -293,6 +320,48 @@ describe("saltnet ingame backup", () => {
         expect(resSuccess.code).toBe(0);
         expect(resSuccess.json.ok).toBe(true);
         expect(readFileSync(filePath, "utf8")).not.toBe("original content");
+    });
+
+    it("refuses to overwrite a file created after the early check without --overwrite", async () => {
+        const paths = makeHome();
+        const cwd = path.dirname(paths.home);
+        const user = makeUser("user-race");
+        const store = openStore(paths);
+        replaceUsers(store, [user], []);
+        store.close();
+
+        const filePath = path.resolve(cwd, "late-created.json");
+        const spy = vi.spyOn(gameBackupModule, "buildGameBackup").mockImplementationOnce(u => {
+            writeFileSync(filePath, "created after early check");
+            return gameBackupModule.buildGameBackup(u);
+        });
+
+        try {
+            const resFail = await commandIn(paths, "ingame", ["backup", "late-created.json"], {
+                cwd,
+            });
+            expect(resFail.code).toBe(2);
+            expect(resFail.json.ok).toBe(false);
+            expect(resFail.json.error.code).toBe("FILE_EXISTS");
+            expect(resFail.json.error.fix).toBe(
+                "saltnet ingame backup late-created.json --overwrite"
+            );
+            expect(readFileSync(filePath, "utf8")).toBe("created after early check");
+            const tmpFiles = readdirSync(cwd).filter(f => f.endsWith(".tmp"));
+            expect(tmpFiles).toEqual([]);
+        } finally {
+            spy.mockRestore();
+        }
+
+        const resSuccess = await commandIn(
+            paths,
+            "ingame",
+            ["backup", "late-created.json", "--overwrite"],
+            { cwd }
+        );
+        expect(resSuccess.code).toBe(0);
+        expect(readFileSync(filePath, "utf8")).not.toBe("created after early check");
+        expect(statSync(filePath).mode & 0o777).toBe(0o600);
     });
 
     it("fails with USAGE when directory does not exist and does not create the directory", async () => {

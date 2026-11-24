@@ -1,6 +1,7 @@
-import type { LXNSOAuthTransaction } from "@core/integrations/lxns/oauth";
 import type { User } from "@core/user/type";
-import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { CredentialsFile } from "../runtime/credentials";
+import type { StagedFile } from "../runtime/files";
+import type { Store } from "../store/store";
 import type { UserDetail, UserRow } from "../users/view";
 import { createUserUid } from "@core/user/scoreHistory/userIdentity";
 import { userCountsSchema, userRowSchema } from "../catalog/schemas";
@@ -20,15 +21,11 @@ import {
     saveUser,
 } from "../users/repository";
 import { userDetail, userRow } from "../users/view";
+import { userUidWord } from "../util/printedCommand";
 import { CONFIRM_OPTIONS, requireConfirmation } from "./confirm";
+import { USER_POSITIONAL } from "./describe";
 import { listOptions } from "./listOptions";
 import { defineCommand } from "./registry";
-
-const USER_POSITIONAL = {
-    name: "user",
-    valueName: "用户",
-    description: "用户序号（从 0 开始）、uid 或显示名",
-} as const;
 
 const OPTIONAL_USER_POSITIONAL = { ...USER_POSITIONAL, optional: true } as const;
 
@@ -55,7 +52,7 @@ function removalUser(
 ) {
     // Normal digit-only references are indexes. A confirmation fix is required to use the stable
     // uid, so its exact uid wins even when an imported uid happens to contain only digits.
-    if (confirmationCode !== undefined) {
+    if (confirmationCode !== undefined && !text.startsWith("uid:")) {
         const byUid = users.find(user => user.uid === text.trim());
         if (byUid) return byUid;
     }
@@ -115,7 +112,7 @@ export const userShow = defineCommand(
         name: "user show",
         summary: "查看一个用户及其本地数据行数",
         description:
-            "用户可以写序号、uid 或显示名；省略时查看 index 0 的默认用户，没有任何用户时是 NO_USER。结果是 user list 的一行，再加 counts：详细成绩、B50、收藏品、旅行伙伴、rating 历史和成绩变化事件各有多少行。",
+            "用户可以写序号、uid、精确 uid（uid:<uid>）或显示名；省略时查看 index 0 的默认用户，没有任何用户时是 NO_USER。结果是 user list 的一行，再加 counts：详细成绩、B50、收藏品、旅行伙伴、rating 历史和成绩变化事件各有多少行。",
         category: "account",
         effect: "none",
         output: "object",
@@ -255,6 +252,35 @@ export const userEdit = defineCommand(
     }
 );
 
+function confirmRemoval(store: Store, uid: string, given: string | undefined): UserDetail {
+    const found = listUsers(store).find(user => user.uid === uid);
+    if (!found) throw new CliError("NOT_FOUND", "找不到要删除的用户");
+    const detail = userDetail(found, readUserCounts(store, uid));
+    const ref = userUidWord(uid);
+    requireConfirmation(given, {
+        operation: "user.remove",
+        target: `user:${uid}`,
+        state: {
+            uid: detail.uid,
+            index: detail.index,
+            name: detail.name,
+            scoresUpdatedAt: detail.scoresUpdatedAt,
+            counts: { ...detail.counts },
+            contentFingerprint: readUserRemovalFingerprint(store, uid),
+        },
+        preview: {
+            ...detail,
+            inGame: { ...detail.inGame },
+            lxns: detail.lxns === null ? null : { ...detail.lxns },
+            divingFish: { ...detail.divingFish },
+            counts: { ...detail.counts },
+        },
+        summary: `将删除用户「${detail.name}」及其成绩和历史`,
+        confirmArgs: ref.startsWith("-") ? ["user", "remove", "--", ref] : ["user", "remove", ref],
+    });
+    return detail;
+}
+
 export const userRemove = defineCommand(
     {
         name: "user remove",
@@ -289,88 +315,49 @@ export const userRemove = defineCommand(
         const store = ctx.store();
         const now = () => ctx.io.now().getTime();
         return withCredentialsLock(store, () => {
-            const users = listUsers(store);
-            const found = removalUser(users, args.positionals.user, args.options.yes);
-            const detail = userDetail(found, readUserCounts(store, found.uid));
-            const confirmArgs = found.uid.startsWith("-")
-                ? ["user", "remove", "--", found.uid]
-                : ["user", "remove", found.uid];
+            const given = args.options.yes;
+            const found = removalUser(listUsers(store), args.positionals.user, given);
             store.transaction(() => assertNoSync(store, found.uid, now));
-            requireConfirmation(args.options.yes, {
-                operation: "user.remove",
-                target: `user:${found.uid}`,
-                state: {
-                    uid: detail.uid,
-                    index: detail.index,
-                    name: detail.name,
-                    scoresUpdatedAt: detail.scoresUpdatedAt,
-                    counts: { ...detail.counts },
-                    contentFingerprint: readUserRemovalFingerprint(store, found.uid),
-                },
-                preview: {
-                    ...detail,
-                    inGame: { ...detail.inGame },
-                    lxns: detail.lxns === null ? null : { ...detail.lxns },
-                    divingFish: { ...detail.divingFish },
-                    counts: { ...detail.counts },
-                },
-                summary: `将删除用户「${detail.name}」及其成绩和历史`,
-                confirmArgs,
-            });
+            store.read(() => confirmRemoval(store, found.uid, given));
 
-            const currentCredentials = readCredentials(ctx.paths);
-            const nextUsers: Record<string, UserCredentials> = {};
-            for (const [uid, creds] of Object.entries(currentCredentials.users)) {
-                if (uid !== found.uid) {
-                    nextUsers[uid] = creds;
-                }
-            }
-            const nextCredentials: CredentialsFile = {
+            const current = readCredentials(ctx.paths);
+            const next: CredentialsFile = {
                 version: 1,
-                users: nextUsers,
+                users: Object.fromEntries(
+                    Object.entries(current.users).filter(([uid]) => uid !== found.uid)
+                ),
             };
-            if (currentCredentials.pendingLxnsAuthorizations !== undefined) {
-                const nextPending: Record<string, LXNSOAuthTransaction> = {};
-                for (const [state, record] of Object.entries(
-                    currentCredentials.pendingLxnsAuthorizations
-                )) {
-                    if (record.userUid !== found.uid) {
-                        nextPending[state] = record;
-                    }
-                }
-                nextCredentials.pendingLxnsAuthorizations = nextPending;
+            if (current.pendingLxnsAuthorizations !== undefined) {
+                next.pendingLxnsAuthorizations = Object.fromEntries(
+                    Object.entries(current.pendingLxnsAuthorizations).filter(
+                        ([, record]) => record.userUid !== found.uid
+                    )
+                );
             }
 
-            const staged = stageCredentials(ctx.paths, nextCredentials);
-            let userDeleted = false;
+            let staged: StagedFile | undefined;
             try {
-                store.transaction(() => {
+                const data = store.transaction(() => {
                     assertNoSync(store, found.uid, now);
-                    if (!removeUser(store, found.uid))
-                        throw new Error("confirmed user disappeared");
+                    const detail = confirmRemoval(store, found.uid, given);
+                    staged = stageCredentials(ctx.paths, next);
+                    removeUser(store, found.uid);
+                    return { ...detail, remainingUsers: listUsers(store).length };
                 });
-                userDeleted = true;
-            } catch (error) {
-                staged.discard();
-                throw error;
-            }
-
-            try {
-                staged.commit();
-            } catch (error) {
-                if (userDeleted) {
+                try {
+                    staged!.commit();
+                } catch (error) {
                     const reason = error instanceof Error ? `（${error.message}）` : "";
                     throw new CliError(
                         "INTERNAL",
-                        `用户「${detail.name}」已删除，但凭据文件未能更新${reason}；残留凭据将在下次改动凭据文件时自动清理`,
+                        `用户「${data.name}」已删除，但凭据文件未能更新${reason}；残留凭据将在下次改动凭据文件时自动清理`,
                         { cause: error }
                     );
                 }
-                staged.discard();
-                throw error;
+                return { data };
+            } finally {
+                staged?.discard();
             }
-
-            return { data: { ...detail, remainingUsers: users.length - 1 } };
         });
     }
 );

@@ -93,14 +93,9 @@ export function planUserSync(
     assertGameQrSource(usesGame(row, requestedSource), qr);
     const user = syncUserMeta(row);
     let source: SyncPlan["source"] = null;
-    let mode: SyncPlan["mode"] = null;
-    let uploads: SyncPlan["uploads"] = [];
-    let error: SyncPlan["error"] = null;
     try {
         const workingUser = buildUserForCore(storedUser, ctx.paths);
         source = resolveSyncSource(workingUser, row, requestedSource);
-        mode = plannedMode(source, qr !== undefined);
-        uploads = syncUploadTargets(workingUser, source, upload);
         if (source === "ingame" && !qr) assertGameId(workingUser, row);
         if (source === "lxns") {
             try {
@@ -115,16 +110,24 @@ export function planUserSync(
                 throw new CliError(error.code, error.message, { fix });
             }
         }
+        const uploads = syncUploadTargets(workingUser, source, upload);
+        return {
+            user,
+            source,
+            mode: plannedMode(source, qr !== undefined),
+            uploads,
+            effect: qr ? "account" : uploads.length ? "remote" : "local",
+            error: null,
+        };
     } catch (cause) {
         if (!(cause instanceof CliError)) throw cause;
-        error = syncResultError(cause);
+        return {
+            user,
+            source,
+            mode: null,
+            uploads: [],
+            effect: "local",
+            error: syncResultError(cause),
+        };
     }
-    return {
-        user,
-        source,
-        mode,
-        uploads,
-        effect: qr ? "account" : uploads.length ? "remote" : "local",
-        error,
-    };
 }
