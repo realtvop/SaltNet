@@ -1,50 +1,22 @@
-import type { LXNSAuth } from "./type";
+import type { LXNSOAuthCallback, LXNSOAuthTransaction } from "@core/integrations/lxns/oauth";
+import {
+    LXNS_OAUTH_LIFETIME,
+    LXNS_PKCE_VALUE,
+    parseLXNSOAuthCallback,
+    validateLXNSOAuthTransaction,
+} from "@core/integrations/lxns/oauth";
 
-export interface LXNSOAuthCallback {
-    url: string;
-    state: string;
-    code: string;
-    error: string;
-    errorDescription: string;
-}
-
-export interface LXNSOAuthTransaction {
-    userUid: string;
-    codeVerifier: string;
-    clientId: string;
-    redirectUri: string;
-    expiresAt: number;
-    callback?: LXNSOAuthCallback;
-    token?: { auth: LXNSAuth; expiresAt: number };
-}
+export type { LXNSOAuthCallback, LXNSOAuthTransaction };
+export { LXNS_OAUTH_LIFETIME, parseLXNSOAuthCallback };
 
 const STORAGE_PREFIX = "saltnet:lxns:oauth:";
 const CALLBACK_STORAGE_KEY = "saltnet:lxns:callback";
-export const LXNS_OAUTH_LIFETIME = 15 * 60 * 1000;
 const CALLBACK_PARAMS = ["lxns_auth_complete", "code", "state", "error", "error_description"];
-const PKCE_VALUE = /^[A-Za-z0-9_-]{43,128}$/;
 
 let initialLXNSOAuthCallback: LXNSOAuthCallback | null = null;
 
 export function getInitialLXNSOAuthCallback(): LXNSOAuthCallback | null {
     return initialLXNSOAuthCallback;
-}
-
-export function parseLXNSOAuthCallback(value: string): LXNSOAuthCallback {
-    const url = new URL(value);
-    if (
-        !["http:", "https:"].includes(url.protocol) ||
-        !url.searchParams.has("lxns_auth_complete")
-    ) {
-        throw new Error("请粘贴落雪授权完成后显示的完整回调链接");
-    }
-    return {
-        url: url.href,
-        state: url.searchParams.get("state") || "",
-        code: url.searchParams.get("code") || "",
-        error: url.searchParams.get("error") || "",
-        errorDescription: url.searchParams.get("error_description") || "",
-    };
 }
 
 // Run before creating hash history, whose base otherwise retains the callback query.
@@ -86,7 +58,9 @@ export function captureLXNSOAuthCallback(): void {
 }
 
 export function clearCapturedLXNSOAuthCallback(state: string): void {
-    if (initialLXNSOAuthCallback?.state !== state) return;
+    if (initialLXNSOAuthCallback?.state !== state) {
+        return;
+    }
     initialLXNSOAuthCallback = null;
     try {
         window.sessionStorage.removeItem(CALLBACK_STORAGE_KEY);
@@ -104,25 +78,16 @@ export function removeLXNSOAuthTransaction(state: string): void {
 }
 
 export function getLXNSOAuthTransaction(state: string): LXNSOAuthTransaction | null {
-    if (!PKCE_VALUE.test(state)) return null;
+    if (!LXNS_PKCE_VALUE.test(state)) {
+        return null;
+    }
     const stored = window.localStorage.getItem(STORAGE_PREFIX + state);
-    if (!stored) return null;
+    if (!stored) {
+        return null;
+    }
     try {
-        const transaction = JSON.parse(stored) as LXNSOAuthTransaction;
-        if (
-            transaction &&
-            typeof transaction.userUid === "string" &&
-            transaction.userUid &&
-            typeof transaction.codeVerifier === "string" &&
-            PKCE_VALUE.test(transaction.codeVerifier) &&
-            typeof transaction.clientId === "string" &&
-            transaction.clientId &&
-            typeof transaction.redirectUri === "string" &&
-            transaction.redirectUri &&
-            Number.isFinite(transaction.expiresAt) &&
-            transaction.expiresAt > Date.now() &&
-            transaction.expiresAt <= Date.now() + LXNS_OAUTH_LIFETIME
-        ) {
+        const transaction = validateLXNSOAuthTransaction(JSON.parse(stored), Date.now());
+        if (transaction) {
             return transaction;
         }
     } catch {
@@ -136,10 +101,14 @@ export function getPendingLXNSOAuthCallback(): LXNSOAuthCallback | null {
     let callback: LXNSOAuthCallback | null = null;
     for (let i = window.localStorage.length - 1; i >= 0; i--) {
         const key = window.localStorage.key(i);
-        if (!key?.startsWith(STORAGE_PREFIX)) continue;
+        if (!key?.startsWith(STORAGE_PREFIX)) {
+            continue;
+        }
         const state = key.slice(STORAGE_PREFIX.length);
         const transaction = getLXNSOAuthTransaction(state);
-        if (transaction?.callback?.state === state) callback = transaction.callback;
+        if (transaction?.callback?.state === state) {
+            callback = transaction.callback;
+        }
     }
     return callback;
 }

@@ -1,0 +1,99 @@
+# Shared by the scripts of this directory. Sourced, never run on its own.
+# Needs: zsh, git, rsync, tar, node, python3.
+#
+# The calling script sets HERE to its own directory (`HERE=${0:A:h}`) before sourcing this file.
+
+HERE=${HERE:?the calling script sets HERE to its own directory}
+REPO=$(git -C "$HERE" rev-parse --show-toplevel) || exit 2
+PLAN=$REPO/docs/spark/2026-11-10-saltnet-cli-plan.md
+# Where snapshots, results and logs go. In a Claude Code session point this at the scratchpad.
+WORK=${SALTNET_WORK:-${TMPDIR:-/tmp}/saltnet-cli-work}
+mkdir -p "$WORK"
+WORK=${WORK:A}   # absolute: the scripts change directory
+
+# Files that must never reach another tool: the user's environment files.
+_not_env() { grep -zvE '(^|/)\.env(\..*)?$'; }
+
+# Turns the files in $1 into a git repository of its own (no remote) with one commit `base`, also
+# tagged `base`, and links node_modules in from the real checkout so tsc and vitest can run.
+_snapshot_init() {
+    local dest=$1
+    (
+        cd "$dest" || exit 2
+        git init -q
+        printf 'node_modules\n' >> .git/info/exclude
+        git -c user.name=snapshot -c user.email=snapshot@example.invalid add -A
+        git -c user.name=snapshot -c user.email=snapshot@example.invalid commit -q -m base
+        git tag base
+    ) || return 2
+    _link_node_modules "$dest"
+}
+
+# Links node_modules in from the real checkout for each package directory that exists in $1 and has
+# no link yet. A review overlay can add a package (cli/) after the base commit, so it runs again then.
+_link_node_modules() {
+    local dest=$1 dir
+    for dir in . cli render-service; do
+        if [ -d "$REPO/$dir/node_modules" ] && [ -d "$dest/$dir" ] && [ ! -e "$dest/$dir/node_modules" ]; then
+            ln -s "$REPO/$dir/node_modules" "$dest/$dir/node_modules" || return 2
+        fi
+    done
+    return 0
+}
+
+# Snapshot of the project as it is on disk right now: every file git knows (tracked, or untracked
+# and not ignored), uncommitted work included, `.env*` left out. `base` is that state. Used to hand
+# a task to a tool that writes code: whatever it changes shows up as the difference from `base`.
+#
+# SNAPSHOT_PATCHES (absolute paths, separated by colons) are applied on top before `base` is made:
+# patches that are reviewed but not committed yet, so a task can start from the state an earlier
+# step will leave (P2-2 on top of P2-1's move) while the real tree still waits for other commits.
+snapshot_worktree() {   # $1 = destination, wiped first
+    local dest=$1 p
+    rm -rf "$dest"; mkdir -p "$dest"
+    (
+        cd "$REPO" || exit 2
+        git ls-files -z --cached --others --exclude-standard | while IFS= read -r -d '' f; do
+            if [ -e "$f" ]; then printf '%s\0' "$f"; fi
+        done | _not_env | rsync -a --from0 --files-from=- "$REPO/" "$dest/"
+    ) || return 2
+    for p in ${(s.:.)${SNAPSHOT_PATCHES:-}}; do
+        ( cd "$dest" && git apply --whitespace=nowarn "$p" ) || { echo "cannot apply $p" >&2; return 2; }
+        echo "applied $p"
+    done
+    _snapshot_init "$dest"
+}
+
+# Snapshot for a review: `base` is the last commit (HEAD, `.env*` left out) and the uncommitted work
+# of the real tree is laid over it uncommitted, so `git diff base` is exactly the change under
+# review (new files show in `git status`).
+# REVIEW_BASE (a commit) makes `base` that commit instead: the tree on disk (the commits after it
+# plus the uncommitted work) is laid over it, so a whole part of the plan is reviewed at once.
+snapshot_candidate() {   # $1 = destination, wiped first
+    local dest=$1 f from=${REVIEW_BASE:-HEAD}
+    rm -rf "$dest"; mkdir -p "$dest"
+    ( cd "$REPO" && git rev-parse -q --verify "$from^{commit}" > /dev/null ) || { echo "no commit $from" >&2; return 2; }
+    ( cd "$REPO" && git archive "$from" | tar -x -C "$dest" ) || return 2
+    find "$dest" \( -name '.env' -o -name '.env.*' \) -type f -delete
+    _snapshot_init "$dest" || return 2
+    (
+        cd "$REPO" || exit 2
+        { git diff "$from" --no-renames --name-only -z --diff-filter=ACMRT
+          git ls-files -z --others --exclude-standard; } | _not_env | rsync -a --from0 --files-from=- "$REPO/" "$dest/"
+        git diff "$from" --no-renames --name-only -z --diff-filter=D | while IFS= read -r -d '' f; do
+            rm -f "$dest/$f"
+        done
+    ) || return 2
+    _link_node_modules "$dest"
+}
+
+# What a tool changed in its snapshot: files.txt (`git status --short`) and patch.diff (binary-safe
+# diff from `base`) in the directory $2.
+collect_changes() {   # $1 = snapshot, $2 = output directory
+    (
+        cd "$1" || exit 2
+        git -c user.name=snapshot -c user.email=snapshot@example.invalid add -A
+        git status --short > "$2/files.txt"
+        git diff --cached --binary base > "$2/patch.diff"
+    )
+}

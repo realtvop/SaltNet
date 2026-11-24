@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        // Web-standard globals (fetch, URL, TextEncoder, crypto) without window/document/localStorage,
+        // and no Node or Vite types, so DOM, Node-only and import.meta.env usage fails to compile.
+        "lib": ["ES2023", "WebWorker"],
+        "types": [],
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "noEmit": true,
+
+        /* Linting */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
+    },
+    "include": ["./**/*.ts"],
+    "exclude": ["./**/*.test.ts", "./**/fixtures/**"]
+}

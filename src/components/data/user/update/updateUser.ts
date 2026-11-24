@@ -1,14 +1,8 @@
-import { type User } from "@/components/data/user/type";
-import { appendRatingHistory } from "@/components/data/user/ratingHistory";
+import { applySyncUpdate } from "@core/sync/apply";
+import { type User } from "@core/user/type";
 import { alert, snackbar, prompt } from "mdui";
 import { markDialogOpen, markDialogClosed } from "@/components/app/router";
-import {
-    createScoreHistoryCandidates,
-    createUserUid,
-    enqueueScoreHistoryBatch,
-    getExistingScoreData,
-    type ScoreHistorySource,
-} from "@/components/data/user/scoreHistory";
+import { createUserUid, enqueueScoreHistoryBatch } from "@/components/data/user/scoreHistory";
 
 import UpdateUserWorker from "./updateUser.worker.ts?worker&inline";
 
@@ -35,51 +29,12 @@ updateUserWorker.onmessage = (event: MessageEvent) => {
         const { result: data } = event.data;
         if (data) {
             const user = pending.user;
-            const {
-                lxns,
-                scoreHistorySource,
-                userId,
-                ...nextData
-            }: {
-                lxns?: User["lxns"];
-                scoreHistorySource: ScoreHistorySource;
-                userId?: number;
-                [key: string]: unknown;
-            } = data;
-            const existing = getExistingScoreData(user.data.detailed, user.data.b50);
-            const incomingDetailed = nextData.detailed
-                ? Object.values(nextData.detailed as NonNullable<User["data"]["detailed"]>)
-                : [];
-            const incomingB50 = nextData.b50
-                ? [
-                      ...(nextData.b50 as NonNullable<User["data"]["b50"]>).sd,
-                      ...(nextData.b50 as NonNullable<User["data"]["b50"]>).dx,
-                  ]
-                : [];
-            const incoming = [...incomingDetailed, ...incomingB50];
-            const observedAt =
-                typeof nextData.updateTime === "number" ? nextData.updateTime : Date.now();
-            const candidates = createScoreHistoryCandidates(existing, incoming, observedAt);
-            appendRatingHistory(user, nextData.rating, observedAt);
-
-            user.data = {
-                ...user.data,
-                ...(nextData as Partial<User["data"]>),
-                ...(userId !== undefined ? { userId } : {}),
-            };
-            if (lxns) user.lxns = { ...user.lxns, ...lxns };
-            if (userId) user.inGame.id = userId;
-            if (
-                user.inGame.id &&
-                typeof user.inGame.id === "number" &&
-                user.inGame.id.toString().length === 8
-            )
-                user.inGame.name = data.name;
+            const { candidates, source } = applySyncUpdate(user, data);
 
             void enqueueScoreHistoryBatch({
                 batchId: requestId,
                 userUid: pending.userUid,
-                source: scoreHistorySource,
+                source,
                 candidates,
             }).then(saved => {
                 if (!saved) {

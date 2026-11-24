@@ -1,9 +1,9 @@
 <script setup lang="ts">
+    import { normalizeRatingHistory } from "@core/user/ratingHistory";
+    import { getUserDisplayName, type RatingHistoryEntry } from "@core/user/type";
     import { computed, ref } from "vue";
     import { useRoute, useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
-    import { getUserDisplayName, type RatingHistoryEntry } from "@/components/data/user/type";
-    import { normalizeRatingHistory } from "@/components/data/user/ratingHistory";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
 
     const route = useRoute();

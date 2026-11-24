@@ -5,7 +5,8 @@
         "baseUrl": ".", // Add baseUrl
         "paths": {
             // Add paths alias
-            "@/*": ["src/*"]
+            "@/*": ["src/*"],
+            "@core/*": ["shared/core/*"]
         },
         "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 

@@ -1,0 +1,671 @@
+import type { ScoreHistoryEventV1 } from "@core/user/scoreHistory/type";
+import type { User } from "@core/user/type";
+import type { CredentialsFile, UserCredentials } from "../runtime/credentials";
+import type { StagedFile } from "../runtime/files";
+import type { RuntimePaths } from "../runtime/paths";
+import type { Store } from "../store/store";
+import { Buffer } from "node:buffer";
+import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
+import { getUserDisplayName } from "@core/user/type";
+import { CliError } from "../errors";
+import { bool, int, object, str } from "../output/schema";
+import {
+    lxnsAccountIdOf,
+    matchingLxnsAuthorization,
+    readCredentials,
+    stageCredentials,
+    withCredentialsLock,
+} from "../runtime/credentials";
+import { stageFileAtomic } from "../runtime/files";
+import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
+import { acquireLock } from "../store/locks";
+import { recordRun } from "../sync/journal";
+import { assertNoSync, DEFAULT_SYNC_LOCK_TTL_MS } from "../sync/lock";
+import {
+    assertStoredScoreEvent,
+    assertStoredUser,
+    listUsers,
+    readScoreEvents,
+    readUserRemovalFingerprint,
+    readUsers,
+    replaceUsers,
+} from "../users/repository";
+import { fileWord } from "../util/printedCommand";
+import { formatLocalTime } from "../util/time";
+import { CONFIRM_OPTIONS, requireConfirmation } from "./confirm";
+import { defineCommand } from "./registry";
+
+const FILE_POSITIONAL = {
+    name: "file",
+    valueName: "文件",
+    description: "备份文件路径；相对路径按当前目录解析",
+} as const;
+
+interface ImportResult {
+    path: string;
+    userCount: number;
+    eventCount: number;
+    divingFishTokenCount: number;
+    lxnsAuthorizationCount: number;
+}
+
+interface ExportResult {
+    path: string;
+    userCount: number;
+    eventCount: number;
+    byteSize: number;
+    containsDivingFishTokens: boolean;
+    divingFishTokenCount: number;
+    containsLxnsAuthorizations: boolean;
+    lxnsAuthorizationCount: number;
+}
+
+interface PreparedImport {
+    users: User[];
+    events: ScoreHistoryEventV1[];
+    credentials: CredentialsFile;
+    divingFishTokenCount: number;
+}
+
+interface CredentialOutcome {
+    uid: string;
+    divingFishImportToken: boolean;
+    lxnsAuthorization: boolean;
+    lxnsAuthorizationSource: "backup" | "kept" | null;
+}
+
+function record(value: unknown): Record<string, unknown> | undefined {
+    return value !== null && typeof value === "object"
+        ? (value as Record<string, unknown>)
+        : undefined;
+}
+
+function present(value: unknown): boolean {
+    return value !== undefined && value !== null;
+}
+
+function credentialsOf(credentials: CredentialsFile, uid: string): UserCredentials | undefined {
+    return Object.hasOwn(credentials.users, uid) ? credentials.users[uid] : undefined;
+}
+
+function emptyCredentialUsers(): Record<string, UserCredentials> {
+    return Object.create(null) as Record<string, UserCredentials>;
+}
+
+function backupError(file: string, reason: string, cause?: unknown): CliError {
+    return new CliError("INVALID_BACKUP", `备份文件 ${file} ${reason}`, {
+        retryable: false,
+        cause,
+    });
+}
+
+function safeDecodeReason(error: unknown): string {
+    const message = error instanceof Error ? error.message : "";
+    return /^(?:备份|不支持|用户数据|成绩历史)/.test(message) ? message : "JSON 或编码内容无效";
+}
+
+function readBackup(file: string): {
+    digest: string;
+    source: Record<string, unknown>;
+    decoded: ReturnType<typeof decodeUserDataBackup>;
+} {
+    let bytes: Buffer;
+    try {
+        bytes = readFileSync(file);
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        throw backupError(file, `无法读取${typeof code === "string" ? `（${code}）` : ""}`, error);
+    }
+
+    let source: unknown;
+    try {
+        const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        source = JSON.parse(text);
+    } catch {
+        throw backupError(file, "不是有效的 UTF-8 JSON");
+    }
+
+    try {
+        const decoded = decodeUserDataBackup(source);
+        const backup = source as Record<string, unknown>;
+        const digest = createHash("sha256").update(bytes).digest("hex");
+        const prefix = `import-v${backup.version}-${digest.slice(0, 24)}`;
+        if (backup.version === 0) {
+            decoded.users = decoded.users.map((user, index) => ({
+                ...user,
+                uid: `${prefix}-${index}`,
+            }));
+        } else if (backup.scoreHistory === undefined) {
+            // Core validates the original data, then assigns random uids when history is absent.
+            // Recover the explicit uids so the CLI can repeat the same preview for these bytes.
+            const originals = JSON.parse(
+                new TextDecoder().decode(Buffer.from(backup.users as string, "base64"))
+            ) as User[];
+            const explicitUids = new Set(originals.map(user => user.uid));
+            const seen = new Set<string>();
+            decoded.users = decoded.users.map((user, index) => {
+                const explicit = originals[index].uid;
+                if (typeof explicit === "string" && explicit.trim() && !seen.has(explicit)) {
+                    seen.add(explicit);
+                    return { ...user, uid: explicit };
+                }
+                let uid = `${prefix}-${index}`;
+                while (explicitUids.has(uid)) uid += "-";
+                return { ...user, uid };
+            });
+        }
+        return { digest, source: backup, decoded };
+    } catch (error) {
+        throw backupError(file, safeDecodeReason(error));
+    }
+}
+
+function stageImportedEvents(events: readonly ScoreHistoryEventV1[]): ScoreHistoryEventV1[] {
+    const generationId = `import-${randomUUID()}`;
+    return events.map(source => {
+        if (
+            !Number.isSafeInteger(source.sequence) ||
+            !Number.isSafeInteger(source.state.dxScore) ||
+            (source.state.playCount !== null && !Number.isSafeInteger(source.state.playCount))
+        ) {
+            throw new CliError(
+                "INVALID_BACKUP",
+                "备份中的成绩历史含有超出安全整数范围的 sequence、dxScore 或 playCount",
+                { retryable: false }
+            );
+        }
+        return {
+            ...source,
+            id: `${generationId}:${source.userUid}:${source.batchId}:${source.chartKey}:${source.sequence}:${source.kind}`,
+            generationId,
+        };
+    });
+}
+
+function prepareImport(
+    users: readonly User[],
+    events: readonly ScoreHistoryEventV1[]
+): PreparedImport {
+    const credentialUsers = emptyCredentialUsers();
+    let divingFishTokenCount = 0;
+    const storedUsers = users.map(source => {
+        const raw = source as unknown as Record<string, unknown>;
+        const divingFish = record(raw.divingFish);
+        const lxns = record(raw.lxns);
+        const importToken = divingFish?.importToken;
+        const lxnsAuthorization = lxns?.auth;
+        const hasImportToken = present(importToken);
+        const hasLxnsAuthorization = present(lxnsAuthorization);
+        const credentials: UserCredentials = {};
+        if (hasImportToken) {
+            credentials.divingFishImportToken = importToken;
+            divingFishTokenCount++;
+        }
+        if (hasLxnsAuthorization) {
+            credentials.lxnsAuthorization = lxnsAuthorization;
+            credentials.lxnsAccountId = lxnsAccountIdOf(raw);
+        }
+        if (hasImportToken || hasLxnsAuthorization)
+            credentialUsers[source.uid as string] = credentials;
+
+        return {
+            ...raw,
+            ...(hasImportToken ? { divingFish: { ...divingFish, importToken: null } } : {}),
+            ...(hasLxnsAuthorization ? { lxns: { ...lxns, auth: null } } : {}),
+        } as unknown as User;
+    });
+    return {
+        users: storedUsers,
+        events: stageImportedEvents(events),
+        credentials: { version: 1, users: credentialUsers },
+        divingFishTokenCount,
+    };
+}
+
+/**
+ * Rejects, before anything is previewed, a backup that decodes but holds users or events the user
+ * tables cannot store, so it fails as INVALID_BACKUP instead of inside the import transaction.
+ */
+function assertImportable(file: string, prepared: PreparedImport): void {
+    try {
+        for (const user of prepared.users) assertStoredUser(user);
+        for (const event of prepared.events) assertStoredScoreEvent(event);
+    } catch (error) {
+        throw backupError(file, "含有 CLI 无法保存的用户数据或成绩历史", error);
+    }
+}
+
+function applyCredentialPolicy(
+    prepared: PreparedImport,
+    currentCredentials: CredentialsFile,
+    keepLxns: boolean
+): { credentials: CredentialsFile; outcome: CredentialOutcome[] } {
+    const users = emptyCredentialUsers();
+    const outcome: CredentialOutcome[] = [];
+    for (const imported of prepared.users) {
+        const uid = imported.uid as string;
+        const incoming = credentialsOf(prepared.credentials, uid);
+        const entry: UserCredentials = {};
+        const importToken = incoming?.divingFishImportToken;
+        const incomingLxns = incoming?.lxnsAuthorization;
+        if (present(importToken)) {
+            entry.divingFishImportToken = importToken;
+        }
+        const accountId = lxnsAccountIdOf(imported);
+        if (keepLxns && present(incomingLxns)) {
+            entry.lxnsAuthorization = incomingLxns;
+            entry.lxnsAccountId = accountId;
+        } else {
+            const own = credentialsOf(currentCredentials, uid);
+            const ownLxns = matchingLxnsAuthorization(own, accountId);
+            if (ownLxns !== undefined) {
+                entry.lxnsAuthorization = ownLxns;
+                entry.lxnsAccountId = accountId;
+                if (own?.lxnsIssuedAt !== undefined) entry.lxnsIssuedAt = own.lxnsIssuedAt;
+            }
+        }
+        if (Object.keys(entry).length > 0) users[uid] = entry;
+        const hasIncomingLxns = keepLxns && present(incomingLxns);
+        const hasFinalLxns = present(entry.lxnsAuthorization);
+        outcome.push({
+            uid,
+            divingFishImportToken: present(entry.divingFishImportToken),
+            lxnsAuthorization: hasFinalLxns,
+            lxnsAuthorizationSource: hasIncomingLxns ? "backup" : hasFinalLxns ? "kept" : null,
+        });
+    }
+    return { credentials: { version: 1, users }, outcome };
+}
+
+function credentialCount(credentials: CredentialsFile, key: keyof UserCredentials): number {
+    return Object.values(credentials.users).filter(entry => present(entry[key])).length;
+}
+
+/** Acquire the whole uid set atomically, without changing sync journal rows. */
+function lockImportUsers(store: Store, uids: readonly string[], now: () => number) {
+    return store.transaction(() => {
+        assertNoSync(store, null, now);
+        return [...new Set(uids)].sort().map(uid => {
+            const result = acquireLock(store, `sync:${uid}`, {
+                ttlMs: DEFAULT_SYNC_LOCK_TTL_MS,
+                now,
+            });
+            // The database write lock excludes other owners after assertNoSync.
+            if (!result.acquired) throw new Error("import could not reserve a sync lock");
+            return result.lock;
+        });
+    });
+}
+
+function stageWithoutChangedCredentials(
+    paths: RuntimePaths,
+    current: CredentialsFile,
+    final: CredentialsFile
+): StagedFile | undefined {
+    const users = Object.fromEntries(
+        Object.entries(current.users).filter(([uid, entry]) =>
+            isDeepStrictEqual(entry, credentialsOf(final, uid))
+        )
+    );
+    if (
+        Object.keys(users).length === Object.keys(current.users).length &&
+        current.pendingLxnsAuthorizations === undefined
+    ) {
+        return;
+    }
+
+    return stageCredentials(paths, { version: 1, users });
+}
+
+export const importBackup = defineCommand(
+    {
+        name: "import",
+        summary: "确认后从网页端备份整体替换用户和成绩历史",
+        description:
+            "读取网页端 v0 或 v1 用户备份，预览文件内容和会被覆盖的本地数据；确认后整体替换用户与成绩历史，收藏夹不受影响。水鱼 Import-Token 会移到 credentials.json；进行中的落雪授权会被丢弃；落雪授权默认丢弃，但会保留凭据所记账号 id 与导入用户相同的 CLI 自有授权。--keep-lxns 改为采用备份里的落雪授权；备份里没有落雪授权的用户仍照默认规则处理。输出和预览永远只含凭据数量，不含凭据值。",
+        category: "data",
+        effect: "local",
+        output: "object",
+        positionals: [FILE_POSITIONAL],
+        options: {
+            ...CONFIRM_OPTIONS,
+            keepLxns: {
+                kind: "boolean",
+                description:
+                    "采用备份里的落雪授权（备份里没有的用户照默认处理）；默认丢弃并保留账号 id 匹配的 CLI 自有授权",
+            },
+        },
+        examples: [
+            {
+                command: "import saltnet-backup.json",
+                description: "预览导入备份；确认后运行 error.fix",
+            },
+        ],
+        errors: ["INVALID_BACKUP", "CONFIRMATION_REQUIRED", "SYNC_IN_PROGRESS", "DB_LOCKED"],
+        dataSchema: object<ImportResult>(
+            {
+                path: str("导入文件的绝对路径"),
+                userCount: int("导入的用户数"),
+                eventCount: int("导入的成绩历史事件数"),
+                divingFishTokenCount: int("存入 credentials.json 的水鱼 Import-Token 数"),
+                lxnsAuthorizationCount: int("存入 credentials.json 的落雪授权数"),
+            },
+            { description: "导入的用户、成绩历史和凭据数量" }
+        ),
+    },
+    async (args, ctx) => {
+        const givenPath = args.positionals.file;
+        const absolutePath = path.resolve(ctx.io.cwd, givenPath);
+        const backup = readBackup(absolutePath);
+        const prepared = prepareImport(backup.decoded.users, backup.decoded.events);
+        assertImportable(absolutePath, prepared);
+        const store = ctx.store();
+        const now = () => ctx.io.now().getTime();
+        function confirm(currentCredentials: CredentialsFile) {
+            const currentRows = listUsers(store);
+            const currentEventCount = readScoreEvents(store).length;
+            const fingerprints = currentRows.map(user => ({
+                uid: user.uid,
+                digest: readUserRemovalFingerprint(store, user.uid),
+            }));
+            const { credentials, outcome } = applyCredentialPolicy(
+                prepared,
+                currentCredentials,
+                args.options.keepLxns
+            );
+            const version = backup.source.version as 0 | 1;
+            const importedRows = prepared.users.map((user, index) => ({
+                index,
+                uid: user.uid as string,
+                name: String(getUserDisplayName(user)),
+            }));
+            const confirmArgs = [
+                "import",
+                ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+                ...(givenPath.startsWith("-") ? ["--"] : []),
+                givenPath,
+            ];
+            requireConfirmation(args.options.yes, {
+                operation: "backup.import",
+                target: absolutePath,
+                state: {
+                    fileDigest: backup.digest,
+                    currentUsers: fingerprints,
+                    credentialOutcome: outcome.map(item => ({
+                        uid: item.uid,
+                        divingFishImportToken: item.divingFishImportToken,
+                        lxnsAuthorization: item.lxnsAuthorization,
+                        lxnsAuthorizationSource: item.lxnsAuthorizationSource,
+                    })),
+                    keepLxns: args.options.keepLxns,
+                },
+                preview: {
+                    file: {
+                        path: absolutePath,
+                        version,
+                        ...(version === 1
+                            ? {
+                                  exportedAt: formatLocalTime(
+                                      new Date(backup.source.exportedAt as number)
+                                  ),
+                              }
+                            : {}),
+                    },
+                    users: importedRows,
+                    eventCount: prepared.events.length,
+                    overwritten: {
+                        users: currentRows.map(user => ({
+                            index: user.index,
+                            uid: user.uid,
+                            name: user.displayName,
+                        })),
+                        eventCount: currentEventCount,
+                    },
+                    keepLxns: args.options.keepLxns,
+                    divingFishTokenCount: prepared.divingFishTokenCount,
+                },
+                summary: `将用备份中的 ${prepared.users.length} 个用户和 ${prepared.events.length} 条成绩历史覆盖本地数据`,
+                confirmArgs,
+            });
+
+            return { currentRows, credentials };
+        }
+
+        const { currentRows } = await withCredentialsLock(store, () => {
+            store.transaction(() => assertNoSync(store, null, now));
+            return store.read(() => confirm(readCredentials(ctx.paths)));
+        });
+        const locks = lockImportUsers(
+            store,
+            [...currentRows.map(user => user.uid), ...prepared.users.map(user => user.uid!)],
+            now
+        );
+        try {
+            return await withCredentialsLock(store, credentialLock => {
+                const current = readCredentials(ctx.paths);
+                function renewLocks() {
+                    for (const lock of locks) {
+                        if (!lock.renew()) throw new Error("import sync lock was lost");
+                    }
+                    if (!credentialLock.renew()) throw new Error("import credential lock was lost");
+                }
+                let staged: StagedFile | undefined;
+                let stripped: StagedFile | undefined;
+                let restore: StagedFile | undefined;
+                let removed = false;
+                try {
+                    const credentials = store.transaction(() => {
+                        const { credentials } = confirm(current);
+                        renewLocks();
+                        // Only entries valid on both sides can remain visible across the commit.
+                        staged = stageCredentials(ctx.paths, credentials);
+                        stripped = stageWithoutChangedCredentials(ctx.paths, current, credentials);
+                        if (stripped) {
+                            restore = stageFileAtomic(
+                                ctx.paths.credentials,
+                                readFileSync(ctx.paths.credentials)
+                            );
+                            stripped.commit();
+                            removed = true;
+                        }
+                        replaceUsers(store, prepared.users, prepared.events);
+                        recordRun(
+                            store,
+                            {
+                                kind: "import",
+                                userUid: null,
+                                userName: null,
+                                source: null,
+                                mode: null,
+                            },
+                            {
+                                outcome: "ok",
+                                summary: {
+                                    users: prepared.users.length,
+                                    scoreEvents: prepared.events.length,
+                                },
+                            },
+                            { version: ctx.version, now }
+                        );
+                        renewLocks();
+                        return credentials;
+                    });
+                    removed = false;
+                    try {
+                        staged!.commit();
+                    } catch (error) {
+                        throw new Error(
+                            `用户已经导入，但凭据未保存到 ${ctx.paths.credentials}；请修复文件权限后重新导入`,
+                            { cause: error }
+                        );
+                    }
+
+                    return {
+                        data: {
+                            path: absolutePath,
+                            userCount: prepared.users.length,
+                            eventCount: prepared.events.length,
+                            divingFishTokenCount: credentialCount(
+                                credentials,
+                                "divingFishImportToken"
+                            ),
+                            lxnsAuthorizationCount: credentialCount(
+                                credentials,
+                                "lxnsAuthorization"
+                            ),
+                        } satisfies ImportResult,
+                    };
+                } catch (error) {
+                    // SQLite has already rolled back while the credential lock is still held.
+                    if (removed) restore!.commit();
+                    throw error;
+                } finally {
+                    staged?.discard();
+                    stripped?.discard();
+                    restore?.discard();
+                }
+            });
+        } finally {
+            for (const lock of locks.reverse()) {
+                try {
+                    lock.release();
+                } catch {
+                    // A lock that could not be released will expire.
+                }
+            }
+        }
+    }
+);
+
+function restoreCredentials(
+    storedUsers: readonly User[],
+    credentials: CredentialsFile,
+    keepLxns: boolean
+): {
+    users: User[];
+    divingFishTokenCount: number;
+    lxnsAuthorizationCount: number;
+} {
+    let divingFishTokenCount = 0;
+    let lxnsAuthorizationCount = 0;
+    const users = storedUsers.map(source => {
+        const raw = source as unknown as Record<string, unknown>;
+        const entry = credentialsOf(credentials, source.uid as string);
+        const importToken = entry?.divingFishImportToken;
+        const lxnsAuthorization = keepLxns
+            ? matchingLxnsAuthorization(entry, lxnsAccountIdOf(source))
+            : undefined;
+        let restored: Record<string, unknown> = { ...raw };
+        if (present(importToken)) {
+            restored = {
+                ...restored,
+                divingFish: {
+                    ...record(raw.divingFish),
+                    importToken,
+                },
+            };
+            divingFishTokenCount++;
+        }
+        if (lxnsAuthorization !== undefined) {
+            restored = {
+                ...restored,
+                lxns: { ...record(raw.lxns), auth: lxnsAuthorization },
+            };
+            lxnsAuthorizationCount++;
+        }
+        return restored as unknown as User;
+    });
+    return { users, divingFishTokenCount, lxnsAuthorizationCount };
+}
+
+export const exportBackup = defineCommand(
+    {
+        name: "export",
+        summary: "导出网页端可直接导入的 v1 用户备份",
+        description:
+            "按 users.raw 的顺序导出全部用户和成绩历史，并从 credentials.json 放回水鱼 Import-Token。落雪授权默认不导出；加 --keep-lxns 时，也只放回绑定的落雪账号 id 与用户当前 id 相同的授权。文件以 0600 权限原子写入；已有文件必须加 --overwrite。输出只含凭据数量，不含凭据值。",
+        category: "data",
+        effect: "local",
+        output: "object",
+        positionals: [FILE_POSITIONAL],
+        options: {
+            overwrite: { kind: "boolean", description: "允许替换已经存在的目标文件" },
+            keepLxns: {
+                kind: "boolean",
+                description: "把账号 id 与用户当前 id 相同的落雪授权写进备份",
+            },
+        },
+        examples: [
+            {
+                command: "export saltnet-backup.json --overwrite",
+                description: "导出一个可供网页端导入的备份",
+            },
+        ],
+        errors: ["FILE_EXISTS", "NO_USER", "DB_LOCKED"],
+        dataSchema: object<ExportResult>(
+            {
+                path: str("导出文件的绝对路径"),
+                userCount: int("导出的用户数"),
+                eventCount: int("导出的成绩历史事件数"),
+                byteSize: int("写入文件的 UTF-8 字节数"),
+                containsDivingFishTokens: bool("文件是否包含水鱼 Import-Token"),
+                divingFishTokenCount: int("文件包含的水鱼 Import-Token 数"),
+                containsLxnsAuthorizations: bool("文件是否包含落雪授权"),
+                lxnsAuthorizationCount: int("文件包含的落雪授权数"),
+            },
+            { description: "导出文件及其中的用户、成绩历史和凭据数量" }
+        ),
+    },
+    async (args, ctx) => {
+        const store = ctx.store();
+        const retryCommand = [
+            "saltnet",
+            "export",
+            fileWord(args.positionals.file),
+            ...(args.options.keepLxns ? ["--keep-lxns"] : []),
+        ];
+        const { users, events, credentials, output } = await withCredentialsLock(store, lock => {
+            const snapshot = store.read(() => {
+                const users = readUsers(store);
+                if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户可以导出");
+                const output = resolveOutputFile(
+                    ctx,
+                    args.positionals.file,
+                    args.options.overwrite,
+                    retryCommand
+                );
+                return {
+                    users,
+                    events: readScoreEvents(store),
+                    credentials: readCredentials(ctx.paths),
+                    output,
+                };
+            });
+            if (!lock.renew()) {
+                throw new CliError("DB_LOCKED", "导出备份时凭据锁已失效，请重新导出");
+            }
+            return snapshot;
+        });
+        const restored = restoreCredentials(users, credentials, args.options.keepLxns);
+        const backup = encodeUserDataBackup(restored.users, events, ctx.io.now().getTime());
+        const content = `${JSON.stringify(backup, null, 2)}\n`;
+        writeOutputFile(output, content, "export");
+        const byteSize = Buffer.byteLength(content);
+        return {
+            data: {
+                path: output.path,
+                userCount: restored.users.length,
+                eventCount: events.length,
+                byteSize,
+                containsDivingFishTokens: restored.divingFishTokenCount > 0,
+                divingFishTokenCount: restored.divingFishTokenCount,
+                containsLxnsAuthorizations: restored.lxnsAuthorizationCount > 0,
+                lxnsAuthorizationCount: restored.lxnsAuthorizationCount,
+            } satisfies ExportResult,
+        };
+    }
+);

@@ -1,0 +1,690 @@
+{
+    "trophies": [
+        {
+            "id": 1,
+            "name": "新人出道",
+            "color": "Normal",
+            "description": "はじめから所持",
+            "genre": "デフォルト",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 2,
+            "name": "从整体中随机选择",
+            "color": "Normal",
+            "description": "每次游戏将从所有收藏中随机设置！",
+            "genre": "随机",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 5101,
+            "name": "千本桜",
+            "color": "Gold",
+            "description": "千本桜[でらっくす]/全難易度/ALL PERFECT",
+            "genre": "niconicoボーカロイド",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "ap",
+                    "songs": [
+                        {
+                            "id": 125,
+                            "title": "千本桜",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 5102,
+            "name": "39",
+            "color": "Gold",
+            "description": "39[でらっくす]/全難易度/ALL PERFECT",
+            "genre": "niconicoボーカロイド",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "ap",
+                    "songs": [
+                        {
+                            "id": 146,
+                            "title": "39",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 5502,
+            "name": "どっちかの夜は昼間",
+            "color": "Bronze",
+            "description": "U.S.A.[でらっくす]/EXPERT/RANK S",
+            "genre": "POPSアニメ",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        2
+                    ],
+                    "rate": "s",
+                    "songs": [
+                        {
+                            "id": 1036,
+                            "title": "U.S.A.",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 5501,
+            "name": "M.A.I.",
+            "color": "Silver",
+            "description": "U.S.A.[でらっくす]/MASTER/RANK S",
+            "genre": "POPSアニメ",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        3
+                    ],
+                    "rate": "s",
+                    "songs": [
+                        {
+                            "id": 1036,
+                            "title": "U.S.A.",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 158511,
+            "name": "MEGA+MEGAはGIGAじゃないぞ。オレたちはMEGA+MEGAでTERAだ！10倍だぞ10倍",
+            "color": "Gold",
+            "description": "MEGATON KICK[でらっくす]/MEGATON BLAST[でらっくす]/MASTER/一回のクレジットでFULL SYNC DX",
+            "genre": "オンゲキCHUNITHM",
+            "release_date": "2022-09-21",
+            "required": [
+                {
+                    "difficulties": [
+                        3
+                    ],
+                    "fs": "fsd",
+                    "songs": [
+                        {
+                            "id": 1248,
+                            "title": "MEGATON BLAST",
+                            "type": "dx"
+                        },
+                        {
+                            "id": 1292,
+                            "title": "MEGATON KICK",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 458582,
+            "name": "and you",
+            "color": "Rainbow",
+            "description": "系ぎて[でらっくす]/BASIC～Re:MASTER/ALL PERFECT+",
+            "genre": "maimai",
+            "release_date": "2025-06-11",
+            "required": [
+                {
+                    "difficulties": [
+                        4
+                    ],
+                    "fc": "app",
+                    "songs": [
+                        {
+                            "id": 1663,
+                            "title": "系ぎて",
+                            "type": "dx"
+                        }
+                    ]
+                },
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "app",
+                    "songs": [
+                        {
+                            "id": 1663,
+                            "title": "系ぎて",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 20,
+            "name": "彩虹评级熊！",
+            "color": "Rainbow",
+            "description": "maimai でらっくすでレーティング8500達成",
+            "genre": "実績",
+            "release_date": "2019-12-05"
+        }
+    ],
+    "icons": [
+        {
+            "id": 1,
+            "name": "デフォルト",
+            "description": "はじめから所持",
+            "genre": "デフォルト",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 2,
+            "name": "从整体中随机选择",
+            "description": "每次游戏将从所有收藏中随机设置！",
+            "genre": "随机",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 209502,
+            "name": "UNiVERSE しゃま＆みるく",
+            "description": "とびだせ！TO THE COSMIC!![でらっくす]/ミルキースター・シューティングスター[でらっくす]/一回のクレジットでプレイ",
+            "genre": "その他",
+            "release_date": "2023-06-08",
+            "required": [
+                {
+                    "difficulties": [],
+                    "songs": [
+                        {
+                            "id": 1296,
+                            "title": "とびだせ！TO THE COSMIC!!",
+                            "type": "dx"
+                        },
+                        {
+                            "id": 1375,
+                            "title": "ミルキースター・シューティングスター",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "plates": [
+        {
+            "id": 1,
+            "name": "デフォルト",
+            "description": "はじめから所持",
+            "genre": "デフォルト",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 2,
+            "name": "从整体中随机选择",
+            "description": "每次游戏将从所有收藏中随机设置！",
+            "genre": "随机",
+            "release_date": "2019-12-05"
+        },
+        {
+            "id": 6101,
+            "name": "真極",
+            "description": "maimai PLUSまでの全曲/BASIC～MASTER/FULL COMBO",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "fc",
+                    "songs": [
+                        {
+                            "id": 8,
+                            "title": "True Love Song",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 9,
+                            "title": "Color My World",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 17,
+                            "title": "Future",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 30,
+                            "title": "ネコ日和。",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 58,
+                            "title": "Endless World",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6102,
+            "name": "真神",
+            "description": "maimai PLUSまでの全曲/BASIC～MASTER/ALL PERFECT",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "ap",
+                    "songs": [
+                        {
+                            "id": 8,
+                            "title": "True Love Song",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 9,
+                            "title": "Color My World",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 17,
+                            "title": "Future",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 30,
+                            "title": "ネコ日和。",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 58,
+                            "title": "Endless World",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6103,
+            "name": "真舞舞",
+            "description": "maimai PLUSまでの全曲/BASIC～MASTER/FULL SYNC DX",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fs": "fsd",
+                    "songs": [
+                        {
+                            "id": 8,
+                            "title": "True Love Song",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 9,
+                            "title": "Color My World",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 17,
+                            "title": "Future",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 30,
+                            "title": "ネコ日和。",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 58,
+                            "title": "Endless World",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6104,
+            "name": "超極",
+            "description": "maimai GreeN 全曲/BASIC～MASTER/FULL COMBO",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "fc",
+                    "songs": [
+                        {
+                            "id": 115,
+                            "title": "DADDY MULK -Groove remix-",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 188,
+                            "title": "天ノ弱",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 191,
+                            "title": "脳漿炸裂ガール",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6105,
+            "name": "超将",
+            "description": "maimai GreeN 全曲/BASIC～MASTER/RANK SSS",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rate": "sss",
+                    "songs": [
+                        {
+                            "id": 115,
+                            "title": "DADDY MULK -Groove remix-",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 188,
+                            "title": "天ノ弱",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 191,
+                            "title": "脳漿炸裂ガール",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6106,
+            "name": "超神",
+            "description": "maimai GreeN 全曲/BASIC～MASTER/ALL PERFECT",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "ap",
+                    "songs": [
+                        {
+                            "id": 115,
+                            "title": "DADDY MULK -Groove remix-",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 188,
+                            "title": "天ノ弱",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 191,
+                            "title": "脳漿炸裂ガール",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6107,
+            "name": "超舞舞",
+            "description": "maimai GreeN 全曲/BASIC～MASTER/FULL SYNC DX",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fs": "fsd",
+                    "songs": [
+                        {
+                            "id": 115,
+                            "title": "DADDY MULK -Groove remix-",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 188,
+                            "title": "天ノ弱",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 191,
+                            "title": "脳漿炸裂ガール",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 6148,
+            "name": "覇者",
+            "description": "全曲/BASIC～Re:MASTER/CLEAR",
+            "genre": "実績",
+            "release_date": "2019-12-05",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "rate": "a",
+                    "songs": [
+                        {
+                            "id": 8,
+                            "title": "True Love Song",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 9,
+                            "title": "Color My World",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 17,
+                            "title": "Future",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 30,
+                            "title": "ネコ日和。",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 58,
+                            "title": "Endless World",
+                            "type": "standard"
+                        }
+                    ]
+                },
+                {
+                    "difficulties": [
+                        4
+                    ],
+                    "rate": "a",
+                    "songs": [
+                        {
+                            "id": 17,
+                            "title": "Future",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 58,
+                            "title": "Endless World",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 70,
+                            "title": "ジングルベル",
+                            "type": "standard"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "standard"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 409506,
+            "name": "USM二人三脚",
+            "description": "ULTRA SYNERGY MATRIX[でらっくす]/FULL SYNC",
+            "genre": "実績",
+            "release_date": "2024-10-16",
+            "required": [
+                {
+                    "difficulties": [],
+                    "fs": "fs",
+                    "songs": [
+                        {
+                            "id": 1591,
+                            "title": "ULTRA SYNERGY MATRIX",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": 101,
+            "name": "はじまりのちほー",
+            "description": "はじまりのちほーのキャラクターを1回ずつ覚醒",
+            "genre": "オリジナルちほー",
+            "release_date": "2019-12-05"
+        }
+    ],
+    "frames": [
+        {
+            "id": 1,
+            "name": "デフォルト",
+            "description": "はじめから所持",
+            "genre": "デフォルト",
+            "release_date": "2023-06-08"
+        },
+        {
+            "id": 2,
+            "name": "从整体中随机选择",
+            "description": "每次游戏将从所有收藏中随机设置！",
+            "genre": "随机",
+            "release_date": "2023-06-08"
+        },
+        {
+            "id": 109101,
+            "name": "PERFECT Jewel [Diamond]",
+            "description": "舞萌DX 全曲/BASIC～MASTER/ALL PERFECT",
+            "genre": "実績",
+            "release_date": "2023-06-08",
+            "required": [
+                {
+                    "difficulties": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "fc": "ap",
+                    "songs": [
+                        {
+                            "id": 191,
+                            "title": "脳漿炸裂ガール",
+                            "type": "dx"
+                        },
+                        {
+                            "id": 256,
+                            "title": "いーあるふぁんくらぶ",
+                            "type": "dx"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

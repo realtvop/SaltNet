@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { User } from "@/components/data/user/type";
+import type { User } from "@core/user/type";
 
 const mocks = vi.hoisted(() => ({
     shared: { users: [] as User[], usersLoaded: Promise.resolve(), persistUsers: vi.fn() },
@@ -124,7 +124,7 @@ describe("LXNS OAuth round trip", () => {
         vi.stubEnv("VITE_LXNS_OAUTH_CLIENT_ID", "other-client");
         vi.stubEnv("VITE_LXNS_OAUTH_REDIRECT_URI", "https://other.test/");
         await handleLXNSOAuthCallback(callback);
-        const body = vi.mocked(fetch).mock.calls[0][1]!.body as URLSearchParams;
+        const body = new URLSearchParams(vi.mocked(fetch).mock.calls[0][1]!.body as string);
         expect(body.get("client_id")).toBe("test-client");
         expect(body.get("redirect_uri")).toBe("https://salt.test/?lxns_auth_complete");
     });

@@ -1,6 +1,7 @@
 packages:
     - "."
     - "render-service"
+    - "cli"
 
 allowBuilds:
     core-js: true

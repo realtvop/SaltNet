@@ -1,10 +1,10 @@
 <script setup lang="ts">
+    import { type User, getUserDisplayName } from "@core/user/type";
     import { ref, toRaw } from "vue";
     import { useRouter } from "vue-router";
     import { markDialogOpen, markDialogClosed } from "@/components/app/router";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import BindUserDialog from "@/components/data/user/BindUserDialog.vue";
-    import { type User, getUserDisplayName } from "@/components/data/user/type";
     import {
         updateUser,
         checkLogin,
@@ -12,7 +12,7 @@
     } from "@/components/data/user/update";
     import { alert, confirm, snackbar } from "mdui";
     import { useShared } from "@/components/app/shared";
-    import type { UserInfo } from "@/components/data/inGame";
+    import type { UserInfo } from "@core/user/inGame";
     import type { LXNSAuth } from "@/components/integrations/lxns";
     import { exportUserBackup } from "@/components/data/user/exportBackup";
     import {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
     import { defineProps, defineEmits, computed } from "vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import { getCoverURL } from "@/components/integrations/assets";
     import { useShared } from "@/components/app/shared";
-    import { ComboStatus, RankRate, SyncStatus } from "../maiTypes";
+    import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
     import { getDeluxeScoreStarsImg, getDeluxeScoreTier } from "@/utils";
 
     const { data, rating, cover, compact, compactFilter, rendering, showDxScoreNum } = defineProps<{

@@ -1,9 +1,9 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import localForage from "localforage";
-import { ComboStatus, RankRate, SyncStatus } from "../../maiTypes";
-import type { DivingFishFullRecord } from "@/components/integrations/diving-fish/type";
-import { convertDetailed, type User } from "../type";
+import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
+import { convertDetailed, type User } from "@core/user/type";
 import {
     ScoreHistoryChange,
     activateStagedScoreHistoryImport,
@@ -170,6 +170,34 @@ describe("score history repository", () => {
         expect(page.entries[0].before?.achievements).toBe(100.5);
         expect(page.entries[0].after.achievements).toBe(100.6);
         expect(page.entries[1].event.observedAt).toBe(500);
+    });
+
+    it("adds no second baseline once a chart has events", async () => {
+        const before = convertDetailed([createRecord({ lastChangedAt: 500 })]);
+        const after = [createRecord({ achievements: 100.6 })];
+        const first = createScoreHistoryCandidates(before, after, 1_000);
+        await appendScoreHistoryBatch({
+            batchId: "batch-2a",
+            userUid: "user-1",
+            source: "lxns",
+            candidates: first,
+        });
+        const middleRecord = createRecord({ achievements: 100.6, lastChangedAt: 1_000 });
+        const latest = [createRecord({ achievements: 100.7 })];
+        const second = createScoreHistoryCandidates(convertDetailed([middleRecord]), latest, 2_000);
+        await appendScoreHistoryBatch({
+            batchId: "batch-2b",
+            userUid: "user-1",
+            source: "lxns",
+            candidates: second,
+        });
+
+        const page = await getScoreHistoryPage("user-1", first[0].chartKey);
+        expect(page.entries.map(entry => [entry.event.kind, entry.event.observedAt])).toEqual([
+            ["change", 2_000],
+            ["change", 1_000],
+            ["initial", 500],
+        ]);
     });
 
     it("hides play-count-only changes unless requested", async () => {

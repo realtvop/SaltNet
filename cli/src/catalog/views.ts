@@ -1,0 +1,958 @@
+/**
+ * The views `sql` offers (design 2.2): the part of the database that is promised to the outside.
+ * The tables behind them are an internal detail that a migration may reshape; these views are
+ * not. Changing one in a way a query can notice (a column removed, renamed, retyped, or a new one
+ * that `SELECT *` would pick up) raises `VIEWS_VERSION`, which `sql` reports in `meta.viewsVersion`.
+ *
+ * A view is written as a SELECT over the tables, for a connection that has the database attached as
+ * `real` (`store/sandbox.ts` copies what each view selects into a throwaway in-memory database and
+ * the query runs there, so it never gets near a base table). The labels (`BASIC`, `SSS+`, `FDX+`)
+ * are produced from the same vocabulary the commands use, and the rules for what is unknown (a
+ * constant of 0, a charter of `-`) are the ones of `catalog/chartRow.ts`, so a view row says the
+ * same as the command row for the same chart.
+ */
+import type { DatabaseSync } from "../store/sqlite";
+import type { MetadataKind } from "./ensure";
+import { SyncStatus } from "@core/mai/types";
+import { CliError } from "../errors";
+import { DIFFICULTIES, difficultyLabel } from "../refs/difficulty";
+import { comboLabel, COMBOS, rankLabel, RANKS, syncLabel } from "../refs/status";
+import { REAL_SCHEMA } from "../store/sandbox";
+import { SOURCE_OF_KIND } from "./ensure";
+import { SOURCE_LABELS } from "./refresh";
+
+/** Raise it when a view changes in a way a query can notice; see the top of this file. */
+export const VIEWS_VERSION = 4;
+
+/** The incompatible public-view changes, in version order. */
+export const VIEWS_CHANGES = [
+    {
+        version: 1,
+        description: "第一版：v_charts、v_collections、v_collection_targets、v_course_tracks",
+    },
+    {
+        version: 2,
+        description:
+            "加入用户成绩、成绩历史、rating 历史、收藏品和角色视图；v_charts 加入默认用户的成绩列",
+    },
+    {
+        version: 3,
+        description: "加入收藏夹条目视图 v_favorites",
+    },
+    {
+        version: 4,
+        description: "加入同步与操作日志视图 v_sync_runs",
+    },
+] as const;
+
+export type ViewColumnType = "TEXT" | "INTEGER" | "REAL";
+
+export interface ViewColumn {
+    readonly name: string;
+    readonly type: ViewColumnType;
+    /** What the column holds, as `schema --views` says it. NULL is described where it can occur. */
+    readonly description: string;
+}
+
+export interface PublicView {
+    readonly name: string;
+    readonly summary: string;
+    /**
+     * The downloaded metadata the rows come from, which a query has to find current first. Empty
+     * for the courses, which ship with the CLI.
+     */
+    readonly needs: readonly MetadataKind[];
+    readonly columns: readonly ViewColumn[];
+    /** Yields exactly `columns`, in this order, reading the database as `real.<table>`. */
+    readonly select: string;
+}
+
+/** A column with the expression that gives it, over the tables the view's `from` names. */
+interface ColumnSpec extends ViewColumn {
+    readonly expr: string;
+}
+
+interface ViewSpec {
+    readonly name: string;
+    readonly summary: string;
+    readonly needs: readonly MetadataKind[];
+    readonly columns: readonly ColumnSpec[];
+    /** What precedes `SELECT`, such as a materialized CTE used by its column expressions. */
+    readonly prefix?: string;
+    /** What follows `SELECT <columns>`: the FROM clause, and an ORDER BY that makes the order fixed. */
+    readonly rest: string;
+}
+
+function column(name: string, type: ViewColumnType, description: string, expr: string): ColumnSpec {
+    return { name, type, description, expr };
+}
+
+function view(spec: ViewSpec): PublicView {
+    return {
+        name: spec.name,
+        summary: spec.summary,
+        needs: spec.needs,
+        columns: spec.columns.map(({ name, type, description }) => ({ name, type, description })),
+        // The select list comes from the columns, so what a view selects and what it says it
+        // selects cannot drift apart.
+        select: `${spec.prefix ? `${spec.prefix} ` : ""}SELECT ${spec.columns.map(({ name, expr }) => `${expr} AS "${name}"`).join(", ")} ${spec.rest}`,
+    };
+}
+
+function quote(text: string): string {
+    return `'${text.replaceAll("'", "''")}'`;
+}
+
+function literal(value: string | number): string {
+    return typeof value === "number" ? String(value) : quote(value);
+}
+
+/** `CASE <expr> WHEN <value> THEN <label> ... ELSE <otherwise> END`; a value with no label is NULL. */
+function labelCase(
+    expr: string,
+    labels: readonly (readonly [string | number, string | number])[],
+    otherwise = "NULL"
+): string {
+    const whens = labels.map(([value, label]) => `WHEN ${literal(value)} THEN ${literal(label)}`);
+    return `CASE ${expr} ${whens.join(" ")} ELSE ${otherwise} END`;
+}
+
+/** The name the game shows for a grade, and the number itself for one it does not know. */
+function difficultyOf(expr: string): string {
+    return labelCase(
+        expr,
+        DIFFICULTIES.map(({ grade }) => [grade, difficultyLabel(grade)]),
+        `CAST(${expr} AS TEXT)`
+    );
+}
+
+/** The rank an LXNS code (`sss`) stands for: `SSS`. */
+function rankOf(expr: string): string {
+    return labelCase(
+        expr,
+        RANKS.map(rank => [rank, rankLabel(rank)])
+    );
+}
+
+function comboOf(expr: string): string {
+    return labelCase(
+        expr,
+        COMBOS.flatMap(combo => {
+            const label = comboLabel(combo);
+            return label === null ? [] : [[combo, label] as const];
+        })
+    );
+}
+
+function syncOf(expr: string): string {
+    return labelCase(
+        expr,
+        Object.values(SyncStatus).flatMap(sync => {
+            const label = syncLabel(sync);
+            return label === null ? [] : [[sync, label] as const];
+        })
+    );
+}
+
+/** 0000-01-01T00:00:00.000Z in epoch milliseconds, the earliest time `utcTimeOf` writes. */
+const YEAR_ZERO_MS = -62167219200000;
+
+/**
+ * Epoch milliseconds as `Date.prototype.toISOString` writes them, fractions dropped toward zero as
+ * `new Date()` does; NULL for NULL and for a time outside the years 0000 to 9999 (SQLite writes no
+ * later year, and writes earlier ones in a form that is not ISO 8601).
+ */
+function utcTimeOf(expr: string): string {
+    const ms = `CAST(${expr} AS INTEGER)`;
+    return `CASE WHEN ${ms} >= ${YEAR_ZERO_MS} THEN strftime('%Y-%m-%dT%H:%M:%fZ', ${ms} / 1000.0, 'unixepoch') END`;
+}
+
+/** The catalog music id a stored record belongs to (`1590` DX is `11590`). */
+function scoreMusicIdOf(alias: string): string {
+    return `CASE WHEN upper(${alias}.type) = 'DX' AND ${alias}.song_id < 10000 THEN ${alias}.song_id + 10000 ELSE ${alias}.song_id END`;
+}
+
+/** The kinds in the order `collection list` gives them. */
+const KIND_ORDER = ["plate", "title", "icon", "frame", "character", "partner"] as const;
+
+/** A number that sorts a kind where `collection list` puts it; a kind it does not know goes last. */
+function kindOrder(expr: string): string {
+    return labelCase(
+        expr,
+        KIND_ORDER.map((kind, index) => [kind, index]),
+        String(KIND_ORDER.length)
+    );
+}
+
+/** The music id a song of a collection condition stands for in the catalog (`1590` DX is `11590`). */
+function musicIdOf(song: string): string {
+    const id = `json_extract(${song}, '$.id')`;
+    return `CASE WHEN upper(json_extract(${song}, '$.type')) = 'DX' THEN CASE WHEN ${id} >= 10000 THEN ${id} ELSE ${id} + 10000 END ELSE ${id} END`;
+}
+
+// --- v_charts -------------------------------------------------------------------------------
+
+/** The note counts. SD charts keep four numbers, DX charts five (touch before break). */
+const NOTE = (index: number): string => `json_extract(c.notes, '$[${index}]')`;
+const HAS_TOUCH = "json_array_length(c.notes) = 5";
+const TAP = NOTE(0);
+const HOLD = NOTE(1);
+const SLIDE = NOTE(2);
+const TOUCH = `CASE WHEN ${HAS_TOUCH} THEN ${NOTE(3)} END`;
+const BREAK = `CASE WHEN ${HAS_TOUCH} THEN ${NOTE(4)} ELSE ${NOTE(3)} END`;
+/** A banquet chart has no counts; the zeros upstream puts in place of its slides and touches are not counts. */
+const NO_NOTES = `(${TAP} IS NULL AND ${HOLD} IS NULL AND ${BREAK} IS NULL)`;
+const countOrNull = (expr: string): string => `CASE WHEN ${NO_NOTES} THEN NULL ELSE ${expr} END`;
+
+const STAT = (path: string): string => `json_extract(c.stat, '${path}')`;
+function distribution(labels: readonly string[], field: string): string {
+    return `CASE WHEN c.stat IS NULL THEN NULL ELSE json_object(${labels
+        .map((label, index) => `${quote(label)}, coalesce(${STAT(`$.${field}[${index}]`)}, 0)`)
+        .join(", ")}) END`;
+}
+
+const CHARTS = view({
+    name: "v_charts",
+    summary: "一张谱面一行：曲目信息、定数、物量、统计和默认用户的成绩",
+    needs: ["catalog"],
+    columns: [
+        column(
+            "chart_key",
+            "TEXT",
+            "谱面 key，曲目 id 加难度，如 11500-3；所有命令都用它",
+            "c.chart_key"
+        ),
+        column(
+            "music_id",
+            "INTEGER",
+            "曲目 id：DX 和宴会谱是 SaltMeta 的 id 加 10000",
+            "c.song_id"
+        ),
+        column(
+            "song_id",
+            "INTEGER",
+            "SaltMeta 里这首歌的 id；同一首歌的 SD 和 DX 两面共用它",
+            "s.meta_id"
+        ),
+        column("title", "TEXT", "标题", "s.title"),
+        column("artist", "TEXT", "曲师", "s.artist"),
+        column("genre", "TEXT", "流派", "s.genre"),
+        column("bpm", "REAL", "BPM；宴会谱没有，是 NULL", "s.bpm"),
+        column("type", "TEXT", "SD 或 DX；宴会谱算 DX", "s.type"),
+        column(
+            "difficulty",
+            "TEXT",
+            "难度名：BASIC、ADVANCED、EXPERT、MASTER、Re:MASTER，宴会谱是 UTAGE",
+            difficultyOf("c.grade")
+        ),
+        column(
+            "grade",
+            "INTEGER",
+            "难度编号：0 到 4 是 BASIC 到 Re:MASTER，10 是宴会谱",
+            "c.grade"
+        ),
+        column("level", "TEXT", "等级，如 13+；宴会谱是 13? 这样的写法", "c.level"),
+        column(
+            "constant",
+            "REAL",
+            "定数；宴会谱没有，是 NULL",
+            "CASE WHEN c.constant > 0 THEN c.constant END"
+        ),
+        column(
+            "fit_constant",
+            "REAL",
+            "拟合定数（保留 4 位）；没有玩家成绩可以拟合时是 NULL",
+            `CASE WHEN ${STAT("$.fit_diff")} > 0 THEN round(${STAT("$.fit_diff")}, 4) END`
+        ),
+        column("version", "TEXT", "这首歌加入的国服版本", "s.version"),
+        column("is_new", "INTEGER", "是不是当前版本的新曲：1 是，0 不是", "s.is_new"),
+        column(
+            "charter",
+            "TEXT",
+            "谱师；宴会谱没有，是 NULL",
+            "CASE WHEN trim(c.charter, ' ' || char(9, 10, 13, 160, 12288)) NOT IN ('', '-') THEN trim(c.charter, ' ' || char(9, 10, 13, 160, 12288)) END"
+        ),
+        column("notes_tap", "INTEGER", "Tap 数；未知时是 NULL", TAP),
+        column("notes_hold", "INTEGER", "Hold 数；未知时是 NULL", HOLD),
+        column("notes_slide", "INTEGER", "Slide 数；未知时是 NULL", countOrNull(SLIDE)),
+        column("notes_touch", "INTEGER", "Touch 数；SD 谱没有 Touch，是 NULL", countOrNull(TOUCH)),
+        column("notes_break", "INTEGER", "Break 数；未知时是 NULL", BREAK),
+        column(
+            "notes_total",
+            "INTEGER",
+            "物量总数；有一项未知时是 NULL",
+            `CASE WHEN ${HAS_TOUCH} THEN ${TAP} + ${HOLD} + ${SLIDE} + ${NOTE(3)} + ${NOTE(4)} ELSE ${TAP} + ${HOLD} + ${SLIDE} + ${NOTE(3)} END`
+        ),
+        column(
+            "stat_samples",
+            "INTEGER",
+            "统计用了多少玩家的成绩；没有统计时是 NULL",
+            STAT("$.cnt")
+        ),
+        column(
+            "stat_avg_achievements",
+            "REAL",
+            "平均达成率（保留 4 位）；没有统计时是 NULL",
+            `round(${STAT("$.avg")}, 4)`
+        ),
+        column(
+            "stat_avg_dx_score",
+            "REAL",
+            "平均 DX 分数（保留 2 位）；没有统计时是 NULL",
+            `round(${STAT("$.avg_dx")}, 2)`
+        ),
+        column(
+            "stat_std_dev_achievements",
+            "REAL",
+            "达成率的标准差（保留 4 位）；没有统计时是 NULL",
+            `round(${STAT("$.std_dev")}, 4)`
+        ),
+        column(
+            "stat_rank_dist",
+            "TEXT",
+            "各评级的玩家数，JSON 对象，键是 D 到 SSS+；用 json_extract(stat_rank_dist, '$.\"SSS+\"') 取；没有统计时是 NULL",
+            distribution(RANKS.map(rankLabel), "dist")
+        ),
+        column(
+            "stat_combo_dist",
+            "TEXT",
+            "各连击状态的玩家数，JSON 对象，键是 none、FC、FC+、AP、AP+；没有统计时是 NULL",
+            distribution(
+                COMBOS.map(combo => comboLabel(combo) ?? "none"),
+                "fc_dist"
+            )
+        ),
+        column(
+            "score_achievements",
+            "REAL",
+            "默认用户的达成率；没有默认用户或这张谱没有成绩时是 NULL",
+            "sc.achievements"
+        ),
+        column(
+            "score_rank",
+            "TEXT",
+            "默认用户的评级，如 SSS+；没有成绩或评级时是 NULL",
+            rankOf("sc.rate")
+        ),
+        column(
+            "score_combo",
+            "TEXT",
+            "默认用户的连击状态：FC、FC+、AP 或 AP+；没有时是 NULL",
+            comboOf("sc.fc")
+        ),
+        column(
+            "score_sync",
+            "TEXT",
+            "默认用户的同步状态：SYNC、FS、FS+、FDX 或 FDX+；没有时是 NULL",
+            syncOf("sc.fs")
+        ),
+        column("score_dx_score", "INTEGER", "默认用户的 DX 分数；没有成绩时是 NULL", "sc.dx_score"),
+        column(
+            "score_rating",
+            "INTEGER",
+            "默认用户从这张谱得到的 rating；没有成绩时是 NULL",
+            "sc.ra"
+        ),
+        column(
+            "score_play_count",
+            "INTEGER",
+            "默认用户有记录的游玩次数；来源没有给出或没有成绩时是 NULL",
+            "sc.play_count"
+        ),
+        column(
+            "score_changed_at",
+            "TEXT",
+            "默认用户的成绩最近变化时间（UTC）；来源没有给出、没有成绩或不在 0000–9999 年之间时是 NULL",
+            utcTimeOf("sc.last_changed_at")
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.charts c JOIN ${REAL_SCHEMA}.songs s ON s.id = c.song_id LEFT JOIN ${REAL_SCHEMA}.users u ON u.position = 0 LEFT JOIN ${REAL_SCHEMA}.scores sc ON sc.user_uid = u.uid AND sc.chart_key = c.chart_key ORDER BY c.song_id, c.grade`,
+});
+
+// --- User data -------------------------------------------------------------------------------
+
+const SCORES = view({
+    name: "v_scores",
+    summary: "每个用户保存的每一条成绩",
+    needs: [],
+    columns: [
+        column("user_index", "INTEGER", "用户序号；0 是默认用户", "u.position"),
+        column("user_uid", "TEXT", "用户稳定 uid", "u.uid"),
+        column(
+            "chart_key",
+            "TEXT",
+            "匹配到的曲库谱面 key；曲库里没有对应谱面时是 NULL",
+            "sc.chart_key"
+        ),
+        column(
+            "record_key",
+            "TEXT",
+            "网页端保存成绩用的 key；宴会谱可以和 chart_key 不同",
+            "sc.record_key"
+        ),
+        column(
+            "music_id",
+            "INTEGER",
+            "曲目 id；DX 的原始 id 小于 10000 时加 10000；记录没有 id 时是 NULL",
+            scoreMusicIdOf("sc")
+        ),
+        column("title", "TEXT", "成绩记录里的标题；没有时是 NULL", "sc.title"),
+        column("type", "TEXT", "成绩记录里的 SD 或 DX；没有时是 NULL", "sc.type"),
+        column(
+            "difficulty",
+            "TEXT",
+            "难度名；未知编号原样写成文本，记录没有编号时是 NULL",
+            difficultyOf("sc.level_index")
+        ),
+        column("level", "TEXT", "等级；没有时是 NULL", "sc.level"),
+        column(
+            "constant",
+            "REAL",
+            "定数；记录没有正数定数时是 NULL",
+            "CASE WHEN sc.ds > 0 THEN sc.ds END"
+        ),
+        column("achievements", "REAL", "达成率；没有时是 NULL", "sc.achievements"),
+        column("rank", "TEXT", "评级，如 SSS+；没有时是 NULL", rankOf("sc.rate")),
+        column("combo", "TEXT", "连击状态：FC、FC+、AP 或 AP+；没有时是 NULL", comboOf("sc.fc")),
+        column(
+            "sync",
+            "TEXT",
+            "同步状态：SYNC、FS、FS+、FDX 或 FDX+；没有时是 NULL",
+            syncOf("sc.fs")
+        ),
+        column("dx_score", "INTEGER", "DX 分数；没有时是 NULL", "sc.dx_score"),
+        column("rating", "INTEGER", "这条成绩的 rating；没有时是 NULL", "sc.ra"),
+        column(
+            "play_count",
+            "INTEGER",
+            "来源记录的游玩次数；来源没有给出时是 NULL",
+            "sc.play_count"
+        ),
+        column(
+            "changed_at",
+            "TEXT",
+            "成绩最近变化时间（UTC）；来源没有给出或不在 0000–9999 年之间时是 NULL",
+            utcTimeOf("sc.last_changed_at")
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.scores sc JOIN ${REAL_SCHEMA}.users u ON u.uid = sc.user_uid ORDER BY u.position, ${scoreMusicIdOf("sc")}, sc.level_index, sc.record_key`,
+});
+
+const SCORE_EVENTS = view({
+    name: "v_score_events",
+    summary: "每个用户的每一次成绩历史事件",
+    needs: [],
+    columns: [
+        column("user_index", "INTEGER", "用户序号；0 是默认用户", "u.position"),
+        column("user_uid", "TEXT", "用户稳定 uid", "u.uid"),
+        column("event_id", "TEXT", "成绩历史事件的稳定 id", "e.id"),
+        column("record_key", "TEXT", "网页端成绩记录 key", "e.record_key"),
+        column(
+            "chart_key",
+            "TEXT",
+            "同一用户当前成绩匹配到的曲库谱面 key；没有当前成绩或没有匹配时是 NULL",
+            "sc.chart_key"
+        ),
+        column(
+            "observed_at",
+            "TEXT",
+            "观察到这次成绩的 UTC 时间；不在 0000–9999 年之间时是 NULL",
+            utcTimeOf("e.observed_at")
+        ),
+        column("sequence", "INTEGER", "同一批次里的事件顺序", "e.sequence"),
+        column(
+            "source",
+            "TEXT",
+            "来源：inGame、lxns、divingFishImport 或 divingFishPublic",
+            "e.source"
+        ),
+        column("kind", "TEXT", "initial 是首次记录，change 是变化", "e.kind"),
+        column(
+            "changed_mask",
+            "INTEGER",
+            "变化位：1 达成率，2 DX 分，4 combo，8 sync，16 游玩次数",
+            "e.changed_mask"
+        ),
+        column("batch_id", "TEXT", "产生这批事件的批次 id", "e.batch_id"),
+        column("achievements", "REAL", "事件后的达成率", "e.achievements"),
+        column("dx_score", "INTEGER", "事件后的 DX 分数", "e.dx_score"),
+        column(
+            "combo",
+            "TEXT",
+            "事件后的连击状态：FC、FC+、AP 或 AP+；没有时是 NULL",
+            comboOf("e.fc")
+        ),
+        column(
+            "sync",
+            "TEXT",
+            "事件后的同步状态：SYNC、FS、FS+、FDX 或 FDX+；没有时是 NULL",
+            syncOf("e.fs")
+        ),
+        column("play_count", "INTEGER", "事件后的游玩次数；来源没有给出时是 NULL", "e.play_count"),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.score_events e JOIN ${REAL_SCHEMA}.users u ON u.uid = e.user_uid LEFT JOIN ${REAL_SCHEMA}.scores sc ON sc.user_uid = e.user_uid AND sc.record_key = e.record_key ORDER BY u.position, e.observed_at, e.sequence, e.id`,
+});
+
+const RATING_HISTORY = view({
+    name: "v_rating_history",
+    summary: "每个用户保存的 rating 历史",
+    needs: [],
+    columns: [
+        column("user_index", "INTEGER", "用户序号；0 是默认用户", "u.position"),
+        column("user_uid", "TEXT", "用户稳定 uid", "u.uid"),
+        column(
+            "time",
+            "TEXT",
+            "记录这个 rating 的 UTC 时间；原记录没有整数时间或不在 0000–9999 年之间时是 NULL",
+            utcTimeOf("h.time")
+        ),
+        column("rating", "INTEGER", "当时的 rating；原记录没有整数 rating 时是 NULL", "h.rating"),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.rating_history h JOIN ${REAL_SCHEMA}.users u ON u.uid = h.user_uid ORDER BY u.position, h.time, h.position`,
+});
+
+function userItemKindOf(expr: string): string {
+    return labelCase(
+        expr,
+        [
+            [1, "plate"],
+            [2, "title"],
+            [3, "icon"],
+            [9, "character"],
+            [10, "partner"],
+            [11, "frame"],
+        ],
+        `CAST(${expr} AS TEXT)`
+    );
+}
+
+const USER_ITEMS = view({
+    name: "v_user_items",
+    summary: "每个用户 data.items 里的每一个收藏品条目",
+    needs: [],
+    columns: [
+        column("user_index", "INTEGER", "用户序号；0 是默认用户", "u.position"),
+        column("user_uid", "TEXT", "用户稳定 uid", "u.uid"),
+        column(
+            "kind",
+            "TEXT",
+            "所在列表的收藏品类型；未知的列表编号原样写成文本",
+            userItemKindOf("i.list_index")
+        ),
+        column("item_id", "INTEGER", "收藏品 id；原记录没有时是 NULL", "i.item_id"),
+        column(
+            "ref",
+            "TEXT",
+            "类型:id，和 v_collections.ref 一样；item_id 没有时是 NULL",
+            `${userItemKindOf("i.list_index")} || ':' || i.item_id`
+        ),
+        column("stock", "INTEGER", "持有数量；原记录没有时是 NULL", "i.stock"),
+        column(
+            "is_valid",
+            "INTEGER",
+            "条目是否有效：1 是，0 不是；原记录没有时是 NULL",
+            "i.is_valid"
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.user_items i JOIN ${REAL_SCHEMA}.users u ON u.uid = i.user_uid ORDER BY u.position, i.list_index, i.position`,
+});
+
+const USER_CHARACTERS = view({
+    name: "v_user_characters",
+    summary: "每个用户 data.characters 里的每一个旅行伙伴条目",
+    needs: [],
+    columns: [
+        column("user_index", "INTEGER", "用户序号；0 是默认用户", "u.position"),
+        column("user_uid", "TEXT", "用户稳定 uid", "u.uid"),
+        column(
+            "character_id",
+            "INTEGER",
+            "旅行伙伴 id；原记录没有整数 id 时是 NULL",
+            "c.character_id"
+        ),
+        column(
+            "ref",
+            "TEXT",
+            "character:<id>，可和 v_collections.ref 连接；character_id 是 NULL 时是 NULL",
+            "'character:' || c.character_id"
+        ),
+        column("level", "INTEGER", "等级；原记录没有时是 NULL", "c.level"),
+        column("awakening", "INTEGER", "觉醒次数；原记录没有时是 NULL", "c.awakening"),
+        column("point", "INTEGER", "当前经验点；原记录没有时是 NULL", "c.point"),
+        column("use_count", "INTEGER", "使用次数；原记录没有时是 NULL", "c.use_count"),
+        column("next_awake", "INTEGER", "下次觉醒所需点数；原记录没有时是 NULL", "c.next_awake"),
+        column(
+            "next_awake_percent",
+            "REAL",
+            "下次觉醒进度；原记录没有时是 NULL",
+            "c.next_awake_percent"
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.user_characters c JOIN ${REAL_SCHEMA}.users u ON u.uid = c.user_uid ORDER BY u.position, c.position`,
+});
+
+// --- v_collections, v_collection_targets ----------------------------------------------------
+
+const COLLECTIONS = view({
+    name: "v_collections",
+    summary: "收藏品一行：称号、头像、姓名框、背景、牌子、旅行伙伴和搭档",
+    needs: ["collections"],
+    columns: [
+        column(
+            "ref",
+            "TEXT",
+            "类型:id，如 title:5108；collection show 和 charts --collection 用它",
+            "c.kind || ':' || c.id"
+        ),
+        column("kind", "TEXT", "plate、title、icon、frame、character 或 partner", "c.kind"),
+        column("id", "INTEGER", "收藏品 id（在同一类里唯一）", "c.id"),
+        column("name", "TEXT", "名称", "c.name"),
+        column(
+            "genre",
+            "TEXT",
+            "游戏里把它归在哪一类；搭档没有，是 NULL",
+            "CASE WHEN c.kind IN ('plate', 'title', 'icon', 'frame') THEN coalesce(c.genre, '') ELSE c.genre END"
+        ),
+        column(
+            "color",
+            "TEXT",
+            "称号的稀有度：Normal、Bronze、Silver、Gold 或 Rainbow；其他类型是 NULL",
+            `CASE WHEN c.kind = 'title' THEN ${labelCase(
+                "lower(c.color)",
+                ["Normal", "Bronze", "Silver", "Gold", "Rainbow"].map(color => [
+                    color.toLowerCase(),
+                    color,
+                ]),
+                "'Normal'"
+            )} END`
+        ),
+        column(
+            "description",
+            "TEXT",
+            "获得方式的说明；没有时是空字符串",
+            "coalesce(c.description, '')"
+        ),
+        column(
+            "song_count",
+            "INTEGER",
+            "获取条件点名了多少首歌；条件里没有歌（多数称号和头像）是 0",
+            `(SELECT count(DISTINCT ${musicIdOf("s.value")}) FROM json_each(c.required) r, json_each(r.value, '$.songs') s)`
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.collections c ORDER BY ${kindOrder("c.kind")}, c.position`,
+});
+
+const COLLECTION_TARGETS = view({
+    name: "v_collection_targets",
+    summary: "收藏品的获取条件展开成一行一条：收藏品、条件、歌、难度",
+    needs: ["collections"],
+    prefix: `WITH collection_conditions AS MATERIALIZED (SELECT c.kind, c.id, c.position, r.key AS condition_index, r.value AS condition_json, json_extract(r.value, '$.rate') AS rate, json_extract(r.value, '$.fc') AS fc, json_extract(r.value, '$.fs') AS fs FROM ${REAL_SCHEMA}.collections c JOIN json_each(c.required) r)`,
+    columns: [
+        column(
+            "collection_ref",
+            "TEXT",
+            "收藏品，类型:id，和 v_collections.ref 一样",
+            "c.kind || ':' || c.id"
+        ),
+        column("collection_kind", "TEXT", "收藏品的类型", "c.kind"),
+        column("collection_id", "INTEGER", "收藏品 id", "c.id"),
+        column("condition", "INTEGER", "这是收藏品的第几条条件，从 1 起", "c.condition_index + 1"),
+        column(
+            "music_id",
+            "INTEGER",
+            "条件点名的歌的曲目 id（DX 是 SaltMeta 的 id 加 10000）；曲库里不一定有这首歌",
+            musicIdOf("s.value")
+        ),
+        column(
+            "song_title",
+            "TEXT",
+            "条件数据里写的歌名，不一定和曲库里的标题一样",
+            "json_extract(s.value, '$.title')"
+        ),
+        column(
+            "difficulty",
+            "TEXT",
+            "条件点名的难度（BASIC 到 Re:MASTER）；NULL 是这首歌的任何难度都行。条件点名几个难度就有几行",
+            difficultyOf("d.value")
+        ),
+        column("rank", "TEXT", "条件要求的最低评级，如 SSS；不要求是 NULL", rankOf("c.rate")),
+        column(
+            "combo",
+            "TEXT",
+            "条件要求的最低连击状态：FC、FC+、AP 或 AP+；不要求是 NULL",
+            comboOf("c.fc")
+        ),
+        column(
+            "sync",
+            "TEXT",
+            "条件要求的最低同步状态：SYNC、FS、FS+、FDX 或 FDX+；不要求是 NULL",
+            syncOf("c.fs")
+        ),
+    ],
+    rest: `FROM collection_conditions c JOIN json_each(c.condition_json, '$.songs') s LEFT JOIN json_each(c.condition_json, '$.difficulties') d ORDER BY ${kindOrder("c.kind")}, c.position, c.condition_index, s.key, d.key`,
+});
+
+// --- v_course_tracks ------------------------------------------------------------------------
+
+const COURSE_TRACKS = view({
+    name: "v_course_tracks",
+    summary: "段位课程的每一首：课程的规则，加上这一首的谱面",
+    needs: [],
+    columns: [
+        column("course_id", "INTEGER", "课程 id", "c.id"),
+        column("course_name", "TEXT", "课程名", "c.name"),
+        column("course_mode", "TEXT", "段位认定 或 真段位认定", "c.mode_name"),
+        column(
+            "course_locked",
+            "INTEGER",
+            "要不要先通过另一个课程才能挑战：1 要，0 不要",
+            "c.is_locked"
+        ),
+        column(
+            "unlock_course_id",
+            "INTEGER",
+            "解锁它的课程 id；一开始就开放的课程是 NULL",
+            "CASE WHEN c.is_locked THEN c.unlock_course_id END"
+        ),
+        column("life_initial", "INTEGER", "开始时的血量", "c.life_initial"),
+        column("life_recovery", "INTEGER", "每首之后恢复的血量", "c.life_recovery"),
+        column("damage_perfect", "INTEGER", "一个 PERFECT 扣的血", "c.damage_perfect"),
+        column("damage_great", "INTEGER", "一个 GREAT 扣的血", "c.damage_great"),
+        column("damage_good", "INTEGER", "一个 GOOD 扣的血", "c.damage_good"),
+        column("damage_miss", "INTEGER", "一个 MISS 扣的血", "c.damage_miss"),
+        column("track", "INTEGER", "这是第几首，从 1 起", "t.position + 1"),
+        column(
+            "chart_key",
+            "TEXT",
+            "谱面 key，和 v_charts.chart_key 一样；曲库里没有这张谱时在 v_charts 里找不到",
+            "t.chart_key"
+        ),
+        column("music_id", "INTEGER", "曲目 id", "t.music_id"),
+        column("track_title", "TEXT", "课程数据里写的歌名", "t.title"),
+        column("difficulty", "TEXT", "难度名", difficultyOf("t.difficulty")),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.course_tracks t JOIN ${REAL_SCHEMA}.courses c ON c.id = t.course_id ORDER BY c.position, t.position`,
+});
+
+const FAVORITES = view({
+    name: "v_favorites",
+    summary:
+        "收藏夹条目：每个收藏夹里的一首曲目一行。可用 music_id 和 grade（或 music_id || '-' || grade = chart_key）与 v_charts 连接",
+    needs: [],
+    columns: [
+        column("name", "TEXT", "收藏夹名称", "f.name"),
+        column("position", "INTEGER", "收藏夹在列表中的位置，从 0 开始", "f.position"),
+        column("entry_position", "INTEGER", "条目在收藏夹内的位置，从 0 开始", "fc.position"),
+        column("music_id", "INTEGER", "曲目 id，和 v_charts.music_id 一样", "fc.music_id"),
+        column(
+            "grade",
+            "INTEGER",
+            "难度编号：0 到 4 是 BASIC 到 Re:MASTER，10 是宴会谱；和 v_charts.grade 一样",
+            "fc.grade"
+        ),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.favorite_charts fc JOIN ${REAL_SCHEMA}.favorites f ON f.id = fc.favorite_id ORDER BY f.position, fc.position`,
+});
+
+const SYNC_RUNS = view({
+    name: "v_sync_runs",
+    summary: "同步、上传、账号操作和导入的执行日志，按 id 倒序",
+    needs: [],
+    columns: [
+        column("id", "INTEGER", "运行记录 id", "r.id"),
+        column(
+            "kind",
+            "TEXT",
+            "操作类型：sync（同步成绩）、upload（上传成绩）、account（账号操作）或 import（导入备份）",
+            "r.kind"
+        ),
+        column("user_uid", "TEXT", "目标用户的 uid；非用户操作时为 NULL", "r.user_uid"),
+        column(
+            "user_name",
+            "TEXT",
+            "执行时的用户显示名，删除或重命名用户后保留当时的名字；非用户操作时为 NULL",
+            "r.user_name"
+        ),
+        column(
+            "source",
+            "TEXT",
+            "来源或目标服务：ingame、lxns、df-token、df-name、diving-fish；没有时为 NULL",
+            "r.source"
+        ),
+        column("mode", "TEXT", "操作模式，如 full、fast、public-b50；没有时为 NULL", "r.mode"),
+        column(
+            "outcome",
+            "TEXT",
+            "执行结果：running（进行中）、ok（成功）、failed（失败）、interrupted（中断）",
+            "r.outcome"
+        ),
+        column("error_code", "TEXT", "失败时的错误码，成功或进行中时为 NULL", "r.error_code"),
+        column(
+            "error_message",
+            "TEXT",
+            "失败时的错误信息，成功或进行中时为 NULL",
+            "r.error_message"
+        ),
+        column("summary", "TEXT", "结果摘要 JSON 文本；没有时为 NULL", "r.summary"),
+        column("started_at", "TEXT", "开始时间，UTC ISO 8601 格式", utcTimeOf("r.started_at")),
+        column(
+            "finished_at",
+            "TEXT",
+            "结束时间，UTC ISO 8601 格式；进行中或中断时为 NULL",
+            utcTimeOf("r.finished_at")
+        ),
+        column("cli_version", "TEXT", "执行时 saltnet CLI 的版本号", "r.cli_version"),
+    ],
+    rest: `FROM ${REAL_SCHEMA}.sync_runs r ORDER BY r.id DESC`,
+});
+
+/** Every view `sql` can read, in the order `schema --views` lists them. */
+export const PUBLIC_VIEWS: readonly PublicView[] = [
+    CHARTS,
+    SCORES,
+    SCORE_EVENTS,
+    RATING_HISTORY,
+    COLLECTIONS,
+    COLLECTION_TARGETS,
+    USER_ITEMS,
+    USER_CHARACTERS,
+    COURSE_TRACKS,
+    FAVORITES,
+    SYNC_RUNS,
+];
+
+/** The names of the views, in lower case as SQLite compares them. */
+export const PUBLIC_VIEW_NAMES: readonly string[] = PUBLIC_VIEWS.map(({ name }) => name);
+
+function stripSqlCommentsAndStrings(sql: string): string {
+    let result = "";
+    let i = 0;
+    const len = sql.length;
+
+    while (i < len) {
+        const char = sql[i];
+        const next = sql[i + 1];
+
+        if (char === "-" && next === "-") {
+            i += 2;
+            while (i < len && sql[i] !== "\n" && sql[i] !== "\r") {
+                i++;
+            }
+            result += " ";
+            continue;
+        }
+
+        if (char === "/" && next === "*") {
+            i += 2;
+            while (i < len && !(sql[i] === "*" && sql[i + 1] === "/")) {
+                i++;
+            }
+            if (i < len) i += 2;
+            result += " ";
+            continue;
+        }
+
+        if (char === "'") {
+            i++;
+            while (i < len) {
+                if (sql[i] === "'") {
+                    if (sql[i + 1] === "'") {
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            result += " ";
+            continue;
+        }
+
+        if (char === '"') {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                if (c === '"') {
+                    if (sql[i + 1] === '"') {
+                        result += sql[i + 1];
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            continue;
+        }
+
+        if (char === "[") {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                i++;
+                if (c === "]") break;
+            }
+            continue;
+        }
+
+        if (char === "`") {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                i++;
+                if (c === "`") break;
+            }
+            continue;
+        }
+
+        result += char;
+        i++;
+    }
+
+    return result;
+}
+
+/**
+ * The views a query mentions. SQL names do not depend on case, and a name can be quoted. Single-quoted
+ * string literals and comments are skipped before matching.
+ */
+export function viewsMentionedIn(sql: string): readonly PublicView[] {
+    const text = stripSqlCommentsAndStrings(sql).toLowerCase();
+    return PUBLIC_VIEWS.filter(({ name }) =>
+        new RegExp(`(?<![a-z0-9_])${name}(?![a-z0-9_])`).test(text)
+    );
+}
+
+/**
+ * When each kind of metadata was downloaded (epoch milliseconds), read from the attached database
+ * in the same snapshot as the copies, so the time belongs to the rows the query sees. A kind with
+ * no row has not been downloaded, which only a deletion between the check and the copy explains.
+ */
+export function fetchedAtOf(
+    db: DatabaseSync,
+    kinds: readonly MetadataKind[]
+): Partial<Record<MetadataKind, number>> {
+    const select = db.prepare(`SELECT fetched_at FROM ${REAL_SCHEMA}.meta_state WHERE source = ?`);
+    const found: Partial<Record<MetadataKind, number>> = {};
+    for (const kind of kinds) {
+        const row = select.get(SOURCE_OF_KIND[kind]) as { fetched_at: number } | undefined;
+        if (!row) {
+            throw new CliError(
+                "INTERNAL",
+                `${SOURCE_LABELS[SOURCE_OF_KIND[kind]]}刚才还在，现在读不到了`
+            );
+        }
+        found[kind] = row.fetched_at;
+    }
+    return found;
+}

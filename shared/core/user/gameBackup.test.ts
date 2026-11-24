@@ -1,0 +1,515 @@
+import type { DivingFishFullRecord } from "../integrations/diving-fish/type";
+import type { User } from "./type";
+import { describe, expect, it } from "vitest";
+import { ComboStatus, RankRate, SyncStatus } from "../mai/types";
+import { buildGameBackup } from "./gameBackup";
+
+function createRecord(overrides: Partial<DivingFishFullRecord>): DivingFishFullRecord {
+    return {
+        song_id: 1,
+        type: "SD",
+        title: "Test Song",
+        level: "12",
+        level_index: 2,
+        level_label: "Expert",
+        ds: 12.0,
+        achievements: 100.5,
+        dxScore: 2500,
+        fc: ComboStatus.FullCombo,
+        fs: SyncStatus.FullSync,
+        rate: RankRate.sss,
+        ra: 280,
+        play_count: 10,
+        ...overrides,
+    };
+}
+
+describe("buildGameBackup", () => {
+    it("converts a complete user with all combo, sync, rank values, unknown fallbacks, items, and characters", () => {
+        const records: Record<string, DivingFishFullRecord> = {
+            // Covering combo statuses
+            r0: createRecord({
+                song_id: 101,
+                level_index: 0,
+                achievements: 101.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.d,
+                dxScore: 1000,
+                play_count: 3,
+            }),
+            r1: createRecord({
+                song_id: 102,
+                level_index: 1,
+                achievements: 99.5,
+                fc: ComboStatus.FullCombo,
+                fs: SyncStatus.Sync,
+                rate: RankRate.c,
+                dxScore: 1100,
+                play_count: 4,
+            }),
+            r2: createRecord({
+                song_id: 103,
+                level_index: 2,
+                achievements: 98.0,
+                fc: ComboStatus.FullComboPlus,
+                fs: SyncStatus.FullSync,
+                rate: RankRate.b,
+                dxScore: 1200,
+                play_count: 5,
+            }),
+            r3: createRecord({
+                song_id: 104,
+                level_index: 3,
+                achievements: 97.0,
+                fc: ComboStatus.AllPerfect,
+                fs: SyncStatus.FullSyncPlus,
+                rate: RankRate.bb,
+                dxScore: 1300,
+                play_count: 6,
+            }),
+            r4: createRecord({
+                song_id: 105,
+                level_index: 4,
+                achievements: 96.0,
+                fc: ComboStatus.AllPerfectPlus,
+                fs: SyncStatus.FullSyncDX,
+                rate: RankRate.bbb,
+                dxScore: 1400,
+                play_count: 7,
+            }),
+            // Covering sync statuses and ranks
+            r5: createRecord({
+                song_id: 106,
+                level_index: 2,
+                achievements: 95.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.FullSyncDXPlus,
+                rate: RankRate.a,
+                dxScore: 1500,
+                play_count: 8,
+            }),
+            r6: createRecord({
+                song_id: 107,
+                level_index: 3,
+                achievements: 94.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.aa,
+                dxScore: 1600,
+                play_count: 9,
+            }),
+            r7: createRecord({
+                song_id: 108,
+                level_index: 3,
+                achievements: 93.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.aaa,
+                dxScore: 1700,
+                play_count: 10,
+            }),
+            r8: createRecord({
+                song_id: 109,
+                level_index: 3,
+                achievements: 97.5,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.s,
+                dxScore: 1800,
+                play_count: 11,
+            }),
+            r9: createRecord({
+                song_id: 110,
+                level_index: 3,
+                achievements: 98.5,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.sp,
+                dxScore: 1900,
+                play_count: 12,
+            }),
+            r10: createRecord({
+                song_id: 111,
+                level_index: 3,
+                achievements: 99.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.ss,
+                dxScore: 2000,
+                play_count: 13,
+            }),
+            r11: createRecord({
+                song_id: 112,
+                level_index: 3,
+                achievements: 99.8,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.ssp,
+                dxScore: 2100,
+                play_count: 14,
+            }),
+            r12: createRecord({
+                song_id: 113,
+                level_index: 3,
+                achievements: 100.0,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.sss,
+                dxScore: 2200,
+                play_count: 15,
+            }),
+            r13: createRecord({
+                song_id: 114,
+                level_index: 3,
+                achievements: 100.8,
+                fc: ComboStatus.None,
+                fs: SyncStatus.None,
+                rate: RankRate.sssp,
+                dxScore: 2300,
+                play_count: 16,
+            }),
+            // Unknown combo, sync, rate fallback to 0, missing play_count
+            r14: createRecord({
+                song_id: 115,
+                level_index: 1,
+                achievements: 80.1234,
+                fc: "unknown_fc" as never,
+                fs: "unknown_fs" as never,
+                rate: "unknown_rate" as never,
+                dxScore: 500,
+                play_count: undefined,
+            }),
+        };
+
+        const user: User = {
+            uid: "user-test-1",
+            remark: "TestRemark",
+            divingFish: { name: "df-name" },
+            inGame: {
+                name: "InGamePlayer",
+                id: 12345678,
+            },
+            settings: { manuallyUpdate: false },
+            data: {
+                updateTime: 1700000000000,
+                name: "DataName",
+                rating: 15200,
+                detailed: records,
+                items: [
+                    [],
+                    [
+                        { itemKind: 1, itemId: 10, stock: 1, isValid: true },
+                        { itemKind: 1, itemId: 11, stock: 0, isValid: false },
+                    ],
+                    [{ itemKind: 2, itemId: 20, stock: 1, isValid: true }],
+                ],
+                characters: [
+                    {
+                        characterId: 1001,
+                        point: 50,
+                        level: 10,
+                        awakening: 2,
+                        useCount: 25,
+                        nextAwake: 100,
+                        nextAwakePercent: 50,
+                    },
+                ],
+            },
+        };
+
+        const backup = buildGameBackup(user);
+
+        expect(backup).toEqual({
+            userName: "InGamePlayer",
+            userRating: 15200,
+            userMusicDetailList: [
+                {
+                    musicId: 101,
+                    level: 0,
+                    playCount: 3,
+                    achievement: 1010000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 1000,
+                    scoreRank: 0,
+                    extNum1: 1,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 102,
+                    level: 1,
+                    playCount: 4,
+                    achievement: 995000,
+                    comboStatus: 1,
+                    syncStatus: 1,
+                    deluxscoreMax: 1100,
+                    scoreRank: 1,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 103,
+                    level: 2,
+                    playCount: 5,
+                    achievement: 980000,
+                    comboStatus: 2,
+                    syncStatus: 2,
+                    deluxscoreMax: 1200,
+                    scoreRank: 2,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 104,
+                    level: 3,
+                    playCount: 6,
+                    achievement: 970000,
+                    comboStatus: 3,
+                    syncStatus: 3,
+                    deluxscoreMax: 1300,
+                    scoreRank: 3,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 105,
+                    level: 4,
+                    playCount: 7,
+                    achievement: 960000,
+                    comboStatus: 4,
+                    syncStatus: 4,
+                    deluxscoreMax: 1400,
+                    scoreRank: 4,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 106,
+                    level: 2,
+                    playCount: 8,
+                    achievement: 950000,
+                    comboStatus: 0,
+                    syncStatus: 5,
+                    deluxscoreMax: 1500,
+                    scoreRank: 5,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 107,
+                    level: 3,
+                    playCount: 9,
+                    achievement: 940000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 1600,
+                    scoreRank: 6,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 108,
+                    level: 3,
+                    playCount: 10,
+                    achievement: 930000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 1700,
+                    scoreRank: 7,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 109,
+                    level: 3,
+                    playCount: 11,
+                    achievement: 975000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 1800,
+                    scoreRank: 8,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 110,
+                    level: 3,
+                    playCount: 12,
+                    achievement: 985000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 1900,
+                    scoreRank: 9,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 111,
+                    level: 3,
+                    playCount: 13,
+                    achievement: 990000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 2000,
+                    scoreRank: 10,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 112,
+                    level: 3,
+                    playCount: 14,
+                    achievement: 998000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 2100,
+                    scoreRank: 11,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 113,
+                    level: 3,
+                    playCount: 15,
+                    achievement: 1000000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 2200,
+                    scoreRank: 12,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 114,
+                    level: 3,
+                    playCount: 16,
+                    achievement: 1008000,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 2300,
+                    scoreRank: 13,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+                {
+                    musicId: 115,
+                    level: 1,
+                    playCount: 0,
+                    achievement: 801234,
+                    comboStatus: 0,
+                    syncStatus: 0,
+                    deluxscoreMax: 500,
+                    scoreRank: 0,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+            ],
+            userItemList: [
+                { itemKind: 1, itemId: 10, stock: 1, isValid: true },
+                { itemKind: 1, itemId: 11, stock: 0, isValid: false },
+                { itemKind: 2, itemId: 20, stock: 1, isValid: true },
+            ],
+            userCharacterList: [
+                {
+                    characterId: 1001,
+                    point: 50,
+                    level: 10,
+                    awakening: 2,
+                    useCount: 25,
+                },
+            ],
+        });
+    });
+
+    it("handles missing items and characters, missing inGame.name, and missing rating", () => {
+        const user: User = {
+            uid: "user-test-minimal",
+            remark: "FallbackRemark",
+            divingFish: { name: "df-player" },
+            inGame: {
+                id: 87654321,
+                name: undefined,
+            },
+            settings: { manuallyUpdate: false },
+            data: {
+                updateTime: 1700000000000,
+                name: null,
+                rating: null,
+                detailed: {
+                    single: createRecord({
+                        song_id: 42,
+                        level_index: 3,
+                        achievements: 100.0,
+                        play_count: 1,
+                    }),
+                },
+                items: undefined,
+                characters: undefined,
+            },
+        };
+
+        const backup = buildGameBackup(user);
+
+        expect(backup).toEqual({
+            userName: "FallbackRemark",
+            userRating: null,
+            userMusicDetailList: [
+                {
+                    musicId: 42,
+                    level: 3,
+                    playCount: 1,
+                    achievement: 1000000,
+                    comboStatus: 1,
+                    syncStatus: 2,
+                    deluxscoreMax: 2500,
+                    scoreRank: 12,
+                    extNum1: 0,
+                    extNum2: 0,
+                },
+            ],
+            userItemList: [],
+            userCharacterList: [],
+        });
+    });
+
+    it("rounds the achievement rate to the nearest ten-thousandth, as the web export did", () => {
+        // 97.0011 * 1e4 is 970010.9999999999 in floating point.
+        const user: User = {
+            uid: "user-rounding",
+            remark: null,
+            divingFish: { name: null },
+            inGame: { id: 1 },
+            settings: { manuallyUpdate: false },
+            data: {
+                updateTime: 1700000000000,
+                name: null,
+                rating: null,
+                detailed: { only: createRecord({ achievements: 97.0011 }) },
+            },
+        };
+
+        expect(buildGameBackup(user).userMusicDetailList[0].achievement).toBe(970011);
+    });
+
+    it("writes the position of each item list as the kind of its items", () => {
+        const user: User = {
+            uid: "user-item-kind",
+            remark: null,
+            divingFish: { name: null },
+            inGame: { id: 1 },
+            settings: { manuallyUpdate: false },
+            data: {
+                updateTime: 1700000000000,
+                name: null,
+                rating: null,
+                detailed: { only: createRecord({}) },
+                items: [[], [], [], [{ itemKind: 1, itemId: 7, stock: 1, isValid: true }]],
+            },
+        };
+
+        expect(buildGameBackup(user).userItemList).toEqual([
+            { itemKind: 3, itemId: 7, stock: 1, isValid: true },
+        ]);
+    });
+});

@@ -1,5 +1,9 @@
 export { initLXNSOAuth, handleLXNSOAuthCallback } from "./oauth";
-export type { LXNSAuth, LXNSUploadScore, LXNSUploadScoreRequest } from "./type";
+export type {
+    LXNSAuth,
+    LXNSUploadScore,
+    LXNSUploadScoreRequest,
+} from "@core/integrations/lxns/type";
 export { fetchLXNSApi } from "./fetch";
 export { fetchLXNSScore } from "./fetchScore";
 export { uploadScoresToLXNS } from "./uploadScore";
@@ -10,4 +14,4 @@ export type {
     LXNSCollectionRequired,
     LXNSCollectionRequiredSong,
     LXNSCollectionType,
-} from "./type";
+} from "@core/integrations/lxns/type";

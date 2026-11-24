@@ -1,6 +1,6 @@
-import { ChartType } from "../maiTypes";
-import type { Chart } from "../music/type";
-import { getChartDifficultySearchLabel } from "./difficulty";
+import { ChartType } from "@core/mai/types";
+import type { Chart } from "@core/music/type";
+import { getChartDifficultySearchLabel } from "@core/chart/difficulty";
 
 export function getChartSearchUrls(chart: Chart): typeof VideoSearchUrls {
     const urls: typeof VideoSearchUrls = [];

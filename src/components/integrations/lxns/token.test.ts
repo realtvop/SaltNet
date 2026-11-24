@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { User } from "@/components/data/user/type";
+import type { User } from "@core/user/type";
 import { refreshLXNSOAuthToken, requestLXNSToken } from "./token";
 
 function token(id = 123): string {
@@ -31,13 +31,53 @@ function mockResponse(body: unknown, status = 200) {
         vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }))
     );
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+});
 
 describe("LXNS token endpoint", () => {
     it.each(["flat", "legacy"])("accepts %s token responses", async format => {
         const data = response();
         mockResponse(format === "flat" ? data : { success: true, code: 200, data });
         await expect(requestLXNSToken(new URLSearchParams())).resolves.toEqual(data);
+    });
+
+    it("sends refresh request with configured client id and form headers", async () => {
+        vi.stubEnv("VITE_LXNS_OAUTH_CLIENT_ID", "made-client-id");
+        mockResponse(response());
+        const target = user();
+        const expectedBody = new URLSearchParams({
+            grant_type: "refresh_token",
+            refresh_token: target.lxns!.auth!.refreshToken!,
+            client_id: "made-client-id",
+        }).toString();
+
+        await refreshLXNSOAuthToken(target);
+
+        const fetchMock = vi.mocked(fetch);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, init] = fetchMock.mock.calls[0];
+        expect(init?.body).toBe(expectedBody);
+        expect(init?.headers).toMatchObject({
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        });
+    });
+
+    it("sends request with body exactly matching URLSearchParams.toString()", async () => {
+        mockResponse(response());
+        const params = new URLSearchParams({
+            grant_type: "authorization_code",
+            code: " made code ",
+            redirect_uri: "https://app.example/cb?x=1&y=2",
+        });
+
+        await requestLXNSToken(params);
+
+        const fetchMock = vi.mocked(fetch);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, init] = fetchMock.mock.calls[0];
+        expect(init?.body).toBe(params.toString());
     });
 
     it("reports OAuth errors without treating them as successful API envelopes", async () => {

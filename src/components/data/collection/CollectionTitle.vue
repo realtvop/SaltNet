@@ -1,6 +1,6 @@
 <script setup lang="ts">
-    import type { Title } from "./type";
-    import { TitleColor } from "./type";
+    import type { Title } from "@core/collection/type";
+    import { TitleColor } from "@core/collection/type";
 
     defineProps<{
         title: Title;

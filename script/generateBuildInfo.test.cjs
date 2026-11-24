@@ -69,3 +69,30 @@ test("recognizes semantic whitespace changes in stylesheet code", async () => {
 
     assert.equal(await findLatestCodeChangeTime(cwd), Date.parse("2026-01-02T00:00:00Z"));
 });
+
+test("skips commits changing only cli or docs code files", async () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "saltnet-build-info-cli-docs-"));
+    temporaryDirectories.push(cwd);
+    git(cwd, ["init"]);
+    git(cwd, ["config", "user.email", "test@example.com"]);
+    git(cwd, ["config", "user.name", "Test"]);
+
+    fs.writeFileSync(path.join(cwd, "app.ts"), "export const answer = 1;\n");
+    commit(cwd, "feat: web code commit", "2026-01-01T00:00:00Z");
+
+    fs.mkdirSync(path.join(cwd, "cli", "src"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, "cli", "src", "x.ts"), "export const cli = 1;\n");
+    commit(cwd, "feat(cli): cli code commit", "2026-01-02T00:00:00Z");
+
+    fs.mkdirSync(path.join(cwd, "docs", "tools"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, "docs", "tools", "x.mjs"), "console.log(1);\n");
+    commit(cwd, "docs: tool script commit", "2026-01-03T00:00:00Z");
+
+    assert.equal(await findLatestCodeChangeTime(cwd), Date.parse("2026-01-01T00:00:00Z"));
+
+    fs.mkdirSync(path.join(cwd, "shared", "core"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, "shared", "core", "x.ts"), "export const shared = 1;\n");
+    commit(cwd, "feat(shared): shared core commit", "2026-01-04T00:00:00Z");
+
+    assert.equal(await findLatestCodeChangeTime(cwd), Date.parse("2026-01-04T00:00:00Z"));
+});

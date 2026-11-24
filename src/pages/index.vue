@@ -1,11 +1,11 @@
 <script setup lang="ts">
+    import { getUserDisplayName } from "@core/user/type";
     import RatingPlate from "@/components/data/user/RatingPlate.vue";
     import { onBeforeUnmount, onMounted, ref } from "vue";
     import { useRouter } from "vue-router";
     import { useShared } from "@/components/app/shared";
     import { updateUser } from "@/components/data/user/update";
     import { snackbar } from "mdui";
-    import { getUserDisplayName } from "@/components/data/user/type";
 
     interface PwaInstallPromptEvent extends Event {
         prompt(): Promise<void>;

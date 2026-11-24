@@ -1,18 +1,16 @@
 <script setup lang="ts">
+    import { getScoredCollectionCharts } from "@core/collection/progress";
     import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
     import ScoreCard from "@/components/data/chart/ScoreCard.vue";
-    import { createDetailedScoreLookup, toChartScore } from "@/components/data/chart/scoreLookup";
     import { getMusicInfoAsync } from "@/components/data/music";
-    import type { Chart } from "@/components/data/music/type";
-    import type { User } from "@/components/data/user/type";
-    import { RankRate } from "@/components/data/maiTypes";
-    import type { Collection } from "./type";
+    import type { Chart } from "@core/music/type";
+    import type { User } from "@core/user/type";
+    import { RankRate } from "@core/mai/types";
+    import type { Collection } from "@core/collection/type";
     import {
-        getCollectionCharts,
         getCollectionProgress,
         isCollectionScoreEvaluable,
-        sortCollectionChartsByCompletion,
-    } from "./versionPlate";
+    } from "@core/collection/versionPlate";
 
     const props = defineProps<{
         collection: Collection;
@@ -95,14 +93,10 @@
                 return;
             }
 
-            const scoreLookup = createDetailedScoreLookup(props.user?.data.detailed);
-            const withScores = Object.values(musicData.chartList).map(chart => ({
-                ...chart,
-                score: toChartScore(scoreLookup?.findScoreForChart(chart)),
-            }));
-            charts.value = sortCollectionChartsByCompletion(
+            charts.value = getScoredCollectionCharts(
                 props.collection,
-                getCollectionCharts(props.collection, withScores)
+                Object.values(musicData.chartList),
+                props.user?.data.detailed
             );
         } finally {
             loading.value = false;

@@ -1,0 +1,2550 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`chart info query snapshots > getLowestRaInSection and getLowestRaInChartOrSection across chart and user variants 1`] = `
+"chart old SD 8-0:
+  user full B50 (35 sd, 15 dx): sectionLowest = 262
+    score no score (null): chartOrSection = 262
+    score score undefined: chartOrSection = 262
+    score score ra 0: chartOrSection = 262
+    score score ra 200: chartOrSection = 262
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 262
+  user short B50 (10 sd, 5 dx): sectionLowest = 283
+    score no score (null): chartOrSection = 283
+    score score undefined: chartOrSection = 283
+    score score ra 0: chartOrSection = 283
+    score score ra 200: chartOrSection = 283
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 283
+  user B50 ending at 0 (3 sd, 2 dx): sectionLowest = 0
+    score no score (null): chartOrSection = 0
+    score score undefined: chartOrSection = 0
+    score score ra 0: chartOrSection = 0
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 0
+  user missing B50: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+  user null user: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+chart old DX 10044-0:
+  user full B50 (35 sd, 15 dx): sectionLowest = 262
+    score no score (null): chartOrSection = 262
+    score score undefined: chartOrSection = 262
+    score score ra 0: chartOrSection = 262
+    score score ra 200: chartOrSection = 262
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 262
+  user short B50 (10 sd, 5 dx): sectionLowest = 283
+    score no score (null): chartOrSection = 283
+    score score undefined: chartOrSection = 283
+    score score ra 0: chartOrSection = 283
+    score score ra 200: chartOrSection = 283
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 283
+  user B50 ending at 0 (3 sd, 2 dx): sectionLowest = 0
+    score no score (null): chartOrSection = 0
+    score score undefined: chartOrSection = 0
+    score score ra 0: chartOrSection = 0
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 0
+  user missing B50: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+  user null user: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+chart new DX 10030-0:
+  user full B50 (35 sd, 15 dx): sectionLowest = 293
+    score no score (null): chartOrSection = 293
+    score score undefined: chartOrSection = 293
+    score score ra 0: chartOrSection = 293
+    score score ra 200: chartOrSection = 293
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 293
+  user short B50 (10 sd, 5 dx): sectionLowest = 304
+    score no score (null): chartOrSection = 304
+    score score undefined: chartOrSection = 304
+    score score ra 0: chartOrSection = 304
+    score score ra 200: chartOrSection = 304
+    score score ra 300: chartOrSection = 304
+    score score without ra: chartOrSection = 304
+  user B50 ending at 0 (3 sd, 2 dx): sectionLowest = 0
+    score no score (null): chartOrSection = 0
+    score score undefined: chartOrSection = 0
+    score score ra 0: chartOrSection = 0
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = 0
+  user missing B50: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+  user null user: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = 200
+    score score ra 300: chartOrSection = 300
+    score score without ra: chartOrSection = null
+chart null chart:
+  user full B50 (35 sd, 15 dx): sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = null
+    score score ra 300: chartOrSection = null
+    score score without ra: chartOrSection = null
+  user short B50 (10 sd, 5 dx): sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = null
+    score score ra 300: chartOrSection = null
+    score score without ra: chartOrSection = null
+  user B50 ending at 0 (3 sd, 2 dx): sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = null
+    score score ra 300: chartOrSection = null
+    score score without ra: chartOrSection = null
+  user missing B50: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = null
+    score score ra 300: chartOrSection = null
+    score score without ra: chartOrSection = null
+  user null user: sectionLowest = null
+    score no score (null): chartOrSection = null
+    score score undefined: chartOrSection = null
+    score score ra 0: chartOrSection = null
+    score score ra 200: chartOrSection = null
+    score score ra 300: chartOrSection = null
+    score score without ra: chartOrSection = null"
+`;
+
+exports[`chart info query snapshots > rating stage tables and available modes across charts, scores and modes 1`] = `
+"chart 110022-10 (constant 0):
+  all (empty)
+  score none: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 99.5: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 100.5: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 101: available 简洁, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+chart 10030-0 (constant 2):
+  all (15) 100.5000% sssp 45 ds 2, 100.4999% sss 44 ds 2, 100.0000% sss 43 ds 2, 99.5261% ssp 42 ds 2, 99.0000% ss 41 ds 2, 98.5222% sp 40 ds 2, 97.5000% s 39 ds 2, 97.0000% s 38 ds 2, 96.9999% aaa 34 ds 2, 95.2381% aaa 32 ds 2, 94.0000% aaa 31 ds 2, 92.1053% aa 28 ds 2, 90.0000% aa 27 ds 2, 80.8824% a 22 ds 2, 80.0000% a 21 ds 2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (8) 100.5000% sssp 45 ds 2, 100.4999% sss 44 ds 2, 100.0000% sss 43 ds 2, 99.5261% ssp 42 ds 2, 99.0000% ss 41 ds 2, 98.5222% sp 40 ds 2, 97.5000% s 39 ds 2, 97.0000% s 38 ds 2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (5) 100.5000% sssp 45 ds 2, 100.4999% sss 44 ds 2, 100.0000% sss 43 ds 2, 99.5261% ssp 42 ds 2, 99.0000% ss 41 ds 2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 45 ds 2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 45 ds 2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10146-0 (constant 3):
+  all (14) 100.5000% sssp 67 ds 3, 100.4999% sss 66 ds 3, 99.9999% ssp 64 ds 3, 98.9999% sp 61 ds 3, 98.5222% sp 60 ds 3, 98.0000% sp 59 ds 3, 97.0000% s 58 ds 3, 96.9999% aaa 51 ds 3, 95.2381% aaa 48 ds 3, 94.0000% aaa 47 ds 3, 92.1053% aa 42 ds 3, 90.0000% aa 41 ds 3, 80.8824% a 33 ds 3, 80.0000% a 32 ds 3
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 67 ds 3, 100.4999% sss 66 ds 3, 99.9999% ssp 64 ds 3, 98.9999% sp 61 ds 3, 98.5222% sp 60 ds 3, 98.0000% sp 59 ds 3, 97.0000% s 58 ds 3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (4) 100.5000% sssp 67 ds 3, 100.4999% sss 66 ds 3, 99.9999% ssp 64 ds 3, 98.9999% sp 61 ds 3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 67 ds 3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 67 ds 3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 228-0 (constant 4):
+  all (19) 100.5000% sssp 90 ds 4, 100.4999% sss 89 ds 4, 100.0000% sss 86 ds 4, 99.9999% ssp 85 ds 4, 99.5261% ssp 84 ds 4, 99.5000% ssp 83 ds 4, 99.0000% ss 82 ds 4, 98.9999% sp 81 ds 4, 98.5222% sp 80 ds 4, 98.0000% sp 79 ds 4, 97.5000% s 78 ds 4, 97.0000% s 77 ds 4, 96.9999% aaa 68 ds 4, 95.2381% aaa 64 ds 4, 94.0000% aaa 63 ds 4, 90.4606% aa 55 ds 4, 90.0000% aa 54 ds 4, 80.8824% a 44 ds 4, 80.0000% a 43 ds 4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (12) 100.5000% sssp 90 ds 4, 100.4999% sss 89 ds 4, 100.0000% sss 86 ds 4, 99.9999% ssp 85 ds 4, 99.5261% ssp 84 ds 4, 99.5000% ssp 83 ds 4, 99.0000% ss 82 ds 4, 98.9999% sp 81 ds 4, 98.5222% sp 80 ds 4, 98.0000% sp 79 ds 4, 97.5000% s 78 ds 4, 97.0000% s 77 ds 4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 90 ds 4, 100.4999% sss 89 ds 4, 100.0000% sss 86 ds 4, 99.9999% ssp 85 ds 4, 99.5261% ssp 84 ds 4, 99.5000% ssp 83 ds 4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 90 ds 4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 90 ds 4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 242-0 (constant 5):
+  all (19) 100.5000% sssp 112 ds 5, 100.4999% sss 111 ds 5, 100.0000% sss 108 ds 5, 99.9999% ssp 106 ds 5, 99.5261% ssp 105 ds 5, 99.5000% ssp 104 ds 5, 99.0385% ss 103 ds 5, 99.0000% ss 102 ds 5, 98.9999% sp 101 ds 5, 98.5222% sp 100 ds 5, 98.0000% sp 99 ds 5, 97.0000% s 97 ds 5, 96.9999% aaa 85 ds 5, 94.0477% aaa 79 ds 5, 94.0000% aaa 78 ds 5, 90.7895% aa 69 ds 5, 90.0000% aa 68 ds 5, 80.8824% a 55 ds 5, 80.0000% a 54 ds 5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (12) 100.5000% sssp 112 ds 5, 100.4999% sss 111 ds 5, 100.0000% sss 108 ds 5, 99.9999% ssp 106 ds 5, 99.5261% ssp 105 ds 5, 99.5000% ssp 104 ds 5, 99.0385% ss 103 ds 5, 99.0000% ss 102 ds 5, 98.9999% sp 101 ds 5, 98.5222% sp 100 ds 5, 98.0000% sp 99 ds 5, 97.0000% s 97 ds 5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 112 ds 5, 100.4999% sss 111 ds 5, 100.0000% sss 108 ds 5, 99.9999% ssp 106 ds 5, 99.5261% ssp 105 ds 5, 99.5000% ssp 104 ds 5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 112 ds 5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 112 ds 5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10191-1 (constant 6):
+  all (21) 100.5000% sssp 135 ds 6, 100.4999% sss 133 ds 6, 100.3087% sss 130 ds 6, 100.0000% sss 129 ds 6, 99.9999% ssp 128 ds 6, 99.5261% ssp 126 ds 6, 99.5000% ssp 125 ds 6, 99.3590% ss 124 ds 6, 99.0000% ss 123 ds 6, 98.9999% sp 122 ds 6, 98.5222% sp 120 ds 6, 98.0000% sp 119 ds 6, 97.5000% s 117 ds 6, 97.0000% s 116 ds 6, 96.9999% aaa 102 ds 6, 94.2461% aaa 95 ds 6, 94.0000% aaa 94 ds 6, 91.0088% aa 83 ds 6, 90.0000% aa 82 ds 6, 80.8824% a 66 ds 6, 80.0000% a 65 ds 6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 135 ds 6, 100.4999% sss 133 ds 6, 100.3087% sss 130 ds 6, 100.0000% sss 129 ds 6, 99.9999% ssp 128 ds 6, 99.5261% ssp 126 ds 6, 99.5000% ssp 125 ds 6, 99.3590% ss 124 ds 6, 99.0000% ss 123 ds 6, 98.9999% sp 122 ds 6, 98.5222% sp 120 ds 6, 98.0000% sp 119 ds 6, 97.5000% s 117 ds 6, 97.0000% s 116 ds 6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 135 ds 6, 100.4999% sss 133 ds 6, 100.3087% sss 130 ds 6, 100.0000% sss 129 ds 6, 99.9999% ssp 128 ds 6, 99.5261% ssp 126 ds 6, 99.5000% ssp 125 ds 6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 135 ds 6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 135 ds 6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10030-1 (constant 6.5):
+  all (21) 100.5000% sssp 146 ds 6.5, 100.4999% sss 145 ds 6.5, 100.4274% sss 141 ds 6.5, 100.0000% sss 140 ds 6.5, 99.9999% ssp 139 ds 6.5, 99.8907% ssp 137 ds 6.5, 99.5000% ssp 136 ds 6.5, 99.1125% ss 134 ds 6.5, 99.0000% ss 133 ds 6.5, 98.9999% sp 132 ds 6.5, 98.5222% sp 130 ds 6.5, 98.0000% sp 129 ds 6.5, 97.6924% s 127 ds 6.5, 97.0000% s 126 ds 6.5, 96.9999% aaa 110 ds 6.5, 94.3224% aaa 103 ds 6.5, 94.0000% aaa 102 ds 6.5, 90.0810% aa 89 ds 6.5, 90.0000% aa 88 ds 6.5, 80.3168% a 71 ds 6.5, 80.0000% a 70 ds 6.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 146 ds 6.5, 100.4999% sss 145 ds 6.5, 100.4274% sss 141 ds 6.5, 100.0000% sss 140 ds 6.5, 99.9999% ssp 139 ds 6.5, 99.8907% ssp 137 ds 6.5, 99.5000% ssp 136 ds 6.5, 99.1125% ss 134 ds 6.5, 99.0000% ss 133 ds 6.5, 98.9999% sp 132 ds 6.5, 98.5222% sp 130 ds 6.5, 98.0000% sp 129 ds 6.5, 97.6924% s 127 ds 6.5, 97.0000% s 126 ds 6.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 146 ds 6.5, 100.4999% sss 145 ds 6.5, 100.4274% sss 141 ds 6.5, 100.0000% sss 140 ds 6.5, 99.9999% ssp 139 ds 6.5, 99.8907% ssp 137 ds 6.5, 99.5000% ssp 136 ds 6.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 146 ds 6.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 146 ds 6.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 185-1 (constant 6.8):
+  all (20) 100.5000% sssp 153 ds 6.8, 100.4999% sss 151 ds 6.8, 100.0817% sss 147 ds 6.8, 100.0000% sss 146 ds 6.8, 99.9999% ssp 145 ds 6.8, 99.6655% ssp 143 ds 6.8, 99.5000% ssp 142 ds 6.8, 99.0000% ss 140 ds 6.8, 98.9999% sp 138 ds 6.8, 98.5222% sp 136 ds 6.8, 98.0000% sp 135 ds 6.8, 97.0589% s 132 ds 6.8, 97.0000% s 131 ds 6.8, 96.9999% aaa 116 ds 6.8, 94.5379% aaa 108 ds 6.8, 94.0000% aaa 107 ds 6.8, 90.9443% aa 94 ds 6.8, 90.0000% aa 93 ds 6.8, 80.0174% a 74 ds 6.8, 80.0000% a 73 ds 6.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 153 ds 6.8, 100.4999% sss 151 ds 6.8, 100.0817% sss 147 ds 6.8, 100.0000% sss 146 ds 6.8, 99.9999% ssp 145 ds 6.8, 99.6655% ssp 143 ds 6.8, 99.5000% ssp 142 ds 6.8, 99.0000% ss 140 ds 6.8, 98.9999% sp 138 ds 6.8, 98.5222% sp 136 ds 6.8, 98.0000% sp 135 ds 6.8, 97.0589% s 132 ds 6.8, 97.0000% s 131 ds 6.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 153 ds 6.8, 100.4999% sss 151 ds 6.8, 100.0817% sss 147 ds 6.8, 100.0000% sss 146 ds 6.8, 99.9999% ssp 145 ds 6.8, 99.6655% ssp 143 ds 6.8, 99.5000% ssp 142 ds 6.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 153 ds 6.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 153 ds 6.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 11726-1 (constant 7):
+  all (19) 100.5000% sssp 157 ds 7, 100.4999% sss 156 ds 7, 100.0000% sss 151 ds 7, 99.9999% ssp 149 ds 7, 99.5261% ssp 147 ds 7, 99.5000% ssp 146 ds 7, 99.0000% ss 144 ds 7, 98.9999% sp 142 ds 7, 98.5222% sp 140 ds 7, 98.0000% sp 139 ds 7, 97.1429% s 136 ds 7, 97.0000% s 135 ds 7, 96.9999% aaa 119 ds 7, 94.3878% aaa 111 ds 7, 94.0000% aaa 110 ds 7, 90.2256% aa 96 ds 7, 90.0000% aa 95 ds 7, 80.8824% a 77 ds 7, 80.0000% a 76 ds 7
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (12) 100.5000% sssp 157 ds 7, 100.4999% sss 156 ds 7, 100.0000% sss 151 ds 7, 99.9999% ssp 149 ds 7, 99.5261% ssp 147 ds 7, 99.5000% ssp 146 ds 7, 99.0000% ss 144 ds 7, 98.9999% sp 142 ds 7, 98.5222% sp 140 ds 7, 98.0000% sp 139 ds 7, 97.1429% s 136 ds 7, 97.0000% s 135 ds 7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 157 ds 7, 100.4999% sss 156 ds 7, 100.0000% sss 151 ds 7, 99.9999% ssp 149 ds 7, 99.5261% ssp 147 ds 7, 99.5000% ssp 146 ds 7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 157 ds 7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 157 ds 7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 225-1 (constant 7.1):
+  all (19) 100.5000% sssp 159 ds 7.1, 100.4999% sss 158 ds 7.1, 100.4174% sss 154 ds 7.1, 100.0000% sss 153 ds 7.1, 99.9999% ssp 151 ds 7.1, 99.5000% ssp 149 ds 7.1, 99.0000% ss 146 ds 7.1, 98.9999% sp 144 ds 7.1, 98.5222% sp 142 ds 7.1, 98.0000% sp 141 ds 7.1, 97.1831% s 138 ds 7.1, 97.0000% s 137 ds 7.1, 96.9999% aaa 121 ds 7.1, 94.7351% aaa 113 ds 7.1, 94.0000% aaa 112 ds 7.1, 90.8081% aa 98 ds 7.1, 90.0000% aa 97 ds 7.1, 80.7788% a 78 ds 7.1, 80.0000% a 77 ds 7.1
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (12) 100.5000% sssp 159 ds 7.1, 100.4999% sss 158 ds 7.1, 100.4174% sss 154 ds 7.1, 100.0000% sss 153 ds 7.1, 99.9999% ssp 151 ds 7.1, 99.5000% ssp 149 ds 7.1, 99.0000% ss 146 ds 7.1, 98.9999% sp 144 ds 7.1, 98.5222% sp 142 ds 7.1, 98.0000% sp 141 ds 7.1, 97.1831% s 138 ds 7.1, 97.0000% s 137 ds 7.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 159 ds 7.1, 100.4999% sss 158 ds 7.1, 100.4174% sss 154 ds 7.1, 100.0000% sss 153 ds 7.1, 99.9999% ssp 151 ds 7.1, 99.5000% ssp 149 ds 7.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 159 ds 7.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 159 ds 7.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10188-1 (constant 7.2):
+  all (20) 100.5000% sssp 162 ds 7.2, 100.4999% sss 160 ds 7.2, 100.3087% sss 156 ds 7.2, 100.0000% sss 155 ds 7.2, 99.9999% ssp 154 ds 7.2, 99.5000% ssp 151 ds 7.2, 99.4926% ss 149 ds 7.2, 99.0000% ss 148 ds 7.2, 98.9999% sp 146 ds 7.2, 98.5222% sp 144 ds 7.2, 98.0000% sp 143 ds 7.2, 97.2223% s 140 ds 7.2, 97.0000% s 139 ds 7.2, 96.9999% aaa 122 ds 7.2, 94.2461% aaa 114 ds 7.2, 94.0000% aaa 113 ds 7.2, 90.4606% aa 99 ds 7.2, 90.0000% aa 98 ds 7.2, 80.6782% a 79 ds 7.2, 80.0000% a 78 ds 7.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 162 ds 7.2, 100.4999% sss 160 ds 7.2, 100.3087% sss 156 ds 7.2, 100.0000% sss 155 ds 7.2, 99.9999% ssp 154 ds 7.2, 99.5000% ssp 151 ds 7.2, 99.4926% ss 149 ds 7.2, 99.0000% ss 148 ds 7.2, 98.9999% sp 146 ds 7.2, 98.5222% sp 144 ds 7.2, 98.0000% sp 143 ds 7.2, 97.2223% s 140 ds 7.2, 97.0000% s 139 ds 7.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 162 ds 7.2, 100.4999% sss 160 ds 7.2, 100.3087% sss 156 ds 7.2, 100.0000% sss 155 ds 7.2, 99.9999% ssp 154 ds 7.2, 99.5000% ssp 151 ds 7.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 162 ds 7.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 162 ds 7.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 256-1 (constant 7.5):
+  all (20) 100.5000% sssp 168 ds 7.5, 100.4999% sss 167 ds 7.5, 100.0000% sss 162 ds 7.5, 99.9999% ssp 160 ds 7.5, 99.8421% ssp 158 ds 7.5, 99.5000% ssp 157 ds 7.5, 99.3590% ss 155 ds 7.5, 99.0000% ss 154 ds 7.5, 98.9999% sp 152 ds 7.5, 98.5222% sp 150 ds 7.5, 98.0000% sp 149 ds 7.5, 97.3334% s 146 ds 7.5, 97.0000% s 145 ds 7.5, 96.9999% aaa 128 ds 7.5, 94.4445% aaa 119 ds 7.5, 94.0000% aaa 118 ds 7.5, 90.3509% aa 103 ds 7.5, 90.0000% aa 102 ds 7.5, 80.3922% a 82 ds 7.5, 80.0000% a 81 ds 7.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 168 ds 7.5, 100.4999% sss 167 ds 7.5, 100.0000% sss 162 ds 7.5, 99.9999% ssp 160 ds 7.5, 99.8421% ssp 158 ds 7.5, 99.5000% ssp 157 ds 7.5, 99.3590% ss 155 ds 7.5, 99.0000% ss 154 ds 7.5, 98.9999% sp 152 ds 7.5, 98.5222% sp 150 ds 7.5, 98.0000% sp 149 ds 7.5, 97.3334% s 146 ds 7.5, 97.0000% s 145 ds 7.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 168 ds 7.5, 100.4999% sss 167 ds 7.5, 100.0000% sss 162 ds 7.5, 99.9999% ssp 160 ds 7.5, 99.8421% ssp 158 ds 7.5, 99.5000% ssp 157 ds 7.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 168 ds 7.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 168 ds 7.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 44-1 (constant 7.6):
+  all (20) 100.5000% sssp 171 ds 7.6, 100.4999% sss 169 ds 7.6, 100.0000% sss 164 ds 7.6, 99.9999% ssp 162 ds 7.6, 99.7756% ssp 160 ds 7.6, 99.5000% ssp 159 ds 7.6, 99.3169% ss 157 ds 7.6, 99.0000% ss 156 ds 7.6, 98.9999% sp 154 ds 7.6, 98.5222% sp 152 ds 7.6, 98.0000% sp 151 ds 7.6, 97.3685% s 148 ds 7.6, 97.0000% s 147 ds 7.6, 96.9999% aaa 129 ds 7.6, 94.7682% aaa 121 ds 7.6, 94.0000% aaa 120 ds 7.6, 90.0278% aa 104 ds 7.6, 90.0000% aa 103 ds 7.6, 80.3019% a 83 ds 7.6, 80.0000% a 82 ds 7.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 171 ds 7.6, 100.4999% sss 169 ds 7.6, 100.0000% sss 164 ds 7.6, 99.9999% ssp 162 ds 7.6, 99.7756% ssp 160 ds 7.6, 99.5000% ssp 159 ds 7.6, 99.3169% ss 157 ds 7.6, 99.0000% ss 156 ds 7.6, 98.9999% sp 154 ds 7.6, 98.5222% sp 152 ds 7.6, 98.0000% sp 151 ds 7.6, 97.3685% s 148 ds 7.6, 97.0000% s 147 ds 7.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (6) 100.5000% sssp 171 ds 7.6, 100.4999% sss 169 ds 7.6, 100.0000% sss 164 ds 7.6, 99.9999% ssp 162 ds 7.6, 99.7756% ssp 160 ds 7.6, 99.5000% ssp 159 ds 7.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 171 ds 7.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 171 ds 7.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 650-1 (constant 7.8):
+  all (21) 100.5000% sssp 175 ds 7.8, 100.4999% sss 174 ds 7.8, 100.3087% sss 169 ds 7.8, 100.0000% sss 168 ds 7.8, 99.9999% ssp 166 ds 7.8, 99.6476% ssp 164 ds 7.8, 99.5000% ssp 163 ds 7.8, 99.2358% ss 161 ds 7.8, 99.0000% ss 160 ds 7.8, 98.9999% sp 159 ds 7.8, 98.5222% sp 156 ds 7.8, 98.0000% sp 155 ds 7.8, 97.4359% s 152 ds 7.8, 97.0000% s 151 ds 7.8, 96.9999% aaa 133 ds 7.8, 94.6276% aaa 124 ds 7.8, 94.0000% aaa 123 ds 7.8, 90.2497% aa 107 ds 7.8, 90.0000% aa 106 ds 7.8, 80.1283% a 85 ds 7.8, 80.0000% a 84 ds 7.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 175 ds 7.8, 100.4999% sss 174 ds 7.8, 100.3087% sss 169 ds 7.8, 100.0000% sss 168 ds 7.8, 99.9999% ssp 166 ds 7.8, 99.6476% ssp 164 ds 7.8, 99.5000% ssp 163 ds 7.8, 99.2358% ss 161 ds 7.8, 99.0000% ss 160 ds 7.8, 98.9999% sp 159 ds 7.8, 98.5222% sp 156 ds 7.8, 98.0000% sp 155 ds 7.8, 97.4359% s 152 ds 7.8, 97.0000% s 151 ds 7.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 175 ds 7.8, 100.4999% sss 174 ds 7.8, 100.3087% sss 169 ds 7.8, 100.0000% sss 168 ds 7.8, 99.9999% ssp 166 ds 7.8, 99.6476% ssp 164 ds 7.8, 99.5000% ssp 163 ds 7.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 175 ds 7.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 175 ds 7.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 30-1 (constant 7.9):
+  all (21) 100.5000% sssp 177 ds 7.9, 100.4999% sss 176 ds 7.9, 100.2110% sss 171 ds 7.9, 100.0000% sss 170 ds 7.9, 99.9999% ssp 169 ds 7.9, 99.5861% ssp 166 ds 7.9, 99.5000% ssp 165 ds 7.9, 99.1967% ss 163 ds 7.9, 99.0000% ss 162 ds 7.9, 98.9999% sp 161 ds 7.9, 98.5222% sp 158 ds 7.9, 98.0000% sp 157 ds 7.9, 97.4684% s 154 ds 7.9, 97.0000% s 153 ds 7.9, 96.9999% aaa 134 ds 7.9, 94.1833% aaa 125 ds 7.9, 94.0000% aaa 124 ds 7.9, 90.7729% aa 109 ds 7.9, 90.0000% aa 108 ds 7.9, 80.0447% a 86 ds 7.9, 80.0000% a 85 ds 7.9
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 177 ds 7.9, 100.4999% sss 176 ds 7.9, 100.2110% sss 171 ds 7.9, 100.0000% sss 170 ds 7.9, 99.9999% ssp 169 ds 7.9, 99.5861% ssp 166 ds 7.9, 99.5000% ssp 165 ds 7.9, 99.1967% ss 163 ds 7.9, 99.0000% ss 162 ds 7.9, 98.9999% sp 161 ds 7.9, 98.5222% sp 158 ds 7.9, 98.0000% sp 157 ds 7.9, 97.4684% s 154 ds 7.9, 97.0000% s 153 ds 7.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 177 ds 7.9, 100.4999% sss 176 ds 7.9, 100.2110% sss 171 ds 7.9, 100.0000% sss 170 ds 7.9, 99.9999% ssp 169 ds 7.9, 99.5861% ssp 166 ds 7.9, 99.5000% ssp 165 ds 7.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 177 ds 7.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 177 ds 7.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 236-1 (constant 8):
+  all (21) 100.5000% sssp 180 ds 8, 100.4999% sss 178 ds 8, 100.1158% sss 173 ds 8, 100.0000% sss 172 ds 8, 99.9999% ssp 171 ds 8, 99.5261% ssp 168 ds 8, 99.5000% ssp 167 ds 8, 99.1587% ss 165 ds 8, 99.0000% ss 164 ds 8, 98.9999% sp 163 ds 8, 98.5222% sp 160 ds 8, 98.0000% sp 159 ds 8, 97.5000% s 156 ds 8, 97.0000% s 155 ds 8, 96.9999% aaa 136 ds 8, 94.4941% aaa 127 ds 8, 94.0000% aaa 126 ds 8, 90.4606% aa 110 ds 8, 90.0000% aa 109 ds 8, 80.8824% a 88 ds 8, 80.0000% a 87 ds 8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 180 ds 8, 100.4999% sss 178 ds 8, 100.1158% sss 173 ds 8, 100.0000% sss 172 ds 8, 99.9999% ssp 171 ds 8, 99.5261% ssp 168 ds 8, 99.5000% ssp 167 ds 8, 99.1587% ss 165 ds 8, 99.0000% ss 164 ds 8, 98.9999% sp 163 ds 8, 98.5222% sp 160 ds 8, 98.0000% sp 159 ds 8, 97.5000% s 156 ds 8, 97.0000% s 155 ds 8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 180 ds 8, 100.4999% sss 178 ds 8, 100.1158% sss 173 ds 8, 100.0000% sss 172 ds 8, 99.9999% ssp 171 ds 8, 99.5261% ssp 168 ds 8, 99.5000% ssp 167 ds 8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 180 ds 8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 180 ds 8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10256-2 (constant 8.2):
+  all (21) 100.5000% sssp 184 ds 8.2, 100.4999% sss 182 ds 8.2, 100.4969% sss 178 ds 8.2, 100.0000% sss 177 ds 8.2, 99.9999% ssp 175 ds 8.2, 99.9885% ssp 173 ds 8.2, 99.5000% ssp 172 ds 8.2, 99.0854% ss 169 ds 8.2, 99.0000% ss 168 ds 8.2, 98.9999% sp 167 ds 8.2, 98.5222% sp 164 ds 8.2, 98.0000% sp 163 ds 8.2, 97.5610% s 160 ds 8.2, 97.0000% s 159 ds 8.2, 96.9999% aaa 139 ds 8.2, 94.3671% aaa 130 ds 8.2, 94.0000% aaa 129 ds 8.2, 90.6612% aa 113 ds 8.2, 90.0000% aa 112 ds 8.2, 80.7031% a 90 ds 8.2, 80.0000% a 89 ds 8.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 184 ds 8.2, 100.4999% sss 182 ds 8.2, 100.4969% sss 178 ds 8.2, 100.0000% sss 177 ds 8.2, 99.9999% ssp 175 ds 8.2, 99.9885% ssp 173 ds 8.2, 99.5000% ssp 172 ds 8.2, 99.0854% ss 169 ds 8.2, 99.0000% ss 168 ds 8.2, 98.9999% sp 167 ds 8.2, 98.5222% sp 164 ds 8.2, 98.0000% sp 163 ds 8.2, 97.5610% s 160 ds 8.2, 97.0000% s 159 ds 8.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 184 ds 8.2, 100.4999% sss 182 ds 8.2, 100.4969% sss 178 ds 8.2, 100.0000% sss 177 ds 8.2, 99.9999% ssp 175 ds 8.2, 99.9885% ssp 173 ds 8.2, 99.5000% ssp 172 ds 8.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 184 ds 8.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 184 ds 8.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 188-1 (constant 8.4):
+  all (21) 100.5000% sssp 189 ds 8.4, 100.4999% sss 187 ds 8.4, 100.3087% sss 182 ds 8.4, 100.0000% sss 181 ds 8.4, 99.9999% ssp 179 ds 8.4, 99.8646% ssp 177 ds 8.4, 99.5000% ssp 176 ds 8.4, 99.0156% ss 173 ds 8.4, 99.0000% ss 172 ds 8.4, 98.9999% sp 171 ds 8.4, 98.5222% sp 168 ds 8.4, 98.0000% sp 167 ds 8.4, 97.0239% s 163 ds 8.4, 97.0000% s 162 ds 8.4, 96.9999% aaa 143 ds 8.4, 94.2461% aaa 133 ds 8.4, 94.0000% aaa 132 ds 8.4, 90.0690% aa 115 ds 8.4, 90.0000% aa 114 ds 8.4, 80.5323% a 92 ds 8.4, 80.0000% a 91 ds 8.4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 189 ds 8.4, 100.4999% sss 187 ds 8.4, 100.3087% sss 182 ds 8.4, 100.0000% sss 181 ds 8.4, 99.9999% ssp 179 ds 8.4, 99.8646% ssp 177 ds 8.4, 99.5000% ssp 176 ds 8.4, 99.0156% ss 173 ds 8.4, 99.0000% ss 172 ds 8.4, 98.9999% sp 171 ds 8.4, 98.5222% sp 168 ds 8.4, 98.0000% sp 167 ds 8.4, 97.0239% s 163 ds 8.4, 97.0000% s 162 ds 8.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 189 ds 8.4, 100.4999% sss 187 ds 8.4, 100.3087% sss 182 ds 8.4, 100.0000% sss 181 ds 8.4, 99.9999% ssp 179 ds 8.4, 99.8646% ssp 177 ds 8.4, 99.5000% ssp 176 ds 8.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 189 ds 8.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 189 ds 8.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 552-1 (constant 8.5):
+  all (20) 100.5000% sssp 191 ds 8.5, 100.4999% sss 189 ds 8.5, 100.2179% sss 184 ds 8.5, 100.0000% sss 183 ds 8.5, 99.9999% ssp 181 ds 8.5, 99.8049% ssp 179 ds 8.5, 99.5000% ssp 178 ds 8.5, 99.0000% ss 175 ds 8.5, 98.9999% sp 173 ds 8.5, 98.5222% sp 170 ds 8.5, 98.0000% sp 169 ds 8.5, 97.0589% s 165 ds 8.5, 97.0000% s 164 ds 8.5, 96.9999% aaa 145 ds 8.5, 94.5379% aaa 135 ds 8.5, 94.0000% aaa 134 ds 8.5, 90.5573% aa 117 ds 8.5, 90.0000% aa 116 ds 8.5, 80.4499% a 93 ds 8.5, 80.0000% a 92 ds 8.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 191 ds 8.5, 100.4999% sss 189 ds 8.5, 100.2179% sss 184 ds 8.5, 100.0000% sss 183 ds 8.5, 99.9999% ssp 181 ds 8.5, 99.8049% ssp 179 ds 8.5, 99.5000% ssp 178 ds 8.5, 99.0000% ss 175 ds 8.5, 98.9999% sp 173 ds 8.5, 98.5222% sp 170 ds 8.5, 98.0000% sp 169 ds 8.5, 97.0589% s 165 ds 8.5, 97.0000% s 164 ds 8.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 191 ds 8.5, 100.4999% sss 189 ds 8.5, 100.2179% sss 184 ds 8.5, 100.0000% sss 183 ds 8.5, 99.9999% ssp 181 ds 8.5, 99.8049% ssp 179 ds 8.5, 99.5000% ssp 178 ds 8.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 191 ds 8.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 191 ds 8.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 256-2 (constant 8.6):
+  all (20) 100.5000% sssp 193 ds 8.6, 100.4999% sss 191 ds 8.6, 100.1292% sss 186 ds 8.6, 100.0000% sss 185 ds 8.6, 99.9999% ssp 184 ds 8.6, 99.7466% ssp 181 ds 8.6, 99.5000% ssp 180 ds 8.6, 99.0000% ss 177 ds 8.6, 98.9999% sp 175 ds 8.6, 98.5222% sp 172 ds 8.6, 98.0000% sp 171 ds 8.6, 97.0931% s 167 ds 8.6, 97.0000% s 166 ds 8.6, 96.9999% aaa 146 ds 8.6, 94.1307% aaa 136 ds 8.6, 94.0000% aaa 135 ds 8.6, 90.2693% aa 118 ds 8.6, 90.0000% aa 117 ds 8.6, 80.3694% a 94 ds 8.6, 80.0000% a 93 ds 8.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (13) 100.5000% sssp 193 ds 8.6, 100.4999% sss 191 ds 8.6, 100.1292% sss 186 ds 8.6, 100.0000% sss 185 ds 8.6, 99.9999% ssp 184 ds 8.6, 99.7466% ssp 181 ds 8.6, 99.5000% ssp 180 ds 8.6, 99.0000% ss 177 ds 8.6, 98.9999% sp 175 ds 8.6, 98.5222% sp 172 ds 8.6, 98.0000% sp 171 ds 8.6, 97.0931% s 167 ds 8.6, 97.0000% s 166 ds 8.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 193 ds 8.6, 100.4999% sss 191 ds 8.6, 100.1292% sss 186 ds 8.6, 100.0000% sss 185 ds 8.6, 99.9999% ssp 184 ds 8.6, 99.7466% ssp 181 ds 8.6, 99.5000% ssp 180 ds 8.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 193 ds 8.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 193 ds 8.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 113-1 (constant 8.7):
+  all (21) 100.5000% sssp 195 ds 8.7, 100.4999% sss 194 ds 8.7, 100.0426% sss 188 ds 8.7, 100.0000% sss 187 ds 8.7, 99.9999% ssp 186 ds 8.7, 99.6895% ssp 183 ds 8.7, 99.5000% ssp 182 ds 8.7, 99.4695% ss 180 ds 8.7, 99.0000% ss 179 ds 8.7, 98.9999% sp 177 ds 8.7, 98.5222% sp 174 ds 8.7, 98.0000% sp 173 ds 8.7, 97.1265% s 169 ds 8.7, 97.0000% s 168 ds 8.7, 96.9999% aaa 148 ds 8.7, 94.4171% aaa 138 ds 8.7, 94.0000% aaa 137 ds 8.7, 90.7442% aa 120 ds 8.7, 90.0000% aa 119 ds 8.7, 80.2908% a 95 ds 8.7, 80.0000% a 94 ds 8.7
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 195 ds 8.7, 100.4999% sss 194 ds 8.7, 100.0426% sss 188 ds 8.7, 100.0000% sss 187 ds 8.7, 99.9999% ssp 186 ds 8.7, 99.6895% ssp 183 ds 8.7, 99.5000% ssp 182 ds 8.7, 99.4695% ss 180 ds 8.7, 99.0000% ss 179 ds 8.7, 98.9999% sp 177 ds 8.7, 98.5222% sp 174 ds 8.7, 98.0000% sp 173 ds 8.7, 97.1265% s 169 ds 8.7, 97.0000% s 168 ds 8.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 195 ds 8.7, 100.4999% sss 194 ds 8.7, 100.0426% sss 188 ds 8.7, 100.0000% sss 187 ds 8.7, 99.9999% ssp 186 ds 8.7, 99.6895% ssp 183 ds 8.7, 99.5000% ssp 182 ds 8.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 195 ds 8.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 195 ds 8.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 30-2 (constant 8.8):
+  all (21) 100.5000% sssp 198 ds 8.8, 100.4999% sss 196 ds 8.8, 100.4841% sss 191 ds 8.8, 100.0000% sss 190 ds 8.8, 99.9999% ssp 188 ds 8.8, 99.6338% ssp 185 ds 8.8, 99.5000% ssp 184 ds 8.8, 99.4319% ss 182 ds 8.8, 99.0000% ss 181 ds 8.8, 98.9999% sp 179 ds 8.8, 98.5222% sp 176 ds 8.8, 98.0000% sp 175 ds 8.8, 97.1591% s 171 ds 8.8, 97.0000% s 170 ds 8.8, 96.9999% aaa 150 ds 8.8, 94.0206% aaa 139 ds 8.8, 94.0000% aaa 138 ds 8.8, 90.4606% aa 121 ds 8.8, 90.0000% aa 120 ds 8.8, 80.2140% a 96 ds 8.8, 80.0000% a 95 ds 8.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 198 ds 8.8, 100.4999% sss 196 ds 8.8, 100.4841% sss 191 ds 8.8, 100.0000% sss 190 ds 8.8, 99.9999% ssp 188 ds 8.8, 99.6338% ssp 185 ds 8.8, 99.5000% ssp 184 ds 8.8, 99.4319% ss 182 ds 8.8, 99.0000% ss 181 ds 8.8, 98.9999% sp 179 ds 8.8, 98.5222% sp 176 ds 8.8, 98.0000% sp 175 ds 8.8, 97.1591% s 171 ds 8.8, 97.0000% s 170 ds 8.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 198 ds 8.8, 100.4999% sss 196 ds 8.8, 100.4841% sss 191 ds 8.8, 100.0000% sss 190 ds 8.8, 99.9999% ssp 188 ds 8.8, 99.6338% ssp 185 ds 8.8, 99.5000% ssp 184 ds 8.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 198 ds 8.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 198 ds 8.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10185-2 (constant 9):
+  all (21) 100.5000% sssp 202 ds 9, 100.4999% sss 200 ds 9, 100.3087% sss 195 ds 9, 100.0000% sss 194 ds 9, 99.9999% ssp 192 ds 9, 99.5261% ssp 189 ds 9, 99.5000% ssp 188 ds 9, 99.3590% ss 186 ds 9, 99.0000% ss 185 ds 9, 98.9999% sp 183 ds 9, 98.5222% sp 180 ds 9, 98.0000% sp 179 ds 9, 97.2223% s 175 ds 9, 97.0000% s 174 ds 9, 96.9999% aaa 153 ds 9, 94.5768% aaa 143 ds 9, 94.0000% aaa 142 ds 9, 90.6433% aa 124 ds 9, 90.0000% aa 123 ds 9, 80.0654% a 98 ds 9, 80.0000% a 97 ds 9
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 202 ds 9, 100.4999% sss 200 ds 9, 100.3087% sss 195 ds 9, 100.0000% sss 194 ds 9, 99.9999% ssp 192 ds 9, 99.5261% ssp 189 ds 9, 99.5000% ssp 188 ds 9, 99.3590% ss 186 ds 9, 99.0000% ss 185 ds 9, 98.9999% sp 183 ds 9, 98.5222% sp 180 ds 9, 98.0000% sp 179 ds 9, 97.2223% s 175 ds 9, 97.0000% s 174 ds 9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 202 ds 9, 100.4999% sss 200 ds 9, 100.3087% sss 195 ds 9, 100.0000% sss 194 ds 9, 99.9999% ssp 192 ds 9, 99.5261% ssp 189 ds 9, 99.5000% ssp 188 ds 9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 202 ds 9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 202 ds 9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10146-2 (constant 9.3):
+  all (21) 100.5000% sssp 209 ds 9.3, 100.4999% sss 207 ds 9.3, 100.0598% sss 201 ds 9.3, 100.0000% sss 200 ds 9.3, 99.9999% ssp 199 ds 9.3, 99.8828% ssp 196 ds 9.3, 99.5000% ssp 195 ds 9.3, 99.2556% ss 192 ds 9.3, 99.0000% ss 191 ds 9.3, 98.9999% sp 189 ds 9.3, 98.5222% sp 186 ds 9.3, 98.0000% sp 185 ds 9.3, 97.3119% s 181 ds 9.3, 97.0000% s 180 ds 9.3, 96.9999% aaa 158 ds 9.3, 94.0861% aaa 147 ds 9.3, 94.0000% aaa 146 ds 9.3, 90.5490% aa 128 ds 9.3, 90.0000% aa 127 ds 9.3, 80.6452% a 102 ds 9.3, 80.0000% a 101 ds 9.3
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 209 ds 9.3, 100.4999% sss 207 ds 9.3, 100.0598% sss 201 ds 9.3, 100.0000% sss 200 ds 9.3, 99.9999% ssp 199 ds 9.3, 99.8828% ssp 196 ds 9.3, 99.5000% ssp 195 ds 9.3, 99.2556% ss 192 ds 9.3, 99.0000% ss 191 ds 9.3, 98.9999% sp 189 ds 9.3, 98.5222% sp 186 ds 9.3, 98.0000% sp 185 ds 9.3, 97.3119% s 181 ds 9.3, 97.0000% s 180 ds 9.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 209 ds 9.3, 100.4999% sss 207 ds 9.3, 100.0598% sss 201 ds 9.3, 100.0000% sss 200 ds 9.3, 99.9999% ssp 199 ds 9.3, 99.8828% ssp 196 ds 9.3, 99.5000% ssp 195 ds 9.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 209 ds 9.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 209 ds 9.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10030-2 (constant 9.5):
+  all (21) 100.5000% sssp 213 ds 9.5, 100.4999% sss 211 ds 9.5, 100.3899% sss 206 ds 9.5, 100.0000% sss 205 ds 9.5, 99.9999% ssp 203 ds 9.5, 99.7756% ssp 200 ds 9.5, 99.5000% ssp 199 ds 9.5, 99.1903% ss 196 ds 9.5, 99.0000% ss 195 ds 9.5, 98.9999% sp 193 ds 9.5, 98.0037% sp 189 ds 9.5, 98.0000% sp 188 ds 9.5, 97.3685% s 185 ds 9.5, 97.0000% s 184 ds 9.5, 96.9999% aaa 162 ds 9.5, 94.6116% aaa 151 ds 9.5, 94.0000% aaa 150 ds 9.5, 90.0278% aa 130 ds 9.5, 90.0000% aa 129 ds 9.5, 80.4954% a 104 ds 9.5, 80.0000% a 103 ds 9.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 213 ds 9.5, 100.4999% sss 211 ds 9.5, 100.3899% sss 206 ds 9.5, 100.0000% sss 205 ds 9.5, 99.9999% ssp 203 ds 9.5, 99.7756% ssp 200 ds 9.5, 99.5000% ssp 199 ds 9.5, 99.1903% ss 196 ds 9.5, 99.0000% ss 195 ds 9.5, 98.9999% sp 193 ds 9.5, 98.0037% sp 189 ds 9.5, 98.0000% sp 188 ds 9.5, 97.3685% s 185 ds 9.5, 97.0000% s 184 ds 9.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 213 ds 9.5, 100.4999% sss 211 ds 9.5, 100.3899% sss 206 ds 9.5, 100.0000% sss 205 ds 9.5, 99.9999% ssp 203 ds 9.5, 99.7756% ssp 200 ds 9.5, 99.5000% ssp 199 ds 9.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 213 ds 9.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 213 ds 9.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 44-2 (constant 9.6):
+  all (21) 100.5000% sssp 216 ds 9.6, 100.4999% sss 214 ds 9.6, 100.3087% sss 208 ds 9.6, 100.0000% sss 207 ds 9.6, 99.9999% ssp 205 ds 9.6, 99.7236% ssp 202 ds 9.6, 99.5000% ssp 201 ds 9.6, 99.1587% ss 198 ds 9.6, 99.0000% ss 197 ds 9.6, 98.9999% sp 195 ds 9.6, 98.0091% sp 191 ds 9.6, 98.0000% sp 190 ds 9.6, 97.3959% s 187 ds 9.6, 97.0000% s 186 ds 9.6, 96.9999% aaa 163 ds 9.6, 94.2461% aaa 152 ds 9.6, 94.0000% aaa 151 ds 9.6, 90.4606% aa 132 ds 9.6, 90.0000% aa 131 ds 9.6, 80.4228% a 105 ds 9.6, 80.0000% a 104 ds 9.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 216 ds 9.6, 100.4999% sss 214 ds 9.6, 100.3087% sss 208 ds 9.6, 100.0000% sss 207 ds 9.6, 99.9999% ssp 205 ds 9.6, 99.7236% ssp 202 ds 9.6, 99.5000% ssp 201 ds 9.6, 99.1587% ss 198 ds 9.6, 99.0000% ss 197 ds 9.6, 98.9999% sp 195 ds 9.6, 98.0091% sp 191 ds 9.6, 98.0000% sp 190 ds 9.6, 97.3959% s 187 ds 9.6, 97.0000% s 186 ds 9.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 216 ds 9.6, 100.4999% sss 214 ds 9.6, 100.3087% sss 208 ds 9.6, 100.0000% sss 207 ds 9.6, 99.9999% ssp 205 ds 9.6, 99.7236% ssp 202 ds 9.6, 99.5000% ssp 201 ds 9.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 216 ds 9.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 216 ds 9.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 9-2 (constant 9.8):
+  all (21) 100.5000% sssp 220 ds 9.8, 100.4999% sss 218 ds 9.8, 100.1512% sss 212 ds 9.8, 100.0000% sss 211 ds 9.8, 99.9999% ssp 209 ds 9.8, 99.6228% ssp 206 ds 9.8, 99.5000% ssp 205 ds 9.8, 99.0974% ss 202 ds 9.8, 99.0000% ss 201 ds 9.8, 98.9999% sp 199 ds 9.8, 98.0196% sp 195 ds 9.8, 98.0000% sp 194 ds 9.8, 97.4490% s 191 ds 9.8, 97.0000% s 190 ds 9.8, 96.9999% aaa 167 ds 9.8, 94.1449% aaa 155 ds 9.8, 94.0000% aaa 154 ds 9.8, 90.6284% aa 135 ds 9.8, 90.0000% aa 134 ds 9.8, 80.2822% a 107 ds 9.8, 80.0000% a 106 ds 9.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 220 ds 9.8, 100.4999% sss 218 ds 9.8, 100.1512% sss 212 ds 9.8, 100.0000% sss 211 ds 9.8, 99.9999% ssp 209 ds 9.8, 99.6228% ssp 206 ds 9.8, 99.5000% ssp 205 ds 9.8, 99.0974% ss 202 ds 9.8, 99.0000% ss 201 ds 9.8, 98.9999% sp 199 ds 9.8, 98.0196% sp 195 ds 9.8, 98.0000% sp 194 ds 9.8, 97.4490% s 191 ds 9.8, 97.0000% s 190 ds 9.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 220 ds 9.8, 100.4999% sss 218 ds 9.8, 100.1512% sss 212 ds 9.8, 100.0000% sss 211 ds 9.8, 99.9999% ssp 209 ds 9.8, 99.6228% ssp 206 ds 9.8, 99.5000% ssp 205 ds 9.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 220 ds 9.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 220 ds 9.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10188-2 (constant 10):
+  all (23) 100.5000% sssp 225 ds 10, 100.4999% sss 223 ds 10, 100.4630% sss 217 ds 10, 100.0000% sss 216 ds 10, 99.9999% ssp 213 ds 10, 99.5261% ssp 210 ds 10, 99.5000% ssp 209 ds 10, 99.0385% ss 206 ds 10, 99.0000% ss 205 ds 10, 98.9999% sp 203 ds 10, 98.0296% sp 199 ds 10, 98.0000% sp 198 ds 10, 97.5000% s 195 ds 10, 97.0000% s 194 ds 10, 96.9999% aaa 170 ds 10, 94.0477% aaa 158 ds 10, 94.0000% aaa 157 ds 10, 90.1316% aa 137 ds 10, 90.0000% aa 136 ds 10, 88.2353% a 120 ds 10, 87.5000% a 119 ds 10, 80.1471% a 109 ds 10, 80.0000% a 108 ds 10
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 225 ds 10, 100.4999% sss 223 ds 10, 100.4630% sss 217 ds 10, 100.0000% sss 216 ds 10, 99.9999% ssp 213 ds 10, 99.5261% ssp 210 ds 10, 99.5000% ssp 209 ds 10, 99.0385% ss 206 ds 10, 99.0000% ss 205 ds 10, 98.9999% sp 203 ds 10, 98.0296% sp 199 ds 10, 98.0000% sp 198 ds 10, 97.5000% s 195 ds 10, 97.0000% s 194 ds 10
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 225 ds 10, 100.4999% sss 223 ds 10, 100.4630% sss 217 ds 10, 100.0000% sss 216 ds 10, 99.9999% ssp 213 ds 10, 99.5261% ssp 210 ds 10, 99.5000% ssp 209 ds 10
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 225 ds 10
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 225 ds 10
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 8-2 (constant 10.2):
+  all (21) 100.5000% sssp 229 ds 10.2, 100.4999% sss 227 ds 10.2, 100.3087% sss 221 ds 10.2, 100.0000% sss 220 ds 10.2, 99.9999% ssp 218 ds 10.2, 99.8978% ssp 215 ds 10.2, 99.5000% ssp 214 ds 10.2, 99.4533% ss 211 ds 10.2, 99.0000% ss 210 ds 10.2, 98.9999% sp 208 ds 10.2, 98.0393% sp 203 ds 10.2, 98.0000% sp 202 ds 10.2, 97.0589% s 198 ds 10.2, 97.0000% s 197 ds 10.2, 96.9999% aaa 174 ds 10.2, 94.5379% aaa 162 ds 10.2, 94.0000% aaa 161 ds 10.2, 90.2993% aa 140 ds 10.2, 90.0000% aa 139 ds 10.2, 80.0174% a 111 ds 10.2, 80.0000% a 110 ds 10.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 229 ds 10.2, 100.4999% sss 227 ds 10.2, 100.3087% sss 221 ds 10.2, 100.0000% sss 220 ds 10.2, 99.9999% ssp 218 ds 10.2, 99.8978% ssp 215 ds 10.2, 99.5000% ssp 214 ds 10.2, 99.4533% ss 211 ds 10.2, 99.0000% ss 210 ds 10.2, 98.9999% sp 208 ds 10.2, 98.0393% sp 203 ds 10.2, 98.0000% sp 202 ds 10.2, 97.0589% s 198 ds 10.2, 97.0000% s 197 ds 10.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 229 ds 10.2, 100.4999% sss 227 ds 10.2, 100.3087% sss 221 ds 10.2, 100.0000% sss 220 ds 10.2, 99.9999% ssp 218 ds 10.2, 99.8978% ssp 215 ds 10.2, 99.5000% ssp 214 ds 10.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 229 ds 10.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 229 ds 10.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 77-2 (constant 10.6):
+  all (21) 100.5000% sssp 238 ds 10.6, 100.4999% sss 236 ds 10.6, 100.0175% sss 229 ds 10.6, 100.0000% sss 228 ds 10.6, 99.9999% ssp 226 ds 10.6, 99.7050% ssp 223 ds 10.6, 99.5000% ssp 222 ds 10.6, 99.3288% ss 219 ds 10.6, 99.0000% ss 218 ds 10.6, 98.9999% sp 216 ds 10.6, 98.0575% sp 211 ds 10.6, 98.0000% sp 210 ds 10.6, 97.1699% s 206 ds 10.6, 97.0000% s 205 ds 10.6, 96.9999% aaa 180 ds 10.6, 94.3397% aaa 168 ds 10.6, 94.0000% aaa 167 ds 10.6, 90.6157% aa 146 ds 10.6, 90.0000% aa 145 ds 10.6, 80.4662% a 116 ds 10.6, 80.0000% a 115 ds 10.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 238 ds 10.6, 100.4999% sss 236 ds 10.6, 100.0175% sss 229 ds 10.6, 100.0000% sss 228 ds 10.6, 99.9999% ssp 226 ds 10.6, 99.7050% ssp 223 ds 10.6, 99.5000% ssp 222 ds 10.6, 99.3288% ss 219 ds 10.6, 99.0000% ss 218 ds 10.6, 98.9999% sp 216 ds 10.6, 98.0575% sp 211 ds 10.6, 98.0000% sp 210 ds 10.6, 97.1699% s 206 ds 10.6, 97.0000% s 205 ds 10.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 238 ds 10.6, 100.4999% sss 236 ds 10.6, 100.0175% sss 229 ds 10.6, 100.0000% sss 228 ds 10.6, 99.9999% ssp 226 ds 10.6, 99.7050% ssp 223 ds 10.6, 99.5000% ssp 222 ds 10.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 238 ds 10.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 238 ds 10.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 17-3 (constant 10.7):
+  all (21) 100.5000% sssp 240 ds 10.7, 100.4999% sss 238 ds 10.7, 100.3808% sss 232 ds 10.7, 100.0000% sss 231 ds 10.7, 99.9999% ssp 228 ds 10.7, 99.6590% ssp 225 ds 10.7, 99.5000% ssp 224 ds 10.7, 99.2991% ss 221 ds 10.7, 99.0000% ss 220 ds 10.7, 98.9999% sp 218 ds 10.7, 98.0618% sp 213 ds 10.7, 98.0000% sp 212 ds 10.7, 97.1963% s 208 ds 10.7, 97.0000% s 207 ds 10.7, 96.9999% aaa 182 ds 10.7, 94.0143% aaa 169 ds 10.7, 94.0000% aaa 168 ds 10.7, 90.3837% aa 147 ds 10.7, 90.0000% aa 146 ds 10.7, 80.4014% a 117 ds 10.7, 80.0000% a 116 ds 10.7
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 240 ds 10.7, 100.4999% sss 238 ds 10.7, 100.3808% sss 232 ds 10.7, 100.0000% sss 231 ds 10.7, 99.9999% ssp 228 ds 10.7, 99.6590% ssp 225 ds 10.7, 99.5000% ssp 224 ds 10.7, 99.2991% ss 221 ds 10.7, 99.0000% ss 220 ds 10.7, 98.9999% sp 218 ds 10.7, 98.0618% sp 213 ds 10.7, 98.0000% sp 212 ds 10.7, 97.1963% s 208 ds 10.7, 97.0000% s 207 ds 10.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 240 ds 10.7, 100.4999% sss 238 ds 10.7, 100.3808% sss 232 ds 10.7, 100.0000% sss 231 ds 10.7, 99.9999% ssp 228 ds 10.7, 99.6590% ssp 225 ds 10.7, 99.5000% ssp 224 ds 10.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 240 ds 10.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 240 ds 10.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 242-2 (constant 10.8):
+  all (21) 100.5000% sssp 243 ds 10.8, 100.4999% sss 240 ds 10.8, 100.3087% sss 234 ds 10.8, 100.0000% sss 233 ds 10.8, 99.9999% ssp 231 ds 10.8, 99.6139% ssp 227 ds 10.8, 99.5000% ssp 226 ds 10.8, 99.2700% ss 223 ds 10.8, 99.0000% ss 222 ds 10.8, 98.9999% sp 220 ds 10.8, 98.0661% sp 215 ds 10.8, 98.0000% sp 214 ds 10.8, 97.2223% s 210 ds 10.8, 97.0000% s 209 ds 10.8, 96.9999% aaa 184 ds 10.8, 94.2461% aaa 171 ds 10.8, 94.0000% aaa 170 ds 10.8, 90.1560% aa 148 ds 10.8, 90.0000% aa 147 ds 10.8, 80.3377% a 118 ds 10.8, 80.0000% a 117 ds 10.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 243 ds 10.8, 100.4999% sss 240 ds 10.8, 100.3087% sss 234 ds 10.8, 100.0000% sss 233 ds 10.8, 99.9999% ssp 231 ds 10.8, 99.6139% ssp 227 ds 10.8, 99.5000% ssp 226 ds 10.8, 99.2700% ss 223 ds 10.8, 99.0000% ss 222 ds 10.8, 98.9999% sp 220 ds 10.8, 98.0661% sp 215 ds 10.8, 98.0000% sp 214 ds 10.8, 97.2223% s 210 ds 10.8, 97.0000% s 209 ds 10.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 243 ds 10.8, 100.4999% sss 240 ds 10.8, 100.3087% sss 234 ds 10.8, 100.0000% sss 233 ds 10.8, 99.9999% ssp 231 ds 10.8, 99.6139% ssp 227 ds 10.8, 99.5000% ssp 226 ds 10.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 243 ds 10.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 243 ds 10.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 650-2 (constant 10.9):
+  all (21) 100.5000% sssp 245 ds 10.9, 100.4999% sss 243 ds 10.9, 100.2379% sss 236 ds 10.9, 100.0000% sss 235 ds 10.9, 99.9999% ssp 233 ds 10.9, 99.5696% ssp 229 ds 10.9, 99.5000% ssp 228 ds 10.9, 99.2414% ss 225 ds 10.9, 99.0000% ss 224 ds 10.9, 98.9999% sp 222 ds 10.9, 98.0703% sp 217 ds 10.9, 98.0000% sp 216 ds 10.9, 97.2478% s 212 ds 10.9, 97.0000% s 211 ds 10.9, 96.9999% aaa 186 ds 10.9, 94.4736% aaa 173 ds 10.9, 94.0000% aaa 172 ds 10.9, 90.5360% aa 150 ds 10.9, 90.0000% aa 149 ds 10.9, 80.2753% a 119 ds 10.9, 80.0000% a 118 ds 10.9
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 245 ds 10.9, 100.4999% sss 243 ds 10.9, 100.2379% sss 236 ds 10.9, 100.0000% sss 235 ds 10.9, 99.9999% ssp 233 ds 10.9, 99.5696% ssp 229 ds 10.9, 99.5000% ssp 228 ds 10.9, 99.2414% ss 225 ds 10.9, 99.0000% ss 224 ds 10.9, 98.9999% sp 222 ds 10.9, 98.0703% sp 217 ds 10.9, 98.0000% sp 216 ds 10.9, 97.2478% s 212 ds 10.9, 97.0000% s 211 ds 10.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 245 ds 10.9, 100.4999% sss 243 ds 10.9, 100.2379% sss 236 ds 10.9, 100.0000% sss 235 ds 10.9, 99.9999% ssp 233 ds 10.9, 99.5696% ssp 229 ds 10.9, 99.5000% ssp 228 ds 10.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 245 ds 10.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 245 ds 10.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 188-2 (constant 11):
+  all (21) 100.5000% sssp 247 ds 11, 100.4999% sss 245 ds 11, 100.1684% sss 238 ds 11, 100.0000% sss 237 ds 11, 99.9999% ssp 235 ds 11, 99.5261% ssp 231 ds 11, 99.5000% ssp 230 ds 11, 99.2133% ss 227 ds 11, 99.0000% ss 226 ds 11, 98.9999% sp 224 ds 11, 98.0744% sp 219 ds 11, 98.0000% sp 218 ds 11, 97.2728% s 214 ds 11, 97.0000% s 213 ds 11, 96.9999% aaa 187 ds 11, 94.1559% aaa 174 ds 11, 94.0000% aaa 173 ds 11, 90.3111% aa 151 ds 11, 90.0000% aa 150 ds 11, 80.2140% a 120 ds 11, 80.0000% a 119 ds 11
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 247 ds 11, 100.4999% sss 245 ds 11, 100.1684% sss 238 ds 11, 100.0000% sss 237 ds 11, 99.9999% ssp 235 ds 11, 99.5261% ssp 231 ds 11, 99.5000% ssp 230 ds 11, 99.2133% ss 227 ds 11, 99.0000% ss 226 ds 11, 98.9999% sp 224 ds 11, 98.0744% sp 219 ds 11, 98.0000% sp 218 ds 11, 97.2728% s 214 ds 11, 97.0000% s 213 ds 11
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 247 ds 11, 100.4999% sss 245 ds 11, 100.1684% sss 238 ds 11, 100.0000% sss 237 ds 11, 99.9999% ssp 235 ds 11, 99.5261% ssp 231 ds 11, 99.5000% ssp 230 ds 11
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 247 ds 11
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 247 ds 11
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 228-2 (constant 11.1):
+  all (21) 100.5000% sssp 249 ds 11.1, 100.4999% sss 247 ds 11.1, 100.1002% sss 240 ds 11.1, 100.0000% sss 239 ds 11.1, 99.9999% ssp 237 ds 11.1, 99.9104% ssp 234 ds 11.1, 99.5000% ssp 233 ds 11.1, 99.1858% ss 229 ds 11.1, 99.0000% ss 228 ds 11.1, 98.9999% sp 226 ds 11.1, 98.0784% sp 221 ds 11.1, 98.0000% sp 220 ds 11.1, 97.2973% s 216 ds 11.1, 97.0000% s 215 ds 11.1, 96.9999% aaa 189 ds 11.1, 94.3801% aaa 176 ds 11.1, 94.0000% aaa 175 ds 11.1, 90.0901% aa 152 ds 11.1, 90.0000% aa 151 ds 11.1, 80.1537% a 121 ds 11.1, 80.0000% a 120 ds 11.1
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 249 ds 11.1, 100.4999% sss 247 ds 11.1, 100.1002% sss 240 ds 11.1, 100.0000% sss 239 ds 11.1, 99.9999% ssp 237 ds 11.1, 99.9104% ssp 234 ds 11.1, 99.5000% ssp 233 ds 11.1, 99.1858% ss 229 ds 11.1, 99.0000% ss 228 ds 11.1, 98.9999% sp 226 ds 11.1, 98.0784% sp 221 ds 11.1, 98.0000% sp 220 ds 11.1, 97.2973% s 216 ds 11.1, 97.0000% s 215 ds 11.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 249 ds 11.1, 100.4999% sss 247 ds 11.1, 100.1002% sss 240 ds 11.1, 100.0000% sss 239 ds 11.1, 99.9999% ssp 237 ds 11.1, 99.9104% ssp 234 ds 11.1, 99.5000% ssp 233 ds 11.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 249 ds 11.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 249 ds 11.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10256-3 (constant 11.2):
+  all (21) 100.5000% sssp 252 ds 11.2, 100.4999% sss 249 ds 11.2, 100.0331% sss 242 ds 11.2, 100.0000% sss 241 ds 11.2, 99.9999% ssp 239 ds 11.2, 99.8646% ssp 236 ds 11.2, 99.5000% ssp 235 ds 11.2, 99.1587% ss 231 ds 11.2, 99.0000% ss 230 ds 11.2, 98.9999% sp 228 ds 11.2, 98.0824% sp 223 ds 11.2, 98.0000% sp 222 ds 11.2, 97.3215% s 218 ds 11.2, 97.0000% s 217 ds 11.2, 96.9999% aaa 191 ds 11.2, 94.0689% aaa 177 ds 11.2, 94.0000% aaa 176 ds 11.2, 90.4606% aa 154 ds 11.2, 90.0000% aa 153 ds 11.2, 80.0946% a 122 ds 11.2, 80.0000% a 121 ds 11.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 252 ds 11.2, 100.4999% sss 249 ds 11.2, 100.0331% sss 242 ds 11.2, 100.0000% sss 241 ds 11.2, 99.9999% ssp 239 ds 11.2, 99.8646% ssp 236 ds 11.2, 99.5000% ssp 235 ds 11.2, 99.1587% ss 231 ds 11.2, 99.0000% ss 230 ds 11.2, 98.9999% sp 228 ds 11.2, 98.0824% sp 223 ds 11.2, 98.0000% sp 222 ds 11.2, 97.3215% s 218 ds 11.2, 97.0000% s 217 ds 11.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 252 ds 11.2, 100.4999% sss 249 ds 11.2, 100.0331% sss 242 ds 11.2, 100.0000% sss 241 ds 11.2, 99.9999% ssp 239 ds 11.2, 99.8646% ssp 236 ds 11.2, 99.5000% ssp 235 ds 11.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 252 ds 11.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 252 ds 11.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10191-2 (constant 11.3):
+  all (21) 100.5000% sssp 254 ds 11.3, 100.4999% sss 252 ds 11.3, 100.3770% sss 245 ds 11.3, 100.0000% sss 244 ds 11.3, 99.9999% ssp 241 ds 11.3, 99.8197% ssp 238 ds 11.3, 99.5000% ssp 237 ds 11.3, 99.1321% ss 233 ds 11.3, 99.0000% ss 232 ds 11.3, 98.9999% sp 230 ds 11.3, 98.0863% sp 225 ds 11.3, 98.0000% sp 224 ds 11.3, 97.3452% s 220 ds 11.3, 97.0000% s 219 ds 11.3, 96.9999% aaa 192 ds 11.3, 94.2900% aaa 179 ds 11.3, 94.0000% aaa 178 ds 11.3, 90.2422% aa 155 ds 11.3, 90.0000% aa 154 ds 11.3, 80.0365% a 123 ds 11.3, 80.0000% a 122 ds 11.3
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 254 ds 11.3, 100.4999% sss 252 ds 11.3, 100.3770% sss 245 ds 11.3, 100.0000% sss 244 ds 11.3, 99.9999% ssp 241 ds 11.3, 99.8197% ssp 238 ds 11.3, 99.5000% ssp 237 ds 11.3, 99.1321% ss 233 ds 11.3, 99.0000% ss 232 ds 11.3, 98.9999% sp 230 ds 11.3, 98.0863% sp 225 ds 11.3, 98.0000% sp 224 ds 11.3, 97.3452% s 220 ds 11.3, 97.0000% s 219 ds 11.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 254 ds 11.3, 100.4999% sss 252 ds 11.3, 100.3770% sss 245 ds 11.3, 100.0000% sss 244 ds 11.3, 99.9999% ssp 241 ds 11.3, 99.8197% ssp 238 ds 11.3, 99.5000% ssp 237 ds 11.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 254 ds 11.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 254 ds 11.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 695-2 (constant 11.4):
+  all (21) 100.5000% sssp 256 ds 11.4, 100.4999% sss 254 ds 11.4, 100.3087% sss 247 ds 11.4, 100.0000% sss 246 ds 11.4, 99.9999% ssp 243 ds 11.4, 99.7756% ssp 240 ds 11.4, 99.5000% ssp 239 ds 11.4, 99.1060% ss 235 ds 11.4, 99.0000% ss 234 ds 11.4, 98.9999% sp 232 ds 11.4, 98.0901% sp 227 ds 11.4, 98.0000% sp 226 ds 11.4, 97.3685% s 222 ds 11.4, 97.0000% s 221 ds 11.4, 96.9999% aaa 194 ds 11.4, 94.5072% aaa 181 ds 11.4, 94.0000% aaa 180 ds 11.4, 90.0278% aa 156 ds 11.4, 90.0000% aa 155 ds 11.4, 80.6244% a 125 ds 11.4, 80.0000% a 124 ds 11.4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 256 ds 11.4, 100.4999% sss 254 ds 11.4, 100.3087% sss 247 ds 11.4, 100.0000% sss 246 ds 11.4, 99.9999% ssp 243 ds 11.4, 99.7756% ssp 240 ds 11.4, 99.5000% ssp 239 ds 11.4, 99.1060% ss 235 ds 11.4, 99.0000% ss 234 ds 11.4, 98.9999% sp 232 ds 11.4, 98.0901% sp 227 ds 11.4, 98.0000% sp 226 ds 11.4, 97.3685% s 222 ds 11.4, 97.0000% s 221 ds 11.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 256 ds 11.4, 100.4999% sss 254 ds 11.4, 100.3087% sss 247 ds 11.4, 100.0000% sss 246 ds 11.4, 99.9999% ssp 243 ds 11.4, 99.7756% ssp 240 ds 11.4, 99.5000% ssp 239 ds 11.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 256 ds 11.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 256 ds 11.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 236-2 (constant 11.8):
+  all (21) 100.5000% sssp 265 ds 11.8, 100.4999% sss 263 ds 11.8, 100.0471% sss 255 ds 11.8, 100.0000% sss 254 ds 11.8, 99.9999% ssp 252 ds 11.8, 99.6064% ssp 248 ds 11.8, 99.5000% ssp 247 ds 11.8, 99.0059% ss 243 ds 11.8, 99.0000% ss 242 ds 11.8, 98.9999% sp 240 ds 11.8, 98.1048% sp 235 ds 11.8, 98.0000% sp 234 ds 11.8, 97.0339% s 229 ds 11.8, 97.0000% s 228 ds 11.8, 96.9999% aaa 201 ds 11.8, 94.3302% aaa 187 ds 11.8, 94.0000% aaa 186 ds 11.8, 90.3212% aa 162 ds 11.8, 90.0000% aa 161 ds 11.8, 80.3839% a 129 ds 11.8, 80.0000% a 128 ds 11.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 265 ds 11.8, 100.4999% sss 263 ds 11.8, 100.0471% sss 255 ds 11.8, 100.0000% sss 254 ds 11.8, 99.9999% ssp 252 ds 11.8, 99.6064% ssp 248 ds 11.8, 99.5000% ssp 247 ds 11.8, 99.0059% ss 243 ds 11.8, 99.0000% ss 242 ds 11.8, 98.9999% sp 240 ds 11.8, 98.1048% sp 235 ds 11.8, 98.0000% sp 234 ds 11.8, 97.0339% s 229 ds 11.8, 97.0000% s 228 ds 11.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 265 ds 11.8, 100.4999% sss 263 ds 11.8, 100.0471% sss 255 ds 11.8, 100.0000% sss 254 ds 11.8, 99.9999% ssp 252 ds 11.8, 99.6064% ssp 248 ds 11.8, 99.5000% ssp 247 ds 11.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 265 ds 11.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 265 ds 11.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 115-2 (constant 12):
+  all (23) 100.5000% sssp 270 ds 12, 100.4999% sss 267 ds 12, 100.3087% sss 260 ds 12, 100.0000% sss 259 ds 12, 99.9999% ssp 256 ds 12, 99.5261% ssp 252 ds 12, 99.5000% ssp 251 ds 12, 99.3590% ss 248 ds 12, 99.0000% ss 247 ds 12, 98.9999% sp 244 ds 12, 98.1117% sp 239 ds 12, 98.0000% sp 238 ds 12, 97.9167% s 235 ds 12, 97.5000% s 234 ds 12, 97.0834% s 233 ds 12, 97.0000% s 232 ds 12, 96.9999% aaa 204 ds 12, 94.2461% aaa 190 ds 12, 94.0000% aaa 189 ds 12, 90.4606% aa 165 ds 12, 90.0000% aa 164 ds 12, 80.2697% a 131 ds 12, 80.0000% a 130 ds 12
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (16) 100.5000% sssp 270 ds 12, 100.4999% sss 267 ds 12, 100.3087% sss 260 ds 12, 100.0000% sss 259 ds 12, 99.9999% ssp 256 ds 12, 99.5261% ssp 252 ds 12, 99.5000% ssp 251 ds 12, 99.3590% ss 248 ds 12, 99.0000% ss 247 ds 12, 98.9999% sp 244 ds 12, 98.1117% sp 239 ds 12, 98.0000% sp 238 ds 12, 97.9167% s 235 ds 12, 97.5000% s 234 ds 12, 97.0834% s 233 ds 12, 97.0000% s 232 ds 12
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 270 ds 12, 100.4999% sss 267 ds 12, 100.3087% sss 260 ds 12, 100.0000% sss 259 ds 12, 99.9999% ssp 256 ds 12, 99.5261% ssp 252 ds 12, 99.5000% ssp 251 ds 12
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 270 ds 12
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 270 ds 12
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 12025-2 (constant 12.2):
+  all (21) 100.5000% sssp 274 ds 12.2, 100.4999% sss 272 ds 12.2, 100.1822% sss 264 ds 12.2, 100.0000% sss 263 ds 12.2, 99.9999% ssp 261 ds 12.2, 99.8369% ssp 257 ds 12.2, 99.5000% ssp 256 ds 12.2, 99.3065% ss 252 ds 12.2, 99.0000% ss 251 ds 12.2, 98.9999% sp 248 ds 12.2, 98.1184% sp 243 ds 12.2, 98.0000% sp 242 ds 12.2, 97.1312% s 237 ds 12.2, 97.0000% s 236 ds 12.2, 96.9999% aaa 208 ds 12.2, 94.1648% aaa 193 ds 12.2, 94.0000% aaa 192 ds 12.2, 90.0561% aa 167 ds 12.2, 90.0000% aa 166 ds 12.2, 80.1592% a 133 ds 12.2, 80.0000% a 132 ds 12.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 274 ds 12.2, 100.4999% sss 272 ds 12.2, 100.1822% sss 264 ds 12.2, 100.0000% sss 263 ds 12.2, 99.9999% ssp 261 ds 12.2, 99.8369% ssp 257 ds 12.2, 99.5000% ssp 256 ds 12.2, 99.3065% ss 252 ds 12.2, 99.0000% ss 251 ds 12.2, 98.9999% sp 248 ds 12.2, 98.1184% sp 243 ds 12.2, 98.0000% sp 242 ds 12.2, 97.1312% s 237 ds 12.2, 97.0000% s 236 ds 12.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 274 ds 12.2, 100.4999% sss 272 ds 12.2, 100.1822% sss 264 ds 12.2, 100.0000% sss 263 ds 12.2, 99.9999% ssp 261 ds 12.2, 99.8369% ssp 257 ds 12.2, 99.5000% ssp 256 ds 12.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 274 ds 12.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 274 ds 12.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 8-3 (constant 12.4):
+  all (21) 100.5000% sssp 279 ds 12.4, 100.4999% sss 276 ds 12.4, 100.0598% sss 268 ds 12.4, 100.0000% sss 267 ds 12.4, 99.9999% ssp 265 ds 12.4, 99.7554% ssp 261 ds 12.4, 99.5000% ssp 260 ds 12.4, 99.2556% ss 256 ds 12.4, 99.0000% ss 255 ds 12.4, 98.9999% sp 252 ds 12.4, 98.1250% sp 247 ds 12.4, 98.0000% sp 246 ds 12.4, 97.1775% s 241 ds 12.4, 97.0000% s 240 ds 12.4, 96.9999% aaa 211 ds 12.4, 94.0861% aaa 196 ds 12.4, 94.0000% aaa 195 ds 12.4, 90.1953% aa 170 ds 12.4, 90.0000% aa 169 ds 12.4, 80.0522% a 135 ds 12.4, 80.0000% a 134 ds 12.4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 279 ds 12.4, 100.4999% sss 276 ds 12.4, 100.0598% sss 268 ds 12.4, 100.0000% sss 267 ds 12.4, 99.9999% ssp 265 ds 12.4, 99.7554% ssp 261 ds 12.4, 99.5000% ssp 260 ds 12.4, 99.2556% ss 256 ds 12.4, 99.0000% ss 255 ds 12.4, 98.9999% sp 252 ds 12.4, 98.1250% sp 247 ds 12.4, 98.0000% sp 246 ds 12.4, 97.1775% s 241 ds 12.4, 97.0000% s 240 ds 12.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 279 ds 12.4, 100.4999% sss 276 ds 12.4, 100.0598% sss 268 ds 12.4, 100.0000% sss 267 ds 12.4, 99.9999% ssp 265 ds 12.4, 99.7554% ssp 261 ds 12.4, 99.5000% ssp 260 ds 12.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 279 ds 12.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 279 ds 12.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 383-3 (constant 12.5):
+  all (21) 100.5000% sssp 281 ds 12.5, 100.4999% sss 278 ds 12.5, 100.3704% sss 271 ds 12.5, 100.0000% sss 270 ds 12.5, 99.9999% ssp 267 ds 12.5, 99.7157% ssp 263 ds 12.5, 99.5000% ssp 262 ds 12.5, 99.2308% ss 258 ds 12.5, 99.0000% ss 257 ds 12.5, 98.9999% sp 254 ds 12.5, 98.1281% sp 249 ds 12.5, 98.0000% sp 248 ds 12.5, 97.2000% s 243 ds 12.5, 97.0000% s 242 ds 12.5, 96.9999% aaa 213 ds 12.5, 94.2858% aaa 198 ds 12.5, 94.0000% aaa 197 ds 12.5, 90.5264% aa 172 ds 12.5, 90.0000% aa 171 ds 12.5, 80.5883% a 137 ds 12.5, 80.0000% a 136 ds 12.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 281 ds 12.5, 100.4999% sss 278 ds 12.5, 100.3704% sss 271 ds 12.5, 100.0000% sss 270 ds 12.5, 99.9999% ssp 267 ds 12.5, 99.7157% ssp 263 ds 12.5, 99.5000% ssp 262 ds 12.5, 99.2308% ss 258 ds 12.5, 99.0000% ss 257 ds 12.5, 98.9999% sp 254 ds 12.5, 98.1281% sp 249 ds 12.5, 98.0000% sp 248 ds 12.5, 97.2000% s 243 ds 12.5, 97.0000% s 242 ds 12.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 281 ds 12.5, 100.4999% sss 278 ds 12.5, 100.3704% sss 271 ds 12.5, 100.0000% sss 270 ds 12.5, 99.9999% ssp 267 ds 12.5, 99.7157% ssp 263 ds 12.5, 99.5000% ssp 262 ds 12.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 281 ds 12.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 281 ds 12.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 30-3 (constant 12.6):
+  all (21) 100.5000% sssp 283 ds 12.6, 100.4999% sss 281 ds 12.6, 100.3087% sss 273 ds 12.6, 100.0000% sss 272 ds 12.6, 99.9999% ssp 269 ds 12.6, 99.6766% ssp 265 ds 12.6, 99.5000% ssp 264 ds 12.6, 99.2064% ss 260 ds 12.6, 99.0000% ss 259 ds 12.6, 98.9999% sp 256 ds 12.6, 98.1313% sp 251 ds 12.6, 98.0000% sp 250 ds 12.6, 97.2223% s 245 ds 12.6, 97.0000% s 244 ds 12.6, 96.9999% aaa 215 ds 12.6, 94.0099% aaa 199 ds 12.6, 94.0000% aaa 198 ds 12.6, 90.3300% aa 173 ds 12.6, 90.0000% aa 172 ds 12.6, 80.5323% a 138 ds 12.6, 80.0000% a 137 ds 12.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 283 ds 12.6, 100.4999% sss 281 ds 12.6, 100.3087% sss 273 ds 12.6, 100.0000% sss 272 ds 12.6, 99.9999% ssp 269 ds 12.6, 99.6766% ssp 265 ds 12.6, 99.5000% ssp 264 ds 12.6, 99.2064% ss 260 ds 12.6, 99.0000% ss 259 ds 12.6, 98.9999% sp 256 ds 12.6, 98.1313% sp 251 ds 12.6, 98.0000% sp 250 ds 12.6, 97.2223% s 245 ds 12.6, 97.0000% s 244 ds 12.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 283 ds 12.6, 100.4999% sss 281 ds 12.6, 100.3087% sss 273 ds 12.6, 100.0000% sss 272 ds 12.6, 99.9999% ssp 269 ds 12.6, 99.6766% ssp 265 ds 12.6, 99.5000% ssp 264 ds 12.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 283 ds 12.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 283 ds 12.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 17-4 (constant 12.7):
+  all (21) 100.5000% sssp 285 ds 12.7, 100.4999% sss 283 ds 12.7, 100.2479% sss 275 ds 12.7, 100.0000% sss 274 ds 12.7, 99.9999% ssp 271 ds 12.7, 99.6381% ssp 267 ds 12.7, 99.5000% ssp 266 ds 12.7, 99.1824% ss 262 ds 12.7, 99.0000% ss 261 ds 12.7, 98.9999% sp 259 ds 12.7, 98.1343% sp 253 ds 12.7, 98.0000% sp 252 ds 12.7, 97.2441% s 247 ds 12.7, 97.0000% s 246 ds 12.7, 96.9999% aaa 216 ds 12.7, 94.2070% aaa 201 ds 12.7, 94.0000% aaa 200 ds 12.7, 90.1368% aa 174 ds 12.7, 90.0000% aa 173 ds 12.7, 80.4771% a 139 ds 12.7, 80.0000% a 138 ds 12.7
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 285 ds 12.7, 100.4999% sss 283 ds 12.7, 100.2479% sss 275 ds 12.7, 100.0000% sss 274 ds 12.7, 99.9999% ssp 271 ds 12.7, 99.6381% ssp 267 ds 12.7, 99.5000% ssp 266 ds 12.7, 99.1824% ss 262 ds 12.7, 99.0000% ss 261 ds 12.7, 98.9999% sp 259 ds 12.7, 98.1343% sp 253 ds 12.7, 98.0000% sp 252 ds 12.7, 97.2441% s 247 ds 12.7, 97.0000% s 246 ds 12.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 285 ds 12.7, 100.4999% sss 283 ds 12.7, 100.2479% sss 275 ds 12.7, 100.0000% sss 274 ds 12.7, 99.9999% ssp 271 ds 12.7, 99.6381% ssp 267 ds 12.7, 99.5000% ssp 266 ds 12.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 285 ds 12.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 285 ds 12.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 650-3 (constant 12.8):
+  all (21) 100.5000% sssp 288 ds 12.8, 100.4999% sss 285 ds 12.8, 100.1881% sss 277 ds 12.8, 100.0000% sss 276 ds 12.8, 99.9999% ssp 273 ds 12.8, 99.6002% ssp 269 ds 12.8, 99.5000% ssp 268 ds 12.8, 99.1587% ss 264 ds 12.8, 99.0000% ss 263 ds 12.8, 98.9999% sp 261 ds 12.8, 98.1374% sp 255 ds 12.8, 98.0000% sp 254 ds 12.8, 97.2657% s 249 ds 12.8, 97.0000% s 248 ds 12.8, 96.9999% aaa 218 ds 12.8, 94.4011% aaa 203 ds 12.8, 94.0000% aaa 202 ds 12.8, 90.4606% aa 176 ds 12.8, 90.0000% aa 175 ds 12.8, 80.4228% a 140 ds 12.8, 80.0000% a 139 ds 12.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 288 ds 12.8, 100.4999% sss 285 ds 12.8, 100.1881% sss 277 ds 12.8, 100.0000% sss 276 ds 12.8, 99.9999% ssp 273 ds 12.8, 99.6002% ssp 269 ds 12.8, 99.5000% ssp 268 ds 12.8, 99.1587% ss 264 ds 12.8, 99.0000% ss 263 ds 12.8, 98.9999% sp 261 ds 12.8, 98.1374% sp 255 ds 12.8, 98.0000% sp 254 ds 12.8, 97.2657% s 249 ds 12.8, 97.0000% s 248 ds 12.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 288 ds 12.8, 100.4999% sss 285 ds 12.8, 100.1881% sss 277 ds 12.8, 100.0000% sss 276 ds 12.8, 99.9999% ssp 273 ds 12.8, 99.6002% ssp 269 ds 12.8, 99.5000% ssp 268 ds 12.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 288 ds 12.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 288 ds 12.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 564-3 (constant 12.9):
+  all (21) 100.5000% sssp 290 ds 12.9, 100.4999% sss 287 ds 12.9, 100.1292% sss 279 ds 12.9, 100.0000% sss 278 ds 12.9, 99.9999% ssp 276 ds 12.9, 99.5629% ssp 271 ds 12.9, 99.5000% ssp 270 ds 12.9, 99.1354% ss 266 ds 12.9, 99.0000% ss 265 ds 12.9, 98.9999% sp 263 ds 12.9, 98.1403% sp 257 ds 12.9, 98.0000% sp 256 ds 12.9, 97.2869% s 251 ds 12.9, 97.0000% s 250 ds 12.9, 96.9999% aaa 220 ds 12.9, 94.1307% aaa 204 ds 12.9, 94.0000% aaa 203 ds 12.9, 90.2693% aa 177 ds 12.9, 90.0000% aa 176 ds 12.9, 80.3694% a 141 ds 12.9, 80.0000% a 140 ds 12.9
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 290 ds 12.9, 100.4999% sss 287 ds 12.9, 100.1292% sss 279 ds 12.9, 100.0000% sss 278 ds 12.9, 99.9999% ssp 276 ds 12.9, 99.5629% ssp 271 ds 12.9, 99.5000% ssp 270 ds 12.9, 99.1354% ss 266 ds 12.9, 99.0000% ss 265 ds 12.9, 98.9999% sp 263 ds 12.9, 98.1403% sp 257 ds 12.9, 98.0000% sp 256 ds 12.9, 97.2869% s 251 ds 12.9, 97.0000% s 250 ds 12.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 290 ds 12.9, 100.4999% sss 287 ds 12.9, 100.1292% sss 279 ds 12.9, 100.0000% sss 278 ds 12.9, 99.9999% ssp 276 ds 12.9, 99.5629% ssp 271 ds 12.9, 99.5000% ssp 270 ds 12.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 290 ds 12.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 290 ds 12.9
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 146-3 (constant 13):
+  all (21) 100.5000% sssp 292 ds 13, 100.4999% sss 290 ds 13, 100.0713% sss 281 ds 13, 100.0000% sss 280 ds 13, 99.9999% ssp 278 ds 13, 99.5261% ssp 273 ds 13, 99.5000% ssp 272 ds 13, 99.1125% ss 268 ds 13, 99.0000% ss 267 ds 13, 98.9999% sp 265 ds 13, 98.1433% sp 259 ds 13, 98.0000% sp 258 ds 13, 97.3077% s 253 ds 13, 97.0000% s 252 ds 13, 96.9999% aaa 221 ds 13, 94.3224% aaa 206 ds 13, 94.0000% aaa 205 ds 13, 90.0810% aa 178 ds 13, 90.0000% aa 177 ds 13, 80.3168% a 142 ds 13, 80.0000% a 141 ds 13
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 292 ds 13, 100.4999% sss 290 ds 13, 100.0713% sss 281 ds 13, 100.0000% sss 280 ds 13, 99.9999% ssp 278 ds 13, 99.5261% ssp 273 ds 13, 99.5000% ssp 272 ds 13, 99.1125% ss 268 ds 13, 99.0000% ss 267 ds 13, 98.9999% sp 265 ds 13, 98.1433% sp 259 ds 13, 98.0000% sp 258 ds 13, 97.3077% s 253 ds 13, 97.0000% s 252 ds 13
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 292 ds 13, 100.4999% sss 290 ds 13, 100.0713% sss 281 ds 13, 100.0000% sss 280 ds 13, 99.9999% ssp 278 ds 13, 99.5261% ssp 273 ds 13, 99.5000% ssp 272 ds 13
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 292 ds 13
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 292 ds 13
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 695-3 (constant 13.1):
+  all (21) 100.5000% sssp 294 ds 13.1, 100.4999% sss 292 ds 13.1, 100.0142% sss 283 ds 13.1, 100.0000% sss 282 ds 13.1, 99.9999% ssp 280 ds 13.1, 99.8517% ssp 276 ds 13.1, 99.5000% ssp 275 ds 13.1, 99.0899% ss 270 ds 13.1, 99.0000% ss 269 ds 13.1, 98.9999% sp 267 ds 13.1, 98.1462% sp 261 ds 13.1, 98.0000% sp 260 ds 13.1, 97.3283% s 255 ds 13.1, 97.0000% s 254 ds 13.1, 96.9999% aaa 223 ds 13.1, 94.0568% aaa 207 ds 13.1, 94.0000% aaa 206 ds 13.1, 90.3978% aa 180 ds 13.1, 90.0000% aa 179 ds 13.1, 80.2650% a 143 ds 13.1, 80.0000% a 142 ds 13.1
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 294 ds 13.1, 100.4999% sss 292 ds 13.1, 100.0142% sss 283 ds 13.1, 100.0000% sss 282 ds 13.1, 99.9999% ssp 280 ds 13.1, 99.8517% ssp 276 ds 13.1, 99.5000% ssp 275 ds 13.1, 99.0899% ss 270 ds 13.1, 99.0000% ss 269 ds 13.1, 98.9999% sp 267 ds 13.1, 98.1462% sp 261 ds 13.1, 98.0000% sp 260 ds 13.1, 97.3283% s 255 ds 13.1, 97.0000% s 254 ds 13.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 294 ds 13.1, 100.4999% sss 292 ds 13.1, 100.0142% sss 283 ds 13.1, 100.0000% sss 282 ds 13.1, 99.9999% ssp 280 ds 13.1, 99.8517% ssp 276 ds 13.1, 99.5000% ssp 275 ds 13.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 294 ds 13.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 294 ds 13.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 552-3 (constant 13.2):
+  all (21) 100.5000% sssp 297 ds 13.2, 100.4999% sss 294 ds 13.2, 100.3087% sss 286 ds 13.2, 100.0000% sss 285 ds 13.2, 99.9999% ssp 282 ds 13.2, 99.8133% ssp 278 ds 13.2, 99.5000% ssp 277 ds 13.2, 99.0676% ss 272 ds 13.2, 99.0000% ss 271 ds 13.2, 98.9999% sp 269 ds 13.2, 98.1490% sp 263 ds 13.2, 98.0000% sp 262 ds 13.2, 97.3485% s 257 ds 13.2, 97.0000% s 256 ds 13.2, 96.9999% aaa 225 ds 13.2, 94.2461% aaa 209 ds 13.2, 94.0000% aaa 208 ds 13.2, 90.2114% aa 181 ds 13.2, 90.0000% aa 180 ds 13.2, 80.2140% a 144 ds 13.2, 80.0000% a 143 ds 13.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 297 ds 13.2, 100.4999% sss 294 ds 13.2, 100.3087% sss 286 ds 13.2, 100.0000% sss 285 ds 13.2, 99.9999% ssp 282 ds 13.2, 99.8133% ssp 278 ds 13.2, 99.5000% ssp 277 ds 13.2, 99.0676% ss 272 ds 13.2, 99.0000% ss 271 ds 13.2, 98.9999% sp 269 ds 13.2, 98.1490% sp 263 ds 13.2, 98.0000% sp 262 ds 13.2, 97.3485% s 257 ds 13.2, 97.0000% s 256 ds 13.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 297 ds 13.2, 100.4999% sss 294 ds 13.2, 100.3087% sss 286 ds 13.2, 100.0000% sss 285 ds 13.2, 99.9999% ssp 282 ds 13.2, 99.8133% ssp 278 ds 13.2, 99.5000% ssp 277 ds 13.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 297 ds 13.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 297 ds 13.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 236-3 (constant 13.3):
+  all (21) 100.5000% sssp 299 ds 13.3, 100.4999% sss 296 ds 13.3, 100.2507% sss 288 ds 13.3, 100.0000% sss 287 ds 13.3, 99.9999% ssp 284 ds 13.3, 99.7756% ssp 280 ds 13.3, 99.5000% ssp 279 ds 13.3, 99.0457% ss 274 ds 13.3, 99.0000% ss 273 ds 13.3, 98.9999% sp 271 ds 13.3, 98.1518% sp 265 ds 13.3, 98.0000% sp 264 ds 13.3, 97.3685% s 259 ds 13.3, 97.0000% s 258 ds 13.3, 96.9999% aaa 227 ds 13.3, 94.4326% aaa 211 ds 13.3, 94.0000% aaa 210 ds 13.3, 90.0278% aa 182 ds 13.3, 90.0000% aa 181 ds 13.3, 80.1637% a 145 ds 13.3, 80.0000% a 144 ds 13.3
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 299 ds 13.3, 100.4999% sss 296 ds 13.3, 100.2507% sss 288 ds 13.3, 100.0000% sss 287 ds 13.3, 99.9999% ssp 284 ds 13.3, 99.7756% ssp 280 ds 13.3, 99.5000% ssp 279 ds 13.3, 99.0457% ss 274 ds 13.3, 99.0000% ss 273 ds 13.3, 98.9999% sp 271 ds 13.3, 98.1518% sp 265 ds 13.3, 98.0000% sp 264 ds 13.3, 97.3685% s 259 ds 13.3, 97.0000% s 258 ds 13.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 299 ds 13.3, 100.4999% sss 296 ds 13.3, 100.2507% sss 288 ds 13.3, 100.0000% sss 287 ds 13.3, 99.9999% ssp 284 ds 13.3, 99.7756% ssp 280 ds 13.3, 99.5000% ssp 279 ds 13.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 299 ds 13.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 299 ds 13.3
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 225-3 (constant 13.4):
+  all (21) 100.5000% sssp 301 ds 13.4, 100.4999% sss 298 ds 13.4, 100.1935% sss 290 ds 13.4, 100.0000% sss 289 ds 13.4, 99.9999% ssp 286 ds 13.4, 99.7383% ssp 282 ds 13.4, 99.5000% ssp 281 ds 13.4, 99.0242% ss 276 ds 13.4, 99.0000% ss 275 ds 13.4, 98.9999% sp 273 ds 13.4, 98.1546% sp 267 ds 13.4, 98.0000% sp 266 ds 13.4, 97.0150% s 260 ds 13.4, 97.0000% s 259 ds 13.4, 96.9999% aaa 228 ds 13.4, 94.1720% aaa 212 ds 13.4, 94.0000% aaa 211 ds 13.4, 90.3378% aa 184 ds 13.4, 90.0000% aa 183 ds 13.4, 80.1142% a 146 ds 13.4, 80.0000% a 145 ds 13.4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 301 ds 13.4, 100.4999% sss 298 ds 13.4, 100.1935% sss 290 ds 13.4, 100.0000% sss 289 ds 13.4, 99.9999% ssp 286 ds 13.4, 99.7383% ssp 282 ds 13.4, 99.5000% ssp 281 ds 13.4, 99.0242% ss 276 ds 13.4, 99.0000% ss 275 ds 13.4, 98.9999% sp 273 ds 13.4, 98.1546% sp 267 ds 13.4, 98.0000% sp 266 ds 13.4, 97.0150% s 260 ds 13.4, 97.0000% s 259 ds 13.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 301 ds 13.4, 100.4999% sss 298 ds 13.4, 100.1935% sss 290 ds 13.4, 100.0000% sss 289 ds 13.4, 99.9999% ssp 286 ds 13.4, 99.7383% ssp 282 ds 13.4, 99.5000% ssp 281 ds 13.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 301 ds 13.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 301 ds 13.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 131-4 (constant 13.5):
+  all (21) 100.5000% sssp 303 ds 13.5, 100.4999% sss 301 ds 13.5, 100.1372% sss 292 ds 13.5, 100.0000% sss 291 ds 13.5, 99.9999% ssp 288 ds 13.5, 99.7016% ssp 284 ds 13.5, 99.5000% ssp 283 ds 13.5, 99.0029% ss 278 ds 13.5, 99.0000% ss 277 ds 13.5, 98.9999% sp 275 ds 13.5, 98.1573% sp 269 ds 13.5, 98.0000% sp 268 ds 13.5, 97.0371% s 262 ds 13.5, 97.0000% s 261 ds 13.5, 96.9999% aaa 230 ds 13.5, 94.3563% aaa 214 ds 13.5, 94.0000% aaa 213 ds 13.5, 90.1560% aa 185 ds 13.5, 90.0000% aa 184 ds 13.5, 80.0654% a 147 ds 13.5, 80.0000% a 146 ds 13.5
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 303 ds 13.5, 100.4999% sss 301 ds 13.5, 100.1372% sss 292 ds 13.5, 100.0000% sss 291 ds 13.5, 99.9999% ssp 288 ds 13.5, 99.7016% ssp 284 ds 13.5, 99.5000% ssp 283 ds 13.5, 99.0029% ss 278 ds 13.5, 99.0000% ss 277 ds 13.5, 98.9999% sp 275 ds 13.5, 98.1573% sp 269 ds 13.5, 98.0000% sp 268 ds 13.5, 97.0371% s 262 ds 13.5, 97.0000% s 261 ds 13.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 303 ds 13.5, 100.4999% sss 301 ds 13.5, 100.1372% sss 292 ds 13.5, 100.0000% sss 291 ds 13.5, 99.9999% ssp 288 ds 13.5, 99.7016% ssp 284 ds 13.5, 99.5000% ssp 283 ds 13.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 303 ds 13.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 303 ds 13.5
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 11726-3 (constant 13.6):
+  all (21) 100.5000% sssp 306 ds 13.6, 100.4999% sss 303 ds 13.6, 100.0817% sss 294 ds 13.6, 100.0000% sss 293 ds 13.6, 99.9999% ssp 291 ds 13.6, 99.6655% ssp 286 ds 13.6, 99.5000% ssp 285 ds 13.6, 99.3355% ss 281 ds 13.6, 99.0000% ss 280 ds 13.6, 98.9999% sp 277 ds 13.6, 98.1600% sp 271 ds 13.6, 98.0000% sp 270 ds 13.6, 97.0589% s 264 ds 13.6, 97.0000% s 263 ds 13.6, 96.9999% aaa 232 ds 13.6, 94.1002% aaa 215 ds 13.6, 94.0000% aaa 214 ds 13.6, 90.4606% aa 187 ds 13.6, 90.0000% aa 186 ds 13.6, 80.0174% a 148 ds 13.6, 80.0000% a 147 ds 13.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 306 ds 13.6, 100.4999% sss 303 ds 13.6, 100.0817% sss 294 ds 13.6, 100.0000% sss 293 ds 13.6, 99.9999% ssp 291 ds 13.6, 99.6655% ssp 286 ds 13.6, 99.5000% ssp 285 ds 13.6, 99.3355% ss 281 ds 13.6, 99.0000% ss 280 ds 13.6, 98.9999% sp 277 ds 13.6, 98.1600% sp 271 ds 13.6, 98.0000% sp 270 ds 13.6, 97.0589% s 264 ds 13.6, 97.0000% s 263 ds 13.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 306 ds 13.6, 100.4999% sss 303 ds 13.6, 100.0817% sss 294 ds 13.6, 100.0000% sss 293 ds 13.6, 99.9999% ssp 291 ds 13.6, 99.6655% ssp 286 ds 13.6, 99.5000% ssp 285 ds 13.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 306 ds 13.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 306 ds 13.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 283-3 (constant 13.7):
+  all (21) 100.5000% sssp 308 ds 13.7, 100.4999% sss 305 ds 13.7, 100.0271% sss 296 ds 13.7, 100.0000% sss 295 ds 13.7, 99.9999% ssp 293 ds 13.7, 99.6299% ssp 288 ds 13.7, 99.5000% ssp 287 ds 13.7, 99.3122% ss 283 ds 13.7, 99.0000% ss 282 ds 13.7, 98.9999% sp 279 ds 13.7, 98.1626% sp 273 ds 13.7, 98.0000% sp 272 ds 13.7, 97.0803% s 266 ds 13.7, 97.0000% s 265 ds 13.7, 96.9999% aaa 233 ds 13.7, 94.2823% aaa 217 ds 13.7, 94.0000% aaa 216 ds 13.7, 90.2805% aa 188 ds 13.7, 90.0000% aa 187 ds 13.7, 80.5067% a 150 ds 13.7, 80.0000% a 149 ds 13.7
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 308 ds 13.7, 100.4999% sss 305 ds 13.7, 100.0271% sss 296 ds 13.7, 100.0000% sss 295 ds 13.7, 99.9999% ssp 293 ds 13.7, 99.6299% ssp 288 ds 13.7, 99.5000% ssp 287 ds 13.7, 99.3122% ss 283 ds 13.7, 99.0000% ss 282 ds 13.7, 98.9999% sp 279 ds 13.7, 98.1626% sp 273 ds 13.7, 98.0000% sp 272 ds 13.7, 97.0803% s 266 ds 13.7, 97.0000% s 265 ds 13.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 308 ds 13.7, 100.4999% sss 305 ds 13.7, 100.0271% sss 296 ds 13.7, 100.0000% sss 295 ds 13.7, 99.9999% ssp 293 ds 13.7, 99.6299% ssp 288 ds 13.7, 99.5000% ssp 287 ds 13.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 308 ds 13.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 308 ds 13.7
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 115-4 (constant 13.8):
+  all (21) 100.5000% sssp 310 ds 13.8, 100.4999% sss 307 ds 13.8, 100.3087% sss 299 ds 13.8, 100.0000% sss 298 ds 13.8, 99.9999% ssp 295 ds 13.8, 99.5948% ssp 290 ds 13.8, 99.5000% ssp 289 ds 13.8, 99.2893% ss 285 ds 13.8, 99.0000% ss 284 ds 13.8, 98.9999% sp 281 ds 13.8, 98.1653% sp 275 ds 13.8, 98.0000% sp 274 ds 13.8, 97.1015% s 268 ds 13.8, 97.0000% s 267 ds 13.8, 96.9999% aaa 235 ds 13.8, 94.0304% aaa 218 ds 13.8, 94.0000% aaa 217 ds 13.8, 90.1030% aa 189 ds 13.8, 90.0000% aa 188 ds 13.8, 80.4561% a 151 ds 13.8, 80.0000% a 150 ds 13.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 310 ds 13.8, 100.4999% sss 307 ds 13.8, 100.3087% sss 299 ds 13.8, 100.0000% sss 298 ds 13.8, 99.9999% ssp 295 ds 13.8, 99.5948% ssp 290 ds 13.8, 99.5000% ssp 289 ds 13.8, 99.2893% ss 285 ds 13.8, 99.0000% ss 284 ds 13.8, 98.9999% sp 281 ds 13.8, 98.1653% sp 275 ds 13.8, 98.0000% sp 274 ds 13.8, 97.1015% s 268 ds 13.8, 97.0000% s 267 ds 13.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 310 ds 13.8, 100.4999% sss 307 ds 13.8, 100.3087% sss 299 ds 13.8, 100.0000% sss 298 ds 13.8, 99.9999% ssp 295 ds 13.8, 99.5948% ssp 290 ds 13.8, 99.5000% ssp 289 ds 13.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 310 ds 13.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 310 ds 13.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 191-3 (constant 14.1):
+  all (21) 100.5000% sssp 317 ds 14.1, 100.4999% sss 314 ds 14.1, 100.1445% sss 305 ds 14.1, 100.0000% sss 304 ds 14.1, 99.9999% ssp 301 ds 14.1, 99.8286% ssp 297 ds 14.1, 99.5000% ssp 296 ds 14.1, 99.2226% ss 291 ds 14.1, 99.0000% ss 290 ds 14.1, 98.9999% sp 287 ds 14.1, 98.1728% sp 281 ds 14.1, 98.0000% sp 280 ds 14.1, 97.1632% s 274 ds 14.1, 97.0000% s 273 ds 14.1, 96.9999% aaa 240 ds 14.1, 94.1405% aaa 223 ds 14.1, 94.0000% aaa 222 ds 14.1, 90.0523% aa 193 ds 14.1, 90.0000% aa 192 ds 14.1, 80.3088% a 154 ds 14.1, 80.0000% a 153 ds 14.1
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 317 ds 14.1, 100.4999% sss 314 ds 14.1, 100.1445% sss 305 ds 14.1, 100.0000% sss 304 ds 14.1, 99.9999% ssp 301 ds 14.1, 99.8286% ssp 297 ds 14.1, 99.5000% ssp 296 ds 14.1, 99.2226% ss 291 ds 14.1, 99.0000% ss 290 ds 14.1, 98.9999% sp 287 ds 14.1, 98.1728% sp 281 ds 14.1, 98.0000% sp 280 ds 14.1, 97.1632% s 274 ds 14.1, 97.0000% s 273 ds 14.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 317 ds 14.1, 100.4999% sss 314 ds 14.1, 100.1445% sss 305 ds 14.1, 100.0000% sss 304 ds 14.1, 99.9999% ssp 301 ds 14.1, 99.8286% ssp 297 ds 14.1, 99.5000% ssp 296 ds 14.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 317 ds 14.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 317 ds 14.1
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 70-4 (constant 14.2):
+  all (21) 100.5000% sssp 319 ds 14.2, 100.4999% sss 316 ds 14.2, 100.0913% sss 307 ds 14.2, 100.0000% sss 306 ds 14.2, 99.9999% ssp 303 ds 14.2, 99.7931% ssp 299 ds 14.2, 99.5000% ssp 298 ds 14.2, 99.2010% ss 293 ds 14.2, 99.0000% ss 292 ds 14.2, 98.9999% sp 289 ds 14.2, 98.1753% sp 283 ds 14.2, 98.0000% sp 282 ds 14.2, 97.1831% s 276 ds 14.2, 97.0000% s 275 ds 14.2, 96.9999% aaa 242 ds 14.2, 94.3159% aaa 225 ds 14.2, 94.0000% aaa 224 ds 14.2, 90.3447% aa 195 ds 14.2, 90.0000% aa 194 ds 14.2, 80.2610% a 155 ds 14.2, 80.0000% a 154 ds 14.2
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 319 ds 14.2, 100.4999% sss 316 ds 14.2, 100.0913% sss 307 ds 14.2, 100.0000% sss 306 ds 14.2, 99.9999% ssp 303 ds 14.2, 99.7931% ssp 299 ds 14.2, 99.5000% ssp 298 ds 14.2, 99.2010% ss 293 ds 14.2, 99.0000% ss 292 ds 14.2, 98.9999% sp 289 ds 14.2, 98.1753% sp 283 ds 14.2, 98.0000% sp 282 ds 14.2, 97.1831% s 276 ds 14.2, 97.0000% s 275 ds 14.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 319 ds 14.2, 100.4999% sss 316 ds 14.2, 100.0913% sss 307 ds 14.2, 100.0000% sss 306 ds 14.2, 99.9999% ssp 303 ds 14.2, 99.7931% ssp 299 ds 14.2, 99.5000% ssp 298 ds 14.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 319 ds 14.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 319 ds 14.2
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 431-3 (constant 14.4):
+  all (21) 100.5000% sssp 324 ds 14.4, 100.4999% sss 321 ds 14.4, 100.3087% sss 312 ds 14.4, 100.0000% sss 311 ds 14.4, 99.9999% ssp 308 ds 14.4, 99.7236% ssp 303 ds 14.4, 99.5000% ssp 302 ds 14.4, 99.1587% ss 297 ds 14.4, 99.0000% ss 296 ds 14.4, 98.9999% sp 293 ds 14.4, 98.1801% sp 287 ds 14.4, 98.0000% sp 286 ds 14.4, 97.2223% s 280 ds 14.4, 97.0000% s 279 ds 14.4, 96.9999% aaa 245 ds 14.4, 94.2461% aaa 228 ds 14.4, 94.0000% aaa 227 ds 14.4, 90.0037% aa 197 ds 14.4, 90.0000% aa 196 ds 14.4, 80.1675% a 157 ds 14.4, 80.0000% a 156 ds 14.4
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 324 ds 14.4, 100.4999% sss 321 ds 14.4, 100.3087% sss 312 ds 14.4, 100.0000% sss 311 ds 14.4, 99.9999% ssp 308 ds 14.4, 99.7236% ssp 303 ds 14.4, 99.5000% ssp 302 ds 14.4, 99.1587% ss 297 ds 14.4, 99.0000% ss 296 ds 14.4, 98.9999% sp 293 ds 14.4, 98.1801% sp 287 ds 14.4, 98.0000% sp 286 ds 14.4, 97.2223% s 280 ds 14.4, 97.0000% s 279 ds 14.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 324 ds 14.4, 100.4999% sss 321 ds 14.4, 100.3087% sss 312 ds 14.4, 100.0000% sss 311 ds 14.4, 99.9999% ssp 308 ds 14.4, 99.7236% ssp 303 ds 14.4, 99.5000% ssp 302 ds 14.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 324 ds 14.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 324 ds 14.4
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 10070-3 (constant 14.6):
+  all (21) 100.5000% sssp 328 ds 14.6, 100.4999% sss 325 ds 14.6, 100.2030% sss 316 ds 14.6, 100.0000% sss 315 ds 14.6, 99.9999% ssp 312 ds 14.6, 99.6560% ssp 307 ds 14.6, 99.5000% ssp 306 ds 14.6, 99.1175% ss 301 ds 14.6, 99.0000% ss 300 ds 14.6, 98.9999% sp 297 ds 14.6, 98.1848% sp 291 ds 14.6, 98.0000% sp 290 ds 14.6, 97.2603% s 284 ds 14.6, 97.0000% s 283 ds 14.6, 96.9999% aaa 249 ds 14.6, 94.1781% aaa 231 ds 14.6, 94.0000% aaa 230 ds 14.6, 90.1226% aa 200 ds 14.6, 90.0000% aa 199 ds 14.6, 80.0766% a 159 ds 14.6, 80.0000% a 158 ds 14.6
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 328 ds 14.6, 100.4999% sss 325 ds 14.6, 100.2030% sss 316 ds 14.6, 100.0000% sss 315 ds 14.6, 99.9999% ssp 312 ds 14.6, 99.6560% ssp 307 ds 14.6, 99.5000% ssp 306 ds 14.6, 99.1175% ss 301 ds 14.6, 99.0000% ss 300 ds 14.6, 98.9999% sp 297 ds 14.6, 98.1848% sp 291 ds 14.6, 98.0000% sp 290 ds 14.6, 97.2603% s 284 ds 14.6, 97.0000% s 283 ds 14.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 328 ds 14.6, 100.4999% sss 325 ds 14.6, 100.2030% sss 316 ds 14.6, 100.0000% sss 315 ds 14.6, 99.9999% ssp 312 ds 14.6, 99.6560% ssp 307 ds 14.6, 99.5000% ssp 306 ds 14.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 328 ds 14.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 328 ds 14.6
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+chart 12025-3 (constant 14.8):
+  all (21) 100.5000% sssp 333 ds 14.8, 100.4999% sss 330 ds 14.8, 100.1002% sss 320 ds 14.8, 100.0000% sss 319 ds 14.8, 99.9999% ssp 316 ds 14.8, 99.5902% ssp 311 ds 14.8, 99.5000% ssp 310 ds 14.8, 99.0775% ss 305 ds 14.8, 99.0000% ss 304 ds 14.8, 98.9999% sp 301 ds 14.8, 98.1894% sp 295 ds 14.8, 98.0000% sp 294 ds 14.8, 97.2973% s 288 ds 14.8, 97.0000% s 287 ds 14.8, 96.9999% aaa 252 ds 14.8, 94.1120% aaa 234 ds 14.8, 94.0000% aaa 233 ds 14.8, 90.2383% aa 203 ds 14.8, 90.0000% aa 202 ds 14.8, 80.4849% a 162 ds 14.8, 80.0000% a 161 ds 14.8
+  score none: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 0: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score null: available 简洁, 吃分, 完整; filtered = all
+    mode 简洁: current = all = filtered
+    mode 吃分: current = all = filtered
+    mode 完整: current = all = filtered
+  score 97: available 简洁, 吃分, 完整; filtered (14) 100.5000% sssp 333 ds 14.8, 100.4999% sss 330 ds 14.8, 100.1002% sss 320 ds 14.8, 100.0000% sss 319 ds 14.8, 99.9999% ssp 316 ds 14.8, 99.5902% ssp 311 ds 14.8, 99.5000% ssp 310 ds 14.8, 99.0775% ss 305 ds 14.8, 99.0000% ss 304 ds 14.8, 98.9999% sp 301 ds 14.8, 98.1894% sp 295 ds 14.8, 98.0000% sp 294 ds 14.8, 97.2973% s 288 ds 14.8, 97.0000% s 287 ds 14.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 99.5: available 简洁, 吃分, 完整; filtered (7) 100.5000% sssp 333 ds 14.8, 100.4999% sss 330 ds 14.8, 100.1002% sss 320 ds 14.8, 100.0000% sss 319 ds 14.8, 99.9999% ssp 316 ds 14.8, 99.5902% ssp 311 ds 14.8, 99.5000% ssp 310 ds 14.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 100.5: available 简洁, 完整; filtered (1) 100.5000% sssp 333 ds 14.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all
+  score 101: available 简洁, 完整; filtered (1) 100.5000% sssp 333 ds 14.8
+    mode 简洁: current = filtered
+    mode 吃分: current = filtered
+    mode 完整: current = all"
+`;
+
+exports[`chart info query snapshots > selectDisplayedRaTable across modes and base rating floors 1`] = `
+"table empty (ds 0) (0 stages):
+  mode 简洁:
+    floor below all stages (0): 0 stages
+    floor inside table (50): 0 stages
+    floor above all stages (20): 0 stages
+    floor exactly equal to a stage (0): 0 stages
+    floor zero (0): 0 stages
+    floor none (null) (null): 0 stages
+  mode 吃分:
+    floor below all stages (0): 0 stages
+    floor inside table (50): 0 stages
+    floor above all stages (20): 0 stages
+    floor exactly equal to a stage (0): 0 stages
+    floor zero (0): 0 stages
+    floor none (null) (null): 0 stages
+  mode 完整:
+    floor below all stages (0): 0 stages
+    floor inside table (50): 0 stages
+    floor above all stages (20): 0 stages
+    floor exactly equal to a stage (0): 0 stages
+    floor zero (0): 0 stages
+    floor none (null) (null): 0 stages
+table short (ds 5.0, score 100.5) (1 stages):
+  mode 简洁:
+    floor below all stages (92): 1 stages
+      100.5000% sssp 112 ds 5
+    floor inside table (50): 1 stages
+      100.5000% sssp 112 ds 5
+    floor above all stages (132): 1 stages
+      100.5000% sssp 112 ds 5
+    floor exactly equal to a stage (112): 1 stages
+      100.5000% sssp 112 ds 5
+    floor zero (0): 1 stages
+      100.5000% sssp 112 ds 5
+    floor none (null) (null): 1 stages
+      100.5000% sssp 112 ds 5
+  mode 吃分:
+    floor below all stages (92): 1 stages
+      100.5000% sssp 112 ds 5
+    floor inside table (50): 1 stages
+      100.5000% sssp 112 ds 5
+    floor above all stages (132): 1 stages
+      100.5000% sssp 112 ds 5
+    floor exactly equal to a stage (112): 1 stages
+      100.5000% sssp 112 ds 5
+    floor zero (0): 1 stages
+      100.5000% sssp 112 ds 5
+    floor none (null) (null): 1 stages
+      100.5000% sssp 112 ds 5
+  mode 完整:
+    floor below all stages (92): 1 stages
+      100.5000% sssp 112 ds 5
+    floor inside table (50): 1 stages
+      100.5000% sssp 112 ds 5
+    floor above all stages (132): 1 stages
+      100.5000% sssp 112 ds 5
+    floor exactly equal to a stage (112): 1 stages
+      100.5000% sssp 112 ds 5
+    floor zero (0): 1 stages
+      100.5000% sssp 112 ds 5
+    floor none (null) (null): 1 stages
+      100.5000% sssp 112 ds 5
+table medium (ds 12.4, score 97) (14 stages):
+  mode 简洁:
+    floor below all stages (220): 3 stages
+      100.5000% sssp 279 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor inside table (255): 4 stages
+      100.5000% sssp 279 ds 12.4
+      99.2556% ss 256 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor above all stages (299): 3 stages
+      100.5000% sssp 279 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor exactly equal to a stage (256): 4 stages
+      100.5000% sssp 279 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor zero (0): 3 stages
+      100.5000% sssp 279 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor none (null) (null): 3 stages
+      100.5000% sssp 279 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+  mode 吃分:
+    floor below all stages (220): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor inside table (255): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor above all stages (299): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor exactly equal to a stage (256): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor zero (0): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor none (null) (null): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+  mode 完整:
+    floor below all stages (220): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor inside table (255): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor above all stages (299): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor exactly equal to a stage (256): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor zero (0): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+    floor none (null) (null): 14 stages
+      100.5000% sssp 279 ds 12.4
+      100.4999% sss 276 ds 12.4
+      100.0598% sss 268 ds 12.4
+      100.0000% sss 267 ds 12.4
+      99.9999% ssp 265 ds 12.4
+      99.7554% ssp 261 ds 12.4
+      99.5000% ssp 260 ds 12.4
+      99.2556% ss 256 ds 12.4
+      99.0000% ss 255 ds 12.4
+      98.9999% sp 252 ds 12.4
+      98.1250% sp 247 ds 12.4
+      98.0000% sp 246 ds 12.4
+      97.1775% s 241 ds 12.4
+      97.0000% s 240 ds 12.4
+table long (ds 14.8, no score) (21 stages):
+  mode 简洁:
+    floor below all stages (141): 3 stages
+      100.5000% sssp 333 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor inside table (294): 4 stages
+      100.5000% sssp 333 ds 14.8
+      98.1894% sp 295 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor above all stages (353): 3 stages
+      100.5000% sssp 333 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor exactly equal to a stage (295): 4 stages
+      100.5000% sssp 333 ds 14.8
+      98.9999% sp 301 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor zero (0): 3 stages
+      100.5000% sssp 333 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor none (null) (null): 3 stages
+      100.5000% sssp 333 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+  mode 吃分:
+    floor below all stages (141): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor inside table (294): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor above all stages (353): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor exactly equal to a stage (295): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor zero (0): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor none (null) (null): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+  mode 完整:
+    floor below all stages (141): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor inside table (294): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor above all stages (353): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor exactly equal to a stage (295): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor zero (0): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8
+    floor none (null) (null): 21 stages
+      100.5000% sssp 333 ds 14.8
+      100.4999% sss 330 ds 14.8
+      100.1002% sss 320 ds 14.8
+      100.0000% sss 319 ds 14.8
+      99.9999% ssp 316 ds 14.8
+      99.5902% ssp 311 ds 14.8
+      99.5000% ssp 310 ds 14.8
+      99.0775% ss 305 ds 14.8
+      99.0000% ss 304 ds 14.8
+      98.9999% sp 301 ds 14.8
+      98.1894% sp 295 ds 14.8
+      98.0000% sp 294 ds 14.8
+      97.2973% s 288 ds 14.8
+      97.0000% s 287 ds 14.8
+      96.9999% aaa 252 ds 14.8
+      94.1120% aaa 234 ds 14.8
+      94.0000% aaa 233 ds 14.8
+      90.2383% aa 203 ds 14.8
+      90.0000% aa 202 ds 14.8
+      80.4849% a 162 ds 14.8
+      80.0000% a 161 ds 14.8"
+`;

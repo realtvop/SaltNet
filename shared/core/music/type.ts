@@ -1,0 +1,109 @@
+import type { ChartStats } from "../integrations/diving-fish/type";
+import type {
+    ChartType,
+    ComboStatus,
+    MusicGenre,
+    MusicOrigin,
+    RankRate,
+    SyncStatus,
+} from "../mai/types";
+
+export type MaimaidxRegion = "jp" | "cn" | "ex";
+
+export interface Music {
+    id: number;
+    info: MusicInfo;
+
+    charts: Chart[];
+}
+export interface MusicInfo {
+    id: number;
+    title: string;
+
+    aliases?: string[];
+    searchIndex?: string[];
+
+    artist: string;
+    genre: MusicGenre;
+    bpm: number;
+    from: MusicOrigin;
+    isNew: boolean;
+    type: ChartType;
+}
+
+export interface Chart {
+    id: number;
+    info: ChartInfo;
+
+    score?: ChartScore;
+
+    music: Music;
+}
+
+export interface ChartInfo {
+    notes: [number, number, number, number, number?];
+    charter: string;
+    searchIndex?: string[];
+    level: string; // 难度(..., 13+, 14, ...)
+    grade: number; // 难度对应index(0/1/2/3/4/10, 对应绿黄红紫白宴)
+    constant: number; // 定数(小数点后的一位, 0, 1, ..., 9)
+    deluxeScoreMax: number;
+    stat?: ChartStats;
+}
+export interface ChartScore {
+    rankRate: RankRate;
+    achievements: number | null; // 已小数化
+
+    comboStatus: ComboStatus;
+    syncStatus: SyncStatus;
+
+    deluxeScore: number;
+
+    deluxeRating: number; // 单曲rating
+
+    playCount?: number; // 游玩次数
+    isPlayCountEstimated?: boolean; // 游玩次数是否为预估
+    lastChangedAt?: number; // SaltNet 观测到该成绩最后发生变动的时间
+
+    index?: {
+        all: ChartIndex;
+        difficult: ChartIndex;
+        queried?: ChartIndex;
+    };
+}
+export interface ChartIndex {
+    index: number; // 索引
+    total: number; // 总数
+}
+
+export interface SavedMusicList {
+    musicList: Record<number, Music>;
+    chartList: Record<number, Chart>;
+}
+
+export interface MusicMetadataState {
+    cnVersions: {
+        name: string;
+        word: string;
+    }[];
+}
+
+// 用户成绩类型
+export interface UserChartScore {
+    achievements: number | null;
+    fc: string | null;
+    fs: string | null;
+    rate: string | null;
+}
+
+// 曲目缓存类型
+export interface CachedMusicData {
+    musicList: Record<number, Music>;
+    chartList: Record<number, Chart>;
+    metadata?: MusicMetadataState;
+    metadataUpdatedAt?: number;
+    region: string;
+    cachedAt: number;
+    verBuildTime?: string;
+    searchIndexVersion?: number;
+}

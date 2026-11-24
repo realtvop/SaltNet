@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed } from "vue";
     import ScoreSection from "@/components/data/chart/ScoreSection.vue";
-    import type { Chart } from "@/components/data/music/type";
+    import type { Chart } from "@core/music/type";
     import {
         formatKaleidxscopeDateTime,
         formatKaleidxscopeLife,
@@ -9,13 +9,13 @@
         getKaleidxscopePhaseStatus,
         getKaleidxscopePreferredGrade,
         resolveKaleidxscopeSongChart,
-    } from "./index";
+    } from "@core/kaleidxscope/index";
     import type {
         KaleidxscopeGate,
         KaleidxscopePhaseStatus,
         KaleidxscopeSelectionPool,
         KaleidxscopeSong,
-    } from "./type";
+    } from "@core/kaleidxscope/type";
 
     const props = withDefaults(
         defineProps<{

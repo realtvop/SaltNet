@@ -1,0 +1,798 @@
+# SaltNet CLI 设计
+
+- 日期：2026-11-10
+- 状态：设计已确认，待实现
+- 范围：新包 `cli/`（命令名 `saltnet`），以及为它从网页端抽出的 `shared/core/`
+
+## 背景与目标
+
+网页端能查曲目、谱面、成绩、B50 及其变体、rating 历史、成绩变化、收藏品和牌子进度、段位、万花筒，但 agent 用不了网页。这次做一个给 agent 用的命令行工具 `saltnet`：
+
+- **本地存储**：曲库、收藏品和用户成绩都存在本机，查询不依赖网页端。
+- **网页端能查的都能查**：以曲目和谱面为中心，收藏品为辅。
+- **写操作和网页端对等**：绑定数据来源、同步成绩、上传、账号操作、备份导入导出。
+
+成功标准：
+
+- agent 只读 `saltnet guide` 和 `saltnet schema` 就能正确使用。
+- 输出结构稳定，可以直接解析；出错时能从错误码知道下一步该做什么。
+- 同一份数据，查询结果和网页端一致。
+
+本文只做设计，不含代码。实现计划按阶段分别写（见 6.3），P0 的重构单独写一份。
+
+## 已定决策
+
+| 问题           | 选择                   | 含义                                                                                                             |
+| -------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 使用场景       | 本机个人用             | 你自己的 agent 在你电脑上调用。和网页端一样，本地有一个用户列表（自己加几个好友），凭据存在本机                  |
+| 写操作范围     | 与网页端完全对等       | 包括同步后自动上传、清理非法倍券、检查登录状态；危险操作要显式确认                                               |
+| 接入方式       | 纯 CLI + 使用说明      | agent 在 shell 里调用、读 JSON 输出，另配一份使用说明（含 Claude Code skill）。命令做成注册表，以后加 MCP 成本低 |
+| 和网页端的关系 | 独立存储，备份文件互通 | `import`/`export` 直接读写网页端的「SaltNet\_用户数据.json」（version 1），平时各自更新                          |
+| 分发方式       | 仓库内新包，全局链接   | workspace 新增 `cli/`，Node 24 + TypeScript，用内置的 `node:sqlite`，没有原生依赖                                |
+| 刷新策略       | 元数据自动，成绩手动   | 曲库和收藏品过期时自动刷新，失败就用缓存并标出；成绩只在显式 `sync` 时更新；所有输出都带数据时间                 |
+| 代码复用       | 方案 A：抽共享核心     | 见下一节                                                                                                         |
+| nearcade       | 不做                   | 网页端的机厅功能不进 CLI                                                                                         |
+
+## 考虑过的方案
+
+CLI 需要的模块里，大约一半已经是纯逻辑：SaltMeta 转换、搜索索引、Rating 和阶段表、成绩匹配（含宴谱）、收藏品条件判断、段位、万花筒、水鱼和落雪的拉取。剩下的和 Vue、MDUI、localForage、`import.meta.env`、Web Worker 缠在一起，比如缓存、提示条、OAuth 会话、成绩更新的 worker。
+
+- **A：抽共享核心（选定）**。把纯逻辑逐步搬到 `shared/core/`，做法和现在的 `shared/rendering/` 一样，网页端和 `cli/` 都从这里引用；存储、配置、联网用接口注入，网页端接 IndexedDB，CLI 接 SQLite。
+    - 好处：算法只有一份，网页端修一个 bug，CLI 也跟着修好。
+    - 代价：先要重构一次，网页端的 import 路径会变，要靠现有的 `test:*` 兜底。
+- **B：CLI 直接 import 网页端的 `src/`，再加垫片**。用打包器给 `vue`、`mdui`、`localforage`、`import.meta.env` 做垫片。
+    - 好处：起步最快，网页端一行不用动。
+    - 代价：成绩更新整个在 Worker 里，到处是提示条和对话框，最后还是得重写；网页端随便一处改动都可能悄悄把 CLI 弄坏。
+- **C：CLI 自己重写一遍**。
+    - 好处：完全不耦合，设计自由。
+    - 代价：领域逻辑要维护两份，宴谱匹配、收藏品判断、阶段表这些细节迟早两边对不上。
+
+A 渐进地做：只抽 CLI 用得到的模块，每抽一个就把网页端改成引用共享版本。
+
+## 1. 架构与模块边界
+
+### 1.1 代码分区
+
+```text
+shared/core/        纯 TS 领域核心（新建）：不依赖 Vue / MDUI / localForage / import.meta.env / DOM
+  music/              SaltMeta 转换、类型和枚举、难度、搜索索引、MusicSort
+  chart/              Rating 和阶段表、成绩与谱面的匹配（含宴谱）、最近变动、难度内排名
+  query/              曲目页的筛选/分组/统计、B50 及其变体、吃分表   ← 现在写在页面里
+  collection/         落雪数据映射、条件判定和进度、牌子 tab 合并、从谱面反查收藏品
+  course/  kaleidxscope/
+  user/               User 类型、rating 历史、成绩历史 diff、游玩次数估算、备份编解码（v0/v1）
+  sync/               四种来源的拉取与合并（从 updateUser.worker 里抽出），进度用回调通知，不再调 snackbar
+  integrations/       水鱼 / 落雪 / SaltNet 后端客户端，URL 和 client id 由 CoreConfig 传入
+shared/rendering/   已有：B50 图片的请求体、字体和文件名逻辑，CLI 的 b50 --image 直接复用
+src/                网页端：改为引用 shared/core，自己只留 Vue 状态、IndexedDB 缓存和 UI
+cli/                saltnet-cli（新建），命令名 saltnet
+  commands/           命令注册表：参数、说明、示例、副作用级别；解析器、--help、schema、guide 都从这里生成
+  services/           用例层：解析引用 → 读库 → 调 core → 写库
+  store/              SQLite（node:sqlite，WAL）、迁移、对外的只读视图
+  output/             JSON / TSV / 文本渲染，错误码
+  runtime/            路径、配置、凭据文件、元数据过期检查、锁
+```
+
+### 1.2 三条约定
+
+1. **core 不碰存储**。它只接收内存里的数据、返回结果，唯一的副作用是联网。存储由各端自己负责：网页端用 IndexedDB，CLI 用 SQLite。
+2. **查询逻辑只有一份**。CLI 每次从 SQLite 把曲库和成绩读出来，还原成和网页端一样的内存结构（`SavedMusicList`、`DetailedData`），再调用同一套 core 函数，所以结果和网页端一致。实测 `node:sqlite` 读 6000 行约 2ms，不会成为瓶颈。SQLite 只负责三件事：持久化、多个 agent 同时调用时的安全、给 agent 一个只读的 SQL 入口。它不另写一套筛选逻辑。
+3. **每次调用都是一个新进程，要控制启动时间**。
+    - 用 esbuild 把 `cli/` 和 `shared/core/` 打包成一个 `cli/dist/saltnet.mjs`，`cli/package.json` 的 `bin` 指向它，在 `cli/` 里全局链接后，任何目录都能调用 `saltnet`。仓库里用了 enum 和 `@/` 路径别名，Node 自带的去类型执行跑不了，所以必须打包。
+    - pinyin-pro 和 wanakana 只在刷新元数据、重建搜索索引时加载；opencc 只在查询里有汉字时加载。
+    - 后端地址（主、备）、渲染服务地址、落雪 client id 的默认值在构建时从网页端同一份 `.env` 读入，可以用 `config.json` 或环境变量覆盖，环境变量优先。
+
+### 1.3 抽取顺序
+
+1. 先搬本来就是纯逻辑的模块：直接移动，网页端改 import 路径。
+2. 再拆混在一起的模块（路径相对 `src/`）：
+    - `components/data/music/index.ts`：缓存和 Vue 状态分开
+    - `components/data/collection/index.ts`：数据映射和 Vue 数组分开
+    - `components/data/chart/chartPosition.ts`：项目位置的计算和 localForage 缓存分开
+    - `components/data/user/update/updateUser.worker.ts`：拉取逻辑和 worker 消息分开
+    - `pages/songs.vue`、`pages/b50.vue`、`components/data/chart/ChartInfo.vue` 里的查询逻辑移到 `core/query`
+
+每一步网页端都要通过 `pnpm check`、`pnpm lint`、`pnpm build` 和现有的全部 `test:*`。
+
+## 2. 本地存储
+
+### 2.1 目录
+
+由环境变量 `SALTNET_HOME` 指定，默认 `~/.saltnet`：
+
+```text
+saltnet.db         SQLite（WAL）：元数据和用户数据
+credentials.json   权限 0600：落雪 token、水鱼 Import-Token、进行中的落雪授权
+config.json        可选：API 地址、过期时间、默认输出格式、落雪 client id
+cache/             上游原始快照（SaltMeta、落雪的四类收藏品），供离线重建和排错；迁移前的 db 备份也放这里
+```
+
+- 凭据单独放一个文件，这样 `saltnet sql` 打开数据库时永远读不到 token。
+- `credentials.json` 当前是 `{version: 1, users: {<uid>: {divingFishImportToken?, lxnsAuthorization?, lxnsAccountId?}}, pendingLxnsAuthorizations?: {<state>: LXNSOAuthTransaction}}`；两个凭据值都按网页用户里的 JSON 值原样保存。`lxnsAccountId` 是写入授权时该用户 `lxns.id` 的 JSON 值，没有落雪账号时是 `null`；旧文件没有这个成员时，授权不视为与任何账号匹配。缺文件等同空文件；已有文件读不了、JSON 损坏或结构不对时必须报错，不能静默覆盖。每次改动时自动清理：过期或格式损坏的进行中授权被丢弃；目标用户不在库里的进行中授权被丢弃；落雪账号不匹配时授权和 `lxnsAccountId` 被丢弃，但水鱼 token 保留；不在库里或两项凭据都没有的用户条目被丢弃。
+- 进行中的落雪授权按 state 各存一条记录：PKCE verifier、目标用户、过期时间（15 分钟）。换到 token 后先暂存在这条记录里，直到绑定完成（见 5.2）。
+- 二维码一律不存盘。
+
+### 2.2 表
+
+基础表是内部实现，版本升级时可以随意迁移。
+
+**元数据**（随时可以重新拉取）
+
+- `songs`：一行一首 SaltNet 曲目。SD 和 DX 各占一行，另存一列 SaltMeta 条目 id，`song` 命令按它把同一首歌的 SD 和 DX 合在一起。含别名和搜索索引。
+- `charts`：一行一张谱面，主键是 `chart_key`（见 3.1）。含定数、物量、谱师、拟合定数和统计分布。
+- `versions`。
+- `collections`：六类收藏品。称号、头像、姓名框、背景来自落雪，获取条件按落雪返回的 JSON 原样保存；旅行伙伴和搭档是仓库里的静态数据，随 CLI 版本写入。
+- `collection_targets`：把获取条件里的曲目展开成「收藏品 ↔ 曲目 + 难度 + 条件」一行一条，用于反查和 SQL。
+- `courses`、`course_tracks` 等静态数据：随 CLI 版本写入，只是为了 SQL 能 join。
+- `meta_state`：每个数据源的拉取时间和上游版本。
+
+**用户数据**（丢了就找不回来）
+
+- `users`：顺序和网页端一样，第 0 位是默认用户。绑定信息里不含任何 token。`raw` 列存网页端这个用户的完整 JSON（去掉水鱼 Import-Token 和落雪授权：写入时拒绝带 token 的用户，库表的约束再挡一道），导出备份时照它写回，所以网页端以后新加的字段、`null` 和缺省的区别、类型不寻常的值都不会丢。其余各列和下面 `scores` 到 `rating_history` 这几张表都是从它拆出来、给查询用的副本，放不进列类型的值在副本里是 `NULL`。
+- `scores`：对应网页端的 `data.detailed`，主键是 `(user_uid, record_key)`。`record_key` 沿用网页端的「曲目id-level_index」格式，另存一列由 core 匹配出的 `chart_key`（宴谱的这两个值不一样）。匹配时先给全部精确记录分配谱面；一首歌的宴谱共用一个 `chart_key`，它拿 core 在这首歌第一张宴谱上显示的、还没分配的那条记录。同一记录和同一 `chart_key` 都只分配一次，所以不会把一条记录兜底显示在宴谱兄弟上。几条记录争同一张谱面时照 core 的规则：精确匹配取键顺序里的第一条，宴谱先比 `level_index`、再比 `ds`、再按键顺序。`song_id`、`level_index`、`ds` 转不成文字或数字（core 遇到会出错）的记录不参与匹配。各列都从存下的 JSON 读出，曲库整体替换时在同一事务里重算这些 key，结果和保存时一样。
+- `b50_snapshot`：保存每个有 `data.b50` 的用户所存的 B50，保留 SD/DX 分区和原顺序。每个是普通对象的条目存一行（`song_id` 或 `level_index` 转不成文字的除外），`record_key` 照网页端 `convertDetailed` 的写法生成；`chart_key` 用该快照自己的记录按同一规则匹配，键顺序就是快照顺序（SD 在前，同区按位置）。
+- `user_items`、`user_characters`、`rating_history`。
+- `score_events`：字段和 `ScoreHistoryEventV1` 一一对应，保证备份导出再导入不丢信息。
+- `favorites`：网页端的备份不含收藏夹，所以只存本地。
+- `sync_runs`：每次同步、上传、账号操作和导入的时间、来源、结果摘要。结果状态有 running、ok、failed、interrupted。它独立于用户生命周期（删除用户和导入备份时保留所有记录），也不属于备份内容。agent 可以靠它回答「上次什么时候更新的、改了什么」，所有对外写操作也都在这里留痕。不记二维码和 token。
+
+**内部**
+
+- `locks`：同步、元数据刷新、落雪 token 刷新用的锁。每行记持有锁的进程和过期时间，进程崩溃后锁会自动过期。
+
+**对外只读视图**：`saltnet sql` 只能看到这些。它们是对外承诺的接口，带版本号，列定义用 `schema --views` 查。
+
+- `v_charts`：一张谱面一行，含曲目信息和默认用户的成绩
+- `v_scores`、`v_score_events`、`v_rating_history`
+- `v_collections`、`v_collection_targets`、`v_user_items`、`v_user_characters`
+- `v_course_tracks`、`v_favorites`、`v_sync_runs`
+
+`sql` 在一个临时的内存数据库里执行：先以只读方式打开真正的数据库，在同一个事务里把查询里写到的视图复制进去，然后断开真正的数据库，再用 SQLite 的 authorizer（`node:sqlite` 的 `setAuthorizer`，默认拒绝）、`query_only` 和 defensive 模式把查询限制成只能 `SELECT` 这些副本，所以查询运行时够不到任何基础表。（不在真实连接的视图上装 authorizer：SQLite 报告对视图的读取时，给的是底层表的读取，不带「是通过哪个视图读的」，`count(*)` 这类查询没法和直接读基础表区分，CTE 也能冒充视图的上下文。）
+
+**写入与并发**
+
+- 刷新元数据：拉取 → 检查版本和结构 → 在一个事务里整体替换。任何一部分失败就保留旧数据，和网页端收藏品「四类都成功才替换」一致。
+- 同步成绩：替换成绩、追加 rating 历史和成绩历史、更新用户字段、写 `sync_runs`，都在同一个事务里提交。
+- 用 WAL 加 busy_timeout，多个 agent 进程可以同时读。同一用户的同步、元数据刷新各用一把锁：同步撞上锁直接返回 `SYNC_IN_PROGRESS`；元数据刷新撞上锁就用旧缓存继续。
+- 导入和删除用户在事务里检查同步锁，有同步在进行就返回 `SYNC_IN_PROGRESS`；导入成功会在 `sync_runs` 里记一条 `import`。
+- 迁移用 `PRAGMA user_version` 加按顺序执行的迁移脚本，迁移前先把 db 备份到 `cache/`。
+
+### 2.3 刷新规则
+
+- 曲库和收藏品默认 24 小时过期。用到它们的命令会先检查，过期就刷新（超时约 8 秒）；刷新失败就用缓存，并带一条 `STALE_METADATA` 警告。只有完全没有缓存又联不上网时才报 `NETWORK` 错误。
+- 成绩从不自动拉取。输出里带上成绩数据的时间，超过 3 天就附一条 `STALE_SCORES` 警告，建议运行 `saltnet sync`。
+- 这两个时间都可以在 `config.json` 里改。
+- `--offline` 禁止联网：元数据过期也不刷新，照样带 `STALE_METADATA`；没有缓存时返回 `OFFLINE_NO_CACHE`；`sync` 这类必须联网的命令返回 `USAGE`。
+- `saltnet refresh` 强制刷新。
+
+### 2.4 和网页端互通
+
+- `saltnet import <文件>`：用 core 里同一套解码（v0/v1），整体替换用户和成绩历史。语义和网页端一样是全部覆盖，所以需要确认（见 5.4）。凭据拆出来存进 `credentials.json`，数据库里相应位置写 `null`；收藏夹不受影响。和网页端的导入一样，成绩历史的每个事件换上这次导入新起的 generation 和 id。成绩历史里的 `sequence`、`dxScore`、`playCount` 超出 ±(2^53−1) 时拒绝导入：网页端不会写出这样的值，SQLite 的整数列存进去也读不回来。新的凭据文件先以 0600 写在同目录；用户和事件在一个数据库事务里提交后才把它改名到位，事务失败时旧凭据不变。
+- `saltnet export <文件>`：在同一个数据库快照里从 `users.raw` 按用户顺序读取用户和成绩事件，生成网页端可以直接导入的 v1 文件；水鱼 Import-Token 从 `credentials.json` 放回。文件里可能有凭据，所以以 0600 在目标目录原子写入，目录不存在时报 `USAGE` 且不创建。
+- 落雪 token 默认不跟着导入，也不跟着导出。落雪每次刷新都会换发新的 refresh token，网页端也是整份替换保存；两边共用同一份授权时，一边刷新后另一边会收到 `invalid_grant`，授权就被清掉了。所以默认让 CLI 自己单独授权一次，两边互不影响。落雪 id 和名字照常导入导出，用于身份判断。确实想沿用对方的授权，导入或导出时加 `--keep-lxns`；导入备份授权时同时记下导入用户的落雪 id。备份里没有某个用户的落雪授权时，只在凭据条目已经记下的落雪 id 与导入用户相同（`null` 也可相同）时保留 CLI 自己的授权；旧条目缺少该 id 时不保留。导出也只放回所记落雪 id 与数据库用户相同的授权。
+
+## 3. 实体、引用与命令
+
+### 3.1 引用
+
+曲目和谱面只用两种 id，规则和网页端、水鱼相同：
+
+- **曲目 id**：SD 用 SaltMeta 原 id，DX 用原 id + 10000，宴会场曲目在 100000 以上。
+- **谱面 key**：`曲目id-难度`，例如 `11451-3`。难度 0–4 依次是 BASIC 到 Re:MASTER，宴谱是 10。输出里每个谱面都带这个 key，agent 可以直接拿去调用别的命令。
+
+一首歌对应 SaltMeta 里的一个条目，SD 和 DX 谱面一起返回（国服目前有 61 首两种都有）。所以问「这首歌打得怎么样」，查一次就能拿全。
+
+**曲目引用**按以下顺序解析：
+
+1. 纯数字：当曲目 id。SD 和 DX 的 id 都指向同一首歌。
+2. `数字-数字`：当谱面 key。
+3. 其他文本：依次匹配精确标题（先按原样比，再忽略大小写和全半角）、精确别名、搜索索引（简繁、拼音、罗马音）。
+    - 某一步只命中一首就算找到；命中多首就返回 `AMBIGUOUS_REF`，附上候选的 id、类型和曲师；一首都没有才进入下一步。
+    - 全都没命中时返回 `NOT_FOUND`，附上最接近的几个候选。
+    - 现有数据里确实有重名：两首「Link」，还有「TRUST」和「Trust」。按原样比时 `TRUST` 能唯一命中，`trust` 则会有歧义。
+
+标题是纯数字的歌（比如「39」）会被当成 id，这种情况要先用 `search` 找。
+
+**谱面引用**：直接给谱面 key，或者曲目引用加难度（第二个位置参数）。
+
+- 难度可以写成 `bas/adv/exp/mas/rem/utage`、英文全称、`0`–`4` 和 `10`，或者 `绿黄红紫白宴`。
+- 用纯数字 id 时按 id 的类型取谱面，比如 DX 的 id 只找 DX 谱。
+- 用标题或别名时，如果这首歌 SD 和 DX 都有这个难度，要加 `--type sd|dx`；不加就返回 `AMBIGUOUS_REF`，候选是这两个谱面 key。
+
+**上游重复的宴谱**：谱面 key 必须唯一，但上游目前有两首宴谱各收录了两次（100851 和 100998），网页端的谱面列表里因此有 id 相撞。每首都是一条只有国服、标题不带前缀，另一条多区服、带 `[幸]` 或 `[宴]` 前缀。构建曲库时把它们合并成一条，保留带前缀的标题，另一个标题作为别名，并在 `status` 里列出。
+
+**其他引用**
+
+- 用户（`--user`）：序号（从 0 开始，和网页端 `/b50/0` 一致）、uid 或显示名，纯数字按序号解析。不写时用第 0 位的默认用户。序号会因为 `user default` 或删除用户而变化，需要长期引用时用 uid。
+- 收藏品：`类型:id` 或名称。类型有 `plate`（姓名框，含版本牌子）、`title`（称号）、`icon`（头像）、`frame`（背景）、`character`（旅行伙伴）、`partner`（搭档）。名称在不同类型里重名时报歧义。
+- 段位、门、收藏夹、版本：id 或名称。门还可以用 `blue` 这类 id 或简称，版本还可以用牌子字（比如 `熊`）。
+
+### 3.2 命令一览
+
+核心查询各是一个独立命令；有多个操作的对象用「名词 + 动词」。表里的斜杠分隔可选的子命令。
+
+**曲目与谱面（核心）**
+
+| 命令             | 作用                                                                                                           | 网页端           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `search <文本>`  | 搜歌，返回候选和命中方式（标题、别名、拼音、罗马音）                                                           | 曲目页搜索       |
+| `song <曲目>`    | 一首歌的全部信息：基本信息、所有谱面、当前用户的成绩。加 `--with related` 还会列出用到这首歌的收藏品、段位和门 | 谱面弹窗切换难度 |
+| `chart <谱面>`   | 一张谱的详情：定数、拟合定数、物量、谱师、统计、成绩、吃分表                                                   | 谱面弹窗         |
+| `charts [筛选]`  | 谱面列表，支持分类、筛选、排序、分组、统计（见 3.3）                                                           | 曲目页           |
+| `history [谱面]` | 成绩变化记录，可以看全部，也可以只看一张谱，`--since` 限定时间                                                 | 弹窗里的成绩历史 |
+
+`chart` 默认返回基本信息、成绩和简洁版吃分表（同谱面弹窗的「简洁」模式），其他内容用 `--with` 加：
+
+- `stages`：完整的阶段表
+- `friends`：本地其他用户在这张谱上的成绩和排名
+- `history`：成绩历史
+- `related`：相关的收藏品、段位和门
+- `position`：项目位置（同等级里按达成率排第几）和游玩次数。没有游玩次数时用成绩历史估算，并标明是估算
+- `all`：以上全部
+
+**成绩**
+
+| 命令                | 作用                                                                                                                                                              | 网页端         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `b50`               | 查 B50。`--mode` 可选 `fit`（拟合）、`ap`、`fc`、`pc`、`nb`（牛逼 50），不写时是普通 B50；`--image <文件>` 调渲染服务生成图片（支持 `--overwrite`、`--dx-score`） | B50 页         |
+| `rating`            | 当前 rating，加 `--history` 返回历史数据                                                                                                                          | rating 历史页  |
+| `calc <定数或谱面>` | 达成率和 rating 互算：给 `--achievements` 算 rating，给 `--rating` 算需要的达成率，都不给就输出整张阶段表                                                         | 弹窗里的计算器 |
+
+**收藏品（辅）**
+
+| 命令                       | 作用                                                               | 网页端     |
+| -------------------------- | ------------------------------------------------------------------ | ---------- |
+| `collection list`          | 按类型列出，标明是否拥有和大致进度；可以按类型、拥有状态、名称筛选 | 收藏品页   |
+| `collection show <收藏品>` | 获取条件和每张谱的进度，默认只列没完成的，`--all` 列出全部         | 收藏品详情 |
+
+要对收藏品涉及的谱面排序或分组，还是用 `charts`，例如 `charts --plate 熊極 --missing`。
+
+**玩法数据**
+
+| 命令                | 作用                                                                                                                           | 网页端           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `course list/show`  | 段位包含的曲目、血量规则，以及你在这些谱上的成绩                                                                               | 曲目页「段位」   |
+| `kaleidxscope [门]` | 不带参数时返回总览：开了哪些门、当前和下一个血量阶段、钥匙条件。指定门时返回选曲池和你的成绩。`--at <时间>` 按指定时间计算阶段 | 曲目页「万花筒」 |
+
+**用户、同步、账号**
+
+| 命令                                     | 作用                                                                               | 网页端   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- | -------- |
+| `user list/show/add/edit/remove/default` | 管理用户。`edit` 可以改备注名、开关「手动更新」；`default` 把用户移到第 0 位       | 用户页   |
+| `user bind <用户> <来源>`                | 绑定数据来源：`ingame`、`lxns`、`df-token`、`df-name`（见 5.2）                    | 绑定弹窗 |
+| `user unbind <用户> <来源>`              | 解除绑定，删除对应的凭据，只改本地                                                 | 绑定弹窗 |
+| `sync`                                   | 更新成绩。`--all` 和网页端的「全部更新」一样，跳过开了「手动更新」的用户（见 5.1） | 更新按钮 |
+| `ingame check-login --qr -`              | 从 stdin 读二维码或链接，确认属于已绑定的舞萌账号后查询登录状态                    | 用户菜单 |
+| `ingame backup <文件>`                   | 导出游戏格式的备份                                                                 | 用户菜单 |
+
+`ingame check-login` 接受 `--user`，返回所选用户 `user: {index, uid, name}` 和布尔值 `isLogin`。
+`GetQRInfo` 和 `CheckLogin` 各发送一次，不重试、不跟随重定向，也不改用备用地址。`--offline` 返回 `USAGE`。
+
+`user list` 的用户行也是 `show`、`add`、`edit`、`remove` 和 `default` 复用的基础结构：
+
+- `index`、`uid`、`name`（显示名）、`remark`
+- `playerName`、`rating`、`scoresUpdatedAt`（从上次更新的数据取得，没有时是 null）
+- `manualUpdate`
+- `inGame: {id, name, enabled, fastUpdate}`、`lxns: {id, name} | null`、
+  `divingFish: {name}`
+
+这些绑定结构只说明非凭据状态，不输出 token。`user show` 再加 `counts`，分别统计详细成绩、
+B50、收藏品、旅行伙伴、rating 历史和成绩变化事件。`user remove` 的预览使用同一个详情结构；
+确认成功后再加 `remainingUsers`。`user default` 再加 `previousIndex`。
+
+网页端在 `1667dd2d` 隐藏了清理补偿倍券和预览倍券的菜单，CLI 因此省略这两项操作。
+
+**收藏夹、数据管理、自描述**
+
+| 命令                                       | 作用                                                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `fav list/create/rename/delete/add/remove` | 管理收藏夹。和网页端一样按曲目收藏，难度在查询时再选，例如 `charts --fav 练习 --diff mas`                                                  |
+| `import <文件>`、`export <文件>`           | 和网页端互通备份（见 2.4）                                                                                                                 |
+| `refresh`                                  | 强制刷新曲库和收藏品                                                                                                                       |
+| `status`                                   | 汇总各项数据的更新时间、用户列表、凭据状态、合并过的上游重复条目。凭据状态按本地记录判断（有没有、是否过期），不联网验证，也不输出凭据本身 |
+| `config`                                   | 查看或修改 `config.json`                                                                                                                   |
+| `sql <查询>`                               | 在只读视图上执行 SQL                                                                                                                       |
+| `schema [命令]`                            | 以机器可读的格式说明命令、参数、错误码和视图（见 4.7）                                                                                     |
+| `guide`                                    | 给 agent 的使用指南（见 6.1）                                                                                                              |
+
+`status.users` 包含 `staleDays`（设置 `scores.staleDays`）和按当前用户顺序排列的 `items`。
+每项有 `index`、`uid`、`name`、`scoresUpdatedAt` 和 `scoresState`；从未更新是 `missing`，
+未达到 `staleDays` 是 `fresh`，达到或超过它是 `stale`。数据库不存在时 `items` 为空，且
+`status` 仍然不创建数据目录或数据库。
+
+### 3.3 `charts` 的参数
+
+曲目页的每个分类都对应一个参数。参数可以任意组合，结果须同时满足所有条件：
+
+| 网页端分类         | 参数                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| 难度               | `--level 13+`，也可以写成区间 `--level 13..14`；按定数筛选用 `--constant 13.5..14.0` |
+| 难度 › 最近        | `--recent`：只看有成绩变化记录的谱，默认按最近一次变化排序                           |
+| 版本               | `--version <版本名或牌子字>`                                                         |
+| 收藏夹             | `--fav <名称>`                                                                       |
+| 宴会场             | `--diff utage`，等级照常写，例如 `--level 13`（宴谱等级末尾的 `?` 可以省略）         |
+| 万花筒             | `--gate <门>`                                                                        |
+| 段位               | `--course <段位>`                                                                    |
+| 極、将、神、舞舞   | `--plate <牌子>`，合并标签（`熊華極`）和单个牌子（`熊極`）都能用                     |
+| （新增）其他收藏品 | `--collection <收藏品>`                                                              |
+
+其他参数：
+
+- **难度**：`--diff mas,rem`。网页端在版本、收藏夹和牌子分类下默认只显示 MASTER；CLI 不默认过滤，除宴谱外全部返回。宴谱只有写了 `--diff utage` 才返回。
+- **文本**：`--search <文本>`，匹配规则和 `search` 一样。
+- **排序**：`--sort` 可选 `default`、`constant`、`achievements`、`rating`、`playcount`、`version`、`recent`、`gain`（见下），再配合 `--asc` 或 `--desc`。`default` 和网页端一致：有成绩的按达成率从高到低，没成绩的按游戏内顺序排在后面。
+- **分组**：`--group-by constant|version|level|difficulty|rank|combo|sync`。网页端「难度」分类和「版本」「收藏夹」分类各有一套分组选项，这里合成一套，任何筛选条件下都能用。
+- **统计**：`--stats` 返回 SSS、SSS+、FC、AP、FDX 等的数量，分组时每组各一份，对应曲目页顶部的统计。
+- **分页和字段**：`--limit`（默认 50）、`--offset`、`--fields`，见 4.5。
+
+下面两项是网页端没有、为 agent 新增的：
+
+1. **按成绩条件筛选**：`--achieved <条件>` 和 `--missing <条件>`。
+    - 条件可以是任一评级（`s`、`s+`、`sss+` 等）、`clear`（达成率 80% 以上）、combo 状态（`fc`、`fc+`、`ap`、`ap+`）或 sync 状态（`sync`、`fs`、`fs+`、`fdx`、`fdx+`）。条件都是「至少达到」，比如 `--achieved fc` 也包括 AP。
+    - `--missing` 也包括没打过的谱。
+    - 和 `--plate` 或 `--collection` 一起用时可以不写条件，默认就是这个牌子或收藏品本身的要求。
+2. **B50 涨分**：`chart` 的阶段表里每一档多一个字段，表示打到这一档后 B50 总分能涨多少。`charts --sort gain` 按打到目标档能涨多少排序，目标档用 `--target` 指定，默认 SSS+。用户常问「该推哪首」，有这两项就能直接回答。
+
+### 3.4 约定
+
+- 查询命令不修改任何数据，唯一的例外是元数据过期时自动刷新缓存（见 2.3）。
+- `schema` 会标出每个命令的副作用级别（见 5.4）。
+- 输出里的谱面都用同一种「谱面行」结构（见 4.4）。所以 `b50`、`history`、`collection show`、`course show` 的结果可以和 `charts` 一样处理，里面的谱面 key 也能直接传给 `chart`。
+- 列表命令都支持 `--limit` 和 `--offset`，涉及成绩的命令都支持 `--user`。
+
+## 4. 输入输出约定
+
+### 4.1 输入
+
+- 位置参数只用来指定对象（曲目、谱面等），其余一律用 `--kebab-case` 选项。开关选项写 `--x` 打开，写 `--no-x` 关闭。
+- 多个值用逗号隔开，例如 `--diff mas,rem`、`--with stages,friends`。
+- 区间用 `..` 连接，可以只写一端：`13..14`、`14..`、`..12+`。
+- 时间用 ISO 8601，没写时区就按本机时区算。`--since` 还接受 `7d`、`24h` 这样的相对时长。
+- 枚举值不分大小写，游戏里的写法和内部代码都能用，例如 `SSS+` 或 `sssp`、`AP+` 或 `app`，难度可以写 `Re:MASTER`、`rem` 或 `4`。
+- CLI 从不交互提问：
+    - 需要确认的操作加 `--yes <确认码>`（见 5.4）。
+    - 二维码、水鱼 Import-Token、落雪回调链接这类凭据写成 `-`，从 stdin 读入，不放在命令行参数里，以免留在 shell 历史和进程列表里。
+- 给人看的帮助用 `--help`；agent 应该用 `schema`。
+
+### 4.2 输出格式与输出流
+
+- 默认输出 JSON，压缩成一行以节省 token。加 `--pretty` 输出带缩进的格式。
+- `--format tsv` 只用于列表命令：第一行是表头，嵌套字段的列名写成 `score.rank`。
+- `--format text` 输出给人看的表格，格式不保证稳定，agent 不要解析它。
+- config 里设的默认格式只在终端里直接运行时生效。如果 stdout 不是终端（被程序调用），一律输出 JSON，除非显式指定了 `--format`。
+- stdout 上只有一份结果，出错时也一样。一般的错误不管 `--format` 是什么，都输出 JSON 格式的失败结构；唯一例外是 `CONFIRMATION_REQUIRED` 在 text 格式（显式 `--format text`，或终端采用 text 默认格式）下输出给人看的预览和完整确认命令。json 和 tsv 格式下仍输出 JSON 失败结构。
+- `--help` 和 `guide` 是例外：直接输出文本，不套外层结构。
+- stderr 平时只在终端里显示进度，被程序调用时什么都不输出，避免占用 agent 的上下文；加 `--verbose` 可以强制输出日志。tsv 模式也是例外：meta 和警告写到 stderr，每行以 `#` 开头。
+
+### 4.3 外层结构
+
+成功时的例子：`saltnet charts --level 15 --diff rem --limit 1 --pretty`。国服 15 级的 Re:MASTER 谱目前只有 3 张，所以 `total` 是 3。
+
+```json
+{
+    "v": 1,
+    "ok": true,
+    "command": "charts",
+    "data": {
+        "items": [
+            {
+                "chartKey": "834-4",
+                "musicId": 834,
+                "title": "PANDORA PARADOXXX",
+                "type": "SD",
+                "difficulty": "Re:MASTER",
+                "level": "15",
+                "constant": 15,
+                "fitConstant": 15.34,
+                "version": "maimai FiNALE",
+                "score": {
+                    "achievements": 100.1234,
+                    "rank": "SSS",
+                    "combo": "FC",
+                    "sync": null,
+                    "dxScore": 3780,
+                    "dxScoreMax": 4026,
+                    "dxStars": 3,
+                    "rating": 324,
+                    "playCount": 41,
+                    "playCountEstimated": false,
+                    "changedAt": "2026-11-06T22:31:08+08:00"
+                },
+                "b50": { "part": "B35", "rank": 2 }
+            }
+        ]
+    },
+    "meta": {
+        "user": { "index": 0, "uid": "<uid>", "name": "玩家" },
+        "dataAsOf": {
+            "catalog": "2026-11-10T09:12:03+08:00",
+            "scores": "2026-11-06T22:40:11+08:00"
+        },
+        "page": { "total": 3, "offset": 0, "limit": 1, "nextOffset": 1 }
+    },
+    "warnings": [
+        { "code": "STALE_SCORES", "message": "成绩已经 3 天没更新", "fix": "saltnet sync" }
+    ]
+}
+```
+
+- `v`：输出格式的版本号。只新增字段时不变；字段改名、删除或改变含义时才升级，变更记录在 `schema` 里。
+- `command`：正式的命令名，例如 `charts`、`user bind`。
+- `data`：查单个对象的命令直接返回这个对象；列表命令返回 `{items: [...]}`，需要时再附带 `stats` 或 `groups`。
+- `meta.user`：这次用的是哪个用户的成绩。只要涉及成绩就会带上，防止 agent 弄混用户。
+- `meta.dataAsOf`：本次用到的各类数据分别是什么时候的。`catalog` 是曲库，`collections` 是收藏品，`scores` 是这个用户上次成功同步的时间。只列出本次用到的项。
+- `meta.page`：只有列表命令才有。`nextOffset` 为 null 表示没有下一页了。
+- `warnings`：结果可以用，但有需要注意的地方。每条的格式是 `{code, message, fix?}`，其中 `fix` 是建议执行的命令。目前有：
+    - `STALE_METADATA`：曲库或收藏品已过期又没能刷新（刷新失败或 `--offline`），用的是缓存
+    - `STALE_SCORES`：成绩超过 3 天没更新，或有成绩但更新时间未知
+    - `NO_SCORES`：这个用户还没同步过
+    - `PARTIAL_SCORES`：只拿到了水鱼公开的 B50，其他谱面没有成绩
+    - `TRUNCATED`：`sql` 的结果被截断了
+    - `UPLOAD_FAILED`：同步成功了，但上传到水鱼或落雪失败（见 5.1）
+    - `SOME_FAILED`：`sync --all` 里有用户失败（见 5.1）
+    - `LXNS_EXPIRING`：落雪授权快过期了（见 5.3）
+    - `PUBLIC_B50_ONLY`：只更新了水鱼公开的 B50，详细成绩保留原样（见 5.1）
+    - `PARTIAL_BACKUP`：游戏格式的备份里没有角色数据，只有成绩和已有的收藏品
+
+失败时的例子：`song link`。两首「Link」的别名里都有 link。
+
+```json
+{
+    "v": 1,
+    "ok": false,
+    "command": "song",
+    "error": {
+        "code": "AMBIGUOUS_REF",
+        "message": "「link」对应 2 首歌",
+        "candidates": [
+            { "ref": "131", "title": "Link", "artist": "Clean Tears feat. Youna", "type": "SD" },
+            {
+                "ref": "383",
+                "title": "Link",
+                "artist": "Circle of friends(天月-あまつき-・un:c・伊東歌詞太郎・コニー・はしやん)",
+                "type": "SD"
+            }
+        ],
+        "retryable": false
+    }
+}
+```
+
+- `code` 是固定不变的英文常量，完整列表在 `schema` 里；`message` 是中文说明。
+- `candidates` 在有歧义或找不到时给出。每个候选的 `ref` 可以直接拿去重试；找不到时列出最接近的几个。
+- `fix` 是可选的建议命令，要能照原样运行。`user bind` 里默认用户写 `0`，其他用户写 uid；选默认用户时一般不写 `--user`。以 `-` 开头的值写成 `--user=<uid>`；以 `-` 开头的用户放在 `--` 后面，选项放在 `--` 前面；以 `-` 开头的文件名写成 `./<文件名>`。只有 CLI 不可能知道的值留成占位符，比如 `<水鱼用户名>`。
+- `retryable` 表示原样重试是否可能成功，网络错误和锁冲突时为 true。
+- 出错时如果有 meta 和 warnings，也照样带上。
+
+### 4.4 谱面行
+
+凡是输出谱面的地方都用这个结构。各个命令可以在上面加字段，比如 `collection show` 加 `done`，`--sort gain` 加 `gain`，但不会改名或删除已有字段。
+
+| 字段                               | 说明                                                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `chartKey`                         | 谱面 key                                                                                                                        |
+| `musicId`、`title`、`type`         | 曲目 id、标题、类型（`SD` 或 `DX`；宴谱和网页端一样算 `DX`）                                                                    |
+| `difficulty`                       | 从 `BASIC` 到 `Re:MASTER`，宴谱是 `UTAGE`                                                                                       |
+| `level`、`constant`、`fitConstant` | 等级（如 `14+`，宴谱如 `13?`）、定数、拟合定数（没有时为 null）                                                                 |
+| `version`                          | 国服版本名                                                                                                                      |
+| `score`                            | 没打过时为 null；否则包括达成率、评级、combo、sync、DX 分和满分及星数、rating、游玩次数（以及是否为估算值）、最近一次变化的时间 |
+| `b50`                              | 不在 B50 里时为 null；否则给出在哪部分（`B35` 或 `B15`）和第几名                                                                |
+
+谱师、物量和统计数据占的篇幅大，只在 `chart` 命令里返回。
+
+### 4.5 写法约定
+
+- 键名用 camelCase。时间用 ISO 8601，带本机时区。`sql` 的视图例外：列名是 snake_case，时间是 UTC（带毫秒，以 `Z` 结尾），这样同一条查询在哪台机器上结果都一样，按文本排序就是按时间排序。
+- 评级、combo、sync 和难度都用游戏里的写法，比如 `SSS+`、`AP+`、`FDX+`、`Re:MASTER`。没有的值为 null。
+- 达成率是数字，例如 `100.1234`；rating 是整数。
+- 同一种对象的键总是齐全的，不知道的值填 null。只有 `--fields` 会去掉字段。
+- 排序是稳定的：数据和参数相同，输出顺序就相同。其他排序条件都相同时，按谱面 key 排。
+- 所有输出里都不会出现 token、二维码等凭据。
+
+列表相关：
+
+- `--limit` 默认是 50（`search` 默认是 10），用 `--offset` 翻页。
+- `--fields chartKey,title,score.rank` 表示只保留这些字段，点号表示嵌套。tsv 格式下这些就是列名。
+- 加了 `--group-by` 时，结果放在 `data.groups` 里，每组的格式是 `{key, count, stats?, items}`。此时 `--limit` 限制的是每组的条数，`count` 是这组的总数。
+- `sql` 的结果同样放在 `data.items` 里，默认最多 1000 行。超出时截断，并给出 `TRUNCATED` 警告。
+
+### 4.6 退出码
+
+| 退出码 | 含义             | 错误码                                                                      |
+| ------ | ---------------- | --------------------------------------------------------------------------- |
+| 0      | 成功，可能带警告 | —                                                                           |
+| 1      | 内部错误         | `INTERNAL`                                                                  |
+| 2      | 用法错误         | `USAGE`、`SQL_ERROR`、`INVALID_BACKUP`、`FILE_EXISTS`                       |
+| 3      | 找不到或有歧义   | `NOT_FOUND`、`AMBIGUOUS_REF`                                                |
+| 4      | 需要人来处理     | `NO_USER`、`NOT_BOUND`、`QR_REQUIRED`、`QR_INVALID`、`LXNS_REAUTH_REQUIRED` |
+| 5      | 网络或上游出错   | `NETWORK`、`UPSTREAM_ERROR`、`OFFLINE_NO_CACHE`                             |
+| 6      | 需要确认         | `CONFIRMATION_REQUIRED`，附带即将执行的操作的预览和确认码                   |
+| 7      | 资源被占用       | `SYNC_IN_PROGRESS`、`DB_LOCKED`                                             |
+
+退出码是给 agent 的明确信号：
+
+- 4：去找用户处理（扫码、重新授权、绑定）。
+- 6：先把预览给用户看，用户同意后再带上确认码重新执行。
+- 7：稍后再试。
+- 5：看 `retryable` 决定是否重试。
+
+### 4.7 `schema`
+
+- `schema` 列出全部命令。
+- `schema <命令>` 给出：
+    - 参数的类型、可选值和默认值
+    - 副作用级别
+    - `data` 的 JSON Schema
+    - 可能出现的错误码
+- `schema --views` 给出只读视图的列定义。
+- 这些说明和参数解析用的是同一份命令注册表，所以说明和实际行为不会不一致。`guide` 和以后的 MCP 也从这份注册表生成。
+
+## 5. 同步、绑定与写操作
+
+以下行为以网页端 `updateUser.worker.ts`、`BindUserDialog.vue`、`users.vue` 的实际代码为准。
+
+### 5.1 `sync`
+
+**选哪个来源**：默认 `--source auto`，按网页端的顺序取第一个可用的：
+
+1. 舞萌账号（已启用 InGame）
+2. 落雪（已授权）
+3. 水鱼 Import-Token
+4. 水鱼用户名（先通过 SaltNet 后端拿详细数据，拿不到再用公开 B50）
+
+和网页端一样，选中的来源失败后不会自动换下一个。错误里的 `fix` 会建议另一个已绑定的来源，例如 `saltnet sync --source lxns`。也可以直接指定来源，取值和 `user bind` 的来源名相同：`ingame`、`lxns`、`df-token`、`df-name`。当选择落雪来源时，在同步锁（`sync:<uid>`）保护下、发起成绩拉取前，先调用 `lxnsAccessToken` 检查并刷新已过期的 access token；若缺少 refresh token 或 refresh 失败（`invalid_grant`），在锁内报错 `LXNS_REAUTH_REQUIRED`，记录 failed 日志，且 `fix` 推荐其他已绑定来源。
+
+**舞萌账号的两种更新方式**
+
+- **带二维码**（`--qr -`，从 stdin 读扫码结果或二维码页面链接）会登录账号并进行全量更新。CLI 用 `GetQRInfo` 查出二维码所属账号，拿同步锁前先和已绑定的游戏 ID 比对，在锁内再和重读的游戏 ID 比对。`GetQRInfo` 和负责登录及全量更新的 `UpdateUser` 各最多请求一次，失败后也不重试或改用备用地址。
+    - `sync.qrOtherAccount` 为 `rewrite`（默认）时，和网页端一样，成功同步时将游戏 ID 改为二维码所属账号，沿用同一用户的 uid 和已有成绩历史，并照常自动上传。原本已绑定其他游戏账号时，返回 `GAME_ACCOUNT_CHANGED`，其 `fix` 是 `saltnet config set sync.qrOtherAccount error`。
+    - `sync.qrOtherAccount` 为 `error` 时，若已有游戏 ID 且与二维码所属账号不同，则在登录和写入同步结果前返回 `USAGE`，`fix` 为 `saltnet user bind <用户> ingame --qr -`。身份变化的确认由 `user bind` 处理。
+- **不带二维码**时执行快速更新，无需登录账号。先从舞萌拿数据，再尝试用落雪补全。落雪不可用或失败时，尝试用水鱼 Import-Token 补全。两者都不可用或失败时，仍保存舞萌返回的成绩。落雪补全在记录同步开始后、发起落雪成绩请求前，在同一用户的同步锁内检查和刷新 access token。没有游戏 id 时返回 `QR_REQUIRED`。
+- 二维码格式不对或已经失效时返回 `QR_INVALID`。命令行上的二维码或在非舞萌来源上使用 `--qr -` 会报 `USAGE`。
+
+网页端的「快速更新」开关只决定要不要弹出二维码输入框。CLI 不弹框，所以不看这个开关，只是为了备份兼容保留这个字段。
+
+**自动上传（P3-10）**在舞萌全量或快速同步成功写入本地之后，沿用同一把用户同步锁上传未经补全的游戏成绩。水鱼需要 Import-Token，落雪需要 `credentials.json` 中与当前落雪账号匹配且有访问令牌的授权，访问令牌过期时先刷新。CLI 按水鱼、落雪的顺序等待结果，每个上传单独写入 `sync_runs`，只发一次，不跟随重定向。其他同步来源不上传。`--no-upload` 可以关闭上传。每个失败的目标各加一条 `UPLOAD_FAILED` 警告，本地同步仍然成功。
+
+**写入**在用户同步锁内进行。参数和二维码预检通过后，先在 `sync_runs` 记录尝试。缺少绑定或快速更新缺少游戏 id 时也记录失败。成功后在同一个事务里替换成绩、追加 rating 历史和成绩历史，并把这条记录标为成功。未能取得同步锁时不写记录。
+
+**返回的 `data`**
+
+- `user`：`{uid, index, name}`。
+- `source`：本次使用的同步来源。
+- `mode`：带二维码的舞萌更新、落雪和水鱼 token 为 `full`。舞萌快速更新为 `fast`。水鱼用户名在后端返回详细记录时为 `full`，退回公开 B50 时为 `public-b50`，并给出 `PUBLIC_B50_ONLY` 警告。
+- `rating`：`{before, after}`，原先无数据或不是安全整数时为 null。
+- `counts`：`{charts, added, improved}`。`charts` 为同步后有成绩的谱面数（`detailed` 或公开 B50 谱面总数）；`added` 为本次新游玩的谱面数；`improved` 为本次有成绩提升的谱面数。
+- `changes`：本次产生变动的谱面列表。每条为标准谱面行附带变动前成绩 `before`（之前无成绩时为 null）。按 rating 增幅倒序排列，增幅相同时按 chart key 排序。默认最多 20 条，带 `changesTotal` 与 `missing`。用户首次同步时 `changes` 为空，只给数量。
+- `uploads`：每个尝试过的目标各一项 `{target, ok, error}`，`target` 为 `diving-fish` 或 `lxns`，`error` 成功时为 null，失败时为 `{code, message}`。没有尝试上传时为空数组。
+
+**成绩事件的 generation 规则**：生成成绩变动历史时，沿用该用户最新一条历史事件的 `generation_id`（按 `observed_at DESC, id DESC` 排序）；若尚无历史事件则新建 `cli-<uuid>`。网页端每个用户维护一个活跃 generation，CLI 沿用该规则。
+
+命令的副作用级别按最高可能的级别标为「账号」，对应带二维码的舞萌更新。向水鱼或落雪上传本身属于「远端」。
+
+**`--all`**：和网页端的「全部更新」一样，跳过开了「手动更新」的用户。CLI 按存储顺序逐个同步，每个用户使用自动来源、自己的同步锁和事务。支持 `--no-upload`，与 `--user`、`--source` 或 `--qr` 一起用时返回 `USAGE`。没有存储用户时返回 `NO_USER`。
+
+- `data` 的 `results` 按用户列出 `{user, ok, data, error, warnings}`，`skipped` 列出 `{user}`。成功的用户有单人同步的 `data`，失败的用户有 `{code, message, fix?}`，另一字段为 null。每项保留自己的警告。
+- 单人的 CLI 错误（包括 `SYNC_IN_PROGRESS` 和 `NETWORK`）记下后继续。命令跑完就返回成功，若有失败则加一条 `SOME_FAILED`，列出失败人数、名字与 uid。意外异常会结束整个命令。
+- `--all` 读不了二维码，所以舞萌来源只能走快速更新，走不了的用户记为 `QR_REQUIRED`。
+
+**`--dry-run`**：按本地存的用户和凭据列出同步计划。预览不联网、不读 stdin、不取同步锁、不写本地数据，也不刷新曲库。可以和 `--offline` 一起用；带 `--qr -` 时只在计划里写明会做全量更新，不读二维码。
+
+- `data` 的 `plans` 列出 `{user, source, mode, uploads, effect, error}`，`skipped` 与 `--all` 相同。无法确定来源时 `source` 为 null，水鱼用户名查询的 `mode` 要联网才能确定，因此为 null。
+- `uploads` 列出舞萌同步成功后的上传目标，水鱼在前、落雪在后。`--no-upload` 或非舞萌来源的列表为空。
+- 确定的绑定问题放在对应计划的 `error` 中，字段为 `{code, message, fix?}`。选项冲突等用法错误仍由命令返回 `USAGE`。
+
+### 5.2 绑定：`user bind` / `user unbind`
+
+| 来源       | 用法                          | 说明                                                              |
+| ---------- | ----------------------------- | ----------------------------------------------------------------- |
+| `ingame`   | `--qr -` 或 `--id <8 位数字>` | 二维码只用来查游戏 id（后端 GetQRInfo），不登录账号，用完也不保存 |
+| `lxns`     | 分两步，见下                  | OAuth + PKCE，申请的权限和网页端相同：读资料、读成绩、写成绩      |
+| `df-token` | `-`，从 stdin 读              | 保存前先用它拉一次成绩，验证能用                                  |
+| `df-name`  | `<用户名>`                    | 用户名不是凭据，直接保存                                          |
+
+**各来源绑定的数据变更（与网页端一致）**
+
+- `ingame`：设置 `inGame.id` 并开启 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。网页端绑定只改 id，「启用」是单独的开关；CLI 没有这个开关，所以绑定时一并打开。
+- `df-token`：通过 Diving Fish 读取成绩验证有效后，保存到 `credentials.json` 的 `divingFishImportToken`（权限 0600）；用户对象上的 `divingFish.name` 与 `divingFish.importToken` 均置为 null，token 绝不落入数据库。
+- `df-name`：设置 `divingFish.name`，清空 `divingFish.importToken`。若已设置 token 则拒绝绑定用户名（需先解绑 token）。
+- `lxns`：从 access token 读取落雪账号的 id 和名字，写入用户对象，`lxns.auth` 为 null。授权、对应的落雪 id 和刷新令牌的签发时间保存在 `credentials.json`。
+
+**各来源解绑（只改本地数据，无需确认）**
+
+- `ingame`：清除 `inGame.id` 与 `inGame.name`，关闭 `inGame.enabled`，`inGame.useFastUpdate` 保持原样。三者任一不是初始值都算已绑定。
+- `df-token`：只从 `credentials.json` 移除 `divingFishImportToken`；token 从不存进数据库，用户对象不变。
+- `df-name`：用户对象的 `divingFish.name` 置为 null。
+- `lxns`：从 `credentials.json` 移除 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`，用户对象的 `lxns` 置为空（`{ auth: null, id: null, name: null }`）。
+- 解绑未绑定的来源时成功返回且 `changed: false`，不产生任何写入。
+
+**落雪分两步**
+
+1. 运行 `user bind <用户> lxns`，CLI 离线生成授权链接 `authorizeUrl` 和本机时区的过期时间 `expiresAt`（15 分钟）。PKCE verifier 存在 `credentials.json` 里。同一个用户重新开始授权会替换先前的记录。
+2. 用户在浏览器里授权后会跳到 SaltNet 网页端。网页端找不到这次授权的记录，会显示「复制回调链接」。用户把链接交给 agent，agent 运行 `user bind <用户> lxns --callback -`（链接从 stdin 读）完成绑定。CLI 先校验 state 和回调地址，再用 verifier 换取 token。
+
+这两步沿用网页端的规则：
+
+- 缺少对应用户的有效授权记录时返回 `LXNS_REAUTH_REQUIRED`，`fix` 给出重新开始授权的命令。
+- CLI 在用户同步锁和凭据锁内兑换授权码，不自动重试，也不新增 `sync_runs` 记录。兑换前保存授权码的哈希，服务明确拒绝时恢复原记录。结果不确定时应重新授权。
+- 换到 token 后校验账号资料，再把兑换结果写进授权记录。如果此时中断，可以用同一回调继续。完成绑定后移除授权记录。
+
+**需要实测**：用同一个落雪 client 再授权一次，网页端原来的授权会不会失效？如果会，CLI 就得用单独的 client id（可以在 `config.json` 里配置），否则 CLI 一绑定，网页端就掉线了。
+
+**身份变化**：判断规则和网页端（`hasStrongIdentityChanged`）一样：
+
+- 游戏 id 或落雪 id 在绑定前后都有值且不相同，就算换了一个人。
+- 如果绑定前后都没有游戏 id 和落雪 id，只在两个非空水鱼用户名不相同时算换人。
+
+换人时先预览账号变更及要清除的成绩和历史行数，用户同意后才运行 `error.fix`（见 5.4）。确认后，CLI 使用与网页端相同的 `resetUserForNewIdentity` 清空玩家数据，删除旧 uid 的成绩事件，并在原列表位置写入新 uid。仍适用的凭据随用户迁移，成功结果带 `oldUid` 和 `newUid`。同步期间禁止写入。首次绑定和同一身份的绑定无需确认，即使传了 `--yes` 也照常执行。
+
+- `ingame --qr -`：先用二维码查出游戏 id，只发送一次 `GetQRInfo`。和直接使用 `--id` 一样，确认命令使用 `--id <id> --yes <确认码>`。
+- `df-name`：确认命令使用同一个用户名，加上 `--yes <确认码>`。
+- `lxns`：换到 token 后先查落雪账号。需要确认时，确认命令是 `user bind <用户> lxns --yes <确认码>`，直接用授权记录里暂存的 token，不用再传回调链接。换到 token 后，授权记录从这时起再保留 15 分钟，过期就得重新授权。
+
+`user unbind <用户> <来源>` 删除对应的凭据和绑定，只改本地数据。
+
+### 5.3 落雪 token 刷新
+
+落雪每次刷新都会换发新的 refresh token，旧的随即作废。多个 agent 可能同时运行 CLI，所以刷新这样处理：
+
+- 刷新在调用方持有的该用户同步锁（`sync:<uid>`）下进行，这把锁保证了同一用户同一时刻只有一个进程刷新落雪 token。拿到锁后重新读一遍凭据，如果别的进程已经刷新过，就直接用新的。
+- 配置项：通过设置 `lxns.refreshTokenDays`（默认 30 天）控制 refresh token 有效期，`lxns.expiringWarnDays`（默认 3 天）控制临期预警阈值。
+- 条件写：新 token 写入 `credentials.json` 时，在 `updateCredentials` 更新函数内仅当存储记录仍与刷新前的授权匹配（同账号、同 `refreshToken`）时，才原子写入 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`（毫秒时间戳）；若中途被并发修改或移除则保留当前文件内容不变，本次运行仍返回新换取的 token。
+- 刷新返回 `invalid_grant` 或身份变化时，同样在匹配失效授权时才原子清除 `lxnsAuthorization`、`lxnsAccountId` 与 `lxnsIssuedAt`，保留落雪 id、名字与其他来源凭据，并返回 `LXNS_REAUTH_REQUIRED`。
+- `status` 会展示每个用户的凭据状态 `credentials`：水鱼 `divingFish` 为 `present` 或 `missing`；落雪 `lxns` 为 `valid`、`expiring`、`expired`、`unknown` 或 `missing`，以及刷新令牌过期时间 `lxnsRefreshExpiresAt`。refresh token 剩余时间小于 `lxns.expiringWarnDays` 或已过期时，`status` 会给出 `LXNS_EXPIRING` 警告（`fix` 是给这个用户重新授权落雪的 `user bind` 命令），建议重新授权。
+
+### 5.4 副作用级别与确认
+
+`schema` 里标注的副作用级别：
+
+| 级别 | 含义                 | 命令                                                                                   |
+| ---- | -------------------- | -------------------------------------------------------------------------------------- |
+| 无   | 只读                 | 所有查询；`ingame check-login`（只查登录状态，不登录账号或写入 `sync_runs`）           |
+| 本地 | 只改本机的数据或文件 | `user`、`fav`、`import`、`export`、`config`、`refresh`、`ingame backup`、`b50 --image` |
+| 远端 | 写入第三方服务       | `sync` 上传到水鱼、落雪                                                                |
+| 账号 | 登录或改动舞萌账号   | 带二维码的 `sync`                                                                      |
+
+`sync` 在命令表中标为最高可能的 `account`。`--dry-run` 按用户说明实际执行计划的级别：带二维码的更新为 `account`，有上传目标为 `remote`，其余为 `local`。
+
+**需要确认的操作**（没确认时返回退出码 6 和预览）：
+
+- `user remove`：删除这个用户和其成绩历史
+- 导致身份变化的 `user bind`：清空成绩和历史
+- `import`：覆盖全部用户和成绩历史
+- `fav delete`：收藏夹不在备份里，删了就找不回来
+
+`sync` 不需要确认，和网页端一致：用户绑定时就已经同意了上传。想先看看会做什么，可以用 `--dry-run`。
+
+**确认码**：需要确认的命令统一用 `--yes <确认码>`。
+
+- 确认码由预览给出，和这次操作的内容绑定：哪个操作、哪个对象、当时的数据。数据一变，确认码就失效，需要重新预览。这样 agent 没法跳过预览直接确认，也不会确认一个内容已经变了的操作。
+- 确认码是 8 个 Crockford base32 字符；同一个操作、对象和数据总是得到同一个码，没有时限，传入时不区分大小写。
+- 确认码不对或已失效时，和没带确认码一样，返回退出码 6 和新的预览。
+- `CONFIRMATION_REQUIRED` 的 error 包含 `preview`、`confirmationCode`、`codeRejected`，以及在 `fix` 里的完整确认命令；`codeRejected` 说明这次是否传了错误或已失效的码。
+- 预览通常不读 stdin。`user bind <用户> ingame --qr -` 先查游戏 id，不登录账号。`user bind <用户> lxns --callback -` 先兑换授权码，把兑换结果暂存于 `credentials.json`；用户数据保持原样。两者都能用 `error.fix` 离线确认（见 5.2）。
+
+`user remove` 的确认状态包含 uid、当时的 index、显示名、成绩更新时间、各子表行数，以及
+所有待删除数据库行的内部摘要；同步、编辑、重排或任何待删除内容变化后都要重新预览。
+`error.fix` 总是用稳定的 uid 再指向这个用户；uid 以 `-` 开头时写成
+`user remove -- <uid>`，确认码仍插在 `--` 前面。
+
+`user bind` 换人的确认状态包含绑定来源、用户 uid、待清除数据库行的摘要和目标身份；落雪还绑定暂存授权的过期时间。确认命令始终使用稳定的 uid，确保重排后仍检查原目标。状态和预览都不包含凭据。
+
+**写文件**：`export`、`ingame backup`、`b50 --image` 遇到同名文件时返回 `FILE_EXISTS`，加 `--overwrite` 才会覆盖。`ingame backup` 以 0600 权限写入与游戏格式兼容的 JSON 备份；当用户缺少角色数据时文件仍会导出，并附带 `PARTIAL_BACKUP` 警告。
+
+### 5.5 网络
+
+- SaltNet 后端的主地址和备用地址沿用网页端：构建时从 `.env` 带入默认值，可以在 `config.json` 里改。主地址失败时自动换备用地址。
+- 每个请求都有超时，舞萌更新比较慢，超时单独放宽。超时算 `NETWORK` 错误，`retryable: true`。
+- 只有读请求会自动重试一次；上传和账号操作不自动重试。B50 图片渲染不产生服务端变更，同样自动重试一次。
+- 同步、上传、账号操作都记在 `sync_runs` 里，但不记二维码和 token。
+- 请求带上 `saltnet-cli/<版本>` 作为 UA。
+
+## 6. agent 指南、测试与分期
+
+### 6.1 agent 指南
+
+同一份内容提供两种形式：
+
+- `saltnet guide`：打印一份 Markdown 指南，任何 agent 都能读。
+- `saltnet guide --skill`：打印带 frontmatter 的 Claude Code skill，保存成 `~/.claude/skills/saltnet/SKILL.md` 就能用。它的描述写成：用户问到舞萌成绩、曲目、B50、牌子、段位或万花筒时使用。
+
+两种形式都直接输出文本，`guide` 只打印，不写文件。
+
+命令和参数部分从命令注册表自动生成，下面这些内容手写：
+
+1. **开头先运行 `saltnet status`**，看清有哪些用户、数据有多新、凭据是否有效。
+2. **找歌**：拿不准时先用 `search`，之后的调用都用输出里的曲目 id 和谱面 key。遇到 `AMBIGUOUS_REF` 时，能从上下文判断就直接选；判断不了就问用户，比如有两首「Link」的情况。
+3. **看 `meta.user`**：确认用的是谁的成绩。用户提到好友时，用 `--user` 指定。
+4. **省 token**：
+    - 列表很长时，用 `--fields` 或 `--format tsv`。
+    - 问数量时用 `--stats` 或 `--group-by`，不要拉完整列表再自己数。
+    - 复杂的问题用 `sql`。
+5. **数据新旧**：看到 `STALE_SCORES` 就告诉用户，问过之后再 `sync`。不要主动同步，因为同步可能会登录账号，还会上传到水鱼和落雪。
+6. **退出码**：
+    - 4：去找用户处理（扫码、重新授权、绑定）。
+    - 6：把预览原样给用户看，等用户明确同意后，再带上确认码重新运行；不能替用户确认。
+    - 7：稍后再试。
+    - 5：看 `retryable` 决定是否重试。
+7. **凭据**：二维码和 token 只从 stdin 传入，不放在命令行里，也不在回复里复述。二维码几分钟就过期，要用的时候再向用户要。
+8. **常见问题怎么查**：
+    - 「某首歌打得怎么样」→ `song <标题>`
+    - 「该推哪首」→ 先 `charts --sort gain --limit 10`，再对候选曲用 `chart --with stages`
+    - 「熊極还差什么」→ `charts --plate 熊極 --missing`
+    - 「最近进步了什么」→ `history --since 7d`
+    - 「万花筒现在什么情况」→ `kaleidxscope`
+9. **术语表**：把玩家的说法对应到输出字段，比如鸟和鸟加（SSS、SSS+）、紫谱和白谱（MASTER、Re:MASTER）、理论值（101%）、底分（B50 里最低的 rating）、拟合定数、牌子（極、将、神、舞舞）等。
+
+指南里的示例命令会在端到端测试中实际执行，文档一旦和行为对不上，测试就会失败。
+
+### 6.2 测试
+
+**抽 core 阶段（P0）**
+
+- 先补现状测试，再搬代码。曲目页的筛选、排序、分组和统计，B50 的各种模式，项目位置，吃分表，这些逻辑现在都写在页面里。搬进 `core/query` 之前，先用固定数据把网页端当前的输出存成快照。搬完后网页端和 CLI 调用同一批函数，这些快照就保证了两边结果一致。
+- 现有的 `test:*` 测试跟着模块一起搬，命令名保持不变。
+- 每一步都要通过 `pnpm check`、`pnpm lint`、`pnpm build` 和全部 `test:*`，并按 AGENTS.md 的要求手动检查受影响的页面：曲目页、B50、谱面弹窗、收藏品页。
+
+**固定数据**
+
+- 一份裁剪过的 SaltMeta，覆盖这些情况：同时有 SD 和 DX 的歌、宴谱、重名（两首「Link」，以及 TRUST 和 Trust）、上游重复收录的两首宴谱、标题是数字的歌，以及一组版本牌子会用到的歌。
+- 落雪收藏品数据、网页端的 v1 备份，以及各数据源接口的返回样例。所有样例都脱敏，不含真实 token。
+
+**CLI 测试**（放在 `cli/tests/`，用 Vitest）
+
+| 测什么            | 要点                                                                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 参数解析和注册表  | 每个命令都有 schema；遇到未知参数返回 `USAGE`                                                                                                 |
+| 引用解析          | id、谱面 key、标题、别名、各种歧义、数字标题、难度的各种写法                                                                                  |
+| 外层结构和退出码  | 代表性命令的输出存成 JSON 快照                                                                                                                |
+| 存储              | 能从空库或任一旧版本迁移；一个进程写入时，其他进程仍能读；`sql` 无法写入，也读不到基础表；凭据文件权限是 0600；任何输出和日志里都扫不到 token |
+| 备份往返          | 网页端备份导入后再导出，网页端能原样导回（落雪 token 除外；两边都加 `--keep-lxns` 时也一致）                                                  |
+| 同步（模拟 HTTP） | 四种数据源、全量和快速更新、补全、上传成功和失败、`invalid_grant`、两个进程同时刷新落雪 token、同步撞锁                                       |
+| 确认              | 需要确认的命令不带确认码或确认码不对时返回 6；数据变化后确认码失效；预览不读 stdin（`user bind ingame --qr -` 除外）                          |
+| 离线              | 有缓存时 `--offline` 能正常用；没缓存时返回 `OFFLINE_NO_CACHE`                                                                                |
+
+**端到端测试**：用打包好的 `cli/dist/saltnet.mjs` 和一个临时的 `SALTNET_HOME`，灌入固定数据，在不联网的情况下把指南里的示例全部跑一遍。这项测试放进 CI。
+
+**真实服务**只手动测，不进 CI：落雪两步绑定（同时验证 5.2 里那个待测问题）、舞萌的全量和快速更新、上传到水鱼和落雪。
+
+### 6.3 分期
+
+每一期做完都能单独使用。涉及凭据和账号的功能放在后面做。
+
+| 阶段              | 内容                                                                                                                                                                                                                                           | 完成标准                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| P0 抽 core        | 把纯逻辑搬进 `shared/core/`；拆开混合模块（曲库缓存、收藏品、更新 worker、项目位置）；把页面里的查询逻辑搬进 `core/query`                                                                                                                      | 网页端行为不变，各项检查全部通过，AGENTS.md 的模块索引已更新             |
+| P1 骨架和曲库     | `cli/` 包、打包、全局链接、命令注册表、输出约定、SQLite 和迁移、元数据刷新。命令：`search`、`song`、`chart`、`charts`（不含成绩）、`course`、`kaleidxscope`、`collection`（不含进度）、`refresh`、`status`、`config`、`schema`、`guide`、`sql` | 首次刷新之后，即使离线也能回答曲库方面的问题                             |
+| P2 本地成绩       | `import`/`export`、用户管理、确认码、各命令加上成绩、`b50`（不出图）、`rating`、`history`、`calc`、按成绩筛选、按涨分排序和统计、收藏品进度、`fav`                                                                                             | 导入网页端备份后，B50、rating 和牌子进度都和网页端一致                   |
+| P3 同步和绑定     | `sync`（四种数据源、上传、`--all`、`--dry-run`）、`user bind`/`unbind`、落雪刷新加锁、身份变化的确认                                                                                                                                           | 不打开网页端，也能完成「绑定 → 同步 → 查询」；落雪二次授权的问题有了结论 |
+| P4 账号操作和收尾 | `ingame` 的三个命令、`b50 --image`、完善 skill                                                                                                                                                                                                 | 网页端能做的事 CLI 都能做（nearcade 除外）                               |
+
+- P0 可以拆开做：每期开工前，先把这一期要用的模块抽出来，不必一次搬完。每个模块组单独提一个 PR。
+- 每一期都要同时更新 AGENTS.md，写入新的包、命令和测试。
+- 实现计划按阶段分别写，P0 的重构单独一份。
+
+## 不在这次范围内
+
+- nearcade、MCP（命令注册表已经有了，以后加 MCP 不难）、交互式界面
+- 自动同步成绩：成绩只手动同步
+- 网页端的显示设置
+- 国服以外的区服
+- 发布到 npm，以后再说
+
+## 待确认
+
+1. 落雪：用同一个 client 再授权一次，网页端那份授权会不会失效？这决定 CLI 要不要单独申请 client id。
+2. 落雪：refresh token 轮换后，30 天有效期会不会重新计算？这决定 `LXNS_EXPIRING` 该怎么提示。
+3. SaltNet 后端会不会校验 Origin 或 UA？CLI 的请求会带上 `saltnet-cli/<版本>` 作为 UA。
+4. SaltMeta 上游那两首重复收录的宴谱，要不要顺手修掉？
+5. 带二维码同步时，如果二维码属于另一个舞萌账号，网页端会直接改写游戏 id，新账号的成绩会接在原来的历史后面。CLI 把这件事做成了设置项 `sync.qrOtherAccount`（见 5.1）：默认 `rewrite` 和网页端一致，另给一条 `GAME_ACCOUNT_CHANGED` 警告；设成 `error` 就报错，提示改用 `user bind`（会触发身份变化的确认）。默认值要不要改成 `error`？
+
+## 附录：数据观察
+
+基于 2026 年 11 月的 SaltMeta 快照：
+
+- 国服同时有 SD 和 DX 谱的歌：61 首。国服 15 级的 Re:MASTER：3 张（4.3 的例子）。
+- 重名：两首「Link」（131 和 383，都是 SD，别名里都有 link 和 cof）；「TRUST」（695，SD）和「Trust」（SaltMeta 1726，DX，曲目 id 11726）。
+- 纯数字标题：「39」（SaltMeta 146，SD 和 DX 都有）。
+- 上游重复收录的宴谱：100851 和 100998，见 3.1。
