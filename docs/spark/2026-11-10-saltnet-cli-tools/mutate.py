@@ -36,6 +36,20 @@ def main():
     tests = sys.argv[2:]
     survived = []
     before = {m["file"]: digest(ROOT + "/" + m["file"]) for m in mutations}
+    # A misspelled test path or a runner that cannot start fails every run; without this check each
+    # of those failures would count as a killed mutation.
+    base = subprocess.run(
+        ["pnpm", "exec", "vitest", "run"] + tests,
+        cwd=ROOT + "/cli",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    )
+    if base.returncode != 0:
+        print("BASE FAILED: the unchanged tests do not pass, so no mutation can be judged")
+        print(base.stdout[-3000:])
+        return 2
+    print("base passed")
     for mutation in mutations:
         path = ROOT + "/" + mutation["file"]
         original = read(path)

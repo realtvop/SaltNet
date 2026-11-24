@@ -17,7 +17,7 @@ _not_env() { grep -zvE '(^|/)\.env(\..*)?$'; }
 # Turns the files in $1 into a git repository of its own (no remote) with one commit `base`, also
 # tagged `base`, and links node_modules in from the real checkout so tsc and vitest can run.
 _snapshot_init() {
-    local dest=$1 dir
+    local dest=$1
     (
         cd "$dest" || exit 2
         git init -q
@@ -26,8 +26,17 @@ _snapshot_init() {
         git -c user.name=snapshot -c user.email=snapshot@example.invalid commit -q -m base
         git tag base
     ) || return 2
+    _link_node_modules "$dest"
+}
+
+# Links node_modules in from the real checkout for each package directory that exists in $1 and has
+# no link yet. A review overlay can add a package (cli/) after the base commit, so it runs again then.
+_link_node_modules() {
+    local dest=$1 dir
     for dir in . cli render-service; do
-        if [ -d "$REPO/$dir/node_modules" ]; then ln -s "$REPO/$dir/node_modules" "$dest/$dir/node_modules"; fi
+        if [ -d "$REPO/$dir/node_modules" ] && [ -d "$dest/$dir" ] && [ ! -e "$dest/$dir/node_modules" ]; then
+            ln -s "$REPO/$dir/node_modules" "$dest/$dir/node_modules" || return 2
+        fi
     done
     return 0
 }
@@ -74,8 +83,8 @@ snapshot_candidate() {   # $1 = destination, wiped first
         git diff "$from" --no-renames --name-only -z --diff-filter=D | while IFS= read -r -d '' f; do
             rm -f "$dest/$f"
         done
-    )
-    return 0
+    ) || return 2
+    _link_node_modules "$dest"
 }
 
 # What a tool changed in its snapshot: files.txt (`git status --short`) and patch.diff (binary-safe
