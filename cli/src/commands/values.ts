@@ -4,8 +4,10 @@
  */
 import type { ErrorCandidate } from "../errors";
 import type { EnumValue, ListItemSpec, OptionEntry, RangeItemKind, RangeValue } from "./registry";
+import { toHalfWidth } from "@core/util/toHalfWidth";
 import { closestMatches } from "../util/closest";
 import { echo } from "../util/echo";
+import { foldName } from "../util/fold";
 import { enumMember } from "./registry";
 
 /** A value that does not fit its option. The message never contains a credential. */
@@ -33,10 +35,10 @@ function spellings(values: readonly EnumValue[]): { canonical: string; spelling:
     });
 }
 
-/** The canonical value an enum member is written as, ignoring case, or undefined. */
+/** The canonical value an enum member is written as, ignoring case and width, or undefined. */
 export function matchEnum(values: readonly EnumValue[], raw: string): string | undefined {
-    const wanted = raw.trim().toLowerCase();
-    return spellings(values).find(entry => entry.spelling.toLowerCase() === wanted)?.canonical;
+    const wanted = foldName(raw.trim());
+    return spellings(values).find(entry => foldName(entry.spelling) === wanted)?.canonical;
 }
 
 export function enumCanonicalValues(values: readonly EnumValue[]): string[] {
@@ -121,9 +123,10 @@ function convertRangeEnd(flag: string, kind: RangeItemKind, text: string): strin
 }
 
 function convertRange(flag: string, kind: RangeItemKind, raw: string): RangeValue<string | number> {
-    const split = raw.indexOf("..");
-    const left = (split < 0 ? raw : raw.slice(0, split)).trim();
-    const right = (split < 0 ? raw : raw.slice(split + 2)).trim();
+    const text = kind === "string" ? toHalfWidth(raw) : raw;
+    const split = text.indexOf("..");
+    const left = (split < 0 ? text : text.slice(0, split)).trim();
+    const right = (split < 0 ? text : text.slice(split + 2)).trim();
     if (left === "" && right === "") {
         throw new ValueError(`选项 --${flag} 的区间至少要写一端，例如 13..14、14.. 或 ..12`);
     }

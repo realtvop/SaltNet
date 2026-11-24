@@ -1,8 +1,11 @@
 import type { FetchResponse } from "@core/http";
 import type { CommandContext } from "../commands/registry";
+import type { TimeoutConfigKey } from "../runtime/http";
 import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { normalizeQrCodeFromInput } from "@core/sync/qrCode";
 import { CliError, usageError } from "../errors";
+import { raiseTimeoutCommand } from "../runtime/http";
+import { joinCommandLine } from "../util/shell";
 
 type QrEndpoint =
     | SaltAPIEndpoints.GetQRInfo
@@ -19,6 +22,26 @@ function invalidQr(): CliError {
     return new CliError("QR_INVALID", "二维码无效或已过期");
 }
 
+export function requireGameBackend({ values: { api } }: CommandContext["config"]): void {
+    if (api.url || api.fallbackUrl) return;
+    throw usageError("尚未配置舞萌服务地址，请设置 api.url", {
+        fix: joinCommandLine(["saltnet", "config", "set", "api.url", "<地址>"]),
+    });
+}
+
+/**
+ * The command that raises the setting a game request waited on, when it ran out of time. The HTTP
+ * layer gives only a timeout a fix, so a `NETWORK` error with one is a timeout.
+ */
+export function gameTimeoutFix(
+    error: CliError,
+    key: TimeoutConfigKey,
+    timeoutMs: number
+): string | undefined {
+    if (error.code !== "NETWORK" || !error.fix) return undefined;
+    return raiseTimeoutCommand(key, timeoutMs);
+}
+
 /**
  * Core's SaltNet client tries the fallback after a primary failure. A QR request must only
  * be sent once, and neither a server error nor a transport error may echo the request body.
@@ -31,11 +54,9 @@ export async function postQrGameApi(
     const { api, network } = ctx.config.values;
     const base = api.url || api.fallbackUrl;
     const update = endpoint === SaltAPIEndpoints.UpdateUser;
-    const fetch = ctx.http({
-        retry: false,
-        timeoutMs: update ? network.updateTimeoutMs : network.timeoutMs,
-        timeoutKey: update ? "network.updateTimeoutMs" : "network.timeoutMs",
-    });
+    const timeoutKey = update ? "network.updateTimeoutMs" : "network.timeoutMs";
+    const timeoutMs = update ? network.updateTimeoutMs : network.timeoutMs;
+    const fetch = ctx.http({ retry: false, timeoutMs, timeoutKey });
     let response: FetchResponse;
     let data: unknown;
     try {
@@ -53,7 +74,7 @@ export async function postQrGameApi(
     } catch (error) {
         if (error instanceof CliError && error.code === "NETWORK") {
             throw new CliError("NETWORK", "连接舞萌服务失败或读取响应超时", {
-                fix: error.fix,
+                fix: gameTimeoutFix(error, timeoutKey, timeoutMs),
                 retryable: false,
             });
         }
@@ -88,6 +109,7 @@ export async function postQrGameApi(
 }
 
 export async function readVerifiedQr(ctx: CommandContext): Promise<VerifiedQr> {
+    requireGameBackend(ctx.config);
     const input = await ctx.io.readStdin();
     const code = normalizeQrCodeFromInput(input);
     if (code?.length !== 64) throw invalidQr();

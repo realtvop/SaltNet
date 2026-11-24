@@ -1,11 +1,27 @@
 import type { ParseOutcome } from "../../src/commands/parse";
 import { describe, expect, it } from "vitest";
+import { createRegistry } from "../../src/commands";
 import { parseArgv } from "../../src/commands/parse";
 import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { failureEnvelope } from "../../src/output/envelope";
 import { createTestRegistry } from "./fixtures";
 
 const registry = createTestRegistry();
+
+it("explains the equals form for a dash-prefixed option value", () => {
+    const real = createRegistry();
+    const rejected = parseArgv(real, ["user", "add", "--remark", "-dash value"]);
+    expect(rejected.kind).toBe("error");
+    if (rejected.kind !== "error") throw new Error("expected a parse error");
+    expect(rejected.error.code).toBe("USAGE");
+    expect(rejected.error.message).toContain("--remark=<值>");
+    expect(rejected.error.message).not.toContain("-dash value");
+
+    const accepted = parseArgv(real, ["user", "add", "--remark=-dash value"]);
+    expect(accepted.kind).toBe("run");
+    if (accepted.kind !== "run") throw new Error("expected parsed arguments");
+    expect(accepted.args.options.remark).toBe("-dash value");
+});
 
 function parse(...argv: string[]): ParseOutcome {
     return parseArgv(registry, argv);
@@ -249,12 +265,17 @@ describe("option syntax", () => {
 
     it("rejects a flag with nothing after it", () => {
         expect(rejected("demo", "x", "--limit").message).toBe("选项 --limit 缺少值");
-        expect(rejected("demo", "x", "--name", "--asc").message).toBe("选项 --name 缺少值");
-        expect(rejected("demo", "x", "--name", "-x").message).toBe("选项 --name 缺少值");
+        for (const next of ["--asc", "-x"]) {
+            expect(rejected("demo", "x", "--name", next).message).toBe(
+                "选项 --name 缺少值；以 - 开头的值请写成 --name=<值>"
+            );
+        }
     });
 
     it("does not take a flag's value for the next option or for the terminator", () => {
-        expect(rejected("demo", "x", "--name", "--").message).toBe("选项 --name 缺少值");
+        expect(rejected("demo", "x", "--name", "--").message).toBe(
+            "选项 --name 缺少值；以 - 开头的值请写成 --name=<值>"
+        );
     });
 
     it("accepts a value that begins with a dash after =", () => {

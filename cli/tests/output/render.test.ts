@@ -3,16 +3,29 @@ import { describe, expect, it } from "vitest";
 import { CliError } from "../../src/errors";
 import { serializeEnvelope, successEnvelope } from "../../src/output/envelope";
 import { renderSuccess } from "../../src/output/render";
+import { anyOf, int, list, nullable, object, str } from "../../src/output/schema";
 
 const items = [
     { chartKey: "834-4", title: "PANDORA PARADOXXX", score: { rank: "SSS", rating: 324 } },
     { chartKey: "131-3", title: "Link", score: null },
 ];
 
+const rowSchema = object({
+    chartKey: str("谱面 key"),
+    title: str("标题"),
+    score: nullable(object({ rank: str("评级"), rating: int("分数") })),
+});
+const dataSchema = anyOf(
+    "列表或分组",
+    object({ items: list(rowSchema, "谱面") }),
+    object({ groups: list(object({ items: list(rowSchema, "谱面") }), "分组") })
+);
+
 function input(rest: Partial<RenderInput> & Pick<RenderInput, "result">): RenderInput {
     return {
         command: "charts",
         output: "list",
+        dataSchema,
         format: "json",
         pretty: false,
         ...rest,
@@ -57,7 +70,7 @@ describe("json", () => {
         });
     });
 
-    it("applies --fields to every group and checks the names against all of them", () => {
+    it("applies --fields to every group", () => {
         const groups = [
             { key: "15", count: 1, items: [items[0]] },
             { key: "13", count: 1, items: [items[1]] },
@@ -73,7 +86,7 @@ describe("json", () => {
             },
             { key: "13", count: 1, items: [{ title: "Link", score: { rank: null } }] },
         ]);
-        // `rating` exists in the first group only; it is still a valid name.
+        // `rating` is absent from the second group but declared in the row schema.
         expect(() =>
             renderSuccess(input({ result: { data: { groups } }, fields: ["score.rating"] }))
         ).not.toThrow();
@@ -178,6 +191,19 @@ describe("tsv", () => {
             input({ format: "tsv", result: { data: { items } }, fields: ["title", "score.rank"] })
         );
         expect(rendered.stdout).toBe("title\tscore.rank\nPANDORA PARADOXXX\tSSS\nLink\t\n");
+    });
+
+    it("prints columns in exact requested order of --fields in tsv", () => {
+        const rendered = renderSuccess(
+            input({
+                format: "tsv",
+                result: { data: { items } },
+                fields: ["score.rank", "title", "score.rating"],
+            })
+        );
+        expect(rendered.stdout).toBe(
+            "score.rank\ttitle\tscore.rating\nSSS\tPANDORA PARADOXXX\t324\n\tLink\t\n"
+        );
     });
 
     it("keeps the header for the fields that were asked for when nothing matched", () => {

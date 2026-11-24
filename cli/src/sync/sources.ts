@@ -30,7 +30,6 @@ import {
     userRefWord,
 } from "../util/printedCommand";
 import { joinCommandLine } from "../util/shell";
-import { LXNS_ACCESS_MARGIN_MS } from "./lxnsToken";
 
 export function usesGame(user: UserListRow, source: CliSyncSource = "auto"): boolean {
     return source === "ingame" || (source === "auto" && user.inGameEnabled);
@@ -65,7 +64,11 @@ export function syncUploadTargets(
     return targets;
 }
 
-export function assertGameId(user: User, target: UserTarget): void {
+export function assertGameId(
+    user: User,
+    target: UserTarget,
+    { upload, dryRun, offline }: { upload: boolean; dryRun?: boolean; offline?: boolean }
+): void {
     if (!user.inGame.id) {
         throw new CliError("QR_REQUIRED", "首次舞萌同步需要二维码", {
             fix: joinCommandLine([
@@ -76,27 +79,11 @@ export function assertGameId(user: User, target: UserTarget): void {
                 "ingame",
                 "--qr",
                 "-",
+                ...(upload ? [] : ["--no-upload"]),
+                ...(dryRun ? ["--dry-run"] : []),
+                ...(offline ? ["--offline"] : []),
             ]),
         });
-    }
-}
-
-/** The deterministic part of lxnsAccessToken, before it makes a refresh request. */
-export function assertLxnsRefreshAvailable(user: User, target: UserTarget, now: number): void {
-    const auth = user.lxns?.auth;
-    if (!auth) return;
-    const accessValid =
-        typeof auth.expiresAt === "number" &&
-        Number.isFinite(auth.expiresAt) &&
-        auth.expiresAt - now > LXNS_ACCESS_MARGIN_MS &&
-        typeof auth.accessToken === "string" &&
-        auth.accessToken.length > 0;
-    if (!accessValid && !(typeof auth.refreshToken === "string" && auth.refreshToken.length > 0)) {
-        throw new CliError(
-            "LXNS_REAUTH_REQUIRED",
-            `用户 ${getUserDisplayName(user)} 的落雪授权缺少刷新令牌，需要重新授权`,
-            { fix: userBindCommand(userRefWord(target), "lxns") }
-        );
     }
 }
 
@@ -136,10 +123,16 @@ export function buildUserForCore(storedUser: User, paths: Pick<RuntimePaths, "cr
  */
 export function getOtherBoundSources(
     userForCore: User,
-    excludeSource: ResolvedSyncSource | null
+    excludeSource: ResolvedSyncSource | null,
+    gameBackendConfigured: boolean
 ): ResolvedSyncSource[] {
     const others: ResolvedSyncSource[] = [];
-    if (userForCore.inGame.enabled && userForCore.inGame.id && excludeSource !== "ingame") {
+    if (
+        gameBackendConfigured &&
+        userForCore.inGame.enabled &&
+        userForCore.inGame.id &&
+        excludeSource !== "ingame"
+    ) {
         others.push("ingame");
     }
     if (userForCore.lxns?.auth && excludeSource !== "lxns") {
@@ -154,21 +147,26 @@ export function getOtherBoundSources(
     return others;
 }
 
-export function formatOtherSourcesFix(
+export function otherSourcesMessage(
+    message: string,
+    sources: readonly ResolvedSyncSource[]
+): string {
+    return sources.length ? `${message}。也可尝试已绑定来源 ${sources.join("、")}` : message;
+}
+
+export function otherSourceFix(
     user: UserTarget,
-    otherSources: readonly ResolvedSyncSource[],
-    existingFix?: string
-): string | undefined {
-    if (otherSources.length === 0) return existingFix;
-    const commands = otherSources
-        .map(source =>
-            joinCommandLine(["saltnet", "sync", ...userOptionWords(user), "--source", source])
-        )
-        .join(" 或 ");
-    if (existingFix) {
-        return `${existingFix}；或尝试其他已绑定来源：${commands}`;
-    }
-    return `尝试其他已绑定来源：${commands}`;
+    source: ResolvedSyncSource,
+    upload: boolean
+): string {
+    return joinCommandLine([
+        "saltnet",
+        "sync",
+        ...userOptionWords(user),
+        "--source",
+        source,
+        ...(upload ? [] : ["--no-upload"]),
+    ]);
 }
 
 export function resolveSyncSource(
@@ -197,14 +195,11 @@ export function resolveSyncSource(
         if (picked === "divingFishName") {
             return "df-name";
         }
-        throw new CliError("NOT_BOUND", `用户 ${displayName} 尚未绑定任何数据源`, {
-            fix: `绑定一个数据来源：${[
-                userBindCommand(userRef, "ingame", [], ["--qr", "-"]),
-                userBindCommand(userRef, "lxns"),
-                userBindCommand(userRef, "df-token", ["-"]),
-                dfNameBindCommand(userRef),
-            ].join(" 或 ")}`,
-        });
+        throw new CliError(
+            "NOT_BOUND",
+            `用户 ${displayName} 尚未绑定任何数据源，可绑定舞萌、落雪或水鱼`,
+            { fix: userBindCommand(userRef, "ingame", [], ["--qr", "-"]) }
+        );
     }
 
     if (requestedSource === "lxns") {

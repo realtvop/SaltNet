@@ -64,7 +64,8 @@ export const ingameCheckLogin = defineCommand(
     {
         name: "ingame check-login",
         summary: "查询指定用户的舞萌账号登录状态",
-        description: "用属于已绑定舞萌账号的二维码查询当前登录状态。此操作需要联网，不会登录账号。",
+        description:
+            "配置舞萌服务地址后，用属于已绑定舞萌账号的二维码查询当前登录状态。此操作需要联网，不会登录账号。",
         category: "account",
         effect: "none",
         output: "object",
@@ -85,6 +86,7 @@ export const ingameCheckLogin = defineCommand(
             "AMBIGUOUS_REF",
             "NOT_BOUND",
             "QR_INVALID",
+            "USAGE",
             "NETWORK",
             "UPSTREAM_ERROR",
             "DB_LOCKED",
@@ -127,7 +129,7 @@ export const ingameCheckLogin = defineCommand(
             }
             if (error.code !== "NETWORK" || !error.fix) throw error;
 
-            throw new CliError(error.code, `${error.message}。${error.fix}`, {
+            throw new CliError(error.code, `${error.message}；网络较慢时可以先运行 ${error.fix}`, {
                 retryable: error.retryable,
                 fix: joinCommandLine([
                     "saltnet",
@@ -168,7 +170,7 @@ export const ingameBackup = defineCommand(
         name: "ingame backup",
         summary: "导出当前用户的游戏格式备份文件",
         description:
-            "将指定用户的成绩、收藏品和角色数据导出为与游戏格式兼容的 JSON 备份。该文件不含凭据，以 0600 权限写入。缺少角色数据时文件仍会导出，并产生 PARTIAL_BACKUP 警告。",
+            "将指定用户的成绩、收藏品和角色数据导出为与游戏格式兼容的 JSON 备份。用户需要绑定舞萌游戏 ID。该文件不含凭据，以 0600 权限写入。缺少角色数据时文件仍会导出，并产生 PARTIAL_BACKUP 警告。",
         category: "account",
         effect: "local",
         output: "object",
@@ -252,7 +254,16 @@ export const ingameBackup = defineCommand(
             retryCommand
         );
 
-        const backup = buildGameBackup(user);
+        const userForBackup = {
+            ...user,
+            data: {
+                ...user.data,
+                items: Array.isArray(user.data.items)
+                    ? user.data.items.map(slot => (Array.isArray(slot) ? slot : []))
+                    : user.data.items,
+            },
+        };
+        const backup = buildGameBackup(userForBackup);
         const content = JSON.stringify(backup, null, 2);
         writeOutputFile(output, content, "ingame backup");
         const byteSize = Buffer.byteLength(content);

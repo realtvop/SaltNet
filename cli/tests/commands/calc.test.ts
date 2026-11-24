@@ -46,6 +46,18 @@ describe("calc command", () => {
         expect(res1004.json.data.achievements).toBe(100.4999);
         expect(res1004.json.data.rating).toBe(290);
         expect(res1004.json.data.rank).toBe("SSS");
+
+        // Achievements rounding: 100.49999 rounds to 100.5 (SSS+, rating 315 on constant 14)
+        const resRoundUp = await commandIn(home, "calc", ["14", "--achievements", "100.49999"]);
+        expect(resRoundUp.code).toBe(0);
+        expect(resRoundUp.json.data.achievements).toBe(100.5);
+        expect(resRoundUp.json.data.rating).toBe(315);
+        expect(resRoundUp.json.data.rank).toBe("SSS+");
+
+        // 100.49994 rounds to 100.4999
+        const resRoundDown = await commandIn(home, "calc", ["14", "--achievements", "100.49994"]);
+        expect(resRoundDown.code).toBe(0);
+        expect(resRoundDown.json.data.achievements).toBe(100.4999);
     });
 
     it("calculates reachable and unreachable --rating with a constant", async () => {

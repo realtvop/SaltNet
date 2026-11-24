@@ -59,9 +59,8 @@ describe("readCredentials", () => {
             expect(caught?.code).toBe("INTERNAL");
             expect(caught?.message).toContain(paths.credentials);
             expect(caught?.message).not.toContain(content);
-            expect(caught?.fix).toBe(
-                `检查 ${paths.credentials}；修不好时可以把它移走，再重新绑定水鱼和落雪`
-            );
+            expect(caught?.fix).toBeUndefined();
+            expect(caught?.message).toContain("修不好时可以把它移走，再重新绑定水鱼和落雪");
             expect(readFileSync(paths.credentials, "utf8")).toBe(content);
         }
     );
@@ -83,9 +82,8 @@ describe("readCredentials", () => {
         expect(caught).toBeInstanceOf(CliError);
         expect(caught?.code).toBe("INTERNAL");
         expect(caught?.message).not.toContain("fake-token-as-string");
-        expect(caught?.fix).toBe(
-            `检查 ${paths.credentials}；修不好时可以把它移走，再重新绑定水鱼和落雪`
-        );
+        expect(caught?.fix).toBeUndefined();
+        expect(caught?.message).toContain("修不好时可以把它移走，再重新绑定水鱼和落雪");
         expect(readFileSync(paths.credentials, "utf8")).toBe(content);
     });
 
@@ -115,9 +113,8 @@ describe("readCredentials", () => {
         expect(caught?.code).toBe("INTERNAL");
         expect(caught?.message).toContain(paths.credentials);
         expect(caught?.message).not.toContain(content);
-        expect(caught?.fix).toBe(
-            `检查 ${paths.credentials}；修不好时可以把它移走，再重新绑定水鱼和落雪`
-        );
+        expect(caught?.fix).toBeUndefined();
+        expect(caught?.message).toContain("修不好时可以把它移走，再重新绑定水鱼和落雪");
         expect(readFileSync(paths.credentials, "utf8")).toBe(content);
     });
 

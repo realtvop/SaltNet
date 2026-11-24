@@ -70,16 +70,26 @@ export const SCORE_CONDITIONS = [
         .map(value => value.toLowerCase()),
 ] as const;
 
-/** One `--achieved` or `--missing` threshold, in the game's spelling. */
+/** One `--achieved` or `--missing` threshold, in the game's spelling or internal enum spelling. */
 export function parseScoreCondition(text: string): ScoreCondition {
     const folded = text.trim().toLowerCase();
     if (folded === "clear") return { kind: "clear" };
 
-    const rank = RANKS.find(value => rankLabel(value).toLowerCase() === folded);
+    const rank = RANKS.find(
+        value => value.toLowerCase() === folded || rankLabel(value).toLowerCase() === folded
+    );
     if (rank !== undefined) return { kind: "rank", value: rank };
-    const combo = COMBOS.find(value => comboLabel(value)?.toLowerCase() === folded);
+    const combo = COMBOS.find(
+        value =>
+            value !== ComboStatus.None &&
+            (value.toLowerCase() === folded || comboLabel(value)?.toLowerCase() === folded)
+    );
     if (combo !== undefined) return { kind: "combo", value: combo };
-    const sync = SYNCS.find(value => syncLabel(value)?.toLowerCase() === folded);
+    const sync = SYNCS.find(
+        value =>
+            value !== SyncStatus.None &&
+            (value.toLowerCase() === folded || syncLabel(value)?.toLowerCase() === folded)
+    );
     if (sync !== undefined) return { kind: "sync", value: sync };
 
     throw usageError(`成绩条件「${text}」无效；可用：${SCORE_CONDITIONS.join("、")}`);
@@ -123,7 +133,9 @@ export function scoreReachesCondition(
 /** Parses a target rank (any case) or numeric achievement rate (0 to 101) into an achievement rate number. */
 export function parseTargetRate(text: string): number {
     const folded = text.trim().toLowerCase();
-    const rank = RANKS.find(value => rankLabel(value).toLowerCase() === folded);
+    const rank = RANKS.find(
+        value => value.toLowerCase() === folded || rankLabel(value).toLowerCase() === folded
+    );
     if (rank !== undefined) {
         if (rank === RankRate.d) return 0;
         const found = ACHIEVEMENT_RATE_THRESHOLDS.find(t => t.rank === rank);

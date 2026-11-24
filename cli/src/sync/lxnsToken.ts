@@ -10,6 +10,7 @@
 import type { LXNSAuth } from "@core/integrations/lxns/type";
 import type { User } from "@core/user/type";
 import type { CommandContext } from "../commands/registry";
+import type { ErrorCode } from "../errors";
 import type { RuntimePaths } from "../runtime/paths";
 import type { Store } from "../store/store";
 import type { SyncLockHandle } from "./lock";
@@ -80,11 +81,84 @@ function hasAccountClaim(accessToken: string, expectedAccountId: number): boolea
     }
 }
 
+function reauthError(user: User, userRef: string, reason: string): CliError {
+    return new CliError(
+        "LXNS_REAUTH_REQUIRED",
+        `用户 ${getUserDisplayName(user)} 的落雪授权${reason}，需要重新授权`,
+        { fix: userBindCommand(userRef, "lxns") }
+    );
+}
+
+/** Decide whether we can use the authorization or need to refresh it, without any I/O. */
+export function checkLxnsAccess(
+    user: User,
+    auth: LXNSAuth,
+    userRef: string,
+    now: number
+): "usable" | "refresh" | { error: CliError; discard: boolean } {
+    const accountId = lxnsAccountIdOf(user);
+    const invalidAccount = () => ({
+        error: reauthError(user, userRef, "的账号无法验证"),
+        discard: true,
+    });
+    if (typeof accountId !== "number" || !Number.isSafeInteger(accountId) || accountId <= 0) {
+        return invalidAccount();
+    }
+    if (
+        Number.isFinite(auth.expiresAt) &&
+        (auth.expiresAt ?? 0) - now > LXNS_ACCESS_MARGIN_MS &&
+        typeof auth.accessToken === "string" &&
+        auth.accessToken.length > 0
+    ) {
+        return hasAccountClaim(auth.accessToken, accountId) ? "usable" : invalidAccount();
+    }
+    return typeof auth.refreshToken === "string" && auth.refreshToken.length > 0
+        ? "refresh"
+        : { error: reauthError(user, userRef, "缺少刷新令牌"), discard: false };
+}
+
+/** A credential-free diagnostic for a refresh we cannot send again. */
+export class LxnsRefreshSkippedError extends CliError {
+    constructor(code: ErrorCode, fix?: string) {
+        super(code, "本次同步已尝试刷新该落雪授权，无法再次刷新", { fix });
+    }
+}
+
+export function createLxnsAccess(
+    ctx: Parameters<typeof lxnsAccessToken>[0],
+    store: Store,
+    handle: SyncLockHandle,
+    user: User,
+    attempted: Set<string>
+): () => Promise<LXNSAuth> {
+    // A failed request may already have consumed the token, so the upload must skip refresh.
+    let failure: LxnsRefreshSkippedError | undefined;
+    return async () => {
+        if (failure) throw failure;
+        const before = attempted.size;
+        try {
+            return await lxnsAccessToken(ctx, store, handle, user, attempted);
+        } catch (error) {
+            if (attempted.size > before) {
+                const code = error instanceof CliError ? error.code : "UPSTREAM_ERROR";
+                failure = new LxnsRefreshSkippedError(
+                    code,
+                    error instanceof CliError && code === "LXNS_REAUTH_REQUIRED"
+                        ? error.fix
+                        : undefined
+                );
+            }
+            throw error;
+        }
+    };
+}
+
 export async function lxnsAccessToken(
     ctx: Pick<CommandContext, "paths" | "config" | "http" | "log" | "io">,
     store: Store,
     handle: SyncLockHandle,
-    user: User
+    user: User,
+    attempted = new Set<string>()
 ): Promise<LXNSAuth> {
     // 1. handle.user.uid must be user.uid (otherwise INTERNAL).
     const uid = user.uid;
@@ -116,43 +190,24 @@ export async function lxnsAccessToken(
     const clock = () => ctx.io.now().getTime();
     const requireReauthorization = async (auth: LXNSAuth, reason: string): Promise<never> => {
         await removeUserLxnsAuth(ctx.paths, store, uid, expectedAccountId, auth, clock);
-        throw new CliError(
-            "LXNS_REAUTH_REQUIRED",
-            `用户 ${getUserDisplayName(user)} 的落雪授权${reason}，需要重新授权`,
-            { fix: userBindCommand(userRef, "lxns") }
-        );
+        throw reauthError(user, userRef, reason);
     };
-    if (
-        typeof expectedAccountId !== "number" ||
-        !Number.isSafeInteger(expectedAccountId) ||
-        expectedAccountId <= 0
-    ) {
-        return requireReauthorization(initialAuth, "的账号无法验证");
-    }
 
     while (true) {
-        // 4. expiresAt a finite number more than LXNS_ACCESS_MARGIN_MS after now() and an access token present.
-        const nowMs = clock();
-        if (
-            typeof currentAuth.expiresAt === "number" &&
-            Number.isFinite(currentAuth.expiresAt) &&
-            currentAuth.expiresAt - nowMs > LXNS_ACCESS_MARGIN_MS &&
-            typeof currentAuth.accessToken === "string" &&
-            currentAuth.accessToken.length > 0
-        ) {
-            if (hasAccountClaim(currentAuth.accessToken, expectedAccountId)) return currentAuth;
-            return requireReauthorization(currentAuth, "的账号无法验证");
-        }
-
-        // 5. No refresh token: LXNS_REAUTH_REQUIRED.
-        if (typeof currentAuth.refreshToken !== "string" || currentAuth.refreshToken.length === 0) {
-            throw new CliError(
-                "LXNS_REAUTH_REQUIRED",
-                `用户 ${getUserDisplayName(user)} 的落雪授权缺少刷新令牌，需要重新授权`,
-                {
-                    fix: userBindCommand(userRef, "lxns"),
-                }
-            );
+        const access = checkLxnsAccess(user, currentAuth, userRef, clock());
+        if (access === "usable") return currentAuth;
+        if (access !== "refresh") {
+            if (access.discard) {
+                await removeUserLxnsAuth(
+                    ctx.paths,
+                    store,
+                    uid,
+                    expectedAccountId,
+                    currentAuth,
+                    clock
+                );
+            }
+            throw access.error;
         }
 
         // 6. Refresh: assert lock held, deep copy user with stored authorization.
@@ -163,6 +218,9 @@ export async function lxnsAccessToken(
             auth: { ...currentAuth },
         };
 
+        const refreshToken = currentAuth.refreshToken!;
+        if (attempted.has(refreshToken)) throw new LxnsRefreshSkippedError("UPSTREAM_ERROR");
+        attempted.add(refreshToken);
         let newAuth: LXNSAuth;
         try {
             newAuth = await refreshLXNSOAuthToken(userCopy, {

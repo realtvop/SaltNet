@@ -80,6 +80,23 @@ describe("acquireLock", () => {
         expect(acquireLock(second, "sync:1", { ttlMs: 500, now: time.now }).acquired).toBe(true);
     });
 
+    it("cannot renew an expired lease even before another owner takes it", () => {
+        const { first, second } = pair();
+        try {
+            const time = clock(1000);
+            const mine = acquireLock(first, "metadata", { ttlMs: 500, now: time.now });
+            if (!mine.acquired) throw new Error("expected the lock");
+            time.set(1500);
+            expect(mine.lock.renew()).toBe(false);
+            expect(acquireLock(second, "metadata", { ttlMs: 500, now: time.now }).acquired).toBe(
+                true
+            );
+        } finally {
+            first.close();
+            second.close();
+        }
+    });
+
     it("renews for the original time to live when no other is given", () => {
         const { first, second } = pair();
         const time = clock(1000);

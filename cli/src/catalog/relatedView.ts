@@ -10,7 +10,7 @@ import type { Course } from "@core/course";
 import type { KaleidxscopeGate, KaleidxscopeSong } from "@core/kaleidxscope";
 import type { Chart } from "@core/music/type";
 import type { CollectionEntry } from "../refs/collection";
-import type { CollectionRow, RequirementRow } from "./collectionView";
+import type { CollectionRow, CollectionUserContext, RequirementRow } from "./collectionView";
 import type { CourseInfo } from "./courseView";
 import { buildRelatedCollectionsIndex, getRelatedCollections } from "@core/collection/related";
 import { requirementMatchesChart } from "@core/collection/versionPlate";
@@ -77,7 +77,8 @@ export interface RelatedSources {
 
 function relatedCollections(
     charts: readonly Chart[],
-    entries: readonly CollectionEntry[]
+    entries: readonly CollectionEntry[],
+    context?: CollectionUserContext
 ): RelatedCollection[] {
     const index = buildRelatedCollectionsIndex(entries.map(({ collection }) => collection));
 
@@ -108,7 +109,7 @@ function relatedCollections(
             const keys = byRequirement.get(requirement);
             return keys ? [{ ...requirementRow(requirement), charts: keys }] : [];
         });
-        return [{ ...collectionRow(entry), requirements }];
+        return [{ ...collectionRow(entry, context), requirements }];
     });
 }
 
@@ -160,9 +161,13 @@ function relatedGates(charts: readonly Chart[], gates: readonly KaleidxscopeGate
  * chart). Collections come in the order of `collection list`, courses in the order of
  * `course list` and gates in the order of the `kaleidxscope` overview.
  */
-export function relatedTo(charts: readonly Chart[], sources: RelatedSources): Related {
+export function relatedTo(
+    charts: readonly Chart[],
+    sources: RelatedSources,
+    context?: CollectionUserContext
+): Related {
     return {
-        collections: relatedCollections(charts, sources.collections),
+        collections: relatedCollections(charts, sources.collections, context),
         courses: relatedCourses(charts, sources.courses ?? shippedCourses),
         gates: relatedGates(charts, sources.gates ?? kaleidxscopeGates),
     };

@@ -11,17 +11,24 @@ import { userCountsSchema, userRowSchema } from "../catalog/schemas";
 import { CliError, usageError } from "../errors";
 import { anyOf, bool, extend, object, str } from "../output/schema";
 import { resolveUser } from "../refs/user";
-import { pruneCredentials, readCredentials, withCredentialsLock } from "../runtime/credentials";
+import { pruneCredentials, readCredentials } from "../runtime/credentials";
 import { createHttp } from "../runtime/http";
 import { postQrGameApi } from "../sync/ingame";
-import { assertNoSync, withSyncLock } from "../sync/lock";
+import { assertNoSync } from "../sync/lock";
 import {
     confirmIdentityChange,
     rejectUnneededConfirmation,
+    withBindingLocks,
     writeBinding,
 } from "../users/bindIdentity";
-import { completeLxnsBind, confirmLxnsBind, startLxnsBind } from "../users/lxnsBind";
+import {
+    completeLxnsBind,
+    confirmLxnsBind,
+    startLxnsBind,
+    validateLxnsRedirect,
+} from "../users/lxnsBind";
 import { listUsers, readUser } from "../users/repository";
+import { userBindCommand, userRefWord } from "../util/printedCommand";
 import { CONFIRM_OPTIONS } from "./confirm";
 import { USER_POSITIONAL } from "./describe";
 import { defineCommand } from "./registry";
@@ -77,24 +84,6 @@ function assertValidSource(source: string): asserts source is BindSource {
 
 type LocalBinding = { source: "ingame"; id: number } | { source: "df-name"; name: string };
 
-function withBindingLocks<T>(
-    ctx: CommandContext,
-    store: Store,
-    target: { uid: string; displayName: string },
-    work: () => T
-) {
-    return withSyncLock(
-        store,
-        { uid: target.uid, name: target.displayName },
-        sync =>
-            withCredentialsLock(store, () => {
-                sync.assertHeld();
-                return work();
-            }),
-        { now: () => ctx.io.now().getTime() }
-    );
-}
-
 function bindLocal(
     ctx: CommandContext,
     store: Store,
@@ -130,12 +119,16 @@ function bindLocal(
     }
 
     // Preview without the credentials lock, then recheck in the transaction that saves.
-    store.transaction(() => {
+    const preview = store.transaction(() => {
         assertNoSync(store, uid, () => ctx.io.now().getTime());
-        prepare();
+        return prepare();
     });
-    return withBindingLocks(ctx, store, target, () =>
-        writeBinding(ctx.paths, store, uid, binding.source, prepare)
+    return withBindingLocks(
+        ctx,
+        store,
+        target,
+        replacement => writeBinding(ctx.paths, store, uid, binding.source, prepare, replacement),
+        preview.reset ? preview.user : undefined
     );
 }
 
@@ -226,6 +219,17 @@ export const userBind = defineCommand(
             }
         }
 
+        if (source === "lxns") {
+            if (args.positionals.value !== undefined) {
+                throw usageError(
+                    "lxns 来源不需要值参数；请通过 --callback - 从 stdin 读取回调链接"
+                );
+            }
+            if (args.options.callback === undefined && args.options.yes === undefined) {
+                validateLxnsRedirect(ctx.config.values.lxns);
+            }
+        }
+
         // Resolve the user before reading stdin or asking anyone, so a wrong reference costs no QR
         // code and no request; the user is read again by uid under the lock before the write.
         const store = ctx.store();
@@ -239,16 +243,11 @@ export const userBind = defineCommand(
         const target = byUid ?? resolveUser(rows, args.positionals.user);
 
         if (source === "lxns") {
-            if (args.positionals.value !== undefined) {
-                throw usageError(
-                    "lxns 来源不需要值参数；请通过 --callback - 从 stdin 读取回调链接"
-                );
-            }
             if (args.options.callback === undefined) {
                 if (given !== undefined) {
                     return { data: await confirmLxnsBind(ctx, store, target, given) };
                 }
-                return { data: await startLxnsBind(ctx, store, target.uid) };
+                return { data: await startLxnsBind(ctx, store, target) };
             }
             rejectUnneededConfirmation(given);
             if (args.global.offline) {
@@ -345,12 +344,11 @@ export const userBind = defineCommand(
         } catch (error) {
             if (error instanceof DivingFishError) {
                 if (error.status === 400 || error.status === 401 || error.status === 403) {
+                    // The fix runs as printed, so the advice is in the message.
                     throw new CliError(
                         "USAGE",
-                        `水鱼数据拒绝了这个 Import-Token（${redact(error.message)}）`,
-                        {
-                            fix: "在水鱼查分器「用户设置」页面重新生成导入 Token 并重试",
-                        }
+                        `水鱼数据拒绝了这个 Import-Token（${redact(error.message)}）；在水鱼查分器「用户设置」页面重新生成导入 Token，再从 stdin 重新绑定`,
+                        { fix: userBindCommand(userRefWord(target), "df-token", ["-"]) }
                     );
                 }
                 throw new CliError("UPSTREAM_ERROR", `水鱼服务返回了 HTTP ${error.status}`, {

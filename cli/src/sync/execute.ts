@@ -25,21 +25,22 @@ import { appendScoreEvents, readUser, saveUser } from "../users/repository";
 import { buildUserRows } from "../users/rows";
 import { readUserScores } from "../users/scores";
 import { userBindCommand, userRefWord } from "../util/printedCommand";
+import { joinCommandLine } from "../util/shell";
 import { formatLocalTime } from "../util/time";
 import { computeSyncChanges, countSyncChanges } from "./changes";
 import { createSyncClients, mapSyncError } from "./clients";
-import { assertQrAccount, isOtherQrAccount, readVerifiedQr } from "./ingame";
+import { assertQrAccount, isOtherQrAccount, readVerifiedQr, requireGameBackend } from "./ingame";
 import { beginRun, finishRun } from "./journal";
 import { withSyncLock } from "./lock";
-import { lxnsAccessToken } from "./lxnsToken";
+import { createLxnsAccess } from "./lxnsToken";
 import { protectSyncSecrets } from "./secrets";
 import {
     assertGameId,
     assertGameQrSource,
-    assertLxnsRefreshAvailable,
     buildUserForCore,
-    formatOtherSourcesFix,
     getOtherBoundSources,
+    otherSourceFix,
+    otherSourcesMessage,
     plannedMode,
     resolveSyncSource,
     syncUploadTargets,
@@ -69,7 +70,8 @@ export interface SyncCommandArgs {
 export async function executeSync(
     args: SyncCommandArgs,
     context: CommandContext,
-    targetUserRow: UserListRow
+    targetUserRow: UserListRow,
+    attemptedLxnsRefreshes: Set<string>
 ): Promise<SyncExecutionResult> {
     const store = context.store();
     const userRef = userRefWord(targetUserRow);
@@ -127,8 +129,21 @@ export async function executeSync(
         }
         const secrets = protectSyncSecrets(context, userForCore, qr?.code);
         const ctx = secrets.ctx;
+        const upload = args.options.upload !== false;
         const modeBeforeNetwork = plannedMode(cliSource, qr !== undefined);
         const inGameMode = cliSource === "ingame" ? modeBeforeNetwork : null;
+        const accessLxns = createLxnsAccess(
+            inGameMode ? { ...ctx, log: () => ctx.log("已刷新落雪授权") } : ctx,
+            store,
+            handle,
+            storedUser,
+            attemptedLxnsRefreshes
+        );
+        const refreshLxns = async () => {
+            const auth = await accessLxns();
+            secrets.add(auth.accessToken, auth.refreshToken);
+            return auth;
+        };
         let runId: number | undefined;
         // Set once the sync is written: a later failure (the lock lost during an upload) must not
         // read as a failed sync or suggest another source.
@@ -148,11 +163,12 @@ export async function executeSync(
                 handle
             );
 
-            if (cliSource === "ingame" && !qr) assertGameId(userForCore, targetUserRow);
+            if (cliSource === "ingame" && !qr) {
+                requireGameBackend(ctx.config);
+                assertGameId(userForCore, targetUserRow, { upload });
+            }
             if (cliSource === "lxns") {
-                assertLxnsRefreshAvailable(userForCore, targetUserRow, ctx.io.now().getTime());
-                const refreshedAuth = await lxnsAccessToken(ctx, store, handle, storedUser);
-                secrets.add(refreshedAuth.accessToken, refreshedAuth.refreshToken);
+                const refreshedAuth = await refreshLxns();
                 if (userForCore.lxns) {
                     userForCore.lxns.auth = refreshedAuth;
                 } else {
@@ -186,16 +202,7 @@ export async function executeSync(
                     ? {
                           useQr: qr !== undefined,
                           assertHeld: handle.assertHeld,
-                          refreshLxns: async () => {
-                              const auth = await lxnsAccessToken(
-                                  { ...ctx, log: () => ctx.log("已刷新落雪授权") },
-                                  store,
-                                  handle,
-                                  storedUser
-                              );
-                              secrets.add(auth.accessToken, auth.refreshToken);
-                              return auth;
-                          },
+                          refreshLxns,
                       }
                     : undefined
             );
@@ -216,11 +223,7 @@ export async function executeSync(
                 },
                 now: () => ctx.io.now().getTime(),
             };
-            const targets = syncUploadTargets(
-                userForCore,
-                cliSource,
-                args.options.upload !== false
-            );
+            const targets = syncUploadTargets(userForCore, cliSource, upload);
             if (targets.includes("diving-fish")) {
                 // Core selects the bound targets and hands back the raw game records.
                 syncOptions.uploadToDivingFish = (records, importToken) => {
@@ -373,7 +376,7 @@ export async function executeSync(
                 ctx,
                 store,
                 handle,
-                storedUser,
+                refreshLxns,
                 userRef,
                 pendingUploads
             );
@@ -433,7 +436,13 @@ export async function executeSync(
                     message: secrets.redact(
                         `二维码属于另一个舞萌账号，已将用户 ${displayName} 的游戏 ID 改为该账号`
                     ),
-                    fix: "saltnet config set sync.qrOtherAccount error",
+                    fix: joinCommandLine([
+                        "saltnet",
+                        "config",
+                        "set",
+                        "sync.qrOtherAccount",
+                        "error",
+                    ]),
                 });
             }
             if (mode === "public-b50") {
@@ -460,22 +469,29 @@ export async function executeSync(
                 throw secrets.withoutCause(mappedErr);
             }
 
+            const { api } = ctx.config.values;
             const otherSources =
-                committed || mappedErr.code === "QR_REQUIRED"
+                committed || mappedErr.code === "QR_REQUIRED" || mappedErr.code === "USAGE"
                     ? []
-                    : getOtherBoundSources(userForCore, cliSource);
-            const fixWithOthers = formatOtherSourcesFix(
-                { index: targetUserRow.index, uid: targetUserRow.uid },
-                otherSources,
-                mappedErr.fix
-            );
+                    : getOtherBoundSources(
+                          userForCore,
+                          cliSource,
+                          Boolean(api.url || api.fallbackUrl)
+                      );
+            const fix =
+                mappedErr.fix ??
+                (otherSources[0]
+                    ? otherSourceFix(targetUserRow, otherSources[0], upload)
+                    : undefined);
             const message = secrets.redact(
-                committed ? `同步结果已写入本地，之后出错：${mappedErr.message}` : mappedErr.message
+                committed
+                    ? `同步结果已写入本地，之后出错：${mappedErr.message}`
+                    : otherSourcesMessage(mappedErr.message, otherSources)
             );
 
             const finalError = new CliError(mappedErr.code, message, {
                 candidates: mappedErr.candidates,
-                fix: fixWithOthers,
+                fix,
                 retryable: mappedErr.retryable,
                 extra: mappedErr.extra,
                 meta: mappedErr.meta,

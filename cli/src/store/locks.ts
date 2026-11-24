@@ -72,14 +72,44 @@ export function acquireLock(store: Store, name: string, options: LockOptions): A
                 db.prepare("DELETE FROM locks WHERE name = ? AND owner = ?").run(name, owner);
             },
             renew(ttlMs = options.ttlMs) {
-                const { changes } = db
-                    .prepare("UPDATE locks SET expires_at = ? WHERE name = ? AND owner = ?")
-                    .run(now() + ttlMs, name, owner);
-                return changes === 1;
+                return store.transaction(() => {
+                    // Sample the clock after waiting for the SQLite writer, not before.
+                    const at = now();
+                    const { changes } = db
+                        .prepare(
+                            "UPDATE locks SET expires_at = ? WHERE name = ? AND owner = ? AND expires_at > ?"
+                        )
+                        .run(at + ttlMs, name, owner, at);
+                    return changes === 1;
+                });
             },
         };
         return { acquired: true, lock };
     });
+}
+
+/** Renews a lease until it expires or a renewal fails. Async timer errors must stay local. */
+export function maintainLock(lock: Lock, intervalMs: number) {
+    let held = true;
+    const timer = setInterval(() => renew(), intervalMs);
+    timer.unref?.();
+
+    function stop() {
+        clearInterval(timer);
+    }
+
+    function renew(ttlMs?: number): boolean {
+        if (!held) return false;
+        try {
+            held = lock.renew(ttlMs);
+        } catch {
+            held = false;
+        }
+        if (!held) stop();
+        return held;
+    }
+
+    return { renew, stop };
 }
 
 export type LockResult<T> =

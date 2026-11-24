@@ -1,6 +1,7 @@
 import type { LXNSOAuthCallback, LXNSOAuthToken } from "@core/integrations/lxns/oauth";
 import type { User } from "@core/user/type";
 import type { CommandContext } from "../commands/registry";
+import type { ConfigValues } from "../runtime/config";
 import type { CredentialsFile, PendingLxnsAuthorization } from "../runtime/credentials";
 import type { Lock } from "../store/locks";
 import type { Store } from "../store/store";
@@ -31,7 +32,7 @@ import {
 import { assertNoSync, withSyncLock } from "../sync/lock";
 import { userBindCommand, userUidWord } from "../util/printedCommand";
 import { formatLocalTime } from "../util/time";
-import { confirmIdentityChange, writeBinding } from "./bindIdentity";
+import { confirmIdentityChange, withBindingLocks, writeBinding } from "./bindIdentity";
 import { readUser } from "./repository";
 
 export interface LxnsBindStart {
@@ -43,43 +44,58 @@ function restartBind(uid: string): string {
     return userBindCommand(userUidWord(uid), "lxns");
 }
 
-export async function startLxnsBind(
-    ctx: CommandContext,
-    store: Store,
-    uid: string
-): Promise<LxnsBindStart> {
-    const { baseUrl, clientId, redirectUri } = ctx.config.values.lxns;
+export function validateLxnsRedirect({ clientId, redirectUri }: ConfigValues["lxns"]): void {
     if (!clientId || !redirectUri) {
         throw usageError("落雪授权缺少配置，请设置 lxns.clientId 和 lxns.redirectUri");
     }
+    try {
+        parseLXNSOAuthCallback(redirectUri);
+    } catch {
+        throw usageError(
+            "lxns.redirectUri 必须保留已在落雪登记的回调地址中的 lxns_auth_complete 参数"
+        );
+    }
+}
+
+export async function startLxnsBind(
+    ctx: CommandContext,
+    store: Store,
+    { uid, displayName }: UserListRow
+): Promise<LxnsBindStart> {
+    const { baseUrl, clientId, redirectUri } = ctx.config.values.lxns;
     const codeVerifier = generateCodeVerifier();
     const challenge = await generateCodeChallenge(codeVerifier);
     const state = generateCodeVerifier();
     const now = () => ctx.io.now().getTime();
-    const updated = await updateCredentials(
-        ctx.paths,
+    const updated = await withSyncLock(
         store,
-        current => {
-            store.transaction(() => {
-                assertNoSync(store, uid, now);
-                if (!readUser(store, uid)) throw new CliError("NOT_FOUND", "找不到要绑定的用户");
-            });
-            const pending = Object.fromEntries(
-                Object.entries(current.pendingLxnsAuthorizations ?? {}).filter(
-                    ([, record]) => record.userUid !== uid
-                )
-            );
-            pending[state] = {
-                userUid: uid,
-                codeVerifier,
-                clientId,
-                redirectUri,
-                baseUrl,
-                expiresAt: now() + LXNS_OAUTH_LIFETIME,
-            };
-            return { ...current, pendingLxnsAuthorizations: pending };
-        },
-        { pruneNow: now }
+        { uid, name: displayName },
+        sync =>
+            updateCredentials(
+                ctx.paths,
+                store,
+                current => {
+                    sync.assertHeld();
+                    if (!readUser(store, uid))
+                        throw new CliError("NOT_FOUND", "找不到要绑定的用户");
+                    const pending = Object.fromEntries(
+                        Object.entries(current.pendingLxnsAuthorizations ?? {}).filter(
+                            ([, record]) => record.userUid !== uid
+                        )
+                    );
+                    pending[state] = {
+                        userUid: uid,
+                        codeVerifier,
+                        clientId,
+                        redirectUri,
+                        baseUrl,
+                        expiresAt: now() + LXNS_OAUTH_LIFETIME,
+                    };
+                    return { ...current, pendingLxnsAuthorizations: pending };
+                },
+                { pruneNow: now }
+            ),
+        { now }
     );
     return {
         authorizeUrl: createLXNSOAuthAuthorizeUrl(clientId, redirectUri, challenge, state, {
@@ -241,7 +257,7 @@ export function confirmLxnsBind(
     target: UserListRow,
     given: string
 ) {
-    const { uid, displayName } = target;
+    const { uid } = target;
     const now = () => ctx.io.now().getTime();
     function prepare() {
         const user = readUser(store, uid);
@@ -258,21 +274,16 @@ export function confirmLxnsBind(
         const [state, authorization] = exchanged;
         return prepareLxnsBinding(ctx, store, user, current, state, authorization, given);
     }
-    store.transaction(() => {
+    const preview = store.transaction(() => {
         assertNoSync(store, uid, now);
-        prepare();
+        return prepare();
     });
-    return withSyncLock(
+    return withBindingLocks(
+        ctx,
         store,
-        { uid, name: displayName },
-        sync =>
-            withCredentialsLock(store, () =>
-                writeBinding(ctx.paths, store, uid, "lxns", () => {
-                    sync.assertHeld();
-                    return prepare();
-                })
-            ),
-        { now }
+        target,
+        replacement => writeBinding(ctx.paths, store, uid, "lxns", prepare, replacement),
+        preview.reset ? preview.user : undefined
     );
 }
 

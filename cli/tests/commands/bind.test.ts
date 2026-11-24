@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
 import * as credentialsModule from "../../src/runtime/credentials";
 import { readCredentials } from "../../src/runtime/credentials";
+import * as files from "../../src/runtime/files";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import {
@@ -19,6 +20,7 @@ import * as repository from "../../src/users/repository";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse } from "../mockHttp";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 import { useTimeZone } from "../zone";
 
@@ -26,6 +28,75 @@ useTimeZone("Asia/Shanghai");
 
 const makeHome = useTempHome();
 const registry = createRegistry();
+
+it("refuses an LXNS redirect missing the callback marker and leaves it unwritten", async () => {
+    const paths = makeHome();
+    const redirect = "http://127.0.0.1:12345/callback";
+    const start = (uri: string) =>
+        commandIn(paths, "user", ["bind", "0", "lxns"], {
+            env: { SALTNET_LXNS_CLIENT_ID: "fake-client", SALTNET_LXNS_REDIRECT_URI: uri },
+            network: {},
+        });
+    expect((await start(redirect)).json.error.code).toBe("USAGE");
+    expect(existsSync(paths.home)).toBe(false);
+    const store = openStore(paths);
+    try {
+        replaceUsers(store, [makeUser("u0")], []);
+        const refused = await start(redirect);
+        expect(refused.json.error).toMatchObject({
+            code: "USAGE",
+            message: expect.stringMatching(/lxns\.redirectUri.*lxns_auth_complete/),
+        });
+        expect(existsSync(paths.credentials)).toBe(false);
+        const accepted = await start(`${redirect}?lxns_auth_complete`);
+        expect(accepted.code).toBe(0);
+        expect(new URL(accepted.json.data.authorizeUrl).searchParams.get("redirect_uri")).toBe(
+            `${redirect}?lxns_auth_complete`
+        );
+    } finally {
+        store.close();
+    }
+});
+
+it("locks the user throughout LXNS bind start and refuses to write while sync holds it", async () => {
+    const paths = makeHome();
+    const store = openStore(paths);
+    const now = () => NOW.getTime();
+    const start = () =>
+        commandIn(paths, "user", ["bind", "0", "lxns"], {
+            env: {
+                SALTNET_LXNS_CLIENT_ID: "fake-client",
+                SALTNET_LXNS_REDIRECT_URI: "https://callback.test/?lxns_auth_complete",
+            },
+            network: {},
+        });
+    const writer = files.writeFileAtomic;
+    let syncAcquired: boolean | undefined;
+    const spy = vi.spyOn(files, "writeFileAtomic").mockImplementation((...args) => {
+        if (args[0] === paths.credentials) {
+            const sync = acquireLock(store, "sync:u0", { ttlMs: 60_000, now });
+            syncAcquired = sync.acquired;
+            if (sync.acquired) sync.lock.release();
+        }
+        return writer(...args);
+    });
+    try {
+        replaceUsers(store, [makeUser("u0")], []);
+        const held = acquireLock(store, "sync:u0", { ttlMs: 60_000, now });
+        if (!held.acquired) throw new Error("expected sync lock");
+        try {
+            expect((await start()).json.error.code).toBe("SYNC_IN_PROGRESS");
+            expect(existsSync(paths.credentials)).toBe(false);
+        } finally {
+            held.lock.release();
+        }
+        expect((await start()).code).toBe(0);
+        expect(syncAcquired).toBe(false);
+    } finally {
+        spy.mockRestore();
+        store.close();
+    }
+});
 
 function schemaOf(name: string) {
     const command = registry.find(name);
@@ -279,9 +350,13 @@ describe("user bind and unbind", () => {
         expect(refusedRes.code).toBe(2);
         expect(refusedRes.json.error.code).toBe("USAGE");
         expect(refusedRes.json.error.message).toContain("水鱼数据拒绝了这个 Import-Token");
-        expect(refusedRes.json.error.fix).toContain(
-            "在水鱼查分器「用户设置」页面重新生成导入 Token 并重试"
+        expect(refusedRes.json.error.message).toContain(
+            "在水鱼查分器「用户设置」页面重新生成导入 Token"
         );
+        expect(parsePrintedCommand(refusedRes.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "0", source: "df-token", value: "-" },
+        });
         // Token not leaked in error
         expect(refusedRes.stdout).not.toContain("BAD-TOKEN");
         expect(refusedRes.stderr).not.toContain("BAD-TOKEN");

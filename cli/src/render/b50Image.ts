@@ -9,11 +9,22 @@ import { parseB50Payload } from "../../../shared/rendering/b50-payload";
 import { CliError } from "../errors";
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
+const IHDR_HEADER = [0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52] as const;
+const IEND_CHUNK = [
+    0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+] as const;
 
 export function isPng(bytes: Uint8Array): boolean {
-    if (bytes.byteLength < 8) return false;
+    if (bytes.byteLength < 45) return false;
     for (let i = 0; i < PNG_SIGNATURE.length; i++) {
         if (bytes[i] !== PNG_SIGNATURE[i]) return false;
+    }
+    for (let i = 0; i < IHDR_HEADER.length; i++) {
+        if (bytes[8 + i] !== IHDR_HEADER[i]) return false;
+    }
+    const iendOffset = bytes.byteLength - IEND_CHUNK.length;
+    for (let i = 0; i < IEND_CHUNK.length; i++) {
+        if (bytes[iendOffset + i] !== IEND_CHUNK[i]) return false;
     }
     return true;
 }

@@ -158,12 +158,12 @@ function createStore(db: DatabaseSync, file: string, migration: MigrationResult)
  */
 export function openStore(paths: RuntimePaths, options: StoreOptions = {}): Store {
     const { DatabaseSync } = loadSqlite();
-    ensureRuntimeDirs(paths);
     const now = options.now ?? (() => new Date());
-    const isNew = !existsSync(paths.database);
 
     let db: DatabaseSync | undefined;
     try {
+        ensureRuntimeDirs(paths);
+        const isNew = !existsSync(paths.database);
         const opened = new DatabaseSync(paths.database, {
             timeout: options.busyTimeoutMs ?? DEFAULT_BUSY_TIMEOUT_MS,
         });
@@ -177,6 +177,6 @@ export function openStore(paths: RuntimePaths, options: StoreOptions = {}): Stor
         return createStore(opened, paths.database, migration);
     } catch (error) {
         quietly(() => db?.close());
-        throw storeError(error, paths.database) ?? error;
+        throw storeError(error, paths.database, paths.home) ?? error;
     }
 }

@@ -8,6 +8,7 @@ import { listOptions } from "../src/commands/listOptions";
 import { buildRegistry, defineCommand } from "../src/commands/registry";
 import { CliError } from "../src/errors";
 import { paginate } from "../src/output/paging";
+import { int, list, nullable, object, str } from "../src/output/schema";
 import { COMMAND_GROUPS, demo, favAdd, needsTarget, userBind, userList } from "./commands/fixtures";
 import { createHarness, run as runWith } from "./harness";
 import { useTempHome } from "./tempHome";
@@ -74,6 +75,26 @@ const rows = defineCommand(
         effect: "none",
         output: "list",
         options: listOptions(2),
+        // `--fields` and the table columns are worked out from this schema, not from the rows.
+        dataSchema: object(
+            {
+                items: list(
+                    object(
+                        {
+                            chartKey: str("谱面键"),
+                            title: str("标题"),
+                            score: nullable(
+                                object({ rank: str("评级"), rating: int("rating") }),
+                                "成绩；没有成绩时为 null"
+                            ),
+                        },
+                        { description: "一行" }
+                    ),
+                    "这一页的行"
+                ),
+            },
+            { description: "几行" }
+        ),
     },
     (args, ctx) => {
         ran();

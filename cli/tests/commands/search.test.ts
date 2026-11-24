@@ -39,6 +39,46 @@ async function searchIn(
 }
 
 describe("saltnet search command", () => {
+    it("reports the total when a text page is past the end", async () => {
+        const paths = makeHome();
+        const { json } = await searchIn(paths, ["remix", "--limit", "1"]);
+        expect(json.meta.page.total).toBeGreaterThan(0);
+        const result = await searchIn(paths, [
+            "remix",
+            "--limit",
+            "1",
+            "--offset",
+            "99999",
+            "--format",
+            "text",
+        ]);
+        expect(result.code).toBe(0);
+        expect(result.stdout).toContain("（没有结果）");
+        expect(result.stdout).toContain(
+            `共 ${json.meta.page.total} 条；--offset 99999 已超过最后一条`
+        );
+        expect(result.stdout).not.toContain("第 100000–99999 条");
+    });
+
+    it.each([
+        ["search", ["146"], ["１４６"]],
+        ["song", ["146"], ["１４６"]],
+        ["song", ["146-3"], ["１４６－３"]],
+        ["chart", ["146-3"], ["１４６－３"]],
+        ["charts", ["--diff", "3"], ["--diff", "３"]],
+        ["charts", ["--diff", "rem"], ["--diff", "ＲＥ：ＭＡＳＴＥＲ"]],
+        ["charts", ["--level", "13+"], ["--level", "１３＋"]],
+        ["charts", ["--level", "13..14"], ["--level", "１３．．１４"]],
+    ] as const)("%s resolves %j and %j to the same result", async (name, ascii, wide) => {
+        const paths = makeHome();
+        const paging = name === "charts" ? ["--limit", "1"] : [];
+        const expected = await commandIn(paths, name, [...ascii, ...paging]);
+        expect(expected.code).toBe(0);
+        const actual = await commandIn(paths, name, [...wide, ...paging]);
+        expect(actual.code).toBe(0);
+        expect(actual.json.data).toEqual(expected.json.data);
+    });
+
     it("returns output matching the standard envelope and item structure.", async () => {
         const paths = makeHome();
         const { code, json } = await searchIn(paths, ["Link"]);

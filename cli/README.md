@@ -6,7 +6,7 @@
 
 ## 需要什么
 
-- Node.js 24 或更新（用到内置的 `node:sqlite`）。
+- Node.js 24.12 或更新（用到内置的 `node:sqlite`；`saltnet sql` 的沙盒要用 24.12 才有的 `enableDefensive`）。
 - 在仓库根目录装过依赖：`pnpm install`。
 
 ## 构建和运行
@@ -55,15 +55,18 @@ pnpm remove --global saltnet-cli
 alias saltnet="node /path/to/SaltNet/cli/dist/saltnet.mjs"
 ```
 
+别名只在交互式 shell 里生效。Claude Code 之类的 agent 用非交互的 shell 运行命令，读不到别名，所以要给 agent 用，就用前两种办法之一，让 `PATH` 里有一个可执行的 `saltnet`。
+
 ## 数据放在哪里
 
 - 数据目录默认是 `~/.saltnet`，用环境变量 `SALTNET_HOME` 可以换到别处。里面有 `saltnet.db`（SQLite 数据库）、`config.json`（设置）、`credentials.json`（各个账号的 token，文件权限 0600）和 `cache/`（下载下来的原始数据）。
 - `saltnet config list` 列出每一项设置的值、来源和默认值。每一项也能用环境变量覆盖：`SALTNET_` 加上大写下划线写法的键名，例如 `lxns.clientId` 对应 `SALTNET_LXNS_CLIENT_ID`。
-- 网页端「导出备份」得到的文件，用 `saltnet import <文件>` 导入（导入前会先预览，要确认才写入）。反过来，`saltnet export <文件>` 导出网页端能读的备份。
+- 绑定落雪时用的回调地址 `lxns.redirectUri` 一般不用改。要改的话，它必须是在落雪登记过的地址，而且要保留其中的 `lxns_auth_complete` 参数，否则授权完成后的回调链接读不了，`saltnet user bind <用户> lxns` 会直接报错。
+- 网页端「导出备份」得到的文件，用 `saltnet import <文件>` 导入（导入前会先预览，要确认才写入）。反过来，`saltnet export <文件>` 导出网页端能读的备份。和网页端的备份一样，导出的文件总是带着各用户的水鱼 Import-Token（加 `--keep-lxns` 还会带上落雪授权），所以文件以 0600 权限写入，不要随手发给别人。
 
 ## 给 Claude Code 用
 
-Claude Code 要能直接运行 `saltnet`，所以先按上面的办法装成全局命令。然后把指南存成一个 skill（只打印、不写文件，由你自己重定向）：
+Claude Code 要能直接运行 `saltnet`，所以先按上面前两种办法之一装成全局命令（别名不行，见上）。然后把指南存成一个 skill（只打印、不写文件，由你自己重定向）：
 
 ```bash
 mkdir -p ~/.claude/skills/saltnet

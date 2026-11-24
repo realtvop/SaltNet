@@ -6,7 +6,10 @@ export function protectSyncSecrets(ctx: CommandContext, user: User, qrCode?: str
     const secrets = new Set<string>();
     function add(...values: unknown[]): void {
         for (const value of values) {
-            if (typeof value === "string" && value) secrets.add(value);
+            if (typeof value !== "string" || !value) continue;
+            secrets.add(value);
+            secrets.add(encodeURIComponent(value.replace(/[\uD800-\uDFFF]/gu, "\uFFFD")));
+            secrets.add(new URLSearchParams([["", value]]).toString().slice(1));
         }
     }
     add(
@@ -17,7 +20,9 @@ export function protectSyncSecrets(ctx: CommandContext, user: User, qrCode?: str
     );
 
     function redact(message: string): string {
-        for (const secret of secrets) message = message.replaceAll(secret, "<已隐藏>");
+        // A raw credential can be a prefix of its encoded spelling.
+        const longestFirst = [...secrets].sort((a, b) => b.length - a.length);
+        for (const secret of longestFirst) message = message.replaceAll(secret, "<已隐藏>");
         return message;
     }
     const log = (message: string) => ctx.log(redact(message));

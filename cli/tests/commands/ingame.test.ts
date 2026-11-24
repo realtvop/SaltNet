@@ -13,6 +13,7 @@ import { replaceUsers } from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn } from "../commandRun";
 import { expectConforms } from "../dataSchema";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -75,6 +76,10 @@ function makeUser(uid: string, overrides: Partial<User> = {}): User {
 }
 
 describe("saltnet ingame backup", () => {
+    it("documents the required game ID for ingame backup", () => {
+        expect(registry.find("ingame backup")?.spec.description).toContain("游戏 ID");
+    });
+
     it("writes game-format JSON equal to buildGameBackup, with 0600 mode, matching dataSchema", async () => {
         const paths = makeHome();
         const cwd = path.dirname(paths.home);
@@ -110,6 +115,53 @@ describe("saltnet ingame backup", () => {
 
         const stat = statSync(absolutePath);
         expect(stat.mode & 0o777).toBe(0o600);
+    });
+
+    it("tolerates empty/null item slots in user data.items", async () => {
+        const paths = makeHome();
+        const cwd = path.dirname(paths.home);
+        const user = makeUser("user-null-slot", {
+            data: {
+                updateTime: 1700000000000,
+                name: null,
+                rating: 15500,
+                detailed: {
+                    "10-3": {
+                        song_id: 10,
+                        type: "SD",
+                        title: "Test Song",
+                        level: "13",
+                        level_index: 3,
+                        level_label: "Master",
+                        ds: 13.2,
+                        achievements: 100.2,
+                        dxScore: 2800,
+                        fc: ComboStatus.FullCombo,
+                        fs: SyncStatus.FullSync,
+                        rate: RankRate.sss,
+                        ra: 300,
+                        play_count: 15,
+                    },
+                },
+                items: [
+                    null,
+                    [{ itemId: 7, stock: 1, isValid: true }],
+                ] as unknown as User["data"]["items"],
+                characters: [],
+            },
+        });
+        const store = openStore(paths);
+        replaceUsers(store, [user], []);
+        store.close();
+
+        const file = "null-slot-backup.json";
+        const { code, json } = await commandIn(paths, "ingame", ["backup", file], { cwd });
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+        expect(json.data.counts.items).toBe(1);
+
+        const content = JSON.parse(readFileSync(path.resolve(cwd, file), "utf8"));
+        expect(content.userItemList).toEqual([{ itemKind: 1, itemId: 7, stock: 1, isValid: true }]);
     });
 
     it("picks the default user when --user is omitted, and picks the named user with --user", async () => {
@@ -228,6 +280,11 @@ describe("saltnet ingame backup", () => {
             code: "NOT_BOUND",
             fix: "saltnet user bind --qr - -- '-dash user' ingame",
         });
+        expect(parsePrintedCommand(unbound.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "-dash user", source: "ingame" },
+            options: { qr: "-" },
+        });
         const [group, ...rest] = splitCommandLine(unbound.json.error.fix ?? "").slice(1);
         const bind = await commandIn(paths, group, rest, { cwd, stdin: "not a qr code" });
         expect(bind.json.error.code).toBe("QR_INVALID");
@@ -236,11 +293,19 @@ describe("saltnet ingame backup", () => {
             code: "NOT_FOUND",
             fix: "saltnet sync '--user=-no scores'",
         });
+        expect(parsePrintedCommand(noScores.json.error.fix)).toMatchObject({
+            command: "sync",
+            options: { user: "-no scores" },
+        });
         const noCharacters = await run("-no characters");
         expect(noCharacters.code).toBe(0);
         expect(noCharacters.json.warnings).toMatchObject([
             { code: "PARTIAL_BACKUP", fix: "saltnet sync '--user=-no characters' --source ingame" },
         ]);
+        expect(parsePrintedCommand(noCharacters.json.warnings[0].fix)).toMatchObject({
+            command: "sync",
+            options: { user: "-no characters", source: "ingame" },
+        });
     });
 
     it("fails with NOT_FOUND when user data has not been updated or detailed scores are missing", async () => {
@@ -557,6 +622,11 @@ describe("saltnet ingame backup", () => {
         expect(looksLikeOptions.json.error.fix).toBe(
             "saltnet ingame backup ./-dash.json '--user=-dash user' --overwrite"
         );
+        expect(parsePrintedCommand(looksLikeOptions.json.error.fix)).toMatchObject({
+            command: "ingame backup",
+            positionals: { file: "./-dash.json" },
+            options: { user: "-dash user", overwrite: true },
+        });
         const [, dashGroup, ...dashRest] = splitCommandLine(looksLikeOptions.json.error.fix ?? "");
         const dashRerun = await commandIn(paths, dashGroup, dashRest, { cwd });
         expect(dashRerun.code).toBe(0);

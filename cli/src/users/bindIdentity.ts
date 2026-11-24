@@ -1,8 +1,10 @@
 import type { User } from "@core/user/type";
+import type { CommandContext } from "../commands/registry";
 import type { CredentialsFile } from "../runtime/credentials";
 import type { StagedFile } from "../runtime/files";
 import type { RuntimePaths } from "../runtime/paths";
 import type { Store } from "../store/store";
+import type { SyncLockHandle } from "../sync/lock";
 import {
     hasStrongIdentityChanged,
     resetUserForNewIdentity,
@@ -13,7 +15,9 @@ import {
     lxnsAccountIdOf,
     matchingLxnsAuthorization,
     stageCredentials,
+    withCredentialsLock,
 } from "../runtime/credentials";
+import { withSyncLock } from "../sync/lock";
 import { userBindCommand, userUidWord } from "../util/printedCommand";
 import { splitCommandLine } from "../util/shell";
 import {
@@ -128,19 +132,58 @@ interface Binding {
     credentials?: CredentialsFile;
 }
 
+type ReplacementIdentity = Pick<User, "uid" | "data">;
+
+/** Reserve both identities before the credential lock, in the same uid order as import. */
+export function withBindingLocks<T>(
+    ctx: CommandContext,
+    store: Store,
+    target: { uid: string; displayName: string },
+    work: (replacement?: ReplacementIdentity) => T,
+    userToReset?: User
+): Promise<T> {
+    const replacement = userToReset ? resetUserForNewIdentity(userToReset) : undefined;
+    const replacementUid = replacement?.uid;
+    const uids = replacementUid ? [target.uid, replacementUid].sort() : [target.uid];
+    const now = () => ctx.io.now().getTime();
+
+    function acquire(index: number, handles: SyncLockHandle[]): Promise<T> {
+        if (index === uids.length) {
+            return withCredentialsLock(store, () => {
+                for (const handle of handles) handle.assertHeld();
+                return work(replacement);
+            });
+        }
+        return withSyncLock(
+            store,
+            { uid: uids[index], name: target.displayName },
+            handle => acquire(index + 1, [...handles, handle]),
+            { now }
+        );
+    }
+
+    return acquire(0, []);
+}
+
 /** The credential lock spans the SQLite commit and the private file's final rename. */
 export function writeBinding(
     paths: RuntimePaths,
     store: Store,
     uid: string,
     source: IdentitySource | "df-token",
-    prepare: () => Binding
+    prepare: () => Binding,
+    replacement?: ReplacementIdentity
 ) {
     let staged: StagedFile | undefined;
     try {
         const result = store.transaction(() => {
             const { user, changed, reset, credentials, userChanged = changed } = prepare();
-            const nextUser = reset ? resetUserForNewIdentity(user) : user;
+            const nextUser = { ...user };
+            if (reset) {
+                if (!replacement?.uid) throw new Error("缺少新用户的同步锁");
+                nextUser.uid = replacement.uid;
+                nextUser.data = replacement.data;
+            }
             const nextUid = nextUser.uid!;
             if (credentials) {
                 const next = reset

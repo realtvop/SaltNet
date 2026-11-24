@@ -234,7 +234,7 @@
 - [x] P4-4 `feat(cli): finish agent guide and skill output`：手写部分、`guide --skill`〔新〕（手写的部分由协调者写）
 - [x] P4-5 `test(cli): run every guide example in the end-to-end test`〔简单〕
 - [x] P4-6 `docs: finish agents guide and cli notes`：`AGENTS.md` 终稿、安装与全局链接的说明〔协调〕
-- [ ] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
+- [x] P4-7 最终全量检查（不产生 commit，结果写进最终报告）：`pnpm check`、`pnpm lint`、`pnpm build`、全部 `test:*`、`render-service` 测试、`cli` 测试与端到端〔协调〕
 
 ## 最终报告要有的内容
 
@@ -1299,3 +1299,26 @@
     - 核对过的：pnpm 10 的文档说，在包目录里运行不带参数的 `pnpm link`，会把包链接到全局的 `node_modules`，包有 `bin` 时它的命令全局可用；撤销用 `pnpm uninstall --global <包名>`（就是 `pnpm remove --global`），`pnpm unlink` 只处理当前目录里的链接。本机的 pnpm 是 10.33.2。环境变量的命名规则（`SALTNET_` 加上大写下划线写法的键名）以 `runtime/config.ts` 为准。
     - `AGENTS.md`：`cli/` 那一条和 `pnpm build:cli` 那一条提到 `cli/README.md`。其余条目在 P3 审查的修复里已经和代码对上了。终稿前用一个小脚本把它提到的 276 个路径逐个对过仓库里的文件：找不到的 10 个都是不进仓库的东西（打包产物、数据目录里的 `config.json`、`credentials.json` 和 `cache/`、`dist/`、`.wrangler/`）或写法（`@core/`、`./`、`*.test.ts`）；它提到的 `pnpm` 脚本在 `package.json` 里都有，`package.json` 的每个 `test:*` 它也都提到了。
     - 测试：只改文档，按 finish.sh 跑全部检查。
+
+109. **最终使用测试、完整审查和修复（2026-11-24）**：
+
+
+    - 起因和做法：P4-7 之后用户要求让 Codex 做一次完整的使用测试和代码审查。使用测试由 Codex（gpt-6.2-sol）在沙盒外跑（用户同意它请求网络访问）：只真实请求公开的 SaltMeta 和落雪收藏品列表，凡是要凭据、二维码或会写到第三方的流程都用模拟 HTTP 和夹具，没有用用户的账号，数据目录都是临时目录。报告列了 24 条发现。审查有四份：查询和输出（12 条缺陷、1 条安全、3 条测试缺口）、状态和凭据（5 条缺陷、5 条安全、3 条测试缺口）、同一部分用 Codex 内置的 `/review` 再审一遍（10 条，其中 3 条是工具脚本的）、网页端（4 条行为、3 条安全、2 条测试缺口、2 条规则和文档）。各份之间重叠不少。
+    - 分组：能复现的发现分成五组，每组的 brief 都要求先写出能看到问题的测试、看它失败再改代码，复现不了的不改、不留测试。
+        - G1（Gemini 3.8 Flash，agy）：成绩条件接受库里的写法（`sssp`、`fsdp` 等）；打印出来的 `search` 命令照着就能运行；两端有空白的 uid 写成 `uid:<uid>`；表格保留带点的列名和要求的列顺序；`b50 --image` 用整份 B50 校验 `--fields`；渲染结果要有 PNG 签名、IHDR 和 IEND 才算 PNG；SQL 字符串和注释里的名字不算用到视图（以前 `SELECT 'v_collections'` 会去下载收藏品）；`calc` 先把达成率舍到游戏保留的四位小数，评级和 rating 用同一个值；`ingame backup` 容忍空的物品格。
+        - G2（Gemini）：谱面行的游玩次数和网页端曲目页一样，有成绩历史的估算就用估算，没有才用记录里的次数（改正第 70 条「记录里的次数优先」）；`ra`、`achievements` 或 `ds` 不是有限数字的记录不进给 core 的副本（`userForCoreScores`），`users.raw` 和导出照旧保留；`--with related` 给出所选用户的 `owned` 和 `progress`；补测试：门自己的谱面行带上用户成绩。
+        - G3（Gemini）：只改 `cli/` 或 `docs/` 的提交不推进网页端的版本号（`script/generateBuildInfo.cjs`，`pnpm test:build-info`）；网页端的收藏品请求重新抛普通 `Error`（`pnpm test:collection-index`）。三个 Gemini 都在收尾时因为一条命令被无头模式拒绝而没写出报告；补丁都能干净应用，我用测试逐项核对了它们做了什么。G3 的第三项（懒加载）没做，我自己写了（见下）。
+        - G4a（Codex gpt-6.2-sol，凭据、锁和数据目录）：导入在提交前任何一步失败都把原来的 `credentials.json` 放回去（原来的测试断言凭据被清空，改成断言原样）；`export` 在凭据锁里一次读出用户、成绩历史和凭据；坏的备份载荷不把可能引用 token 的 `SyntaxError` 留作 cause；换人的绑定按顺序拿新旧两个 uid 的同步锁；开始落雪绑定时拿用户的同步锁，`lxns.redirectUri` 缺 `lxns_auth_complete` 参数时先报 `USAGE`、什么都不写；续租出异常时当作锁丢了，下一次检查在命令里失败，不再让计时器把进程弄崩；`SYNC_IN_PROGRESS` 说明那次同步可能已经中断，并给出锁到期的本地时间；曲库刷新下载时续租，写入事务里确认锁还在，丢了锁就什么都不写；`config set`、`config unset` 用 `config.json.lock` 串行化（锁目录里放唯一的 owner 文件，整个目录原子改名发布；owner 进程已不在且超过 5 秒的锁可以接管），等 5 秒拿不到就是 `DB_LOCKED`，目录不可写时报出目录；打开数据库要写入时遇到只读的数据目录，报出需要写权限的目录。
+        - G4b（Codex，同步流程）：`--dry-run` 用和执行同一个 `checkLxnsAccess` 检查访问令牌里的账号；同一次调用里同一个刷新令牌最多发一次（快速同步的落雪补充刷新失败后，上传不再重发，记为 `UPLOAD_FAILED`）；凭据的 `encodeURIComponent` 和表单编码写法也打码；保密测试逐个断言结果和发出的请求，并加上这种回显；`QR_REQUIRED` 的 fix 保留 `--no-upload`、`--dry-run`、`--offline`；HTTP 200 加不完整的回复是 `UPSTREAM_ERROR`，日志记失败，用户不变；没配游戏后端时 `sync --source ingame`、`ingame check-login --qr -` 和计划都在读 stdin 之前报 `USAGE` 指向 `api.url`；快速更新超时保留超时消息和调大设置的命令；`LXNS_REAUTH_REQUIRED` 的 fix 只留重新绑定，其他已绑定的来源写进消息；`ingame backup` 的说明写明要游戏 ID。
+        - G5（Codex，输出和参数写法）：`--fields` 按命令 `dataSchema` 里条目的 schema 校验，tsv 和 text 的列也从 schema 来，所以空页同样校验、表头和满页一样，`b50 --image` 在请求渲染之前就校验（改正第 22 条「名字必须在结果里真的存在」）；`b50 --image` 在请求之前确认目标的上级是已有的目录；翻过最后一页的文字页给出总数，不再写倒过来的区间；`search`、歌曲引用和 `--diff`、`--level` 这类选项值把全角数字和字母当半角读；以 `-` 开头的值在缺值的错误和帮助里说明 `--选项=<值>` 的写法。
+    - 我自己改的：
+        - `sql` 偶发的段错误（使用测试第 2 条，几千行的查询约八次崩一次）：Node 会记住从不含 SQL 的文本（空白、注释、分号）准备出来的语句，这样的语句被垃圾回收后再关闭数据库，就会 finalize 已经释放的内存。修法是把这类语句留在模块里，进程结束前都可达。回归测试强制垃圾回收后检查，拿掉两处里的任一处测试都失败。
+        - 懒加载搜索库（网页端审查第 2 条）：`cli/build.mjs` 的插件把 `pinyin-pro`、`wanakana`、`opencc-js/t2cn` 换成第一次用到时才加载真模块的替身，`--help` 从约 53 ms 降到约 42 ms，几组搜索结果和改前逐条一致。
+        - `chart` 的位置参数里全角的曲目 id（`chart １４６ ３`），不在 G5 的文件里。
+        - 收尾时发现的 fix：超时的 fix 原来是一句话加命令，而且固定建议 60000，比 `network.updateTimeoutMs` 的默认值 120000 还小；现在建议写在消息里，fix 是一条调大设置的命令（`raiseTimeoutCommand`：两倍，至少一分钟，不超过上限；已到上限就没有 fix），`sync` 里解析旧文字的正则删掉。凭据文件读不了时、水鱼拒绝 Import-Token 时的 fix 也是一句话：前者改进消息，后者改成重新绑定的命令。`DB_LOCKED` 和 `SYNC_IN_PROGRESS` 的说明跟着改。
+        - 文档：`chart --with friends` 说明包含选中的用户（第 18 条）；`--course` 的默认顺序在 `--asc` 时倒过来（第 19 条）；词汇表的底分只在一组满了以后才有意义（第 20 条）；指南写明 `--format text` 下确认预览是文字（第 11 条）、tsv 分组没有 `count`（第 14 条）、`ingame backup` 要先绑定舞萌账号（第 21 条）；谱师搜索的例子换成能搜到的（第 24 条）；README 说明 shell 别名只在交互式 shell 里有（第 22 条）、导出总带水鱼 Import-Token（状态审查的安全第 5 条，第 73 条的决定不变）、改 `lxns.redirectUri` 要保留 `lxns_auth_complete`；`engines` 和 README 改成 Node 24.12（`enableDefensive` 从 24.12 才有，第 41 条没写版本）。
+        - 工具脚本：`commit.sh` 不暂存任何一层的 `.env*` 和 `.wrangler`，git 失败时停下；`mutate.py` 先跑一遍不改的测试，不过就不判；`lib.sh` 的快照在基点早于 `cli/` 时也会补上依赖的链接。
+        - 收尾的全量检查：委派补丁留下几处格式和 lint 问题（G1、G2 改的五个文件，G3 的 `generateBuildInfo.cjs` 和它的测试，我改的 `refs/chart.ts` 的导入顺序），G3 写的网页端测试有两处类型错误，都改了；`generateBuildInfo.cjs` 改成按第一级目录判断，免得多出和 Prettier 冲突的换行规则违规。端到端测试里编的落雪回调地址缺 `lxns_auth_complete`，G4a 加的检查让 `user bind 0 lxns` 那条示例失败，给它补上了参数；真实的 `.env` 和 `.env.local` 里的回调地址都带这个参数（只数了有没有，没有输出取值）。
+    - 保留没改的：SaltNet 的备用地址要等主地址的错误正文读完才切换（内置审查，来自 1712f63）；按仓库里跟踪的默认配置，游戏请求失败时二维码会发到前端的地址（来自 1a2ede8），后端回显的二维码可能出现在网页端的提示里（来自 1712f63），这三条都不是本分支的提交，写进报告给用户定；网页端落雪返回 JSON `null` 时的错误信息比以前清楚，保留；core 的 `gameBackup` 遇到空物品格会崩是以前就有的，CLI 这边已经容忍，网页端不动；刷新失败后快照比 `meta_state` 新（查询审查第 2 条），第 26 条记过，后果只是之后重建时下载时间偏旧；songs 快照抓不到 KALEIDXSCOPE 谱面列表出错，是测试缺口，留给以后；`sql --fields a.b` 选不到带点的 SQL 别名（点号表示嵌套），HEAD 上就是这样。
+    - 破坏检查：G1–G3 共 24 处，补测试后 23 处被发现，剩下的一处（SQL 里双写的引号）是等价改动；G5 共 21 处，19 处被发现，剩下两处（分组 tsv 的 `group` 列、路径中间一段是文件）补了测试；G4a、G4b 和收尾的改动共 35 处，第一轮 33 处被发现；没发现的两处都补了测试：坏备份那条测试用的假 token 比 V8 在解析错误里引用的十个字符长，留下的 cause 也看不出来，改成检查被引用的那一段；开始落雪绑定时等凭据锁的那段时间里同步锁丢了，原来没有测试。补上以后重跑，两处都被发现。
+    - 测试：按 finish.sh 跑全部检查（含 `pnpm build`），都通过：`test:cli` 127 个文件 2466 条（P4-7 时 2384 条），`test:cli-e2e` 2 条，`test:collection-index` 67 条（多了网页端收藏品请求的 4 条），`test:build-info` 3 条，其余和 P4-7 时一样。

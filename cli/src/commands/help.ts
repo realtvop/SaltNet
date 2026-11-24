@@ -53,7 +53,11 @@ function optionRows(entries: readonly OptionEntry[]): Row[] {
 }
 
 function globalOptionLines(): string[] {
-    return renderRows([["-h, --help", "显示帮助"], ...optionRows(GLOBAL_OPTION_ENTRIES)]);
+    return [
+        ...renderRows([["-h, --help", "显示帮助"], ...optionRows(GLOBAL_OPTION_ENTRIES)]),
+        "",
+        `${INDENT}选项值以 - 开头时，用 --选项=<值>。`,
+    ];
 }
 
 function commandRow(command: CommandDefinition): Row {

@@ -5,6 +5,7 @@ import type { Route } from "../mockHttp";
 import { Buffer } from "node:buffer";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
 import { createMusicChartMap, selectB50Charts, sumChartRatings } from "@core/query/b50";
 import { getUserDisplayName } from "@core/user/type";
@@ -31,16 +32,21 @@ function schemaOf(name: string) {
 
 const RENDER_URL = "https://render.example.test";
 const RENDER_ENDPOINT = "https://render.example.test/render/b50";
-// The PNG signature and the start of a header chunk, then every byte value once: most of them are
-// not valid UTF-8 there, so a picture that went through text would not come out the same.
-const SAMPLE_PNG = Buffer.concat([
-    Buffer.from([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
-        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f,
-        0x15, 0xc4, 0x89,
-    ]),
-    Buffer.from(Array.from({ length: 256 }, (_, byte) => byte)),
+const BASE_PNG = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64"
+);
+const PRVT_TYPE = Buffer.from("prVt", "ascii");
+const PRVT_DATA = Buffer.from(Array.from({ length: 256 }, (_, byte) => byte));
+const PRVT_CRC = Buffer.alloc(4);
+PRVT_CRC.writeUInt32BE(zlib.crc32(Buffer.concat([PRVT_TYPE, PRVT_DATA])));
+const PRVT_CHUNK = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x01, 0x00]),
+    PRVT_TYPE,
+    PRVT_DATA,
+    PRVT_CRC,
 ]);
+const SAMPLE_PNG = Buffer.concat([BASE_PNG.subarray(0, 33), PRVT_CHUNK, BASE_PNG.subarray(33)]);
 
 /** The render service's picture as real `fetch` gives it. */
 function pngResponse(bytes: Uint8Array = SAMPLE_PNG, status = 200) {
@@ -488,6 +494,60 @@ describe("b50 --image", () => {
         expect(html200.json.error.message).toContain("PNG");
         expect(html200.json.error.message).not.toContain("SecretPlayerName");
 
+        // Incomplete PNG cases: only signature, signature + IHDR without IEND, cut 1 byte short
+        const signatureOnly = await commandIn(paths, "b50", ["--image", "sig.png"], {
+            network: routes({
+                [RENDER_ENDPOINT]: pngResponse(
+                    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+                ),
+            }),
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(signatureOnly.code).toBe(5);
+        expect(signatureOnly.json.error.code).toBe("UPSTREAM_ERROR");
+        expect(signatureOnly.json.error.message).toContain("PNG");
+
+        const noIend = await commandIn(paths, "b50", ["--image", "no-iend.png"], {
+            network: routes({
+                [RENDER_ENDPOINT]: pngResponse(Buffer.from(SAMPLE_PNG.subarray(0, 33))),
+            }),
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(noIend.code).toBe(5);
+        expect(noIend.json.error.code).toBe("UPSTREAM_ERROR");
+        expect(noIend.json.error.message).toContain("PNG");
+
+        // The signature and the IEND end are not enough: the first chunk has to be IHDR
+        const noIhdr = await commandIn(paths, "b50", ["--image", "no-ihdr.png"], {
+            network: routes({
+                [RENDER_ENDPOINT]: pngResponse(
+                    Buffer.concat([
+                        SAMPLE_PNG.subarray(0, 8),
+                        PRVT_CHUNK,
+                        SAMPLE_PNG.subarray(SAMPLE_PNG.length - 12),
+                    ])
+                ),
+            }),
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(noIhdr.code).toBe(5);
+        expect(noIhdr.json.error.code).toBe("UPSTREAM_ERROR");
+        expect(noIhdr.json.error.message).toContain("PNG");
+
+        const cutShort = await commandIn(paths, "b50", ["--image", "short.png"], {
+            network: routes({
+                [RENDER_ENDPOINT]: pngResponse(Buffer.from(SAMPLE_PNG.subarray(0, -1))),
+            }),
+            cwd: paths.home,
+            env: { SALTNET_RENDER_URL: RENDER_URL },
+        });
+        expect(cutShort.code).toBe(5);
+        expect(cutShort.json.error.code).toBe("UPSTREAM_ERROR");
+        expect(cutShort.json.error.message).toContain("PNG");
+
         // 4. Transport failure is NETWORK
         const netFail = await commandIn(paths, "b50", ["--image", "net.png"], {
             network: routes({
@@ -610,6 +670,55 @@ describe("b50 --image", () => {
         expect(statSync(outPath).mode & 0o777).toBe(0o600);
     });
 
+    it("checks the image parent before making requests", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("test-image-parent", "Image User")]);
+        writeFileSync(path.join(paths.home, "file-parent"), "");
+
+        // A regular file in the middle of the path is as missing a directory as no file at all.
+        for (const parent of ["missing-parent", "file-parent", "file-parent/sub"]) {
+            const result = await commandIn(paths, "b50", ["--image", `${parent}/image.png`], {
+                network: routes({ [RENDER_ENDPOINT]: () => pngResponse() }),
+                cwd: paths.home,
+                env: { SALTNET_RENDER_URL: RENDER_URL },
+            });
+            expect(result.json.error?.code).toBe("USAGE");
+            expect(result.json.error.message).toContain(
+                `目录不存在：${path.join(paths.home, parent)}`
+            );
+            expect(result.requests).toEqual([]);
+        }
+    });
+
+    it("rejects nonexistent fields when the selected B50 mode has no charts", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("test-image-offset", "Offset User")]);
+        const result = await commandIn(
+            paths,
+            "b50",
+            [
+                "--mode",
+                "ap",
+                "--image",
+                "offset.png",
+                "--offset",
+                "999999",
+                "--fields",
+                "nonexistent",
+                "--overwrite",
+            ],
+            {
+                network: routes({ [RENDER_ENDPOINT]: () => pngResponse() }),
+                cwd: paths.home,
+                env: { SALTNET_RENDER_URL: RENDER_URL },
+            }
+        );
+        expect(result.json.error?.code).toBe("USAGE");
+        expect(result.json.error.message).toContain("nonexistent");
+        expect(result.requests.some(request => request.url === RENDER_ENDPOINT)).toBe(false);
+        expect(existsSync(path.join(paths.home, "offset.png"))).toBe(false);
+    });
+
     it("rejects unknown --fields before calling render service and before creating the image", async () => {
         const paths = makeHome();
         await seedScoreUsers(paths, [detailedUser("user-fields", "Fields User")]);
@@ -641,6 +750,70 @@ describe("b50 --image", () => {
         expect(result.json.error.message).toContain("nosuchfield");
         expect(requestReached).toBe(false);
         expect(existsSync(outPath)).toBe(false);
+    });
+
+    it("rejects unknown --fields with --offset beyond group sizes before calling render service", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("user-offset-fields", "Offset Fields User")]);
+
+        let requestReached = false;
+        const network = routes({
+            [RENDER_ENDPOINT]: () => {
+                requestReached = true;
+                return pngResponse();
+            },
+        });
+
+        const outFile = "offset-fields-out.png";
+        const outPath = path.resolve(paths.home, outFile);
+
+        const result = await commandIn(
+            paths,
+            "b50",
+            ["--image", outFile, "--offset", "50", "--fields", "typo"],
+            {
+                network,
+                cwd: paths.home,
+                env: { SALTNET_RENDER_URL: RENDER_URL },
+            }
+        );
+
+        expect(result.code).toBe(2);
+        expect(result.json.error.code).toBe("USAGE");
+        expect(result.json.error.message).toContain("typo");
+        expect(requestReached).toBe(false);
+        expect(existsSync(outPath)).toBe(false);
+    });
+
+    it("renders image with valid --fields and --offset 50", async () => {
+        const paths = makeHome();
+        await seedScoreUsers(paths, [detailedUser("user-valid-offset", "Valid Offset User")]);
+
+        let requestReached = false;
+        const network = routes({
+            [RENDER_ENDPOINT]: () => {
+                requestReached = true;
+                return pngResponse();
+            },
+        });
+
+        const outFile = "valid-offset.png";
+        const outPath = path.resolve(paths.home, outFile);
+
+        const result = await commandIn(
+            paths,
+            "b50",
+            ["--image", outFile, "--offset", "50", "--fields", "title,rating"],
+            {
+                network,
+                cwd: paths.home,
+                env: { SALTNET_RENDER_URL: RENDER_URL },
+            }
+        );
+
+        expect(result.code).toBe(0);
+        expect(requestReached).toBe(true);
+        expect(existsSync(outPath)).toBe(true);
     });
 
     it("draws no image and warns NO_IMAGE when selected mode has no charts in either group", async () => {

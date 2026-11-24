@@ -55,6 +55,12 @@ describe("cellOf", () => {
         expect(cellOf(row, "tags")).toEqual(["a", "b"]);
     });
 
+    it("prefers own key over nested path for a dotted column", () => {
+        expect(cellOf({ "a.b": 7 }, "a.b")).toBe(7);
+        expect(cellOf({ "a.b": 7, a: { b: 8 } }, "a.b")).toBe(7);
+        expect(cellOf({ a: { b: 8 } }, "a.b")).toBe(8);
+    });
+
     it("gives null when the row has no value there", () => {
         expect(cellOf(row, "none")).toBeNull();
         expect(cellOf(row, "none.rank")).toBeNull();

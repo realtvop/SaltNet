@@ -76,8 +76,8 @@ SaltNet is a three-package pnpm workspace:
     - `util/`: `toHalfWidth`.
 - `src/components/rendering/` is the frontend rendering client. Reusable B50 payload, image, font, and download-filename logic lives in `shared/rendering/` and is consumed by both packages.
 - `render-service/` is the Cloudflare Worker/Vercel image-rendering package. `src/worker.ts` is the Worker entry, `tests/` contains its Vitest suite, and both root and package-level `api/render/[...path].ts` files adapt the shared HTTP handler for Vercel deployments.
-- `cli/` is the `saltnet` command-line tool for agents (package `saltnet-cli`, Node 24). It imports
-  core through the same `@core/*` alias as the web app. The design is in
+- `cli/` is the `saltnet` command-line tool for agents (package `saltnet-cli`, Node 24.12 or newer). It
+  imports core through the same `@core/*` alias as the web app. The design is in
   `docs/spark/2026-11-10-saltnet-cli-design.md`, and `cli/README.md` tells users how to build and
   install it.
     - `src/main.ts` is the entry point (it only connects `runCli` in `src/cli.ts` to the real
@@ -85,7 +85,9 @@ SaltNet is a three-package pnpm workspace:
       `cli/dist/saltnet.mjs` with esbuild (git-ignored; the `bin` entry points at it), and
       `build.mjs --outfile <path>` writes the bundle to a caller-selected path instead. Defaults for
       the backend, render service and LXNS client are read from the web app's `.env` files at build
-      time (`build-defaults.mjs`).
+      time (`build-defaults.mjs`). A plugin in `build.mjs` puts stand-ins in place of `pinyin-pro`,
+      `wanakana` and `opencc-js/t2cn` that load the real module on first use, so a command that
+      never searches does not spend its start-up evaluating them.
     - `src/commands/` holds the typed command registry, the pieces the commands share and one file
       per command; the list of commands is in `index.ts`.
         - `registry.ts` is the single source that argument parsing, `--help`, `schema` and `guide`
@@ -97,7 +99,10 @@ SaltNet is a three-package pnpm workspace:
           that is added, dropped or retyped without updating the schema fails a test.
         - `describe.ts` has the shared machine-readable option, positional, usage and error
           descriptions; `parse.ts` and `values.ts` are the never-throwing parser, and `help.ts`
-          renders help.
+          renders help. A value that starts with `-` is written `--option=<value>`, which the
+          missing-value error and the help's general notes say; `values.ts` reads enum values
+          without regard to case or width and range values in full-width digits as half-width
+          ones.
         - `schema.ts` (commands, envelopes and public views) and `guide.ts` (the generated Markdown
           guide; `guide --skill` prints the same guide as a Claude Code skill) are the
           self-description commands.
@@ -110,8 +115,9 @@ SaltNet is a three-package pnpm workspace:
         - `userScores.ts` resolves the shared `--user` option and adds score meta and warnings.
         - `search.ts` is the `search` command (default `--limit` 10).
         - `song.ts` and `chart.ts` are the `song` and `chart` commands. Both take `--with related`
-          through `withRelated.ts`, which fetches the LXNS collections only when it is given, and
-          both take `--user`. `chart` always prints the chart info dialog's rating stage table in
+          through `withRelated.ts`, which fetches the LXNS collections only when it is given and
+          gives each related collection the selected user's `owned` and `progress`, and both take
+          `--user`. `chart` always prints the chart info dialog's rating stage table in
           its concise mode as `stages`, empty for a chart without a constant, and `--with` also
           takes `stages` (the full table), `friends` (the dialog's ranking of the local users on
           this chart), `history` (this chart's score events, as `history <chart>` prints them),
@@ -122,7 +128,8 @@ SaltNet is a three-package pnpm workspace:
           while a chart reference is resolved as `chart` resolves it, with `--user`. Every stage
           that `chart` and `calc` print has `gain`, the rise of the selected user's normal B50 total
           if the chart reached that stage, and `calc` with a chart and `--achievements` or
-          `--rating` also gives the `gain` of its result.
+          `--rating` also gives the `gain` of its result. `--achievements` is rounded to the four
+          decimal places the game keeps before anything is computed from it.
         - `charts.ts` is the `charts` command. Its filters are `--level`, `--constant`, `--diff`,
           `--version`, `--search`, `--gate`, `--course`, `--plate`, `--collection`, `--fav` (every
           chart of the songs in a local favorite), `--achieved` and `--missing` (each takes one
@@ -199,7 +206,8 @@ SaltNet is a three-package pnpm workspace:
           refuses while that user's sync runs, and deletes that user's credentials under the
           credentials lock.
         - `ingame.ts` holds `ingame backup` (exporting the in-game format JSON backup for a user with
-          mode 0600; warns `PARTIAL_BACKUP` when characters are missing or empty) and
+          a game ID, with mode 0600; item slots that are not lists are written as empty ones; warns
+          `PARTIAL_BACKUP` when characters are missing or empty) and
           `ingame check-login --qr -` (reads a QR code or link from stdin, checks that it belongs
           to the selected user's bound in-game account, and returns `user` and `isLogin` without
           logging in or writing local data).
@@ -218,7 +226,10 @@ SaltNet is a three-package pnpm workspace:
           rename, and reads the user again inside the transaction. Credential modifications stage
           `credentials.json` before database transactions that also change credentials. `--yes`
           where no confirmation applies is `USAGE`, and a rejected `df-token` is hidden in the
-          error message.
+          error message, whose fix is the bind command to run again with a new token. An identity
+          change holds the sync locks of both the old and the new uid, in sorted order
+          (`withBindingLocks` in `users/bindIdentity.ts`), so a sync of the new uid cannot start
+          while its credentials are still being moved.
         - `fav.ts` holds `fav list`, `create`, `rename`, `delete` (content-bound confirmation),
           `add` and `remove`. As in the web app, a favorite holds songs by the music id of their
           side together with the difficulty each was added at, and `charts --fav` lists every chart
@@ -233,8 +244,11 @@ SaltNet is a three-package pnpm workspace:
           digest and their position. `import` takes the sync locks of every stored and incoming uid
           in sorted order, checks the confirmation again inside the replacement transaction,
           removes the credential entries it changes before committing SQLite and publishes the
-          final credentials after it, and keeps `lxnsIssuedAt`. `export` reads users and events in
-          one `Store.read`. Both keep or restore an LXNS authorization only for the LXNS account it
+          final credentials after it, and keeps `lxnsIssuedAt`; a failure before the commit puts
+          the original `credentials.json` back while it still holds the credentials lock, and the
+          parse error of a malformed payload is never kept as a cause (it can quote tokens).
+          `export` reads users, events and `credentials.json` in one `Store.read` under the
+          credentials lock, so an import cannot publish between the reads. Both keep or restore an LXNS authorization only for the LXNS account it
           was stored for.
         - `sync.ts` fetches scores from the game, LXNS (matching authorization), or Diving Fish
           (import token or username with a public B50 fallback and the `PUBLIC_B50_ONLY` warning).
@@ -261,14 +275,19 @@ SaltNet is a three-package pnpm workspace:
       parser and checks the command and options of each one with a placeholder.
     - `src/output/` turns a command's result into output: the versioned JSON envelope
       (`envelope.ts`, whose history is `ENVELOPE_CHANGES`), the choice between json, tsv and text
-      (`format.ts`, `render.ts`, `tsv.ts`, `text.ts`, `table.ts`), `--fields` projection
-      (`fields.ts`), paging (`paging.ts`), the builders for the JSON Schemas of `data` (`schema.ts`;
+      (`format.ts`, `render.ts`, `tsv.ts`, `text.ts`, `table.ts`; a text page past the end gives
+      the total instead of a range), `--fields` projection (`fields.ts`: the requested paths are
+      checked against the item schema of the command's `dataSchema`, the leaves of a nullable
+      object included, and the TSV and text columns come from that schema, so an empty page is
+      checked the same way and prints the same header as a full one; a grouped TSV puts `group`
+      first; the `sql` columns come from `meta.columns`), paging (`paging.ts`), the builders for the JSON Schemas of `data` (`schema.ts`;
       an object lists every key it has, so a field that is added or dropped without updating its
       schema fails a test) and the warning codes (`warning.ts`).
     - `src/render/b50Image.ts` builds the render request body as the web app's B50 page does
       (`buildB50RenderPayload`, `toRenderChartPayload`, `getPlayerSecondaryName`), checks it with
       `parseB50Payload`, posts it to `<render.url>/render/b50` with one retry, and takes the answer's
-      bytes (`bytes()`, never the text) only when they start with the PNG signature.
+      bytes (`bytes()`, never the text) only when they start with the PNG signature and the IHDR
+      chunk and end with the IEND chunk.
     - `src/errors.ts` defines `CliError` and the error-code/exit-code table, and `src/toCliError.ts`
       turns anything thrown into a `CliError`.
     - `src/runtime/` resolves the data directory (`SALTNET_HOME`, default `~/.saltnet`) and layers
@@ -277,26 +296,36 @@ SaltNet is a three-package pnpm workspace:
         - `configRows.ts` shapes the settings as the rows `config list` and `config get` print;
           `configFile.ts` changes one entry of `config.json` for `config set` and `config unset` by
           rewriting the whole file in one step through `files.ts`, which `catalog/snapshots.ts` uses
-          too, and leaves a file that is not a JSON object alone.
+          too, and leaves a file that is not a JSON object alone. Writers take a lock next to the
+          file (`config.json.lock`, a directory published by renaming one that holds a unique
+          owner file; one whose owner process is gone and whose owner file is older than 5 seconds
+          is taken over) and fail with `DB_LOCKED` after waiting 5 seconds; a data directory that
+          cannot be written is named in the error.
         - `outputFile.ts` resolves output file paths against the working directory, checks
           `FILE_EXISTS` with a fix adding `--overwrite`, and writes text or bytes atomically with
           mode 0600. Without `--overwrite` the final write links the finished temporary file into
           place (or copies it exclusively where links are not supported; `files.ts` with
           `overwrite: false`), so a file created after the early check is still `FILE_EXISTS`.
+          Given the command's name (`b50 --image`), the early check also makes sure the parent is
+          an existing directory, so a `USAGE` error comes before any request; no command creates
+          directories.
         - `io.ts` wraps stdout/stderr/stdin and the network (`fetch`, whose responses may have
           `arrayBuffer`) so tests can inject them.
         - `http.ts` gives commands a `fetch` (`ctx.http()`) that validates header characters before
           sending, redacts header values from error messages and causes, adds the User-Agent and a
           deadline (`network.timeoutMs` unless the caller names another timeout setting), retries
           read requests once on connection failures, timeouts, body-read errors or 429/5xx statuses
-          when requested, and reports failures as `NETWORK`/`UPSTREAM_ERROR`, a timeout with a `fix`
-          that names the setting to raise. Its responses also have `bytes()`, the body as it came,
+          when requested, and reports failures as `NETWORK`/`UPSTREAM_ERROR`, a timeout with the
+          advice in its message and, as its `fix`, the one command that raises the setting
+          (`raiseTimeoutCommand`: twice the time that ran out, at least a minute, within the
+          setting's range; none when it is at its maximum). Its responses also have `bytes()`, the body as it came,
           for a binary body that `text()` would destroy by decoding it as UTF-8. Requests other
           than GET and HEAD, and requests with an Authorization or Import-Token header, do not
           follow redirects unless the caller asks; such a 3xx is an `UPSTREAM_ERROR` that is not
           retried.
         - `credentials.ts` strictly reads the versioned credential file (users and pending OAuth
-          authorizations) with a fix on parse failures, serializes modifications with
+          authorizations), saying in the message what to do on parse failures (no command repairs
+          the file, so there is no fix), serializes modifications with
           `withCredentialsLock`, prunes expired authorizations, orphaned user entries and LXNS
           authorizations whose user now has another LXNS id in `updateCredentials`, and stages
           mode-0600 whole-file replacements. Each LXNS authorization is stored with the LXNS id it
@@ -308,8 +337,9 @@ SaltNet is a three-package pnpm workspace:
     - `src/util/` has small helpers (edit distance and nearest names, name folding, display width,
       command-line splitting and quoting (`splitCommandLine`, `quoteArg`, `joinCommandLine`), times
       with a UTC offset). `printedCommand.ts` builds the commands printed as a `fix` so that they
-      run as printed: `user bind` names the default user `0`, a uid made only of digits or
-      starting with `uid:` is written `uid:<uid>`, a `--user` value that starts with `-`
+      run as printed: `user bind` names the default user `0`, a uid made only of digits, starting
+      with `uid:`, empty or with spaces around it is written `uid:<uid>`, a `--user` value that
+      starts with `-`
       is written `--user=<uid>`, such a user of `user bind` goes after `--` with the options before
       it, and such a file is written `./<file>`.
     - `src/store/` is the SQLite database, opened lazily through `ctx.store()`.
@@ -323,14 +353,19 @@ SaltNet is a three-package pnpm workspace:
           `user_items`, `user_characters`, `rating_history`, and `score_events`; migration 5 adds
           `favorites` and their `favorite_charts`, which stay on this machine and are never part of
           a backup; migration 6 adds `sync_runs`.
-        - `locks.ts` holds the expiring named locks, and `errors.ts` maps SQLite failures to CLI
-          errors.
+        - `locks.ts` holds the expiring named locks; `maintainLock` renews a lease on a timer and
+          takes a renewal that throws for a lost lease, so the holder's next check fails inside
+          the command instead of the timer killing the process. `errors.ts` maps SQLite failures
+          to CLI errors; opening the store for writing on a read-only data directory names the
+          directory that needs write access.
         - `sandbox.ts` and `query.ts` are where `sql` runs. `openSandbox` copies only the public
           views a query names, from the database attached read-only, into a throwaway in-memory
           database that an authorizer limits to `SELECT` of those copies, so no base table is
           reachable and the real database is detached before the query is prepared; `runQuery` runs
           exactly one statement there and turns the rows into JSON values, reporting what SQLite
-          objects to as `SQL_ERROR`.
+          objects to as `SQL_ERROR`. A statement Node prepared from text without SQL (blanks,
+          comments, semicolons) stays reachable until the process ends: Node does not forget one
+          that is collected, and closing the database then finalizes freed memory and crashes.
     - `src/catalog/` keeps the metadata in that database.
         - `store.ts` replaces the songs, charts and versions built from SaltMeta and the LXNS
           collections (one transaction each; collection kinds are `title`, `icon`, `plate`, `frame`,
@@ -340,7 +375,9 @@ SaltNet is a three-package pnpm workspace:
           `meta_state` (the KALEIDXSCOPE data stays out of the database).
         - `snapshots.ts` keeps the raw downloads in `cache/`, `load.ts` reads the rows back into the
           structures the web app keeps (`SavedMusicList`, the mapped collections), and `refresh.ts`
-          downloads the sources under the `metadata` lock.
+          downloads the sources under the `metadata` lock, renewing its lease while it downloads
+          and checking inside the write transaction that it still holds it (a refresh that lost it
+          writes nothing).
         - `ensure.ts` is what a command calls before it reads them: `ensureMetadata` (its first
           half, `ensureStored`, makes the rows current without loading them and is what `sql` calls)
           rebuilds rows built by another CLI version from the `cache/` snapshots, downloads what is
@@ -380,7 +417,8 @@ SaltNet is a three-package pnpm workspace:
         - `chartRow.ts` shapes a chart as the commands print it, while `chartScore.ts` adds the
           selected user's score and B50 place (the shared chart row, `constantOf` (the constant a
           chart has; null where the game has none), and the charter, note counts and statistics only
-          `chart` adds; unknown values are null).
+          `chart` adds; unknown values are null). The play count is the score history's estimate
+          where there is one, as on the web app's songs page, otherwise the record's own count.
         - `courseView.ts` shapes a course (`courseInfo`) and its tracks (`courseTracks`) as the
           commands print them, and `gateView.ts` the gate overview, the life calendar and a gate's
           songs (`gateOverview`, `gatePhases`, `gateDetail`, which pick one chart per song like the
@@ -408,14 +446,15 @@ SaltNet is a three-package pnpm workspace:
           once instead of once per row) with its columns described and the downloaded sources it
           needs, so a query only makes current what it reads. `VIEWS_VERSION` rises when a query
           could notice a change and `VIEWS_CHANGES` records those versions; `viewsMentionedIn` finds
-          the views a query names.
+          the views a query names outside its string literals and comments.
         - `schemas.ts` holds the JSON Schemas of the shapes several commands print (the chart row
           and its collection and course variants, a song's type, what uses a song or a chart, a
           source's status, a setting row), written with the builders of `src/output/schema.ts` and
           reused by each command's `dataSchema`.
     - `src/refs/` turns what a user typed into those entities.
         - `difficulty.ts` has the difficulty spellings, and `status.ts` the game's spellings of
-          ranks, combo statuses and sync statuses, the score conditions of `charts --achieved` and
+          ranks, combo statuses and sync statuses (the stored spellings such as `sssp` or `fsdp`
+          too), the score conditions of `charts --achieved` and
           `--missing` (`parseScoreCondition`, `scoreReachesCondition`) and the `--target` of
           `charts --sort gain` (`parseTargetRate`).
         - `level.ts` reads levels such as `13+`, and ranges where `13..14` takes `13`, `13+` and
@@ -434,7 +473,9 @@ SaltNet is a three-package pnpm workspace:
           case or width, never by a part of a name, because `config set` writes.
         - `song.ts` (`resolveSong`) takes a music id, chart key, exact title, exact alias, then the
           search index, with `AMBIGUOUS_REF`/`NOT_FOUND` candidates, and `chart.ts` (`resolveChart`)
-          a chart key, or a song reference plus difficulty and `--type`.
+          a chart key, or a song reference plus difficulty and `--type`. Music ids and chart keys
+          in full-width digits and letters are read as half-width ones, in `catalog/search.ts`
+          too.
         - `user.ts` resolves `uid:<uid>` to exactly that uid, otherwise the default position, a
           numeric index, an exact uid or display name, then a folded display name; `favorite.ts` resolves a favorite by its whole name, then by a
           part that only one favorite has.
@@ -446,13 +487,16 @@ SaltNet is a three-package pnpm workspace:
       preserves user order, provides raw-user, row-count and event reads, and shapes the
       credential-free rows used by `user` and `status` (`view.ts`). Replacing music recomputes every
       stored user chart key in the catalog transaction. `rows.ts` also gives `userForCoreScores`,
-      a copy of a user without the raw score and rating-history values core cannot look up, which
-      the score commands pass to core; `users.raw` and exports keep them.
+      a copy of a user without the raw score and rating-history values core cannot look up or
+      compute with (records whose `ra`, `achievements` or `ds` is not a finite number), which the
+      score commands pass to core; `users.raw` and exports keep them.
         - `bindIdentity.ts` previews an identity replacement against the same row fingerprint as
           `user remove` and stages credential changes before the SQLite write. The repository
           replaces the user in its existing slot and cascades deletion of the old user's rows.
-        - `lxnsBind.ts` starts the OAuth transaction, checks the callback under the user's sync
-          lock, and saves the checked exchange privately for 15 minutes.
+        - `lxnsBind.ts` starts the OAuth transaction under the user's sync lock, after
+          `validateLxnsRedirect` has checked that `lxns.redirectUri` keeps the
+          `lxns_auth_complete` parameter the callback check needs, checks the callback under the
+          user's sync lock, and saves the checked exchange privately for 15 minutes.
           `user bind <user> lxns --yes <code>` completes a pending identity change from that
           exchange. It uses the token's profile claims, like the web app, and creates no
           `sync_runs` entry.
@@ -469,15 +513,22 @@ SaltNet is a three-package pnpm workspace:
     - `src/sync/` holds score syncing, uploads, the `sync_runs` journal, sync locks and token refresh.
         - `types.ts` defines sync result data shapes, change items, sources and modes.
         - `sources.ts` resolves sync sources (`auto`, `ingame`, `lxns`, `df-token`, `df-name`)
-          and builds credential-bearing user working copies for core.
+          and builds credential-bearing user working copies for core. The fixes it prints repeat
+          the invocation's `--no-upload`, `--dry-run` and `--offline`, and name other bound
+          sources in the message, never in the fix.
         - `clients.ts` constructs `SyncClients` with core clients and network retries, wraps calls to
           capture upstream errors, and maps them to `CliError`. Game score reads use
           `network.updateTimeoutMs` and the LXNS supplement refreshes authorization on demand.
           SaltNet reads try the fallback address as their one retry when both addresses are set,
           and retry a single address once in `http.ts`. A definite Diving Fish username rejection
-          wins over a passing SaltNet failure.
+          wins over a passing SaltNet failure. A game update reply without `userName`, `rating`,
+          `divingFishData` or both B50 lists is `UPSTREAM_ERROR` before core reads it
+          (`assertGameUpdate`), and a fast update that timed out keeps its timeout message and the
+          command raising `network.updateTimeoutMs` (`gameTimeoutFix`).
         - `ingame.ts` reads and normalizes the QR input, checks its account with `GetQRInfo` before
           login, and sends QR requests once with safe error messages and no fallback replay.
+          `requireGameBackend` fails with `USAGE` naming `api.url` when neither game address is
+          set, before stdin is read or anything is sent.
         - `changes.ts` reports the records the current sync brought, orders the changes by rating
           gain, and computes summary counts (`charts`, `added`, `improved`; a chart is improved when
           its achievement rate, DX score, combo or sync rises and none of them falls).
@@ -495,9 +546,11 @@ SaltNet is a three-package pnpm workspace:
         - `all.ts` selects users and collects each sync result. `plan.ts` reads a read-only
           SQLite snapshot and shares source, mode, binding and upload decisions with execution; a
           plan that fails keeps the chosen source and reports a null mode, no uploads and a local
-          effect.
-          `secrets.ts` redacts credentials from sync diagnostics and detects echoed credentials
-          before an upstream result is saved.
+          effect. The plan applies the same LXNS access-token check (`checkLxnsAccess`) and the
+          same missing-backend check as execution.
+          `secrets.ts` redacts credentials, also in their `encodeURIComponent` and form-encoded
+          spellings, from sync diagnostics and detects echoed credentials before an upstream
+          result is saved.
         - `uploads.ts` sends each upload once without following redirects, under the same sync
           lock, which it checks immediately before each request. It refreshes LXNS authorization when needed and journals each target separately
           with the record count and credential-free diagnostics.
@@ -506,7 +559,8 @@ SaltNet is a three-package pnpm workspace:
           rejects non-plain JSON values, ensuring no token or secret is ever recorded.
         - `lock.ts` manages the per-user sync lock `sync:<uid>` (`withSyncLock`, `assertNoSync`).
           It auto-renews while active, calls `interruptRuns` on taking the lock to mark that user's
-          abandoned runs, and protects concurrent mutations.
+          abandoned runs, and protects concurrent mutations. `SYNC_IN_PROGRESS` says that the
+          other run may have been interrupted and when its lease expires.
         - `lxnsToken.ts` refreshes LXNS access tokens under the caller's sync lock (`lxnsAccessToken`),
           used by `sync` and uploads before requests. Under the account rule, it writes refreshed
           tokens (`lxnsAuthorization`, `lxnsAccountId`, `lxnsIssuedAt`) conditionally only if the
@@ -514,6 +568,9 @@ SaltNet is a three-package pnpm workspace:
           `invalid_grant` or identity change clears credentials only if the entry still matches.
           It needs a valid stored LXNS id and checks the access token's `id` claim before using it;
           it waits for the credentials lock on the live clock and saves the issue time it took once.
+          One invocation sends a refresh token at most once: after a refresh of it failed, a later
+          call (the upload after a fast sync's LXNS supplement) fails with
+          `LxnsRefreshSkippedError` instead of sending it again.
     - `tests/` holds the Vitest suite.
         - `harness.ts` runs a command line in-process with captured output; `createHarness` has no
           network unless a test brings one. `mockHttp.ts` answers requests from a table (honoring
@@ -618,7 +675,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
 - `pnpm test:course` validates the static dan-course snapshot and ordered chart matching.
 - `pnpm test:kaleidxscope` validates the gate, noise-stage, and final-sequence snapshot, life-phase boundaries, and chart matching. Unconfirmed life calendars remain empty unless explicitly requested as estimates; the noise calendar uses a labeled three-day estimate from October 1 at 07:00 UTC+8.
 - `pnpm test:collection-index` runs focused tests for collection caching, initialization, the
-  LXNS collection fetch and mapping, static character/partner data, the ChartInfo reverse
+  LXNS collection fetch and mapping (and that its web wrapper keeps the web app's plain `Error`), static character/partner data, the ChartInfo reverse
   association index (core builder and web wrapper), collection ownership and scored collection
   charts, and version-plate tab merging.
 - `pnpm test:score-history` validates score-change detection, building batch events, IndexedDB
@@ -637,7 +694,7 @@ Install all workspace dependencies with `pnpm install`. From the repository root
   search relevance, stable ties, compatibility with the existing match set and chart positions.
   Regenerate the snapshots only for an intentional behavior change.
 - `pnpm test:build-info` verifies that version timestamps ignore documentation-only and
-  formatting-only commits.
+  formatting-only commits, and commits that only touch `cli/` or `docs/`.
 - `pnpm test:oauth` validates callback cleanup, authorization recovery, user identity targeting,
   token response compatibility, refresh-token handling, serialized durable user writes,
   initial dialog-history reconciliation, the core token and client tests, and the core OAuth

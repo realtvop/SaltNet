@@ -5,6 +5,7 @@ import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { beginRun, readRuns } from "../../src/sync/journal";
 import { assertNoSync, withSyncLock } from "../../src/sync/lock";
+import { formatLocalTime } from "../../src/util/time";
 import { caught } from "../caught";
 import { insertMadeUsers } from "../madeUsers";
 import { useTempHome } from "../tempHome";
@@ -44,9 +45,36 @@ describe("sync lock", () => {
             expect(holder.pid).toBe(process.pid);
             expect(holder.acquiredAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
             expect(holder.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+            expect(err.message).toContain("可能已中断");
+            expect(err.message).toContain(holder.expiresAt);
         });
 
         store.close();
+    });
+
+    it("marks the lock lost when background renewal throws and releases it on failure", async () => {
+        vi.useFakeTimers();
+        const store = openStore(makeHome());
+        try {
+            await expect(
+                withSyncLock(store, { uid: "u1", name: "Alice" }, handle => {
+                    const renewal = vi.spyOn(handle.lock, "renew").mockImplementationOnce(() => {
+                        throw new Error("made-up database busy failure");
+                    });
+                    expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
+                    expect(renewal).toHaveBeenCalledTimes(1);
+                    handle.assertHeld();
+                })
+            ).rejects.toMatchObject({
+                code: "INTERNAL",
+                message: expect.stringContaining("同步锁已失效"),
+            });
+            expect(store.db.prepare("SELECT count(*) AS n FROM locks").get()).toEqual({ n: 0 });
+            expect(vi.getTimerCount()).toBe(0);
+        } finally {
+            store.close();
+            vi.useRealTimers();
+        }
     });
 
     it("releases the lock after work returns and after it throws", async () => {
@@ -81,16 +109,20 @@ describe("sync lock", () => {
         let time = 1000;
         const now = () => time;
 
-        // Acquire lock directly with TTL 100ms
-        acquireLock(store, "sync:u3", { ttlMs: 100, now });
+        acquireLock(store, "sync:u3", { ttlMs: 1500, now });
         expect(
             store.db.prepare("SELECT count(*) AS n FROM locks WHERE name = 'sync:u3'").get()
         ).toEqual({
             n: 1,
         });
+        await expect(withSyncLock(store, user, () => {}, { now })).rejects.toMatchObject({
+            code: "SYNC_IN_PROGRESS",
+            retryable: true,
+            message: expect.stringContaining(formatLocalTime(new Date(2500))),
+        });
 
         // Fast forward time past expiry
-        time = 1200;
+        time = 2500;
 
         let acquired = false;
         await withSyncLock(

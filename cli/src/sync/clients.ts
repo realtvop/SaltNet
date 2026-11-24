@@ -9,7 +9,7 @@ import type {
 } from "@core/integrations/diving-fish/type";
 import type { LXNSAuth, LXNSScore, LXNSUser } from "@core/integrations/lxns/type";
 import type { SavedMusicList } from "@core/music/type";
-import type { LXNSScoreData, SyncClients } from "@core/sync/type";
+import type { LXNSScoreData, SyncClients, UpdateUserResponse } from "@core/sync/type";
 import type { User } from "@core/user/type";
 import type { CommandContext } from "../commands/registry";
 import type { ResolvedSyncSource } from "./types";
@@ -34,7 +34,20 @@ import { toHalfWidth } from "@core/util/toHalfWidth";
 import { CliError } from "../errors";
 import { createHttp } from "../runtime/http";
 import { dfNameBindCommand, userBindCommand } from "../util/printedCommand";
-import { postQrGameApi } from "./ingame";
+import { gameTimeoutFix, postQrGameApi } from "./ingame";
+
+function assertGameUpdate(data: unknown): asserts data is UpdateUserResponse {
+    const reply = data as Partial<UpdateUserResponse> | null | undefined;
+    if (
+        typeof reply?.userName !== "string" ||
+        !Number.isFinite(reply.rating) ||
+        !Array.isArray(reply.divingFishData) ||
+        !Array.isArray(reply.b50?.sd) ||
+        !Array.isArray(reply.b50.dx)
+    ) {
+        throw new CliError("UPSTREAM_ERROR", "舞萌服务返回的数据不完整");
+    }
+}
 
 export interface SyncClientsWrapper {
     readonly clients: SyncClients;
@@ -164,26 +177,44 @@ export function createSyncClients(
         async <T>(endpoint: SaltAPIEndpoints, body: object): Promise<T> => {
             if (inGame?.useQr && endpoint === SaltAPIEndpoints.UpdateUser) {
                 inGame.assertHeld();
-                return (await postQrGameApi(ctx, endpoint, body)) as T;
+                const reply = await postQrGameApi(ctx, endpoint, body);
+                assertGameUpdate(reply);
+                return reply as T;
             }
             let firstRequest: ReturnType<FetchLike> | undefined;
             let redirectError: CliError | undefined;
-            const fetchAddress: FetchLike = (url, init) =>
-                httpSaltNet(url, init).catch((error: unknown) => {
-                    const status = error instanceof CliError ? error.extra?.status : undefined;
-                    if (
-                        error instanceof CliError &&
-                        typeof status === "number" &&
-                        status >= 300 &&
-                        status < 400
-                    ) {
-                        redirectError = error;
+            let timeoutError: CliError | undefined;
+            const fastGame = inGame && !inGame.useQr;
+            const fetchAddress: FetchLike = async (url, init) => {
+                timeoutError = undefined;
+                try {
+                    return await httpSaltNet(url, init);
+                } catch (error) {
+                    if (error instanceof CliError) {
+                        const status = error.extra?.status;
+                        if (typeof status === "number" && status >= 300 && status < 400) {
+                            redirectError = error;
+                        }
+                        const fix = fastGame
+                            ? gameTimeoutFix(
+                                  error,
+                                  "network.updateTimeoutMs",
+                                  network.updateTimeoutMs
+                              )
+                            : undefined;
+                        if (fix) {
+                            timeoutError = new CliError(error.code, error.message, {
+                                fix,
+                                retryable: error.retryable,
+                            });
+                        }
                     }
                     throw error;
-                });
+                }
+            };
 
             try {
-                return await postSaltNetAPIJSON<T>(endpoint, body, {
+                const reply = await postSaltNetAPIJSON<T>(endpoint, body, {
                     config: {
                         saltnetApiUrl: api.url || api.fallbackUrl,
                         saltnetApiFallbackUrl: api.fallbackUrl,
@@ -200,8 +231,10 @@ export function createSyncClients(
                             : firstRequest;
                     },
                 });
+                if (endpoint === SaltAPIEndpoints.UpdateUser) assertGameUpdate(reply);
+                return reply;
             } catch (error) {
-                throw redirectError ?? error;
+                throw redirectError ?? timeoutError ?? error;
             }
         }
     );
@@ -273,9 +306,10 @@ export function mapSyncError(
             // By name, Diving Fish refuses a name it does not know or whose scores are private.
             const byName = source === "df-name";
             const refused = byName ? "水鱼拒绝了按用户名查询" : "水鱼拒绝了访问凭据";
-            return new CliError("NOT_BOUND", `${refused}（${error.message}）`, {
+            const alternative = byName ? "。也可绑定水鱼 Import-Token" : "";
+            return new CliError("NOT_BOUND", `${refused}（${error.message}）${alternative}`, {
                 fix: byName
-                    ? `${dfNameBindCommand(userRef)}；或绑定 Import-Token：${userBindCommand(userRef, "df-token", ["-"])}`
+                    ? dfNameBindCommand(userRef)
                     : userBindCommand(userRef, "df-token", ["-"]),
                 retryable: false,
                 extra: { status: error.status },

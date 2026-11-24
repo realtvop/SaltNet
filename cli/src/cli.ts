@@ -118,6 +118,7 @@ async function run(
         const rendered = renderSuccess({
             command: spec.name,
             output: spec.output,
+            dataSchema: spec.dataSchema,
             result,
             format,
             pretty: args.global.pretty,

@@ -34,10 +34,14 @@ export function columnsOf(rows: readonly unknown[]): string[] {
         }
     };
     walk(root, "");
+
     return columns;
 }
 
 /** The value of a column in a row, null when the row has none. */
 export function cellOf(row: unknown, column: string): unknown {
+    if (isPlainObject(row) && Object.hasOwn(row, column)) {
+        return row[column] ?? null;
+    }
     return getPath(row, column.split("."));
 }

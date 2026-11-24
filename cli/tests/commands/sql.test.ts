@@ -3,6 +3,7 @@ import type { PrintedOutput } from "../commandRun";
 import type { Route } from "../mockHttp";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { viewsMentionedIn } from "../../src/catalog/views";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, LXNS_URL, META_URL, NOW } from "../commandRun";
 import { useTempHome } from "../tempHome";
@@ -80,6 +81,13 @@ describe("sql command", () => {
         expect(res.json.data.items).toEqual([{ one: 1 }]);
     });
 
+    it("keeps dotted column names in tsv output", async () => {
+        const paths = makeHome();
+        const res = await runSql(paths, ["--format", "tsv", 'SELECT 7 AS "a.b"']);
+        expect(res.code).toBe(0);
+        expect(res.stdout).toBe("a.b\n7\n");
+    });
+
     it("accepts comments when preceded by -- to avoid option parsing", async () => {
         const paths = makeHome();
         const res = await runSql(paths, ["--", "-- note\nSELECT 1 AS one"]);
@@ -134,10 +142,20 @@ describe("sql command", () => {
         });
 
         const pathsString = makeHome();
-        const resString = await runSql(pathsString, ["SELECT 'v_collections' AS name"]);
+        const resString = await runSql(pathsString, ["SELECT 'v_collections' AS label"]);
         expect(resString.code).toBe(0);
-        expect(resString.requests.map(r => r.url)).toEqual(EXPECTED_LXNS_REQUESTS);
-        expect(resString.json.data.items).toEqual([{ name: "v_collections" }]);
+        expect(resString.requests).toEqual([]);
+        expect(resString.json.data.items).toEqual([{ label: "v_collections" }]);
+    });
+
+    it("does not treat string literals or comments as naming views in viewsMentionedIn", () => {
+        const names = (sql: string) => viewsMentionedIn(sql).map(v => v.name);
+        expect(names("SELECT 'v_collections' AS label")).toEqual([]);
+        expect(names("SELECT 'it''s v_charts'")).toEqual([]);
+        expect(names("SELECT * FROM v_charts -- v_scores")).toEqual(["v_charts"]);
+        expect(names("SELECT * FROM /* v_scores */ v_charts")).toEqual(["v_charts"]);
+        expect(names('SELECT * FROM "v_scores"')).toEqual(["v_scores"]);
+        expect(names("SELECT * FROM [v_scores]")).toEqual(["v_scores"]);
     });
 
     it("serves subsequent calls from cache and handles stale metadata", async () => {

@@ -1,7 +1,12 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { replaceMusic } from "../../src/catalog/store";
+import { openStore } from "../../src/store/store";
+import { replaceUsers } from "../../src/users/repository";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, NOW } from "../commandRun";
+import { madeMusicBuild } from "../madeCatalog";
+import { recordOf, user } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 import { useTimeZone } from "../zone";
 
@@ -429,5 +434,50 @@ describe("kaleidxscope gate detail command", () => {
         const overviewLater = await gateIn(paths, [], { now: later, network: {} });
         expect(overviewLater.code).toBe(0);
         expect(overviewLater.json.warnings).toEqual([]);
+    });
+
+    it("attaches the user's score to a gate's song rows", async () => {
+        const paths = makeHome();
+        const store = openStore(paths);
+        const build = madeMusicBuild([
+            {
+                id: 11009,
+                title: "STEREOSCAPE",
+                charters: ["Someone", "Someone", "Someone", "Someone"],
+            },
+        ]);
+        const chartMaster = build.music.chartList[11009 * 10 + 3];
+        const testUser = user("u0", "Tester", {
+            detailed: {
+                "11009-3": {
+                    ...recordOf(chartMaster, 0),
+                    achievements: 100.5,
+                },
+            },
+        });
+        try {
+            replaceMusic(store, build, { fetchedAt: NOW.getTime(), upstreamVersion: "test" });
+            replaceUsers(store, [testUser], []);
+        } finally {
+            store.close();
+        }
+
+        const { code, json } = await gateIn(paths, ["blue", "--user", "0", "--diff", "mas"]);
+        expect(code).toBe(0);
+        expect(json.ok).toBe(true);
+
+        const keySong = json.data.keyCondition.songs.find(
+            (s: { musicId: number }) => s.musicId === 11009
+        );
+        expect(keySong).toBeDefined();
+        expect(keySong.score).not.toBeNull();
+        expect(keySong.score.achievements).toBe(100.5);
+
+        const poolSong = json.data.pools[0].songs.find(
+            (s: { musicId: number }) => s.musicId === 11009
+        );
+        expect(poolSong).toBeDefined();
+        expect(poolSong.score).not.toBeNull();
+        expect(poolSong.score.achievements).toBe(100.5);
     });
 });

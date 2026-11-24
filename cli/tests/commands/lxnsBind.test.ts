@@ -544,6 +544,29 @@ describe("user bind lxns", () => {
         expect(existsSync(paths.credentials)).toBe(false);
     });
 
+    it("writes no authorization when the sync lock is lost while it waits for the credential lock", async () => {
+        const { paths, store } = fixture();
+        const held = acquireLock(store, "credentials", { ttlMs: 30_000 });
+        if (!held.acquired) throw new Error("expected the credentials lock");
+        const starting = bind(paths, uid, ["--offline"]);
+        try {
+            const syncLock = store.db.prepare("SELECT owner FROM locks WHERE name = ?");
+            for (let tries = 0; !syncLock.get(`sync:${uid}`); tries++) {
+                if (tries > 400) throw new Error("the command never took the user's sync lock");
+                await new Promise(resolve => setTimeout(resolve, 5));
+            }
+            // Another process takes the user's lock over while this one waits for the credentials.
+            store.db
+                .prepare("UPDATE locks SET owner = 'FAKE-OTHER-OWNER' WHERE name = ?")
+                .run(`sync:${uid}`);
+        } finally {
+            held.lock.release();
+        }
+        const result = await starting;
+        expect(result.json.error.code).toBe("INTERNAL");
+        expect(existsSync(paths.credentials)).toBe(false);
+    });
+
     it("asks for a new authorization when the credential lock is lost during the exchange", async () => {
         const { paths, store, user } = fixture();
         const { link, state, transaction } = await start(paths);

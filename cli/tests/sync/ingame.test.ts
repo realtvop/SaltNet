@@ -8,6 +8,7 @@ import { getFixtureSaltMetaCompacted } from "@core/fixtures/saltmeta";
 import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { ComboStatus, SyncStatus } from "@core/mai/types";
 import { describe, expect, it, vi } from "vitest";
+import { createRegistry } from "../../src/commands";
 import { syncDataSchema } from "../../src/commands/sync";
 import { CliError } from "../../src/errors";
 import { resolveConfig } from "../../src/runtime/config";
@@ -21,6 +22,7 @@ import * as syncLock from "../../src/sync/lock";
 import { readScoreEvents, readUsers, saveUser } from "../../src/users/repository";
 import { commandIn, LXNS_URL, META_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
+import { createHarness, run } from "../harness";
 import { delayedRoute, jsonResponse, mockFetch } from "../mockHttp";
 import { parsePrintedCommand } from "../printedCommand";
 import { allFixtureRecords, recordOf, scoreEvent, seedScoreUsers, user } from "../scoreUsers";
@@ -754,10 +756,11 @@ describe("in-game sync", () => {
         ]);
         expect(fetch.requests).toHaveLength(1);
         expect(fetch.requests[0].init).toMatchObject({ redirect: "manual" });
-        expect(error).toMatchObject({
-            code: "NETWORK",
-            retryable: false,
-            fix: expect.stringContaining(`saltnet config set ${key} `),
+        expect(error).toMatchObject({ code: "NETWORK", retryable: false });
+        if (!(error instanceof CliError)) throw new Error("Expected a CliError");
+        expect(parsePrintedCommand(error.fix)).toMatchObject({
+            command: "config set",
+            positionals: { key },
         });
     });
 
@@ -869,7 +872,7 @@ describe("in-game sync", () => {
         expect(result.code).toBe(5);
         expect(result.json.error).toMatchObject({
             code: "UPSTREAM_ERROR",
-            message: "舞萌成绩响应包含凭据，无法保存",
+            message: expect.stringContaining("舞萌成绩响应包含凭据，无法保存"),
         });
         const state = persisted(paths);
         expect(state.scores).toEqual([]);
@@ -940,6 +943,115 @@ describe("in-game sync", () => {
         });
     });
 
+    it.each(["fast", "full"] as const)(
+        "rejects an incomplete %s game reply and journals the failure",
+        async mode => {
+            const paths = makeHome();
+            await seedScoreUsers(paths, [fakePlayer()]);
+            const before = persisted(paths);
+            const full = mode === "full";
+            const result = await gameSync(
+                paths,
+                full ? ["--qr", "-"] : [],
+                {
+                    [getQr]: jsonResponse({ errorID: 0, userID: gameId }),
+                    [update]: jsonResponse({}),
+                },
+                full ? qrInput : undefined
+            );
+            expect(result.requests.map(request => request.url)).toEqual(
+                full ? [getQr, update] : [update]
+            );
+            expect(result.json.error).toMatchObject({
+                code: "UPSTREAM_ERROR",
+                message: "舞萌服务返回的数据不完整",
+            });
+            const state = persisted(paths);
+            expect(state.users).toEqual(before.users);
+            expect(state.events).toEqual(before.events);
+            expect(state.runs).toMatchObject([
+                { mode, outcome: "failed", errorCode: "UPSTREAM_ERROR" },
+            ]);
+        }
+    );
+
+    it.each([false, true])(
+        "requires a configured backend before game sync or planning (QR: %s)",
+        async full => {
+            const paths = makeHome();
+            await seedScoreUsers(paths, [fakePlayer()]);
+            const args = ["--source", "ingame", ...(full ? ["--qr", "-"] : [])];
+            const env = { SALTNET_API_URL: "", SALTNET_API_FALLBACK_URL: "" };
+            const harness = createHarness({
+                env: { ...env, SALTNET_HOME: paths.home },
+                stdin: qrInput,
+            });
+            const code = await run(createRegistry(), harness, "sync", ...args);
+            expect(code).toBe(2);
+            expect(harness.readStdin).not.toHaveBeenCalled();
+            expect(harness.fetch).not.toHaveBeenCalled();
+            const { error } = JSON.parse(harness.stdout());
+            expect(error).toMatchObject({
+                code: "USAGE",
+                message: expect.stringContaining("api.url"),
+            });
+            expect(parsePrintedCommand(error.fix)).toMatchObject({
+                command: "config set",
+                positionals: { key: "api.url", value: "<地址>" },
+            });
+            const plan = await commandIn(paths, "sync", [...args, "--dry-run"], {
+                env,
+                network: {},
+            });
+            expect(plan.json.data.plans).toMatchObject([
+                {
+                    source: "ingame",
+                    mode: null,
+                    uploads: [],
+                    error: { code: error.code, message: error.message, fix: error.fix },
+                },
+            ]);
+            expect(plan.requests).toEqual([]);
+        }
+    );
+
+    it.each(["", fallback])(
+        "preserves the fast update timeout and its config command with fallback %j",
+        async fallbackUrl => {
+            const paths = makeHome();
+            const player = fakePlayer();
+            player.divingFish.name = "fake-fallback-name";
+            await seedScoreUsers(paths, [player]);
+            const fallbackUpdate = `${fallback}/updateUser`;
+            const result = await gameSync(
+                paths,
+                ["--source", "ingame", "--no-upload"],
+                {
+                    [update]: delayedRoute(gameResult(), 3000),
+                    [fallbackUpdate]: delayedRoute(gameResult(), 3000),
+                },
+                undefined,
+                { SALTNET_NETWORK_UPDATE_TIMEOUT_MS: "1000", SALTNET_API_FALLBACK_URL: fallbackUrl }
+            );
+            expect(result.requests.map(request => request.url)).toEqual([
+                update,
+                fallbackUrl ? fallbackUpdate : update,
+            ]);
+            expect(result.json.error).toMatchObject({
+                code: "NETWORK",
+                message: expect.stringMatching(/超时.*1/),
+                retryable: true,
+            });
+            expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+                command: "config set",
+                positionals: { key: "network.updateTimeoutMs", value: "60000" },
+            });
+            expect(persisted(paths).runs).toMatchObject([
+                { outcome: "failed", errorCode: "NETWORK" },
+            ]);
+        }
+    );
+
     it("waits for a fast update as long as the update timeout allows", async () => {
         const paths = makeHome();
         await seedScoreUsers(paths, [fakePlayer()]);
@@ -1002,26 +1114,42 @@ describe("in-game sync", () => {
         }
     );
 
-    it("suggests the game when another bound source fails", async () => {
-        const paths = makeHome();
-        const player = fakePlayer();
-        player.lxns = { id: lxnsId, name: "Fake LXNS", auth: null };
-        await seedScoreUsers(paths, [player]);
-        const valid = NOW.getTime() + 3_600_000;
-        const access = jwt(valid / 1000);
-        stageCredentials(paths, {
-            version: 1,
-            users: { [uid]: lxnsCredentials(access, valid) },
-        }).commit();
-        const result = await gameSync(paths, ["--source", "lxns"], {
-            [lxnsPlayer]: jsonResponse({ success: false, message: access }, 401),
-        });
-        expect(result.requests.map(r => r.url)).toEqual([lxnsPlayer]);
-        expect(result.code).toBe(4);
-        expect(result.json.error).toMatchObject({
+    it.each([
+        {
+            status: 401,
+            requests: [lxnsPlayer],
             code: "NOT_BOUND",
-            fix: "saltnet user bind 0 lxns；或尝试其他已绑定来源：saltnet sync --source ingame",
-        });
-        expectPrivate(paths, result, [access, refreshToken]);
-    });
+            fix: { command: "user bind", positionals: { user: "0", source: "lxns" } },
+        },
+        {
+            status: 503,
+            requests: [lxnsPlayer, lxnsPlayer],
+            code: "UPSTREAM_ERROR",
+            fix: { command: "sync", options: { source: "ingame", upload: false } },
+        },
+    ])(
+        "suggests the game after LXNS returns HTTP $status",
+        async ({ status, requests, code, fix }) => {
+            const paths = makeHome();
+            const player = fakePlayer();
+            player.lxns = { id: lxnsId, name: "Fake LXNS", auth: null };
+            await seedScoreUsers(paths, [player]);
+            const valid = NOW.getTime() + 3_600_000;
+            const access = jwt(valid / 1000);
+            stageCredentials(paths, {
+                version: 1,
+                users: { [uid]: lxnsCredentials(access, valid) },
+            }).commit();
+            const result = await gameSync(paths, ["--source", "lxns", "--no-upload"], {
+                [lxnsPlayer]: jsonResponse({ success: false, message: access }, status),
+            });
+            expect(result.requests.map(r => r.url)).toEqual(requests);
+            expect(result.json.error).toMatchObject({
+                code,
+                message: expect.stringContaining("ingame"),
+            });
+            expect(parsePrintedCommand(result.json.error.fix)).toMatchObject(fix);
+            expectPrivate(paths, result, [access, refreshToken]);
+        }
+    );
 });

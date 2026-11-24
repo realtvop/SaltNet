@@ -9,6 +9,8 @@ import type { FetchInit, FetchResponse } from "@core/http";
 import type { ConfigKey } from "./config";
 import type { HttpFetch, HttpResponse } from "./io";
 import { CliError } from "../errors";
+import { joinCommandLine } from "../util/shell";
+import { findConfigDefinition } from "./config";
 
 export type TimeoutConfigKey = Extract<
     ConfigKey,
@@ -51,6 +53,22 @@ export function hostOf(url: string): string {
     } catch {
         return "上游服务";
     }
+}
+
+/** A timeout that ran out is never suggested below a minute: a slow network needs that much. */
+const RAISED_TIMEOUT_FLOOR_MS = 60_000;
+
+/**
+ * The command that raises a timeout setting after it ran out: to twice the time it allowed, at
+ * least a minute, within the setting's range. None when the setting cannot go any higher.
+ */
+export function raiseTimeoutCommand(key: TimeoutConfigKey, timeoutMs: number): string | undefined {
+    const kind = findConfigDefinition(key)?.kind;
+    if (kind?.type !== "integer") return undefined;
+    const raised = Math.min(kind.max, Math.max(kind.min, RAISED_TIMEOUT_FLOOR_MS, timeoutMs * 2));
+    return raised > timeoutMs
+        ? joinCommandLine(["saltnet", "config", "set", key, String(raised)])
+        : undefined;
 }
 
 function formatDuration(ms: number): string {
@@ -154,13 +172,14 @@ function networkError(
 ): CliError {
     const hasSecret = errorChainContains(error, secrets);
     if (isTimeout(error)) {
+        // A fix is one command that runs as printed (design 4.3), so the advice is in the message.
+        const fix = raiseTimeoutCommand(timeoutKey, timeoutMs);
+        const advice =
+            fix === undefined ? `${timeoutKey} 已经是最大值` : `网络较慢时可以调大 ${timeoutKey}`;
         return new CliError(
             "NETWORK",
-            `请求 ${host} 超时（超过 ${formatDuration(timeoutMs)} 没有完成）`,
-            {
-                fix: `网络较慢时可以调大 ${timeoutKey}，例如 saltnet config set ${timeoutKey} 60000`,
-                cause: hasSecret ? undefined : error,
-            }
+            `请求 ${host} 超时（超过 ${formatDuration(timeoutMs)} 没有完成）；${advice}`,
+            { fix, cause: hasSecret ? undefined : error }
         );
     }
     const rawReason = reasonOf(error);

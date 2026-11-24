@@ -207,7 +207,11 @@ class Scanner {
                 let raw = inline;
                 if (raw === undefined) {
                     const next = this.argv[index + 1];
-                    if (!isValueToken(next)) throw new ValueError(`选项 --${flag} 缺少值`);
+                    if (!isValueToken(next)) {
+                        const note =
+                            next === undefined ? "" : `；以 - 开头的值请写成 --${flag}=<值>`;
+                        throw new ValueError(`选项 --${flag} 缺少值${note}`);
+                    }
                     raw = next;
                     consumed = index + 1;
                 }

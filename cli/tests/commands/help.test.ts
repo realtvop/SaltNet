@@ -25,6 +25,10 @@ function help(...words: string[]): string {
 }
 
 describe("root help", () => {
+    it("explains the equals form once in the general notes", () => {
+        expect(help().match(/--选项=<值>/g)).toEqual(["--选项=<值>"]);
+    });
+
     it("lists the commands under their headings, with groups folded into one line", () => {
         expect(lines(help())).toEqual([
             "saltnet 9.9.9",
@@ -49,6 +53,8 @@ describe("root help", () => {
             "  --format <json|tsv|text>  输出格式：json 给程序，tsv 只用于列表，text 给人看（不保证稳定）",
             "  --verbose                 总是把日志写到 stderr；默认只在终端里显示",
             "  --offline                 禁止联网：过期的缓存照常使用，没有缓存时报错",
+            "",
+            "  选项值以 - 开头时，用 --选项=<值>。",
             "",
             "更多：",
             "  saltnet <命令> --help  某个命令的用法",
@@ -111,6 +117,8 @@ describe("group help", () => {
             "  --verbose                 总是把日志写到 stderr；默认只在终端里显示",
             "  --offline                 禁止联网：过期的缓存照常使用，没有缓存时报错",
             "",
+            "  选项值以 - 开头时，用 --选项=<值>。",
+            "",
             "用 saltnet user <子命令> --help 查看子命令的用法。",
         ]);
     });
@@ -163,6 +171,8 @@ describe("command help", () => {
             "  --format <json|tsv|text>  输出格式：json 给程序，tsv 只用于列表，text 给人看（不保证稳定）",
             "  --verbose                 总是把日志写到 stderr；默认只在终端里显示",
             "  --offline                 禁止联网：过期的缓存照常使用，没有缓存时报错",
+            "",
+            "  选项值以 - 开头时，用 --选项=<值>。",
         ]);
     });
 

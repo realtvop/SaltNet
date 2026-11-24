@@ -1,4 +1,5 @@
 import { chartRow } from "../catalog/chartRow";
+import { collectionUserContext } from "../catalog/collectionView";
 import { chartRowSchema, relatedSchema, songTypeSchema } from "../catalog/schemas";
 import { buildSongCatalog, songCharts, songType } from "../catalog/songs";
 import { int, list, nullable, num, object, str } from "../output/schema";
@@ -57,11 +58,8 @@ export const song = defineCommand(
     },
     async (args, ctx) => {
         const metadata = await useMetadata(args, ctx, ["catalog"]);
-        const userScores = useUserScores(
-            args,
-            ctx,
-            Object.values(metadata.catalog.music.chartList)
-        );
+        const catalogCharts = Object.values(metadata.catalog.music.chartList);
+        const userScores = useUserScores(args, ctx, catalogCharts);
         try {
             const found = resolveSong(
                 buildSongCatalog(metadata.catalog.music),
@@ -69,7 +67,8 @@ export const song = defineCommand(
             );
             const charts = songCharts(found);
             // The collections are fetched only now: a song that cannot be found costs no download.
-            const related = await loadRelated(args, ctx, charts);
+            const collectionContext = collectionUserContext(userScores.scores, catalogCharts);
+            const related = await loadRelated(args, ctx, charts, collectionContext);
             const dataAsOf = { ...metadata.dataAsOf, ...related?.dataAsOf };
             return {
                 data: {

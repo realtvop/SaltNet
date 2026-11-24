@@ -43,7 +43,9 @@ function inline(value: unknown): string {
 }
 
 function renderTable(rows: readonly unknown[], columns: readonly string[]): string[] {
-    if (rows.length === 0) return ["（没有结果）"];
+    if (rows.length === 0) {
+        return columns.length === 0 ? ["（没有结果）"] : [columns.join("  "), "（没有结果）"];
+    }
     const cells = rows.map(row =>
         columns.map(column => truncate(inline(cellOf(row, column)), MAX_CELL_WIDTH))
     );
@@ -111,21 +113,22 @@ function outline(object: PlainObject, indent: string): string[] {
     return lines;
 }
 
-function listBody(data: PlainObject): string[] {
+function listBody(data: PlainObject, columns: readonly string[] | undefined): string[] {
     const lines: string[] = [];
     if (Array.isArray(data.items)) {
         const summary = statsLine(data.stats);
         if (summary) lines.push(summary);
-        lines.push(...renderTable(data.items, columnsOf(data.items)));
+        lines.push(...renderTable(data.items, columns ?? columnsOf(data.items)));
     }
     if (Array.isArray(data.groups)) {
+        if (data.groups.length === 0 && columns) lines.push(...renderTable([], columns));
         for (const group of data.groups as PlainObject[]) {
             const items = Array.isArray(group.items) ? group.items : [];
             if (lines.length > 0) lines.push("");
             lines.push(`${inline(group.key)}（${inline(group.count ?? items.length)} 条）`);
             const summary = statsLine(group.stats);
             if (summary) lines.push(summary);
-            lines.push(...renderTable(items, columnsOf(items)));
+            lines.push(...renderTable(items, columns ?? columnsOf(items)));
         }
     }
     const rest: PlainObject = { ...data };
@@ -137,6 +140,9 @@ function listBody(data: PlainObject): string[] {
 }
 
 function pageLine(page: PageInfo, shown: number): string {
+    if (shown === 0 && page.offset > 0 && page.offset >= page.total) {
+        return `共 ${page.total} 条；--offset ${page.offset} 已超过最后一条`;
+    }
     const first = page.total === 0 ? 0 : page.offset + 1;
     const last = page.offset + shown;
     const next = page.nextOffset === null ? "" : `；下一页加 --offset ${page.nextOffset}`;
@@ -152,6 +158,7 @@ function isPageInfo(value: unknown): value is PageInfo {
 export interface TextInput {
     readonly kind: "object" | "list";
     readonly data: unknown;
+    readonly columns?: readonly string[];
     readonly meta: Readonly<Record<string, unknown>>;
     readonly warnings: readonly Warning[];
 }
@@ -161,7 +168,7 @@ export function renderText(input: TextInput): string {
     const { data, meta, warnings } = input;
     const lines: string[] = [];
 
-    if (input.kind === "list" && isPlainObject(data)) lines.push(...listBody(data));
+    if (input.kind === "list" && isPlainObject(data)) lines.push(...listBody(data, input.columns));
     else if (isPlainObject(data)) lines.push(...outline(data, ""));
     else lines.push(inline(data));
 

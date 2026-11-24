@@ -1,6 +1,6 @@
 import type { FetchLike } from "@core/http";
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
-import type { User } from "@core/user/type";
+import type { LXNSAuth } from "@core/integrations/lxns/type";
 import type { CommandContext } from "../commands/registry";
 import type { Warning } from "../output/warning";
 import type { Store } from "../store/store";
@@ -12,7 +12,7 @@ import { CliError } from "../errors";
 import { upstreamStatusError } from "../runtime/http";
 import { userBindCommand } from "../util/printedCommand";
 import { beginRun, finishRun } from "./journal";
-import { lxnsAccessToken } from "./lxnsToken";
+import { LxnsRefreshSkippedError } from "./lxnsToken";
 
 export type PendingUpload = { readonly records: DivingFishFullRecord[] } & (
     | { readonly target: "diving-fish"; readonly importToken: string }
@@ -21,6 +21,11 @@ export type PendingUpload = { readonly records: DivingFishFullRecord[] } & (
 
 function uploadError(target: UploadTarget, cause: unknown, userRef: string): CliError {
     const service = target === "diving-fish" ? "水鱼" : "落雪";
+    if (cause instanceof LxnsRefreshSkippedError) {
+        return new CliError(cause.code, `上传到${service}失败，${cause.message}`, {
+            fix: cause.fix,
+        });
+    }
     const status = cause instanceof CliError ? cause.extra?.status : undefined;
     // Only copy structured codes and HTTP status, never messages, bodies or causes.
     if (
@@ -56,7 +61,7 @@ export async function runSyncUploads(
     ctx: CommandContext,
     store: Store,
     handle: SyncLockHandle,
-    user: User,
+    accessLxns: () => Promise<LXNSAuth>,
     userRef: string,
     pending: readonly PendingUpload[]
 ): Promise<{ uploads: SyncUploadResult[]; warnings: Warning[] }> {
@@ -88,12 +93,7 @@ export async function runSyncUploads(
             if (target === "diving-fish") {
                 await uploadDivingFishRecords(upload.importToken, records, { fetch: fetchUpload });
             } else {
-                const auth = await lxnsAccessToken(
-                    { ...ctx, log: () => ctx.log("已刷新落雪授权") },
-                    store,
-                    handle,
-                    user
-                );
+                const auth = await accessLxns();
                 if (!auth.accessToken || !auth.tokenType) {
                     throw new CliError("LXNS_REAUTH_REQUIRED", "缺少落雪访问凭据");
                 }

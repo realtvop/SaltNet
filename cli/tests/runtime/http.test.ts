@@ -3,7 +3,12 @@ import type { HttpFetch, HttpResponse } from "../../src/runtime/io";
 import { describe, expect, it } from "vitest";
 import { buildRegistry, defineCommand } from "../../src/commands/registry";
 import { CliError } from "../../src/errors";
-import { createHttp, hostOf, upstreamStatusError } from "../../src/runtime/http";
+import {
+    createHttp,
+    hostOf,
+    raiseTimeoutCommand,
+    upstreamStatusError,
+} from "../../src/runtime/http";
 import { createHarness, run } from "../harness";
 import { delayedRoute, jsonResponse, mockFetch, redirectResponse, textResponse } from "../mockHttp";
 
@@ -252,7 +257,9 @@ describe("network failures", () => {
 
         const error = await failureOf(http(hung, 20)(URL_WITH_TOKEN));
         expect(error.code).toBe("NETWORK");
-        expect(error.message).toBe("请求 meta.example.com 超时（超过 20 毫秒 没有完成）");
+        expect(error.message).toBe(
+            "请求 meta.example.com 超时（超过 20 毫秒 没有完成）；网络较慢时可以调大 network.timeoutMs"
+        );
         expect(error.fix).toContain("network.timeoutMs");
     });
 
@@ -263,7 +270,9 @@ describe("network failures", () => {
                 8000
             )(URL_WITH_TOKEN)
         );
-        expect(error.message).toBe("请求 meta.example.com 超时（超过 8 秒 没有完成）");
+        expect(error.message).toBe(
+            "请求 meta.example.com 超时（超过 8 秒 没有完成）；网络较慢时可以调大 network.timeoutMs"
+        );
     });
 
     it("reports the configured deadline when the body waits for the request signal", async () => {
@@ -292,10 +301,42 @@ describe("network failures", () => {
         const error = await failureOf(read);
         expect(error.code).toBe("NETWORK");
         expect(error.retryable).toBe(true);
-        expect(error.message).toBe("请求 meta.example.com 超时（超过 20 毫秒 没有完成）");
-        expect(error.fix).toBe(
-            "网络较慢时可以调大 metadata.timeoutMs，例如 saltnet config set metadata.timeoutMs 60000"
+        expect(error.message).toBe(
+            "请求 meta.example.com 超时（超过 20 毫秒 没有完成）；网络较慢时可以调大 metadata.timeoutMs"
         );
+        expect(error.fix).toBe("saltnet config set metadata.timeoutMs 60000");
+    });
+
+    it("never suggests a timeout below the one that ran out", () => {
+        // The default of the game update is two minutes; a minute would make things worse.
+        expect(raiseTimeoutCommand("network.updateTimeoutMs", 120_000)).toBe(
+            "saltnet config set network.updateTimeoutMs 240000"
+        );
+        expect(raiseTimeoutCommand("network.timeoutMs", 15_000)).toBe(
+            "saltnet config set network.timeoutMs 60000"
+        );
+        expect(raiseTimeoutCommand("network.timeoutMs", 400_000)).toBe(
+            "saltnet config set network.timeoutMs 600000"
+        );
+        expect(raiseTimeoutCommand("network.timeoutMs", 600_000)).toBeUndefined();
+    });
+
+    it("gives no command when the timeout setting is already at its highest", async () => {
+        const request = createHttp({
+            fetch: async () => {
+                throw new DOMException("Fake deadline expired", "TimeoutError");
+            },
+            userAgent: "saltnet-cli/1.2.3",
+            timeoutMs: 600_000,
+            timeoutKey: "network.timeoutMs",
+        });
+
+        const error = await failureOf(request(URL_WITH_TOKEN));
+        expect(error.code).toBe("NETWORK");
+        expect(error.message).toBe(
+            "请求 meta.example.com 超时（超过 600 秒 没有完成）；network.timeoutMs 已经是最大值"
+        );
+        expect(error.fix).toBeUndefined();
     });
 
     it("reports a body that breaks off while it is read", async () => {

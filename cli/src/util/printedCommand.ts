@@ -13,7 +13,9 @@ export interface UserTarget {
 
 /** A stable uid as a user reference, escaped when it overlaps another reference form. */
 export function userUidWord(uid: string): string {
-    return /^\d+$/.test(uid) || uid.startsWith("uid:") ? `uid:${uid}` : uid;
+    return /^\d+$/.test(uid) || uid.startsWith("uid:") || uid !== uid.trim() || uid === ""
+        ? `uid:${uid}`
+        : uid;
 }
 
 /** How a printed command names a stored user: `0` for the default user, else its stable uid. */

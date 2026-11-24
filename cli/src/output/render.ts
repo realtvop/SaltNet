@@ -6,7 +6,7 @@ import type { CommandResult, CommandSpec } from "../commands/registry";
 import type { PlainObject } from "./fields";
 import type { OutputFormat } from "./format";
 import { serializeEnvelope, successEnvelope } from "./envelope";
-import { isPlainObject, selectFields } from "./fields";
+import { isPlainObject, listItemSchemas, prepareFields, selectFields } from "./fields";
 import { columnsOf } from "./table";
 import { renderText } from "./text";
 import { renderTsv } from "./tsv";
@@ -14,6 +14,7 @@ import { renderTsv } from "./tsv";
 export interface RenderInput {
     readonly command: string;
     readonly output: CommandSpec["output"];
+    readonly dataSchema?: CommandSpec["dataSchema"];
     readonly result: CommandResult;
     readonly format: OutputFormat;
     readonly pretty: boolean;
@@ -39,20 +40,14 @@ function groupsOf(data: PlainObject): PlainObject[] {
 }
 
 /** Applies `--fields` to the items, or to the items of every group. */
-function withFields(data: PlainObject, fields: readonly string[]): PlainObject {
-    if (Array.isArray(data.items)) return { ...data, items: selectFields(data.items, fields) };
-    const groups = groupsOf(data);
-    const all = groups.flatMap(group => group.items as unknown[]);
-    const selected = selectFields(all, fields);
-    let cursor = 0;
+function withFields(data: PlainObject, paths: readonly (readonly string[])[]): PlainObject {
+    if (Array.isArray(data.items)) return { ...data, items: selectFields(data.items, paths) };
     return {
         ...data,
-        groups: groups.map(group => {
-            const count = (group.items as unknown[]).length;
-            const items = selected.slice(cursor, cursor + count);
-            cursor += count;
-            return { ...group, items };
-        }),
+        groups: groupsOf(data).map(group => ({
+            ...group,
+            items: selectFields(group.items as unknown[], paths),
+        })),
     };
 }
 
@@ -73,11 +68,10 @@ function commentLines(label: string, value: unknown): string {
 function renderTsvResult(
     data: PlainObject,
     result: CommandResult,
-    fields: readonly string[] | undefined
+    selectedColumns: readonly string[] | undefined
 ): RenderedOutput {
     const rows = rowsOf(data);
-    // With nothing to look at the header can only come from what was asked for.
-    const columns = rows.length === 0 && fields ? [...fields] : columnsOf(rows);
+    const columns = selectedColumns ?? columnsOf(rows);
 
     // stdout carries the table alone, so the rest of the result goes to stderr as comments.
     let stderr = "";
@@ -97,7 +91,7 @@ function renderTsvResult(
 }
 
 export function renderSuccess(input: RenderInput): RenderedOutput {
-    const { command, output, result, format, pretty, fields } = input;
+    const { command, output, dataSchema, result, format, pretty, fields } = input;
 
     if (output === "text") {
         if (typeof result.data !== "string") {
@@ -109,17 +103,32 @@ export function renderSuccess(input: RenderInput): RenderedOutput {
         };
     }
 
-    const data = output === "list" ? asListData(command, result.data) : result.data;
-    const shaped = output === "list" && fields ? withFields(data as PlainObject, fields) : data;
+    const list = output === "list" ? asListData(command, result.data) : undefined;
+    const grouped = Array.isArray(list?.groups);
+    const dynamicColumns = result.meta?.columns;
+    const selection =
+        list && fields
+            ? prepareFields(
+                  listItemSchemas(dataSchema, grouped),
+                  fields,
+                  Array.isArray(dynamicColumns)
+                      ? dynamicColumns.filter((key): key is string => typeof key === "string")
+                      : []
+              )
+            : undefined;
+    const shaped = list && selection ? withFields(list, selection.paths) : result.data;
 
     if (format === "tsv") {
-        return renderTsvResult(shaped as PlainObject, result, fields);
+        const columns =
+            selection && (grouped ? ["group", ...selection.columns] : selection.columns);
+        return renderTsvResult(shaped as PlainObject, result, columns);
     }
     if (format === "text") {
         return {
             stdout: renderText({
                 kind: output,
                 data: shaped,
+                columns: selection?.columns,
                 meta: result.meta ?? {},
                 warnings: result.warnings ?? [],
             }),

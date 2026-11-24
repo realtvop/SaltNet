@@ -20,6 +20,7 @@ import {
     stageCredentials,
     withCredentialsLock,
 } from "../runtime/credentials";
+import { stageFileAtomic } from "../runtime/files";
 import { resolveOutputFile, writeOutputFile } from "../runtime/outputFile";
 import { acquireLock } from "../store/locks";
 import { recordRun } from "../sync/journal";
@@ -124,8 +125,8 @@ function readBackup(file: string): {
     try {
         const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
         source = JSON.parse(text);
-    } catch (error) {
-        throw backupError(file, "不是有效的 UTF-8 JSON", error);
+    } catch {
+        throw backupError(file, "不是有效的 UTF-8 JSON");
     }
 
     try {
@@ -159,7 +160,7 @@ function readBackup(file: string): {
         }
         return { digest, source: backup, decoded };
     } catch (error) {
-        throw backupError(file, safeDecodeReason(error), error);
+        throw backupError(file, safeDecodeReason(error));
     }
 }
 
@@ -300,11 +301,11 @@ function lockImportUsers(store: Store, uids: readonly string[], now: () => numbe
     });
 }
 
-function removeChangedCredentials(
+function stageWithoutChangedCredentials(
     paths: RuntimePaths,
     current: CredentialsFile,
     final: CredentialsFile
-): void {
+): StagedFile | undefined {
     const users = Object.fromEntries(
         Object.entries(current.users).filter(([uid, entry]) =>
             isDeepStrictEqual(entry, credentialsOf(final, uid))
@@ -317,12 +318,7 @@ function removeChangedCredentials(
         return;
     }
 
-    const staged = stageCredentials(paths, { version: 1, users });
-    try {
-        staged.commit();
-    } finally {
-        staged.discard();
-    }
+    return stageCredentials(paths, { version: 1, users });
 }
 
 export const importBackup = defineCommand(
@@ -458,13 +454,24 @@ export const importBackup = defineCommand(
                     if (!credentialLock.renew()) throw new Error("import credential lock was lost");
                 }
                 let staged: StagedFile | undefined;
+                let stripped: StagedFile | undefined;
+                let restore: StagedFile | undefined;
+                let removed = false;
                 try {
                     const credentials = store.transaction(() => {
                         const { credentials } = confirm(current);
                         renewLocks();
                         // Only entries valid on both sides can remain visible across the commit.
                         staged = stageCredentials(ctx.paths, credentials);
-                        removeChangedCredentials(ctx.paths, current, credentials);
+                        stripped = stageWithoutChangedCredentials(ctx.paths, current, credentials);
+                        if (stripped) {
+                            restore = stageFileAtomic(
+                                ctx.paths.credentials,
+                                readFileSync(ctx.paths.credentials)
+                            );
+                            stripped.commit();
+                            removed = true;
+                        }
                         replaceUsers(store, prepared.users, prepared.events);
                         recordRun(
                             store,
@@ -487,6 +494,7 @@ export const importBackup = defineCommand(
                         renewLocks();
                         return credentials;
                     });
+                    removed = false;
                     try {
                         staged!.commit();
                     } catch (error) {
@@ -511,8 +519,14 @@ export const importBackup = defineCommand(
                             ),
                         } satisfies ImportResult,
                     };
+                } catch (error) {
+                    // SQLite has already rolled back while the credential lock is still held.
+                    if (removed) restore!.commit();
+                    throw error;
                 } finally {
                     staged?.discard();
+                    stripped?.discard();
+                    restore?.discard();
                 }
             });
         } finally {
@@ -606,27 +620,36 @@ export const exportBackup = defineCommand(
             { description: "导出文件及其中的用户、成绩历史和凭据数量" }
         ),
     },
-    (args, ctx) => {
+    async (args, ctx) => {
         const store = ctx.store();
-        const snapshot = store.read(() => ({
-            users: readUsers(store),
-            events: readScoreEvents(store),
-        }));
-        const { users, events } = snapshot;
-        if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户可以导出");
         const retryCommand = [
             "saltnet",
             "export",
             fileWord(args.positionals.file),
             ...(args.options.keepLxns ? ["--keep-lxns"] : []),
         ];
-        const output = resolveOutputFile(
-            ctx,
-            args.positionals.file,
-            args.options.overwrite,
-            retryCommand
-        );
-        const credentials = readCredentials(ctx.paths);
+        const { users, events, credentials, output } = await withCredentialsLock(store, lock => {
+            const snapshot = store.read(() => {
+                const users = readUsers(store);
+                if (users.length === 0) throw new CliError("NO_USER", "还没有任何用户可以导出");
+                const output = resolveOutputFile(
+                    ctx,
+                    args.positionals.file,
+                    args.options.overwrite,
+                    retryCommand
+                );
+                return {
+                    users,
+                    events: readScoreEvents(store),
+                    credentials: readCredentials(ctx.paths),
+                    output,
+                };
+            });
+            if (!lock.renew()) {
+                throw new CliError("DB_LOCKED", "导出备份时凭据锁已失效，请重新导出");
+            }
+            return snapshot;
+        });
         const restored = restoreCredentials(users, credentials, args.options.keepLxns);
         const backup = encodeUserDataBackup(restored.users, events, ctx.io.now().getTime());
         const content = `${JSON.stringify(backup, null, 2)}\n`;

@@ -41,8 +41,9 @@ function scoreRow(chart: Chart, row: StoredChartScore, scores: UserScores): Char
     const sync = oneOf(SYNCS, row.fs);
     const dxScoreMax = positive(chart.info.deluxeScoreMax);
     const estimate = scores.playCountByRecordKey.get(row.recordKey);
-    const estimated = row.playCount === null ? estimate : undefined;
-    const playCount = row.playCount ?? estimated?.playCount ?? null;
+    const hasEstimate = estimate !== undefined && estimate.playCount !== null;
+    const playCount = hasEstimate ? estimate.playCount : (row.playCount ?? null);
+    const playCountEstimated = hasEstimate ? estimate.isEstimated : false;
     return {
         achievements: row.achievements,
         rank: rank === undefined ? null : rankLabel(rank as RankRate),
@@ -56,7 +57,7 @@ function scoreRow(chart: Chart, row: StoredChartScore, scores: UserScores): Char
                 : getDeluxeScoreTier(row.dxScore, dxScoreMax),
         rating: row.rating,
         playCount,
-        playCountEstimated: row.playCount === null && estimated?.isEstimated === true,
+        playCountEstimated,
         changedAt: changedAt(row.lastChangedAt),
     };
 }

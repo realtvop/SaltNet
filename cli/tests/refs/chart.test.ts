@@ -115,6 +115,15 @@ describe("a music id and a difficulty", () => {
         );
     });
 
+    it("reads a music id in full-width digits as the same id", () => {
+        // Through the song reference it would be the whole song, both sides: AMBIGUOUS_REF here.
+        expect(keyOf({ ref: "１４６", difficulty: "mas" })).toBe("146-3");
+        expect(keyOf({ ref: "１０１４６", difficulty: "mas" })).toBe("10146-3");
+        expect(
+            caught(() => resolveChart(catalog, { ref: "９９９９", difficulty: "mas" })).code
+        ).toBe("NOT_FOUND");
+    });
+
     it("finds a banquet chart by its music id", () => {
         expect(keyOf({ ref: "110851", difficulty: "utage" })).toBe("110851-10");
         expect(keyOf({ ref: "110851", difficulty: "10" })).toBe("110851-10");

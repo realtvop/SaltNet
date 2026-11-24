@@ -32,11 +32,28 @@ export function isSqliteError(error: unknown): error is SqliteError {
  * The CLI's error for a SQLite failure that is not a bug: a busy database, a damaged file, a
  * directory that cannot be written. Undefined for anything else, which stays an internal error.
  * `database` is the file, named in the message when the caller knows it.
+ * Only the writable opener supplies `writableDirectory`.
  */
-export function storeError(error: unknown, database?: string): CliError | undefined {
-    if (!isSqliteError(error)) return undefined;
+export function storeError(
+    error: unknown,
+    database?: string,
+    writableDirectory?: string
+): CliError | undefined {
+    const code = isSqliteError(error) ? error.errcode & 0xff : undefined;
+    const errno = (error as NodeJS.ErrnoException | undefined)?.code;
     const what = database === undefined ? "数据库" : `数据库 ${database}`;
-    switch (error.errcode & 0xff) {
+    if (
+        writableDirectory !== undefined &&
+        (code === SQLITE_READONLY || errno === "EACCES" || errno === "EPERM")
+    ) {
+        return new CliError(
+            "INTERNAL",
+            `此命令需要对数据目录 ${writableDirectory} 有写入权限；请检查目录和数据库文件权限，或者用 SALTNET_HOME 换一个目录`,
+            { cause: error }
+        );
+    }
+    if (!isSqliteError(error)) return undefined;
+    switch (code) {
         case SQLITE_BUSY:
         case SQLITE_LOCKED:
             return new CliError("DB_LOCKED", "数据库正被另一个 saltnet 进程占用，稍后再试", {

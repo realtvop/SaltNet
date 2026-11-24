@@ -397,6 +397,42 @@ describe("uploads after in-game sync", () => {
         expectPrivate(paths, result);
     });
 
+    it("keeps a fast sync when the LXNS refresh response is lost and skips a second refresh", async () => {
+        const paths = makeHome();
+        await seed(paths, authorization(expiredAt));
+        const result = await sync(paths, [], {
+            [tokenUrl]: request => {
+                expect(new URLSearchParams(request.init?.body).get("refresh_token")).toBe(
+                    refreshToken
+                );
+                throw new TypeError("fake lost refresh response");
+            },
+        });
+        expect(result.requests.map(request => request.url)).toEqual([updateUrl, tokenUrl]);
+        expect(result.code).toBe(0);
+        expect(result.json.data).toMatchObject({
+            mode: "fast",
+            rating: { after: 15000 },
+            uploads: [
+                {
+                    target: "lxns",
+                    ok: false,
+                    error: { code: "NETWORK", message: expect.stringContaining("刷新") },
+                },
+            ],
+        });
+        expect(result.json.warnings).toMatchObject([
+            { code: "UPLOAD_FAILED", message: expect.stringContaining("刷新") },
+        ]);
+        const { player, runs } = readState(paths);
+        expect(player?.data.rating).toBe(15000);
+        expect(runs).toMatchObject([
+            { kind: "upload", source: "lxns", outcome: "failed", errorCode: "NETWORK" },
+            { kind: "sync", mode: "fast", outcome: "ok" },
+        ]);
+        expectPrivate(paths, result);
+    });
+
     it("reports an LXNS invalid_grant and keeps the committed game sync", async () => {
         const paths = makeHome();
         await seed(paths, { ...authorization(expiredAt), divingFishImportToken: importToken });

@@ -78,10 +78,12 @@ function object(value: unknown): Record<string, unknown> | undefined {
 function failure(action: string, file: string, error: unknown): CliError {
     const code = (error as NodeJS.ErrnoException).code;
     const reason = typeof code === "string" ? `（${code}）` : "";
-    return new CliError("INTERNAL", `${action}凭据文件 ${file}${reason}；文件没有改动`, {
-        fix: `检查 ${file}；修不好时可以把它移走，再重新绑定水鱼和落雪`,
-        cause: error,
-    });
+    // No command repairs the file, so the advice is in the message: a fix is a command (design 4.3).
+    return new CliError(
+        "INTERNAL",
+        `${action}凭据文件 ${file}${reason}；文件没有改动。检查这个文件；修不好时可以把它移走，再重新绑定水鱼和落雪`,
+        { cause: error }
+    );
 }
 
 /** A missing file is empty; every other read or shape failure is explicit and non-destructive. */

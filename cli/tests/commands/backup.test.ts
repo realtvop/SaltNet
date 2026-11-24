@@ -10,8 +10,10 @@ import { decodeUserDataBackup, encodeUserDataBackup } from "@core/user/backup";
 import * as backupModule from "@core/user/backup";
 import { describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
+import { importBackup } from "../../src/commands/backup";
 import * as confirmation from "../../src/commands/confirm";
 import { addChartToFavorite, createFavorite, listFavorites } from "../../src/favorites/repository";
+import { loadConfig } from "../../src/runtime/config";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
 import * as credentialsModule from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
@@ -28,6 +30,7 @@ import * as userRepository from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn, NOW } from "../commandRun";
 import { expectConforms } from "../dataSchema";
+import { createHarness } from "../harness";
 import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
@@ -357,6 +360,97 @@ describe("backup import and export", () => {
         } finally {
             spy.mockRestore();
             writer.close();
+        }
+    });
+
+    it("waits for the credentials lock before reading the export snapshot", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser()], []);
+        const writer = openStore(paths);
+        const held = acquireLock(writer, "credentials", { ttlMs: 30_000 });
+        if (!held.acquired) throw new Error("expected the credentials lock");
+        const reads = vi.spyOn(userRepository, "readUsers");
+        const target = path.join(path.dirname(paths.home), "locked-export.json");
+        const exporting = commandIn(paths, "export", [target]);
+        try {
+            // The exporter must wait before sampling the profile as well as before reading tokens.
+            expect(reads).not.toHaveBeenCalled();
+            expect(existsSync(target)).toBe(false);
+            replaceUsers(writer, [{ ...storedUser(), remark: "Replacement" }], []);
+            seedCredentials(paths, { "stored-user": { divingFishImportToken: "fake-new-token" } });
+        } finally {
+            held.lock.release();
+            writer.close();
+            await exporting;
+            reads.mockRestore();
+        }
+        expect((await exporting).code).toBe(0);
+        expect(decodeFile(target).users[0]).toMatchObject({
+            remark: "Replacement",
+            divingFish: { importToken: "fake-new-token" },
+        });
+    });
+
+    it("refuses to export if the credentials lease was lost during its snapshot", async () => {
+        const paths = makeHome();
+        seed(paths, [storedUser()], []);
+        const writer = openStore(paths);
+        const read = userRepository.readScoreEvents;
+        const spy = vi.spyOn(userRepository, "readScoreEvents").mockImplementation((store, uid) => {
+            writer.db.prepare("DELETE FROM locks WHERE name = 'credentials'").run();
+            return read(store, uid);
+        });
+        const target = path.join(path.dirname(paths.home), "lost-lease-export.json");
+        try {
+            const result = await commandIn(paths, "export", [target]);
+            expect(result.json.error?.code).toBe("DB_LOCKED");
+            expect(existsSync(target)).toBe(false);
+        } finally {
+            spy.mockRestore();
+            writer.close();
+        }
+    });
+
+    it("keeps malformed decoded users out of the entire backup error chain", async () => {
+        const paths = makeHome();
+        const dummy = "FAKE-IMPORT-TOKEN-PARSE-FAILURE";
+        const file = path.join(path.dirname(paths.home), "malformed-users.json");
+        writeFileSync(
+            file,
+            JSON.stringify({ version: 0, users: Buffer.from(dummy, "utf8").toString("base64") })
+        );
+        const { io } = createHarness({ cwd: path.dirname(file) });
+        const unexpected = () => {
+            throw new Error("invalid backup must be rejected before opening the store");
+        };
+        const error: unknown = await Promise.resolve()
+            .then(() =>
+                importBackup.run(
+                    {
+                        positionals: { file },
+                        options: {},
+                        global: { pretty: false, format: "json", verbose: false, offline: false },
+                    },
+                    {
+                        io,
+                        paths,
+                        store: unexpected,
+                        registry: createRegistry(),
+                        version: "9.9.9",
+                        config: loadConfig(paths, { env: io.env, version: "9.9.9" }),
+                        http: unexpected,
+                        log: unexpected,
+                    }
+                )
+            )
+            .catch((caught: unknown) => caught);
+        expect(error).toMatchObject({ code: "INVALID_BACKUP" });
+        // V8 quotes the first ten characters of text it cannot parse, so a part of a token is
+        // what a kept parse error would leak.
+        const quoted = dummy.slice(0, 10);
+        for (let current = error; current instanceof Error; current = current.cause) {
+            expect(current.message).not.toContain(quoted);
+            expect(current.stack).not.toContain(quoted);
         }
     });
 
@@ -1092,12 +1186,12 @@ describe("backup import and export", () => {
         }
     });
 
-    it("leaves no staged file when import transaction fails", async () => {
+    it("restores the original credentials bytes and leaves no staged file when import fails", async () => {
         const paths = makeHome();
         seed(paths, [storedUser()], []);
-        seedCredentials(paths, {
-            "stored-user": { divingFishImportToken: "fake-import-token-1" },
-        });
+        const credentialsBefore =
+            '{"version":1,"users":{"stored-user":{"divingFishImportToken":"fake-import-token-1"}},"pendingLxnsAuthorizations":{"pending":{}}}';
+        writeFileSync(paths.credentials, credentialsBefore, { mode: 0o600 });
         const before = readState(paths);
 
         const store = openStore(paths);
@@ -1118,7 +1212,7 @@ describe("backup import and export", () => {
         expect(confirmation.code).toBe(1);
         expect(confirmation.json.error.code).toBe("INTERNAL");
 
-        expect(readCredentials(paths).users).toEqual({});
+        expect(readFileSync(paths.credentials, "utf8")).toBe(credentialsBefore);
         const tmpFiles = readdirSync(paths.home).filter(name => name.endsWith(".tmp"));
         expect(tmpFiles).toEqual([]);
         expect(readState(paths)).toEqual(before);
@@ -1281,6 +1375,12 @@ describe("backup import and export", () => {
             expect(failed.code).toBe(1);
             expect(readState(paths).users[0].lxns?.id).toBe(901);
             expect(readCredentials(paths).users["same-user"]?.lxnsAccountId).toBeUndefined();
+            const status = await commandIn(paths, "status", []);
+            expect(status.json.data.users.items[0].credentials.lxns).toBe("missing");
+            const journal = await commandIn(paths, "sql", [
+                "SELECT kind, outcome FROM v_sync_runs",
+            ]);
+            expect(journal.json.data.items).toEqual([{ kind: "import", outcome: "ok" }]);
         } finally {
             stageSpy.mockRestore();
         }
@@ -1567,7 +1667,7 @@ it.each(["credential removal", "database replacement", "final credentials"])(
             expect(result.json.error?.code).toBe("INTERNAL");
             const [stored] = readState(paths).users;
             expect(stored.remark).toBe(stop === "final credentials" ? after.remark : before.remark);
-            const expected = stop === "credential removal" ? "fake-old-import-token" : undefined;
+            const expected = stop === "final credentials" ? undefined : "fake-old-import-token";
             expect(readCredentials(paths).users["same-user"]?.divingFishImportToken).toBe(expected);
             expect(buildUserForCore(stored, paths).divingFish?.importToken).toBe(expected ?? null);
             expect(readdirSync(paths.home).filter(name => name.endsWith(".tmp"))).toEqual([]);
@@ -1639,7 +1739,7 @@ it.each(["bind", "remove"])(
             const bound = await commandIn(paths, "user", ["bind", "other-user", "lxns"], {
                 env: {
                     SALTNET_LXNS_CLIENT_ID: "fake-client",
-                    SALTNET_LXNS_REDIRECT_URI: "https://callback.test",
+                    SALTNET_LXNS_REDIRECT_URI: "https://callback.test/?lxns_auth_complete",
                 },
             });
             expect(bound.code).toBe(0);

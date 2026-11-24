@@ -149,7 +149,7 @@ const syncPlanDataSchema = object<SyncPlanData>(
                         "舞萌同步成功后会上传到的服务"
                     ),
                     effect: strEnum(["local", "remote", "account"], "实际执行该方案的副作用级别"),
-                    error: nullable(syncErrorSchema, "联网前能确认的绑定错误，没有时为 null"),
+                    error: nullable(syncErrorSchema, "联网前能确认的配置或绑定错误，没有时为 null"),
                 },
                 { description: "一个用户的同步计划" }
             ),
@@ -165,7 +165,7 @@ export const sync = defineCommand(
         name: "sync",
         summary: "从舞萌、落雪或水鱼同步成绩",
         description:
-            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。舞萌更新后会向已绑定的水鱼和落雪上传游戏成绩，可用 --no-upload 关闭。--all 按顺序同步所有未开启手动更新的用户。--dry-run 展示计划，不联网、读取 stdin 或写入本地数据。",
+            "从舞萌、落雪或水鱼拉取成绩，写入本地数据库并记录变动历史。auto 按优先级选择来源。舞萌同步需要配置服务地址，默认快速更新，使用 --qr - 时会登录舞萌账号进行全量更新。舞萌更新后会向已绑定的水鱼和落雪上传游戏成绩，可用 --no-upload 关闭。--all 按顺序同步所有未开启手动更新的用户。--dry-run 展示计划，不联网、读取 stdin 或写入本地数据。",
         category: "account",
         effect: "account",
         output: "object",
@@ -178,6 +178,7 @@ export const sync = defineCommand(
             "QR_REQUIRED",
             "QR_INVALID",
             "LXNS_REAUTH_REQUIRED",
+            "USAGE",
             "NETWORK",
             "UPSTREAM_ERROR",
             "SYNC_IN_PROGRESS",

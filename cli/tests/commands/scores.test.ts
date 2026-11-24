@@ -1,8 +1,10 @@
 import type { DivingFishFullRecord } from "@core/integrations/diving-fish/type";
 import type { User } from "@core/user/type";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { kaleidxscopeGates } from "@core/kaleidxscope";
 import { ComboStatus, RankRate, SyncStatus } from "@core/mai/types";
+import { decodeUserDataBackup } from "@core/user/backup";
 import { ScoreHistoryChange } from "@core/user/scoreHistory/type";
 import { describe, expect, it } from "vitest";
 import { replaceMusic } from "../../src/catalog/store";
@@ -66,6 +68,12 @@ describe("chart-row score shaping", () => {
             ...(bad.data.ratingHistory ?? []),
             null as unknown as NonNullable<User["data"]["ratingHistory"]>[number],
         ];
+        // A number core cannot compute with is left out as well (JSON reads 1e999 as Infinity).
+        const firstKey = Object.keys(clean.data.detailed!)[0];
+        detailed["bad-infinite-ra"] = {
+            ...(clean.data.detailed as unknown as Record<string, object>)[firstKey],
+            ra: Number.POSITIVE_INFINITY,
+        };
         const safe = userForCoreScores(bad);
         expect(Object.keys(safe.data.detailed ?? {})).toEqual(Object.keys(clean.data.detailed!));
         expect(safe.data.b50).toEqual({ sd: [], dx: [] });
@@ -203,7 +211,7 @@ describe("chart-row score shaping", () => {
         expect(row).toMatchObject({ score_combo: "FC", score_sync: "FS", score_rank: "SSS" });
     });
 
-    it("prefers the record's play count over an estimate", async () => {
+    it("uses the play-count estimate over the stored record count when estimated", async () => {
         const paths = home();
         const record = recordOf(chart("146-3"));
         record.play_count = 41;
@@ -220,9 +228,69 @@ describe("chart-row score shaping", () => {
 
         const result = await commandIn(paths, "chart", ["146-3"]);
         expect(result.json.data.score).toMatchObject({
-            playCount: 41,
-            playCountEstimated: false,
+            playCount: 42,
+            playCountEstimated: true,
         });
+    });
+
+    it("leaves records with non-number ra, achievements or ds out of core's copy while preserving raw user in export", async () => {
+        const paths = home();
+        const normalRecord = recordOf(chart("146-3"));
+        const badRaRecord = { ...recordOf(chart("146-2")), ra: "250" as unknown as number };
+        const badAchRecord = {
+            ...recordOf(chart("146-1")),
+            achievements: "100" as unknown as number,
+        };
+        const badDsRecord = { ...recordOf(chart("146-0")), ds: "10.0" as unknown as number };
+        const badB50Record = { ...recordOf(chart("8-3")), ra: "300" as unknown as number };
+
+        const testUser = user("bad-score-types", "Bad Score Types", {
+            updateTime: SCORE_TIME,
+            detailed: {
+                "146-3": normalRecord,
+                "146-2": badRaRecord,
+                "146-1": badAchRecord,
+                "146-0": badDsRecord,
+            },
+            b50: {
+                sd: [normalRecord, badB50Record],
+                dx: [],
+            },
+        });
+
+        // userForCoreScores directly leaves out these records
+        const coreUser = userForCoreScores(testUser);
+        expect(Object.keys(coreUser.data.detailed ?? {})).toEqual(["146-3"]);
+        expect(coreUser.data.b50?.sd).toHaveLength(1);
+        expect(coreUser.data.b50?.sd[0].ra).toBe(normalRecord.ra);
+
+        // In b50 command: prints only numbers, sums are numbers, bad records missing from rows
+        await seedScoreUsers(paths, [testUser]);
+        const b50Res = await commandIn(paths, "b50", ["--limit", "10000"]);
+        expect(b50Res.code).toBe(0);
+        expect(typeof b50Res.json.data.rating.total).toBe("number");
+        expect(typeof b50Res.json.data.rating.b35).toBe("number");
+        for (const group of b50Res.json.data.groups) {
+            for (const item of group.items) {
+                expect(typeof item.rating).toBe("number");
+                expect(Number.isFinite(item.rating)).toBe(true);
+            }
+        }
+        const b50ChartKeys = b50Res.json.data.groups.flatMap(
+            (g: { items: { chartKey: string }[] }) => g.items.map(i => i.chartKey)
+        );
+        expect(b50ChartKeys).toContain("146-3");
+        expect(b50ChartKeys).not.toContain("8-3");
+
+        // The same user exported still has the records as they were
+        const exportFile = path.join(paths.home, "export.json");
+        const exportRes = await commandIn(paths, "export", [exportFile]);
+        expect(exportRes.code).toBe(0);
+        const decoded = decodeUserDataBackup(JSON.parse(readFileSync(exportFile, "utf8")));
+        expect(
+            (decoded.users[0].data.detailed as Record<string, { ra: unknown }>)["146-2"].ra
+        ).toBe("250");
+        expect((decoded.users[0].data.b50?.sd as { ra: unknown }[])[1].ra).toBe("300");
     });
 });
 

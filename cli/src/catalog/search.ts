@@ -16,6 +16,7 @@ import {
     createMusicSearchVariants,
     matchesMusicSearchIndex,
 } from "@core/music/search";
+import { toHalfWidth } from "@core/util/toHalfWidth";
 import { foldName } from "../util/fold";
 import { songCharts } from "./songs";
 
@@ -99,7 +100,8 @@ interface Query {
 function buildQuery(text: string): Query | undefined {
     const raw = text.trim();
     if (!raw) return undefined;
-    const id = /^\d+$/.test(raw) ? Number(raw) : undefined;
+    const halfWidth = toHalfWidth(raw);
+    const id = /^\d+$/.test(halfWidth) ? Number(halfWidth) : undefined;
     return {
         raw,
         folded: foldName(raw),

@@ -3,6 +3,7 @@ import { MAX_AMBIGUOUS_CANDIDATES, resolveSong } from "../../src/refs/song";
 import { caught } from "../caught";
 import { fixtureSongCatalog } from "../fixtureCatalog";
 import { catalogOf } from "../madeCatalog";
+import { parsePrintedCommand } from "../printedCommand";
 
 const catalog = fixtureSongCatalog();
 
@@ -15,6 +16,16 @@ describe("a number", () => {
     it("is a music id", () => {
         expect(idOf("17")).toBe(17);
         expect(resolveSong(catalog, "17").title).toBe("Future");
+    });
+
+    it("offers the DX id hint for a missing full-width base id", () => {
+        const error = caught(() => resolveSong(catalog, "１７２６"));
+        expect(error.code).toBe("NOT_FOUND");
+        expect(refsOf(error)).toEqual(["11726"]);
+        expect(parsePrintedCommand(error.fix)).toMatchObject({
+            command: "search",
+            positionals: { text: ["１７２６"] },
+        });
     });
 
     it("gives the same song for the SD id and the DX id", () => {
@@ -336,6 +347,15 @@ describe("nothing matches", () => {
 
     it("is NOT_FOUND for text with nothing in it to look up", () => {
         expect(caught(() => resolveSong(catalog, "!!!")).code).toBe("NOT_FOUND");
+    });
+
+    it("runs as printed when suggested search text starts with -", () => {
+        const error = caught(() => resolveSong(catalog, "-unknown"));
+        expect(error.code).toBe("NOT_FOUND");
+        expect(error.fix).toBe("saltnet search -- -unknown");
+        const parsed = parsePrintedCommand(error.fix);
+        expect(parsed.command).toBe("search");
+        expect(parsed.positionals.text).toEqual(["-unknown"]);
     });
 });
 

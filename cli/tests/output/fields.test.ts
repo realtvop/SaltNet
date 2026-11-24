@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { CliError } from "../../src/errors";
-import { getPath, isPlainObject, selectFields } from "../../src/output/fields";
+import { getPath, isPlainObject, prepareFields, selectFields } from "../../src/output/fields";
+import { int, list, nullable, num, object, str } from "../../src/output/schema";
+
+const rowSchema = object({
+    chartKey: str("谱面 key"),
+    title: str("标题"),
+    score: nullable(object({ achievements: num("达成率"), rank: str("评级") })),
+    b50: nullable(object({ part: str("分组"), rank: int("名次") })),
+    tags: list(str("标签"), "标签列表"),
+});
+
+function project(items: readonly unknown[], fields: readonly string[]): unknown[] {
+    return selectFields(items, prepareFields([rowSchema], fields).paths);
+}
 
 function rows() {
     return [
@@ -60,7 +73,7 @@ describe("getPath", () => {
 
 describe("selectFields", () => {
     it("keeps only the requested fields, in the order they were asked for", () => {
-        const selected = selectFields(rows(), ["title", "chartKey"]);
+        const selected = project(rows(), ["title", "chartKey"]);
         expect(selected).toEqual([
             { title: "PANDORA PARADOXXX", chartKey: "834-4" },
             { title: "Link", chartKey: "131-3" },
@@ -69,14 +82,14 @@ describe("selectFields", () => {
     });
 
     it("keeps the nesting of a dotted name", () => {
-        expect(selectFields(rows(), ["chartKey", "score.rank"])).toEqual([
+        expect(project(rows(), ["chartKey", "score.rank"])).toEqual([
             { chartKey: "834-4", score: { rank: "SSS" } },
             { chartKey: "131-3", score: { rank: null } },
         ]);
     });
 
     it("merges several names below the same object", () => {
-        const selected = selectFields(rows(), ["score.rank", "score.achievements"]);
+        const selected = project(rows(), ["score.rank", "score.achievements"]);
         expect(selected[0]).toEqual({ score: { rank: "SSS", achievements: 100.1234 } });
         expect(Object.keys((selected[0] as { score: object }).score)).toEqual([
             "rank",
@@ -85,7 +98,7 @@ describe("selectFields", () => {
     });
 
     it("takes a whole object when only its name is given", () => {
-        expect(selectFields(rows(), ["score", "tags"])).toEqual([
+        expect(project(rows(), ["score", "tags"])).toEqual([
             { score: { achievements: 100.1234, rank: "SSS" }, tags: ["a", "b"] },
             { score: null, tags: [] },
         ]);
@@ -93,12 +106,12 @@ describe("selectFields", () => {
 
     it("lets a whole object win over names inside it, and ignores repeats", () => {
         const wanted = { score: { achievements: 100.1234, rank: "SSS" } };
-        expect(selectFields(rows(), ["score.rank", "score", "score"])[0]).toEqual(wanted);
-        expect(selectFields(rows(), ["score", "score.rank"])[0]).toEqual(wanted);
+        expect(project(rows(), ["score.rank", "score", "score"])[0]).toEqual(wanted);
+        expect(project(rows(), ["score", "score.rank"])[0]).toEqual(wanted);
     });
 
     it("accepts a nested name when every item has null for the object", () => {
-        expect(selectFields([{ score: null }, { score: null }], ["score.rank"])).toEqual([
+        expect(project([{ score: null }, { score: null }], ["score.rank"])).toEqual([
             { score: { rank: null } },
             { score: { rank: null } },
         ]);
@@ -107,17 +120,21 @@ describe("selectFields", () => {
     it("leaves items that are not objects alone and does not touch the input", () => {
         const input = rows();
         const snapshot = JSON.stringify(input);
-        expect(selectFields([{ a: 1, b: 2 }, "x", null], ["a"])).toEqual([{ a: 1 }, "x", null]);
-        selectFields(input, ["title"]);
+        expect(project([{ title: "A", b: 2 }, "x", null], ["title"])).toEqual([
+            { title: "A" },
+            "x",
+            null,
+        ]);
+        project(input, ["title"]);
         expect(JSON.stringify(input)).toBe(snapshot);
     });
 
-    it("checks nothing when there are no items", () => {
-        expect(selectFields([], ["anything.at.all"])).toEqual([]);
+    it("projects an empty list with valid paths", () => {
+        expect(project([], ["score.rank"])).toEqual([]);
     });
 
     it("rejects a name that no item has, offering the closest ones", () => {
-        const error = failure(() => selectFields(rows(), ["titel"]));
+        const error = failure(() => project(rows(), ["titel"]));
         expect(error.code).toBe("USAGE");
         expect(error.exitCode).toBe(2);
         expect(error.message).toBe("--fields 里有不存在的字段「titel」");
@@ -125,25 +142,25 @@ describe("selectFields", () => {
     });
 
     it("rejects a misspelled name inside an object and suggests the dotted path", () => {
-        const error = failure(() => selectFields(rows(), ["score.rnk"]));
+        const error = failure(() => project(rows(), ["score.rnk"]));
         expect(error.message).toContain("「score.rnk」");
         expect(error.candidates).toContainEqual({ ref: "score.rank" });
     });
 
     it("rejects a step into something that is not an object", () => {
-        expect(failure(() => selectFields(rows(), ["title.length"])).code).toBe("USAGE");
-        expect(failure(() => selectFields(rows(), ["tags.0"])).code).toBe("USAGE");
+        expect(failure(() => project(rows(), ["title.length"])).code).toBe("USAGE");
+        expect(failure(() => project(rows(), ["tags.0"])).code).toBe("USAGE");
     });
 
     it("rejects names that are written wrongly, even when a shorter one covers them", () => {
         for (const bad of ["", ".title", "title.", "score..rank", "__proto__", "a.__proto__"]) {
-            expect(failure(() => selectFields(rows(), [bad])).code).toBe("USAGE");
+            expect(failure(() => project(rows(), [bad])).code).toBe("USAGE");
         }
-        expect(failure(() => selectFields(rows(), ["score", "score..rank"])).code).toBe("USAGE");
+        expect(failure(() => project(rows(), ["score", "score..rank"])).code).toBe("USAGE");
     });
 
     it("does not echo a name that looks like it could be something else", () => {
-        const error = failure(() => selectFields(rows(), ["pa ss word"]));
+        const error = failure(() => project(rows(), ["pa ss word"]));
         expect(error.message).toBe("--fields 里有不存在的字段");
     });
 });

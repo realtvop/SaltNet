@@ -6,9 +6,10 @@ import { Buffer } from "node:buffer";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { CollectionKind } from "@core/collection/type";
 import { LXNS_OAUTH_LIFETIME } from "@core/integrations/lxns/oauth";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRegistry } from "../../src/commands";
 import { readCredentials, stageCredentials } from "../../src/runtime/credentials";
+import * as credentialFiles from "../../src/runtime/credentials";
 import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import {
@@ -436,6 +437,48 @@ it("rolls back the old user's data and discards staged credentials if replacemen
     expect(readUserCounts(store, "fake-default-user")).toEqual(oldCounts);
     noJournal(store);
 });
+
+it.each(["id", "lxns"] as const)(
+    "refuses sync of the replacement uid before the %s bind publishes credentials",
+    async kind => {
+        const { paths, store, uid } = fixture(kind, 0);
+        const { line, options } = await previewCommand(paths, kind, "0");
+        const preview = await runPrinted(paths, line, options);
+        const stage = credentialFiles.stageCredentials;
+        const clock = vi.spyOn(Date, "now").mockReturnValue(NOW.getTime());
+        let sync: ReturnType<typeof commandIn> | undefined;
+        const spy = vi
+            .spyOn(credentialFiles, "stageCredentials")
+            .mockImplementation((paths, content) => {
+                const staged = stage(paths, content);
+                return {
+                    ...staged,
+                    commit() {
+                        const replacement = listUsers(store)[0].uid;
+                        expect(replacement).not.toBe(uid);
+                        sync = commandIn(
+                            paths,
+                            "sync",
+                            ["--user", replacement, "--source", "df-token"],
+                            {
+                                network: {},
+                            }
+                        );
+                        staged.commit();
+                    },
+                };
+            });
+        try {
+            expect((await runPrinted(paths, preview.json.error.fix!)).code).toBe(0);
+            const result = await sync;
+            expect(result?.json.error.code).toBe("SYNC_IN_PROGRESS");
+            expect(result?.requests).toEqual([]);
+        } finally {
+            spy.mockRestore();
+            clock.mockRestore();
+        }
+    }
+);
 
 it("binds a confirmation code to the identity it previewed", async () => {
     const { paths, uid } = fixture("id", 0);

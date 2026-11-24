@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
+import path from "node:path";
 import { createFixtureMusicList } from "@core/fixtures/saltmeta";
 import { describe, expect, it } from "vitest";
+import { splitCommandLine } from "../../src/util/shell";
 import { formatLocalTime } from "../../src/util/time";
 import { commandIn, LXNS_URL, META_URL, NOW } from "../commandRun";
 import { useTempHome } from "../tempHome";
@@ -318,6 +320,55 @@ describe("saltnet song --with related", () => {
         const paths2 = makeHome();
         const resDouble = await songIn(paths2, ["146", "--with", "related,related"]);
         expect(resDouble.json.data).toEqual(resSingle.json.data);
+    });
+
+    it("reports the selected user's ownership and progress in related collections", async () => {
+        const fixturePath = path.resolve(
+            import.meta.dirname,
+            "../../../shared/core/fixtures/web-backup-v1.json"
+        );
+        const paths = makeHome();
+        const preview = await commandIn(paths, "import", [fixturePath]);
+        expect(preview.code).toBe(6);
+        const args = splitCommandLine(preview.json.error.fix!);
+        expect(args.shift()).toBe("saltnet");
+        const command = args.shift()!;
+        const importRes = await commandIn(paths, command, args);
+        expect(importRes.code).toBe(0);
+
+        const songRes = await songIn(paths, ["8", "--with", "related", "--user", "0"]);
+        expect(songRes.code).toBe(0);
+        const listRes = await commandIn(paths, "collection", [
+            "list",
+            "--user",
+            "0",
+            "--limit",
+            "10000",
+        ]);
+        expect(listRes.code).toBe(0);
+
+        const relatedCols = songRes.json.data.related.collections;
+        expect(relatedCols.length).toBeGreaterThan(0);
+        const listByRef = new Map(listRes.json.data.items.map((i: { ref: string }) => [i.ref, i]));
+
+        let sawNonNull = false;
+        for (const col of relatedCols) {
+            const match = listByRef.get(col.ref) as { owned: boolean | null; progress: unknown };
+            expect(match).toBeDefined();
+            expect(col.owned).toBe(match.owned);
+            expect(col.progress).toEqual(match.progress);
+            if (col.owned !== null || col.progress !== null) {
+                sawNonNull = true;
+            }
+        }
+        expect(sawNonNull).toBe(true);
+
+        expect(songRes.json.meta.user).toEqual({
+            index: 0,
+            uid: "web-fixture-user-1",
+            name: "made-up 主账号",
+        });
+        expect(songRes.json.meta.dataAsOf.scores).toBeDefined();
     });
 
     it("returns expected relations for songs 8, 17, 58, 70, 115, 191, 256, 44", async () => {

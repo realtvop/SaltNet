@@ -42,12 +42,13 @@ export async function runSync(args: SyncCommandArgs, ctx: CommandContext): Promi
     }
 
     const { selected, skipped } = selectUsers(listUsers(ctx.store()), args.options);
-    if (!all) return executeSync(args, ctx, selected[0]);
+    const attemptedLxnsRefreshes = new Set<string>();
+    if (!all) return executeSync(args, ctx, selected[0], attemptedLxnsRefreshes);
 
     const results: SyncAllResult[] = [];
     for (const row of selected) {
         try {
-            const { data, warnings } = await executeSync(args, ctx, row);
+            const { data, warnings } = await executeSync(args, ctx, row, attemptedLxnsRefreshes);
             results.push({ user: data.user, ok: true, data, error: null, warnings });
         } catch (error) {
             if (!(error instanceof CliError)) throw error;

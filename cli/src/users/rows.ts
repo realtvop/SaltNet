@@ -146,12 +146,24 @@ export function recordCanBeLookedUp(
     );
 }
 
+function hasSafeCoreNumbers(value: ObjectValue): boolean {
+    for (const key of ["ra", "achievements", "ds"] as const) {
+        const val = value[key];
+        if (val !== undefined && (typeof val !== "number" || !Number.isFinite(val))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function lookupRecords(value: unknown): Record<string, DivingFishFullRecord & ObjectValue> {
     if (!isPlainObject(value)) return {};
     return Object.fromEntries(
         Object.entries(value).filter(
             (entry): entry is [string, DivingFishFullRecord & ObjectValue] =>
-                isPlainObject(entry[1]) && recordCanBeLookedUp(entry[1])
+                isPlainObject(entry[1]) &&
+                recordCanBeLookedUp(entry[1]) &&
+                hasSafeCoreNumbers(entry[1])
         )
     );
 }
@@ -160,7 +172,7 @@ function lookupRecordList(value: unknown): (DivingFishFullRecord & ObjectValue)[
     if (!Array.isArray(value)) return [];
     return value.filter(
         (entry): entry is DivingFishFullRecord & ObjectValue =>
-            isPlainObject(entry) && recordCanBeLookedUp(entry)
+            isPlainObject(entry) && recordCanBeLookedUp(entry) && hasSafeCoreNumbers(entry)
     );
 }
 

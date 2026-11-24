@@ -202,13 +202,13 @@ export const chartFriendEntrySchema = object<ChartFriendEntry>(
         uid: str("用户唯一标识 uid"),
         name: str("用户显示名"),
         rank: nullable(
-            int("在这张谱上的好友排名，同分并列；未游玩时为 null"),
-            "在这张谱上的好友排名，同分并列；未游玩时为 null"
+            int("在本机用户中的排名，同分并列；未游玩时为 null"),
+            "在本机用户中的排名，同分并列；未游玩时为 null"
         ),
         current: bool("是否为当前选中的用户"),
         score: nullable(chartScoreSchema, "该用户在这张谱上的成绩；未游玩时为 null"),
     },
-    { description: "本地其他用户在这张谱上的成绩和排名" }
+    { description: "本机所有用户在这张谱上的成绩和排名，选中的用户 current 为 true" }
 );
 
 export const HISTORY_SOURCES = ["inGame", "lxns", "divingFishImport", "divingFishPublic"] as const;

@@ -1,4 +1,6 @@
 import type { DatabaseSync } from "../../src/store/sqlite";
+import v8 from "node:v8";
+import vm from "node:vm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runQuery } from "../../src/store/query";
 import { openSandbox } from "../../src/store/sandbox";
@@ -232,5 +234,35 @@ describe("runQuery", () => {
         const res = runQuery(plain, "INSERT INTO t VALUES (9, 'q')", 10);
         expect(res.rows).toEqual([]);
         expect(res.truncated).toBe(false);
+    });
+
+    // Node keeps a statement without SQL in the database's list after it is collected, and closing
+    // the database then finalizes freed memory: the process crashed in about one `sql` run in eight.
+    it("never lets a statement without SQL be collected while its database is open", async () => {
+        v8.setFlagsFromString("--expose-gc");
+        const gc = vm.runInNewContext("gc") as () => void;
+        const collected: string[] = [];
+        const registry = new FinalizationRegistry<string>(sql => collected.push(sql));
+        const prepare = plain.prepare.bind(plain);
+        plain.prepare = (sql: string) => {
+            const statement = prepare(sql);
+            try {
+                void statement.sourceSQL;
+            } catch {
+                registry.register(statement, sql);
+            }
+            return statement;
+        };
+
+        // The rest after the statement is a comment; the second query is nothing but one.
+        expect(runQuery(plain, "SELECT 1 AS one; -- the end", 10).rows).toEqual([{ one: 1 }]);
+        expect(caught(() => runQuery(plain, "-- nothing", 10)).code).toBe("SQL_ERROR");
+        for (let round = 0; round < 5; round++) {
+            gc();
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        expect(collected).toEqual([]);
+        plain.close();
     });
 });

@@ -22,7 +22,7 @@ import { buildSaltMetaMusicList, fetchSaltMetaCompacted } from "@core/music/fetc
 import { CliError } from "../errors";
 import { toCoreConfig } from "../runtime/config";
 import { upstreamStatusError } from "../runtime/http";
-import { withLock } from "../store/locks";
+import { maintainLock, withLock } from "../store/locks";
 import { toCliError } from "../toCliError";
 import { formatLocalTime } from "../util/time";
 import { writeSnapshot } from "./snapshots";
@@ -31,7 +31,7 @@ import { DOWNLOADED_SOURCES, readMetaState, replaceCollections, replaceMusic } f
 /** The lock a refresh holds, so two processes do not download and write at the same time. */
 export const METADATA_LOCK = "metadata";
 
-/** Longer than a refresh takes; a process that dies mid-way frees the lock by itself after this. */
+/** A process that dies mid-refresh frees the lock after this long without renewal. */
 export const METADATA_LOCK_TTL_MS = 120_000;
 
 export const SOURCE_LABELS: Readonly<Record<DownloadedSource, string>> = {
@@ -160,7 +160,9 @@ export function buildCatalog(compacted: SaltMetaMusicMetadataNextCompacted): Sal
     return build;
 }
 
-async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
+type Publish = () => SourceOutcome;
+
+async function downloadMusic(deps: RefreshDeps): Promise<Publish> {
     const core = toCoreConfig(deps.config);
     deps.log(`正在下载${SOURCE_LABELS.saltmeta}`);
     const downloaded = await fetchSaltMetaCompacted({
@@ -170,17 +172,19 @@ async function refreshMusic(deps: RefreshDeps): Promise<SourceOutcome> {
     if (!downloaded.ok) throw saltMetaFailure(downloaded.failure, core.saltMetaUrl);
 
     const build = buildCatalog(downloaded.compacted);
-
-    writeSnapshot(deps.paths, "saltmeta", downloaded.compacted);
     const fetchedAt = deps.now().getTime();
-    const counts = replaceMusic(deps.store, build, {
-        fetchedAt,
-        upstreamVersion: String(downloaded.compacted.version),
-    });
-    return { source: "saltmeta", ok: true, fetchedAt, ...counts, merged: build.merged };
+
+    return () => {
+        writeSnapshot(deps.paths, "saltmeta", downloaded.compacted);
+        const counts = replaceMusic(deps.store, build, {
+            fetchedAt,
+            upstreamVersion: String(downloaded.compacted.version),
+        });
+        return { source: "saltmeta", ok: true, fetchedAt, ...counts, merged: build.merged };
+    };
 }
 
-async function refreshCollections(deps: RefreshDeps): Promise<SourceOutcome> {
+async function downloadCollections(deps: RefreshDeps): Promise<Publish> {
     const core = toCoreConfig(deps.config);
     deps.log(`正在下载${SOURCE_LABELS["lxns-collections"]}`);
     let lists: LXNSCollectionLists;
@@ -201,34 +205,27 @@ async function refreshCollections(deps: RefreshDeps): Promise<SourceOutcome> {
         throw new CliError("UPSTREAM_ERROR", "落雪返回的收藏品列表是空的，已有的收藏品没有被替换");
     }
 
-    writeSnapshot(deps.paths, "lxns-collections", lists);
     const fetchedAt = deps.now().getTime();
-    const counts = replaceCollections(deps.store, lists, { fetchedAt });
-    return { source: "lxns-collections", ok: true, fetchedAt, counts };
+    return () => {
+        writeSnapshot(deps.paths, "lxns-collections", lists);
+        const counts = replaceCollections(deps.store, lists, { fetchedAt });
+        return { source: "lxns-collections", ok: true, fetchedAt, counts };
+    };
 }
 
-const RUNNERS: Readonly<Record<DownloadedSource, (deps: RefreshDeps) => Promise<SourceOutcome>>> = {
-    saltmeta: refreshMusic,
-    "lxns-collections": refreshCollections,
+const DOWNLOADERS: Readonly<Record<DownloadedSource, (deps: RefreshDeps) => Promise<Publish>>> = {
+    saltmeta: downloadMusic,
+    "lxns-collections": downloadCollections,
 };
 
-/** Runs one source and turns whatever goes wrong into its outcome, so the other still runs. */
-async function attempt(
-    source: DownloadedSource,
-    deps: RefreshDeps,
-    work: () => Promise<SourceOutcome>
-): Promise<SourceOutcome> {
-    try {
-        return await work();
-    } catch (error) {
-        const kept = readMetaState(deps.store, source)?.fetchedAt;
-        return {
-            source,
-            ok: false,
-            error: toCliError(error),
-            ...(kept === undefined ? {} : { keptFetchedAt: kept }),
-        };
-    }
+function failed(source: DownloadedSource, store: Store, error: unknown): FailedOutcome {
+    const kept = readMetaState(store, source)?.fetchedAt;
+    return {
+        source,
+        ok: false,
+        error: toCliError(error),
+        ...(kept === undefined ? {} : { keptFetchedAt: kept }),
+    };
 }
 
 /**
@@ -243,7 +240,34 @@ export async function refreshCatalog(deps: RefreshDeps): Promise<RefreshResult> 
         deps.store,
         METADATA_LOCK,
         { ttlMs: METADATA_LOCK_TTL_MS, now: () => deps.now().getTime() },
-        () => Promise.all(sources.map(source => attempt(source, deps, () => RUNNERS[source](deps))))
+        async lock => {
+            const lease = maintainLock(lock, METADATA_LOCK_TTL_MS / 2);
+            try {
+                const downloads = await Promise.allSettled(
+                    sources.map(source => DOWNLOADERS[source](deps))
+                );
+                // Check after acquiring the SQLite writer so no successor can publish between
+                // the check and the final snapshot or database write.
+                return deps.store.transaction(() => {
+                    if (!lease.renew()) {
+                        const error = new CliError("SYNC_IN_PROGRESS", "刷新锁已失效，请重新刷新");
+                        return sources.map(source => failed(source, deps.store, error));
+                    }
+                    return downloads.map((download, index) => {
+                        if (download.status === "rejected") {
+                            return failed(sources[index], deps.store, download.reason);
+                        }
+                        try {
+                            return download.value();
+                        } catch (error) {
+                            return failed(sources[index], deps.store, error);
+                        }
+                    });
+                });
+            } finally {
+                lease.stop();
+            }
+        }
     );
     if (!locked.acquired) return { refreshed: false, holder: locked.holder };
     return { refreshed: true, outcomes: locked.value };

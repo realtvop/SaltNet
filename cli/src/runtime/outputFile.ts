@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { CliError } from "../errors";
 import { joinCommandLine } from "../util/shell";
@@ -20,16 +20,38 @@ export interface OutputFileTarget {
     readonly retryCommand: readonly string[];
 }
 
-/** Resolves `given` against the working directory; FILE_EXISTS unless `overwrite`. */
+function missingDirectoryError(directory: string, commandName: string, cause?: unknown): CliError {
+    return new CliError("USAGE", `目录不存在：${directory}；${commandName} 不会创建目录`, {
+        retryable: false,
+        cause,
+    });
+}
+
+/** Pass the command name when the directory must be checked before an external request. */
 export function resolveOutputFile(
     ctx: { readonly io: { readonly cwd: string } },
     given: string,
     overwrite: boolean,
-    retryCommand: readonly string[]
+    retryCommand: readonly string[],
+    commandName?: string
 ): OutputFileTarget {
     const absolutePath = path.resolve(ctx.io.cwd, given);
     if (existsSync(absolutePath) && !overwrite) {
         throw fileExistsError(absolutePath, retryCommand);
+    }
+    if (commandName !== undefined) {
+        const directory = path.dirname(absolutePath);
+        let isDirectory: boolean;
+        try {
+            isDirectory = statSync(directory).isDirectory();
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException).code;
+            if (code === "ENOENT" || code === "ENOTDIR") {
+                throw missingDirectoryError(directory, commandName, error);
+            }
+            throw error;
+        }
+        if (!isDirectory) throw missingDirectoryError(directory, commandName);
     }
     return {
         path: absolutePath,
@@ -62,11 +84,7 @@ export function writeOutputFile(
             });
         }
         if (code === "ENOENT" || code === "ENOTDIR") {
-            throw new CliError(
-                "USAGE",
-                `目录不存在：${path.dirname(filePath)}；${commandName} 不会创建目录`,
-                { retryable: false, cause: error }
-            );
+            throw missingDirectoryError(path.dirname(filePath), commandName, error);
         }
         throw error;
     }

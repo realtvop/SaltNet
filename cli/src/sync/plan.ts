@@ -12,13 +12,15 @@ import { readUserVersion } from "../store/migrations";
 import { loadSqlite } from "../store/sqlite";
 import { DEFAULT_BUSY_TIMEOUT_MS } from "../store/store";
 import { listUsers, readUsers } from "../users/repository";
+import { userRefWord } from "../util/printedCommand";
+import { requireGameBackend } from "./ingame";
+import { checkLxnsAccess } from "./lxnsToken";
 import {
     assertGameId,
     assertGameQrSource,
-    assertLxnsRefreshAvailable,
     buildUserForCore,
-    formatOtherSourcesFix,
     getOtherBoundSources,
+    otherSourcesMessage,
     plannedMode,
     resolveSyncSource,
     syncResultError,
@@ -96,18 +98,35 @@ export function planUserSync(
     try {
         const workingUser = buildUserForCore(storedUser, ctx.paths);
         source = resolveSyncSource(workingUser, row, requestedSource);
-        if (source === "ingame" && !qr) assertGameId(workingUser, row);
-        if (source === "lxns") {
-            try {
-                assertLxnsRefreshAvailable(workingUser, row, ctx.io.now().getTime());
-            } catch (error) {
-                if (!(error instanceof CliError)) throw error;
-                const fix = formatOtherSourcesFix(
-                    row,
-                    getOtherBoundSources(workingUser, source),
-                    error.fix
+        const { api } = ctx.config.values;
+        if (source === "ingame") {
+            requireGameBackend(ctx.config);
+            if (!qr) {
+                assertGameId(workingUser, row, {
+                    upload,
+                    dryRun: true,
+                    offline: args.global.offline,
+                });
+            }
+        }
+        const auth = workingUser.lxns?.auth;
+        if (source === "lxns" && auth) {
+            const access = checkLxnsAccess(
+                workingUser,
+                auth,
+                userRefWord(row),
+                ctx.io.now().getTime()
+            );
+            if (typeof access !== "string") {
+                const { error } = access;
+                const others = getOtherBoundSources(
+                    workingUser,
+                    source,
+                    Boolean(api.url || api.fallbackUrl)
                 );
-                throw new CliError(error.code, error.message, { fix });
+                throw new CliError(error.code, otherSourcesMessage(error.message, others), {
+                    fix: error.fix,
+                });
             }
         }
         const uploads = syncUploadTargets(workingUser, source, upload);

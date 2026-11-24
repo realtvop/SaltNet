@@ -1,8 +1,9 @@
 /**
  * `--fields a,b.c`: keep only some fields of each item (design 4.5). A dot goes one level into an
- * object. A name that no item has is a usage error, so a typo cannot quietly become an empty
- * column or a missing key.
+ * object. The declared row fields decide which paths are valid and which columns they expand to,
+ * even when the current page has no rows.
  */
+import type { JsonSchema } from "../commands/registry";
 import { usageError } from "../errors";
 import { closestMatches } from "../util/closest";
 import { echo } from "../util/echo";
@@ -23,19 +24,36 @@ export function getPath(value: unknown, segments: readonly string[]): unknown {
     return current ?? null;
 }
 
-/** Every dotted path that occurs in the items, nested ones included, for suggestions. */
-function allPaths(items: readonly unknown[]): string[] {
-    const found = new Set<string>();
-    const visit = (value: unknown, prefix: string): void => {
-        if (!isPlainObject(value)) return;
-        for (const [key, child] of Object.entries(value)) {
-            const path = prefix === "" ? key : `${prefix}.${key}`;
-            found.add(path);
-            visit(child, path);
+function alternatives(schema: JsonSchema): JsonSchema[] {
+    if (!Array.isArray(schema.anyOf)) return [schema];
+    return schema.anyOf.filter(isPlainObject).flatMap(alternatives);
+}
+
+/** Merge the properties of the possible shapes in declaration order. */
+function propertiesOf(schemas: readonly JsonSchema[]): Map<string, JsonSchema[]> {
+    const properties = new Map<string, JsonSchema[]>();
+    for (const schema of new Set(schemas.flatMap(alternatives))) {
+        if (!isPlainObject(schema.properties)) continue;
+        for (const [key, child] of Object.entries(schema.properties)) {
+            if (!isPlainObject(child)) continue;
+            const existing = properties.get(key);
+            if (existing) existing.push(child);
+            else properties.set(key, [child]);
         }
-    };
-    for (const item of items) visit(item, "");
-    return [...found];
+    }
+    return properties;
+}
+
+function arrayItemsOf(schemas: readonly JsonSchema[], key: string): JsonSchema[] {
+    return (propertiesOf(schemas).get(key) ?? [])
+        .flatMap(alternatives)
+        .flatMap(schema => (isPlainObject(schema.items) ? [schema.items] : []));
+}
+
+export function listItemSchemas(schema: JsonSchema | undefined, grouped: boolean): JsonSchema[] {
+    if (!schema) return [];
+    const containers = grouped ? arrayItemsOf([schema], "groups") : [schema];
+    return arrayItemsOf(containers, "items");
 }
 
 function checkSyntax(path: string): void {
@@ -47,23 +65,58 @@ function checkSyntax(path: string): void {
     }
 }
 
-/**
- * A path is accepted when some item has it. Where every item has a null (a chart nobody played
- * has `score: null`), there is nothing to compare the deeper names with, so they are accepted too.
- * A step into a string, number or list is never valid.
- */
-function checkExists(items: readonly unknown[], path: string, segments: readonly string[]): void {
-    let nodes: unknown[] = [...items];
-    for (const segment of segments) {
-        const present = nodes.filter(node => node !== null && node !== undefined);
-        if (present.length === 0) return;
-        const objects = present.filter(isPlainObject);
-        if (!objects.some(object => Object.hasOwn(object, segment))) {
-            const candidates = closestMatches(path, allPaths(items)).map(ref => ({ ref }));
+/** Every valid path and the table columns below it. Arrays remain single cells. */
+function fieldColumns(
+    schemas: readonly JsonSchema[],
+    dynamicKeys: readonly string[]
+): Map<string, readonly string[]> {
+    const paths = new Map<string, readonly string[]>();
+    const visit = (properties: Map<string, JsonSchema[]>, prefix: string): string[] => {
+        return [...properties].flatMap(([key, children]) => {
+            const path = `${prefix}${key}`;
+            paths.set(path, []);
+            const leaves = visit(propertiesOf(children), `${path}.`);
+            const columns = leaves.length === 0 ? [path] : leaves;
+            paths.set(path, columns);
+            return columns;
+        });
+    };
+
+    const properties = propertiesOf(schemas);
+    // SQL rows have query-defined column names. The query reports those names even without rows.
+    const dictionary = schemas
+        .flatMap(alternatives)
+        .find(schema => isPlainObject(schema.additionalProperties));
+    if (dictionary) {
+        for (const key of dynamicKeys) {
+            if (!key.includes(".") && !properties.has(key)) properties.set(key, []);
+        }
+    }
+    visit(properties, "");
+    return paths;
+}
+
+/** Validate every requested path before projecting rows or sending an image request. */
+export function prepareFields(
+    schemas: readonly JsonSchema[],
+    requested: readonly string[],
+    dynamicKeys: readonly string[] = []
+): { paths: string[][]; columns: string[] } {
+    const byPath = fieldColumns(schemas, dynamicKeys);
+    const columns = new Set<string>();
+    for (const path of requested) {
+        checkSyntax(path);
+        const leaves = byPath.get(path);
+        if (!leaves) {
+            const candidates = closestMatches(path, [...byPath.keys()]).map(ref => ({ ref }));
             throw usageError(`--fields 里有不存在的字段${echo(path)}`, { candidates });
         }
-        nodes = objects.map(object => object[segment]);
+        for (const leaf of leaves) columns.add(leaf);
     }
+    return {
+        paths: minimal(requested).map(path => path.split(".")),
+        columns: [...columns],
+    };
 }
 
 /** The requested paths without repeats, and without those a shorter requested path already covers. */
@@ -93,17 +146,14 @@ function assign(target: PlainObject, segments: readonly string[], value: unknown
  * The items with only the requested fields, in the requested order. Nesting is kept: `score.rank`
  * gives `{score: {rank}}`, and `rank` is null when the item has no score.
  */
-export function selectFields(items: readonly unknown[], requested: readonly string[]): unknown[] {
-    for (const path of requested) checkSyntax(path);
-    const split = minimal(requested).map(path => {
-        const segments = path.split(".");
-        checkExists(items, path, segments);
-        return segments;
-    });
+export function selectFields(
+    items: readonly unknown[],
+    paths: readonly (readonly string[])[]
+): unknown[] {
     return items.map(item => {
         if (!isPlainObject(item)) return item;
         const selected: PlainObject = {};
-        for (const segments of split) assign(selected, segments, getPath(item, segments));
+        for (const segments of paths) assign(selected, segments, getPath(item, segments));
         return selected;
     });
 }

@@ -15,10 +15,11 @@ import { acquireLock } from "../../src/store/locks";
 import { openStore } from "../../src/store/store";
 import { readRuns } from "../../src/sync/journal";
 import { readScoreEvents, readUsers } from "../../src/users/repository";
+import { splitCommandLine } from "../../src/util/shell";
 import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { jsonResponse, redirectResponse, textResponse } from "../mockHttp";
-import { parsePrintedCommand, printedCommands, selectedUser } from "../printedCommand";
+import { parsePrintedCommand } from "../printedCommand";
 import {
     allFixtureRecords,
     b50User,
@@ -377,9 +378,11 @@ describe("saltnet sync", () => {
         const result = await commandIn(paths, "sync", []);
         expect(result.code).toBe(4);
         expect(result.json.error.code).toBe("NOT_BOUND");
-        expect(result.json.error.fix).toBe(
-            "绑定一个数据来源：saltnet user bind 0 ingame --qr - 或 saltnet user bind 0 lxns 或 saltnet user bind 0 df-token - 或 saltnet user bind 0 df-name <水鱼用户名>"
-        );
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "0", source: "ingame" },
+            options: { qr: "-" },
+        });
     });
 
     it("syncs from lxns successfully, updating user, events, and sync_runs", async () => {
@@ -702,6 +705,78 @@ describe("saltnet sync", () => {
         expect(result.requests).toHaveLength(0);
     });
 
+    it("keeps the selected user and --no-upload in the QR_REQUIRED fix", async () => {
+        const paths = makeHome();
+        const player = sampleUser("-fake needs qr", "Fake QR Player");
+        await seedScoreUsers(paths, [sampleUser("fake-first", "Fake First"), player]);
+        seedCredentials(paths, {
+            [player.uid!]: {
+                lxnsAccountId: 1001,
+                lxnsAuthorization: { accessToken: FAKE_LXNS_TOKEN, tokenType: "Bearer" },
+            },
+        });
+        const env = { SALTNET_API_URL };
+        const result = await commandIn(
+            paths,
+            "sync",
+            ["--source", "ingame", "--user", "1", "--no-upload"],
+            { env }
+        );
+        expect(result.json.error.code).toBe("QR_REQUIRED");
+        const fix = result.json.error.fix!;
+        expect(parsePrintedCommand(fix)).toMatchObject({
+            command: "sync",
+            options: { user: player.uid, source: "ingame", qr: "-", upload: false },
+        });
+        const plan = await commandIn(
+            paths,
+            "sync",
+            [...splitCommandLine(fix).slice(2), "--dry-run"],
+            { env }
+        );
+        expect(plan.json.data.plans).toMatchObject([{ mode: "full", uploads: [], error: null }]);
+        expect(plan.requests).toEqual([]);
+    });
+
+    it("rejects a fresh LXNS token with another account claim in both planning and execution", async () => {
+        const paths = makeHome();
+        const player = sampleUser("fake-lxns-other-claim", "Fake LXNS User");
+        player.inGame = { id: 99001001, enabled: true, useFastUpdate: true };
+        await seedScoreUsers(paths, [player]);
+        const expiresAt = NOW.getTime() + 3_600_000;
+        seedCredentials(paths, {
+            [player.uid!]: {
+                lxnsAccountId: 1001,
+                lxnsAuthorization: {
+                    accessToken: makeFakeJwt(1002, "Fake Other Account", expiresAt / 1000),
+                    tokenType: "Bearer",
+                    expiresAt,
+                    refreshToken: "FAKE-OTHER-ACCOUNT-REFRESH",
+                },
+            },
+        });
+        const before = readFileSync(paths.credentials);
+        const args = ["--source", "lxns"];
+        const env = { SALTNET_API_URL };
+        const preview = await commandIn(paths, "sync", [...args, "--dry-run"], { env });
+        expect(preview.json.data.plans).toMatchObject([
+            { source: "lxns", mode: null, uploads: [], error: { code: "LXNS_REAUTH_REQUIRED" } },
+        ]);
+        const error = preview.json.data.plans[0].error;
+        expect(parsePrintedCommand(error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "0", source: "lxns" },
+        });
+        expect(error.message).toContain("ingame");
+        expect(preview.requests).toEqual([]);
+        expect(readFileSync(paths.credentials)).toEqual(before);
+
+        const execution = await commandIn(paths, "sync", args, { env });
+        expect(execution.json.error).toMatchObject(error);
+        expect(execution.requests).toEqual([]);
+        expect(readCredentials(paths).users[player.uid!]?.lxnsAuthorization).toBeUndefined();
+    });
+
     it("syncs from ingame fast update without QR code supplemented by DF import token (mode: fast)", async () => {
         const paths = makeHome();
         const u = sampleUser("user-ingame-fast", "Fast Player");
@@ -941,8 +1016,11 @@ describe("saltnet sync", () => {
         const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
         expect(result.code).toBe(4);
         expect(result.json.error.code).toBe("NOT_BOUND");
-        // Other bound sources fix
-        expect(result.json.error.fix).toContain("saltnet sync --source");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "0", source: "df-token", value: "-" },
+        });
+        expect(result.json.error.message).toContain("df-name");
 
         const store = openStore(paths);
         try {
@@ -982,8 +1060,12 @@ describe("saltnet sync", () => {
         const result = await commandIn(paths, "sync", ["--source", "lxns"], { network });
         expect(result.code).toBe(4);
         expect(result.json.error.code).toBe("NOT_BOUND");
-        expect(result.json.error.fix).toContain("saltnet sync --source df-name");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "0", source: "lxns" },
+        });
 
+        expect(result.json.error.message).toContain("df-name");
         const store = openStore(paths);
         try {
             const saved = readUsers(store).find(u => u.uid === "user-bad-lxns")!;
@@ -1015,11 +1097,16 @@ describe("saltnet sync", () => {
             [DF_RECORDS_URL]: textResponse("Server Crash", 500),
         };
 
-        const result = await commandIn(paths, "sync", ["--source", "df-token"], { network });
+        const result = await commandIn(paths, "sync", ["--source", "df-token", "--no-upload"], {
+            network,
+        });
         expect(result.code).toBe(5);
         expect(result.json.error.code).toBe("UPSTREAM_ERROR");
         expect(result.json.error.retryable).toBe(true);
-        expect(result.json.error.fix).toContain("saltnet sync --source df-name");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "sync",
+            options: { source: "df-name", upload: false },
+        });
 
         const recordsReqs = result.requests.filter(r => r.url === DF_RECORDS_URL);
         expect(recordsReqs).toHaveLength(2);
@@ -1063,7 +1150,10 @@ describe("saltnet sync", () => {
         expect(result.code).toBe(5);
         expect(result.json.error.code).toBe("NETWORK");
         expect(result.json.error.retryable).toBe(true);
-        expect(result.json.error.fix).toContain("saltnet sync --source df-name");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "sync",
+            options: { source: "df-name" },
+        });
 
         const recordsReqs = result.requests.filter(r => r.url === DF_RECORDS_URL);
         expect(recordsReqs).toHaveLength(2);
@@ -1081,6 +1171,32 @@ describe("saltnet sync", () => {
         } finally {
             store.close();
         }
+    });
+
+    it("prints a single config command for a Diving Fish timeout with an alternative source", async () => {
+        const paths = makeHome();
+        const player = sampleUser("fake-df-timeout", "Fake Timeout Player");
+        await seedScoreUsers(paths, [player]);
+        seedCredentials(paths, { [player.uid!]: { divingFishImportToken: FAKE_DF_TOKEN } });
+        const result = await commandIn(paths, "sync", ["--source", "df-token"], {
+            network: {
+                [DF_RECORDS_URL]: () => {
+                    throw new DOMException("Fake deadline expired", "TimeoutError");
+                },
+            },
+        });
+        expect(result.requests.map(request => request.url)).toEqual([
+            DF_RECORDS_URL,
+            DF_RECORDS_URL,
+        ]);
+        expect(result.json.error).toMatchObject({
+            code: "NETWORK",
+            message: expect.stringContaining("超时"),
+        });
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "config set",
+            positionals: { key: "network.timeoutMs", value: "60000" },
+        });
     });
 
     it("fails with LXNS_REAUTH_REQUIRED on expired LXNS token without making network requests", async () => {
@@ -1510,7 +1626,9 @@ describe("saltnet sync", () => {
             },
         });
 
-        const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"]);
+        const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"], {
+            env: { SALTNET_API_URL },
+        });
         expect(ingame.json.error.code).toBe("QR_REQUIRED");
         expect(ingame.json.error.fix).toBe(
             "saltnet sync --user user-second --source ingame --qr -"
@@ -1518,8 +1636,11 @@ describe("saltnet sync", () => {
 
         const lxns = await commandIn(paths, "sync", ["--user", "Second", "--source", "lxns"]);
         expect(lxns.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
-        expect(lxns.json.error.fix).toContain("saltnet user bind user-second lxns");
-        expect(lxns.json.error.fix).toContain("saltnet sync --user user-second --source df-token");
+        expect(parsePrintedCommand(lxns.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "user-second", source: "lxns" },
+        });
+        expect(lxns.json.error.message).toContain("df-token");
     });
 
     it("prints commands that run as printed for a uid that starts with -", async () => {
@@ -1544,7 +1665,9 @@ describe("saltnet sync", () => {
             },
         });
 
-        const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"]);
+        const ingame = await commandIn(paths, "sync", ["--user", "1", "--source", "ingame"], {
+            env: { SALTNET_API_URL },
+        });
         expect(ingame.json.error.code).toBe("QR_REQUIRED");
         expect(parsePrintedCommand(ingame.json.error.fix)).toMatchObject({
             command: "sync",
@@ -1553,37 +1676,20 @@ describe("saltnet sync", () => {
 
         const lxns = await commandIn(paths, "sync", ["--user", "1", "--source", "lxns"]);
         expect(lxns.json.error.code).toBe("LXNS_REAUTH_REQUIRED");
-        const commands = printedCommands(lxns.json.error.fix);
-        expect(commands.map(selectedUser)).toEqual(commands.map(() => uid));
-        expect(commands).toContainEqual(
-            expect.objectContaining({
-                command: "user bind",
-                positionals: expect.objectContaining({ source: "lxns" }),
-            })
-        );
-        expect(commands).toContainEqual(
-            expect.objectContaining({
-                command: "sync",
-                options: expect.objectContaining({ source: "df-token" }),
-            })
-        );
+        expect(parsePrintedCommand(lxns.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: uid, source: "lxns" },
+        });
+        expect(lxns.json.error.message).toContain("df-token");
 
         const unbound = await commandIn(paths, "sync", ["--user", "2"]);
         expect(unbound.json.error.code).toBe("NOT_BOUND");
         const user2 = "-unbound user";
-        expect(printedCommands(unbound.json.error.fix)).toMatchObject([
-            {
-                command: "user bind",
-                positionals: { user: user2, source: "ingame" },
-                options: { qr: "-" },
-            },
-            { command: "user bind", positionals: { user: user2, source: "lxns" } },
-            { command: "user bind", positionals: { user: user2, source: "df-token", value: "-" } },
-            {
-                command: "user bind",
-                positionals: { user: user2, source: "df-name", value: "<水鱼用户名>" },
-            },
-        ]);
+        expect(parsePrintedCommand(unbound.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: user2, source: "ingame" },
+            options: { qr: "-" },
+        });
 
         for (const [source, words] of [
             ["lxns", {}],
@@ -1783,8 +1889,11 @@ describe("saltnet sync", () => {
 
         const result = await commandIn(paths, "sync", ["--source", "lxns"], { network });
         expect(result.code).toBe(5);
-        expect(result.json.error.fix).toContain("saltnet sync --source df-token");
-        expect(result.json.error.fix).not.toContain("saltnet sync --source lxns");
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "sync",
+            options: { source: "df-token" },
+        });
+        expect(result.json.error.message).not.toMatch(/已绑定来源[^。]*lxns/);
     });
 
     it("orders changes with equal rating differences by chart key ascending", async () => {

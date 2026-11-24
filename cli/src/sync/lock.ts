@@ -8,7 +8,7 @@ import type { Lock, LockHolder } from "../store/locks";
 import type { Store } from "../store/store";
 import { getUserDisplayName } from "@core/user/type";
 import { CliError } from "../errors";
-import { acquireLock } from "../store/locks";
+import { acquireLock, maintainLock } from "../store/locks";
 import { readUser } from "../users/repository";
 import { formatLocalTime } from "../util/time";
 import { interruptRuns } from "./journal";
@@ -42,17 +42,17 @@ interface LockRow {
 }
 
 function syncInProgressError(userName: string, holder: LockHolder): CliError {
-    const acquiredAt = new Date(holder.acquiredAt);
-    const expiresAt = new Date(holder.expiresAt);
+    const acquiredAt = formatLocalTime(new Date(holder.acquiredAt));
+    const expiresAt = formatLocalTime(new Date(holder.expiresAt));
     return new CliError(
         "SYNC_IN_PROGRESS",
-        `用户 ${userName} 正在由另一个 saltnet 进程（pid ${holder.pid}）同步，开始于 ${formatLocalTime(acquiredAt)}；等它结束再试`,
+        `用户 ${userName} 正在由另一个 saltnet 进程（pid ${holder.pid}）同步，开始于 ${acquiredAt}；同步可能已中断，当前锁于 ${expiresAt} 到期。同步结束或锁到期后可重试`,
         {
             extra: {
                 holder: {
                     pid: holder.pid,
-                    acquiredAt: formatLocalTime(acquiredAt),
-                    expiresAt: formatLocalTime(expiresAt),
+                    acquiredAt,
+                    expiresAt,
                 },
             },
             retryable: true,
@@ -83,45 +83,23 @@ export async function withSyncLock<T>(
 
     const { lock } = acquisition;
 
-    interruptRuns(store, user.uid);
-
-    let isHeld = true;
-    let renewTimer: ReturnType<typeof setInterval> | undefined;
-
+    const lease = maintainLock(lock, renewIntervalMs);
     const handle: SyncLockHandle = {
         user,
         lock,
         assertHeld() {
-            if (!isHeld || !lock.renew(ttlMs)) {
-                isHeld = false;
+            if (!lease.renew(ttlMs)) {
                 throw new CliError("INTERNAL", `用户 ${user.name} 的同步锁已失效`);
             }
         },
-        renew(ms = ttlMs) {
-            const ok = isHeld && lock.renew(ms);
-            if (!ok) isHeld = false;
-            return ok;
-        },
+        renew: lease.renew,
     };
 
-    renewTimer = setInterval(() => {
-        if (!lock.renew(ttlMs)) {
-            isHeld = false;
-            if (renewTimer !== undefined) {
-                clearInterval(renewTimer);
-                renewTimer = undefined;
-            }
-        }
-    }, renewIntervalMs);
-    renewTimer.unref?.();
-
     try {
+        interruptRuns(store, user.uid);
         return await work(handle);
     } finally {
-        if (renewTimer !== undefined) {
-            clearInterval(renewTimer);
-            renewTimer = undefined;
-        }
+        lease.stop();
         try {
             lock.release();
         } catch {

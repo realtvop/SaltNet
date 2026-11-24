@@ -10,6 +10,7 @@
  * collections is fetched, so the command still needs only the catalog.
  */
 import type { Chart } from "@core/music/type";
+import type { CollectionUserContext } from "../catalog/collectionView";
 import type { Related } from "../catalog/relatedView";
 import type { CommandContext, GlobalOptions, OptionSpec } from "./registry";
 import { relatedTo } from "../catalog/relatedView";
@@ -51,13 +52,18 @@ export async function loadRelated(
         readonly options: { readonly with?: readonly string[] };
     },
     ctx: CommandContext,
-    charts: readonly Chart[]
+    charts: readonly Chart[],
+    context?: CollectionUserContext
 ) {
     const withValues = args.options.with ?? [];
     if (!withValues.includes("related") && !withValues.includes("all")) return undefined;
     const metadata = await useMetadata(args, ctx, ["collections"]);
-    const data: Related = relatedTo(charts, {
-        collections: listCollections(metadata.collections.collections),
-    });
+    const data: Related = relatedTo(
+        charts,
+        {
+            collections: listCollections(metadata.collections.collections),
+        },
+        context
+    );
     return { data, dataAsOf: metadata.dataAsOf, warnings: metadata.warnings };
 }

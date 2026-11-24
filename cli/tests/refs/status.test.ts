@@ -4,6 +4,7 @@ import {
     comboLabel,
     COMBOS,
     parseScoreCondition,
+    parseTargetRate,
     rankLabel,
     RANKS,
     scoreReachesCondition,
@@ -136,6 +137,44 @@ describe("score conditions", () => {
         });
     });
 
+    it("parses internal enum spellings for ranks, combos and syncs, any case", () => {
+        expect(parseScoreCondition("sssp")).toEqual({ kind: "rank", value: RankRate.sssp });
+        expect(parseScoreCondition("SSSP")).toEqual({ kind: "rank", value: RankRate.sssp });
+        expect(parseScoreCondition("ssp")).toEqual({ kind: "rank", value: RankRate.ssp });
+        expect(parseScoreCondition("sp")).toEqual({ kind: "rank", value: RankRate.sp });
+        expect(parseScoreCondition("fcp")).toEqual({
+            kind: "combo",
+            value: ComboStatus.FullComboPlus,
+        });
+        expect(parseScoreCondition("app")).toEqual({
+            kind: "combo",
+            value: ComboStatus.AllPerfectPlus,
+        });
+        expect(parseScoreCondition("fsp")).toEqual({
+            kind: "sync",
+            value: SyncStatus.FullSyncPlus,
+        });
+        expect(parseScoreCondition("fsd")).toEqual({
+            kind: "sync",
+            value: SyncStatus.FullSyncDX,
+        });
+        expect(parseScoreCondition("fsdp")).toEqual({
+            kind: "sync",
+            value: SyncStatus.FullSyncDXPlus,
+        });
+        expect(parseScoreCondition("sync")).toEqual({
+            kind: "sync",
+            value: SyncStatus.Sync,
+        });
+    });
+
+    it("parses target rates with internal spellings", () => {
+        expect(parseTargetRate("sssp")).toBe(100.5);
+        expect(parseTargetRate("SSSP")).toBe(100.5);
+        expect(parseTargetRate("ssp")).toBe(99.5);
+        expect(parseTargetRate("sp")).toBe(98);
+    });
+
     it("uses at-least ordering and rejects unknown stored values", () => {
         expect(scoreReachesCondition(score(), parseScoreCondition("sss"))).toBe(true);
         expect(scoreReachesCondition(score(), parseScoreCondition("sss+"))).toBe(false);
@@ -189,5 +228,11 @@ describe("score conditions", () => {
 
     it("lists every valid condition in an invalid-value USAGE error", () => {
         expect(() => parseScoreCondition("rainbow")).toThrow(/d、c、b.*sss\+、clear.*fdx\+/);
+    });
+
+    it("does not take an empty condition for the stored spelling of no combo or no sync", () => {
+        // ComboStatus.None and SyncStatus.None are both stored as "".
+        expect(() => parseScoreCondition("")).toThrow(/成绩条件「」无效/);
+        expect(() => parseScoreCondition("  ")).toThrow("成绩条件「  」无效");
     });
 });

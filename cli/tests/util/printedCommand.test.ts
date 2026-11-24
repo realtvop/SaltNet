@@ -1,4 +1,6 @@
+import type { UserListRow } from "../../src/users/repository";
 import { describe, expect, it } from "vitest";
+import { resolveUser } from "../../src/refs/user";
 import {
     dfNameBindCommand,
     fileWord,
@@ -6,6 +8,7 @@ import {
     userBindCommand,
     userOptionWords,
     userRefWord,
+    userUidWord,
 } from "../../src/util/printedCommand";
 import { joinCommandLine } from "../../src/util/shell";
 import { parsePrintedCommand } from "../printedCommand";
@@ -23,6 +26,20 @@ describe("printed command words", () => {
         expect(userRefWord(DEFAULT)).toBe("0");
         expect(userRefWord(PLAIN)).toBe("plain-user");
         expect(userRefWord(DASH)).toBe("-dash user");
+    });
+
+    it("escapes a uid with spaces around it or an empty uid as uid:<uid>", () => {
+        expect(userUidWord(" alice ")).toBe("uid: alice ");
+        expect(userUidWord("")).toBe("uid:");
+        const users = [
+            { index: 0, uid: "alice", displayName: "Alice", inGameId: null },
+            { index: 1, uid: " alice ", displayName: "Alice With Spaces", inGameId: null },
+        ] as UserListRow[];
+        const printedRef = userRefWord(users[1]);
+        const line = joinCommandLine(["saltnet", "sync", "--user", printedRef]);
+        const parsed = parsePrintedCommand(line);
+        const resolved = resolveUser(users, parsed.options.user as string);
+        expect(resolved.uid).toBe(" alice ");
     });
 
     it("selects a user with --user in a form the parser reads as a value", () => {

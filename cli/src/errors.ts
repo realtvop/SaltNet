@@ -77,8 +77,9 @@ export const ERROR_DESCRIPTIONS: Readonly<Record<ErrorCode, string>> = {
     OFFLINE_NO_CACHE: "用了 --offline，可是本地没有需要的数据",
     CONFIRMATION_REQUIRED:
         "这个操作要用户确认；error 里有即将执行的操作的预览和确认码，用户同意后带上 --yes <确认码> 重新运行",
-    SYNC_IN_PROGRESS: "同一个用户的同步或者曲库的刷新正在别的进程里进行；稍后再试",
-    DB_LOCKED: "本地数据库被别的命令占着；稍后再试",
+    SYNC_IN_PROGRESS:
+        "同一个用户的同步或者曲库的刷新正在别的进程里进行，或者那个进程被强行结束、它占着的锁还没到期；error.message 里有到期的时间，到时再试",
+    DB_LOCKED: "本地数据库或者配置文件 config.json 被别的命令占着；稍后再试",
 };
 
 /** Something the caller can retry with: a song, a chart, an option name. */

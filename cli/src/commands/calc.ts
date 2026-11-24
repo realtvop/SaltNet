@@ -173,6 +173,11 @@ export const calc = defineCommand(
             throw usageError("--achievements 和 --rating 不能同时指定");
         }
 
+        const normalizedAchievements =
+            args.options.achievements !== undefined
+                ? Math.round(args.options.achievements * 10_000) / 10_000
+                : undefined;
+
         const isRefExplicit =
             args.positionals.difficulty !== undefined || args.options.type !== undefined;
         const parsedConstant = isRefExplicit
@@ -186,8 +191,8 @@ export const calc = defineCommand(
             let rank: string | null = null;
             let stages: RatingStageEntry[] | null = null;
 
-            if (args.options.achievements !== undefined) {
-                achievements = args.options.achievements;
+            if (normalizedAchievements !== undefined) {
+                achievements = normalizedAchievements;
                 const coeff = new ScoreCoefficient(achievements);
                 rating = coeff.ra(parsedConstant);
                 rank = rankLabel(getRankRateByAchievement(achievements));
@@ -246,8 +251,8 @@ export const calc = defineCommand(
             let gain: number | null = null;
             let stages: RatingStageEntry[] | null = null;
 
-            if (args.options.achievements !== undefined) {
-                achievements = args.options.achievements;
+            if (normalizedAchievements !== undefined) {
+                achievements = normalizedAchievements;
                 const coeff = new ScoreCoefficient(achievements);
                 rating = coeff.ra(constant);
                 rank = rankLabel(getRankRateByAchievement(achievements));

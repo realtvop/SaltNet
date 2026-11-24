@@ -4,6 +4,7 @@ import type { Route } from "../mockHttp";
 import { existsSync, readFileSync } from "node:fs";
 import { SaltAPIEndpoints } from "@core/integrations/saltnet/client";
 import { describe, expect, it } from "vitest";
+import { createRegistry } from "../../src/commands";
 import { ingameCheckLogin } from "../../src/commands/ingame";
 import { CliError } from "../../src/errors";
 import { resolveConfig } from "../../src/runtime/config";
@@ -16,7 +17,9 @@ import { replaceUsers } from "../../src/users/repository";
 import { splitCommandLine } from "../../src/util/shell";
 import { commandIn } from "../commandRun";
 import { expectConforms } from "../dataSchema";
+import { createHarness, run } from "../harness";
 import { delayedRoute, jsonResponse, mockFetch, textResponse } from "../mockHttp";
+import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
@@ -89,6 +92,25 @@ async function checkLogin(
 }
 
 describe("saltnet ingame check-login", () => {
+    it("requires a configured backend before reading the check-login QR code", async () => {
+        const paths = makeHome();
+        seed(paths);
+        const harness = createHarness({
+            env: { SALTNET_HOME: paths.home, SALTNET_API_URL: "", SALTNET_API_FALLBACK_URL: "" },
+            stdin: qrInput,
+        });
+        const code = await run(createRegistry(), harness, "ingame", "check-login", "--qr", "-");
+        expect(code).toBe(2);
+        expect(harness.readStdin).not.toHaveBeenCalled();
+        expect(harness.fetch).not.toHaveBeenCalled();
+        const { error } = JSON.parse(harness.stdout());
+        expect(error).toMatchObject({ code: "USAGE", message: expect.stringContaining("api.url") });
+        expect(parsePrintedCommand(error.fix)).toMatchObject({
+            command: "config set",
+            positionals: { key: "api.url", value: "<地址>" },
+        });
+    });
+
     it.each([
         { isLogin: true, stdin: qrInput, userArgs: [], index: 0, uid: "fake-player" },
         {
@@ -152,6 +174,11 @@ describe("saltnet ingame check-login", () => {
             fix: "saltnet user bind --qr - -- '-fake unbound' ingame",
         });
 
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: "-fake unbound", source: "ingame" },
+            options: { qr: "-" },
+        });
         const [, group, ...args] = splitCommandLine(result.json.error.fix!);
         const bind = await commandIn(paths, group, args, { network: {}, stdin: "not a QR code" });
         expect(bind.json.error.code).toBe("QR_INVALID");
@@ -290,6 +317,10 @@ describe("saltnet ingame check-login", () => {
             // A request carrying the QR code is never sent twice.
             retryable: false,
             fix: "saltnet ingame check-login '--user=-fake default' --qr -",
+        });
+        expect(parsePrintedCommand(result.json.error.fix)).toMatchObject({
+            command: "ingame check-login",
+            options: { user: "-fake default", qr: "-" },
         });
         const [, group, ...args] = splitCommandLine(result.json.error.fix!);
         const retry = await commandIn(paths, group, args, {

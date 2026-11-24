@@ -18,6 +18,7 @@ import {
 import { getUserDisplayName } from "@core/user/type";
 import { chartDetails, chartRow, constantOf } from "../catalog/chartRow";
 import { chartScoreOf } from "../catalog/chartScore";
+import { collectionUserContext } from "../catalog/collectionView";
 import { chartHistoryEntry } from "../catalog/historyView";
 import {
     chartFriendEntrySchema,
@@ -180,7 +181,7 @@ export const chart = defineCommand(
         summary: "一张谱的详情：定数、拟合定数、物量、谱师、统计、成绩、吃分表",
         description:
             "谱面可以写谱面 key（如 146-3），也可以写曲目加难度：曲目 id、标题或别名，后面再给难度（bas、adv、exp、mas、rem、utage，或 0–4、10，或 绿黄红紫白宴）。曲目 id 只在这个 id 自己的一面找；标题或别名如果 SD 和 DX 都有这个难度，要加 --type 选一面，否则是 AMBIGUOUS_REF，候选是两个谱面 key。结果是统一的谱面行，带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次，再加 charter、notes（tap、hold、slide、touch、break、total）、stats（样本数、平均达成率、平均 DX 分、标准差、评级分布、combo 分布）和默认「简洁」模式的 stages 阶段表。本地没有用户时 score 和 b50 都是 null。" +
-            "通过 --with 可以附加额外内容，多个用逗号隔开：stages 为完整阶段表（同谱面弹窗的「全部」）；friends 为本地其他用户在这张谱上的成绩与排名；history 为该谱面的成绩变化历史（从新到旧，隐藏仅游玩次数变动的记录）；position 为项目位置和游玩次数；related 为用到这张谱的收藏品、段位和门；all 为以上全部内容。",
+            "通过 --with 可以附加额外内容，多个用逗号隔开：stages 为完整阶段表（同谱面弹窗的「全部」）；friends 为本机所有用户在这张谱上的成绩与排名（--user 选中的用户也在里面，current 为 true）；history 为该谱面的成绩变化历史（从新到旧，隐藏仅游玩次数变动的记录）；position 为项目位置和游玩次数；related 为用到这张谱的收藏品、段位和门；all 为以上全部内容。",
         category: "catalog",
         effect: "none",
         output: "object",
@@ -207,7 +208,7 @@ export const chart = defineCommand(
             ...USER_OPTION,
             ...withOptions(
                 CHART_WITH_VALUES,
-                "多带上的内容，多个用逗号隔开；可选 stages（完整阶段表）、friends（好友排名）、history（成绩历史）、related（相关收藏品/段位/门）、position（项目位置）、all（全部）"
+                "多带上的内容，多个用逗号隔开；可选 stages（完整阶段表）、friends（本机所有用户在这张谱上的排名）、history（成绩历史）、related（相关收藏品/段位/门）、position（项目位置）、all（全部）"
             ),
         },
         examples: [
@@ -224,7 +225,7 @@ export const chart = defineCommand(
             },
             {
                 command: "chart 146-3 --with all",
-                description: "查看包含好友排名、成绩历史、项目位置和相关项在内的全部详情",
+                description: "查看包含本机用户排名、成绩历史、项目位置和相关项在内的全部详情",
             },
         ],
         errors: ["USAGE", "NOT_FOUND", "AMBIGUOUS_REF", "NO_USER", ...METADATA_ERRORS],
@@ -242,7 +243,10 @@ export const chart = defineCommand(
                     "Rating 阶段表；默认简洁模式，加 --with stages 为完整模式；宴谱为 []"
                 ),
                 related: relatedSchema,
-                friends: list(chartFriendEntrySchema, "本地其他用户在这张谱上的成绩和排名"),
+                friends: list(
+                    chartFriendEntrySchema,
+                    "本机所有用户在这张谱上的成绩和排名，选中的用户 current 为 true"
+                ),
                 history: list(chartHistoryEntrySchema, "这张谱面的成绩变化历史，从新到旧"),
                 position: chartPositionSchema,
             },
@@ -255,11 +259,8 @@ export const chart = defineCommand(
     },
     async (args, ctx) => {
         const metadata = await useMetadata(args, ctx, ["catalog"]);
-        const userScores = useUserScores(
-            args,
-            ctx,
-            Object.values(metadata.catalog.music.chartList)
-        );
+        const allCatalogCharts = Object.values(metadata.catalog.music.chartList);
+        const userScores = useUserScores(args, ctx, allCatalogCharts);
         try {
             const entry = resolveChart(buildSongCatalog(metadata.catalog.music), {
                 ref: args.positionals.chart,
@@ -322,7 +323,6 @@ export const chart = defineCommand(
 
             let position: ChartPositionRow | undefined;
             if (wantPosition) {
-                const allCatalogCharts = Object.values(metadata.catalog.music.chartList);
                 const rawUser = userScores.scores?.raw ?? null;
                 const posStr = getChartPositionByDifficulty(
                     entry.chart,
@@ -348,7 +348,8 @@ export const chart = defineCommand(
             }
 
             // The collections are fetched only now: a chart that cannot be found costs no download.
-            const related = await loadRelated(args, ctx, [entry.chart]);
+            const collectionContext = collectionUserContext(userScores.scores, allCatalogCharts);
+            const related = await loadRelated(args, ctx, [entry.chart], collectionContext);
             const dataAsOf = { ...metadata.dataAsOf, ...related?.dataAsOf };
             return {
                 data: {

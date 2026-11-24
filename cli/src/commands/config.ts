@@ -122,7 +122,7 @@ export const configSet = defineCommand(
         name: "config set",
         summary: "把一项设置写进 config.json",
         description:
-            '检查值是否合法（类型和范围见 config list 的 type），合法才写进数据目录里的 config.json，没有这个文件就新建；文件里别的内容原样保留。可以留空的设置（例如 api.fallbackUrl）用 "" 写空值。结果是这项设置现在的样子（和 config get 一样），再加 changed：文件里原来就是这个值时是 false，没有写文件。环境变量的优先级比 config.json 高，所以结果里 source 是 env 时，生效的还是环境变量的值（env 字段是它的名字）。config.json 不是合法的 JSON 时不会改它，要先修好或删掉。',
+            '检查值是否合法（类型和范围见 config list 的 type），合法才写进数据目录里的 config.json，没有这个文件就新建；文件里别的内容原样保留。可以留空的设置（例如 api.fallbackUrl）用 "" 写空值。结果是这项设置现在的样子（和 config get 一样），再加 changed：文件里原来就是这个值时是 false，没有写文件。环境变量的优先级比 config.json 高，所以结果里 source 是 env 时，生效的还是环境变量的值（env 字段是它的名字）。config.json 不是合法的 JSON 时不会改它，要先修好或删掉。另一个进程持续占用配置文件时返回 DB_LOCKED。',
         category: "data",
         effect: "local",
         output: "object",
@@ -145,7 +145,7 @@ export const configSet = defineCommand(
                 description: "在终端里直接运行时默认输出给人看的文字",
             },
         ],
-        errors: ["USAGE", "NOT_FOUND"],
+        errors: ["USAGE", "NOT_FOUND", "DB_LOCKED"],
         dataSchema: extend<SettingRow & { readonly changed: boolean }, SettingRow>(
             settingRowSchema,
             {
@@ -154,11 +154,11 @@ export const configSet = defineCommand(
             { description: "这项设置现在的样子（和 config get 一样），再加 changed" }
         ),
     },
-    (args, ctx) => {
+    async (args, ctx) => {
         const definition = resolveSetting(args.positionals.key);
         const parsed = parseConfigText(definition, args.positionals.value);
         if (!parsed.ok) throw usageError(`设置 ${definition.key} ${parsed.reason}`);
-        const { changed } = setConfigEntry(ctx.paths, definition.key, parsed.value);
+        const { changed } = await setConfigEntry(ctx.paths, definition.key, parsed.value);
         return resultOf(changed, definition, ctx);
     }
 );
@@ -168,7 +168,7 @@ export const configUnset = defineCommand(
         name: "config unset",
         summary: "去掉 config.json 里的一项设置，让它回到默认值",
         description:
-            "从数据目录的 config.json 里删掉这一项，该项所在的组空了也一并删掉；文件里别的内容原样保留。没有这个文件或这一项时什么也不改，changed 是 false。结果是这项设置现在的样子（和 config get 一样）再加 changed；环境变量里设了的话，值还是环境变量的。config.json 不是合法的 JSON 时不会改它，要先修好或删掉。",
+            "从数据目录的 config.json 里删掉这一项，该项所在的组空了也一并删掉；文件里别的内容原样保留。没有这个文件或这一项时什么也不改，changed 是 false。结果是这项设置现在的样子（和 config get 一样）再加 changed；环境变量里设了的话，值还是环境变量的。config.json 不是合法的 JSON 时不会改它，要先修好或删掉。另一个进程持续占用配置文件时返回 DB_LOCKED。",
         category: "data",
         effect: "local",
         output: "object",
@@ -180,7 +180,7 @@ export const configUnset = defineCommand(
                 description: "曲库和收藏品的过期时间回到默认的 24 小时",
             },
         ],
-        errors: ["USAGE", "NOT_FOUND"],
+        errors: ["USAGE", "NOT_FOUND", "DB_LOCKED"],
         dataSchema: extend<SettingRow & { readonly changed: boolean }, SettingRow>(
             settingRowSchema,
             {
@@ -189,9 +189,9 @@ export const configUnset = defineCommand(
             { description: "这项设置现在的样子（和 config get 一样），再加 changed" }
         ),
     },
-    (args, ctx) => {
+    async (args, ctx) => {
         const definition = resolveSetting(args.positionals.key);
-        const { changed } = unsetConfigEntry(ctx.paths, definition.key);
+        const { changed } = await unsetConfigEntry(ctx.paths, definition.key);
         return resultOf(changed, definition, ctx);
     }
 );

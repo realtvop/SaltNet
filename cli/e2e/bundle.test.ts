@@ -58,7 +58,7 @@ const BUILD_DEFAULTS = [
     {
         variable: "VITE_LXNS_OAUTH_REDIRECT_URI",
         key: "lxns.redirectUri",
-        value: "https://callback.e2e.invalid/cb",
+        value: "https://callback.e2e.invalid/cb?lxns_auth_complete",
     },
 ] as const;
 /** The settings every child overrides with an environment variable. */

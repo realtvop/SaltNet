@@ -16,7 +16,7 @@ import { commandIn, LXNS_URL, NOW, routes } from "../commandRun";
 import { expectConforms } from "../dataSchema";
 import { createHarness, run } from "../harness";
 import { jsonResponse } from "../mockHttp";
-import { parsePrintedCommand, printedCommands, selectedUser } from "../printedCommand";
+import { parsePrintedCommand } from "../printedCommand";
 import { allFixtureRecords, recordOf, seedScoreUsers, user } from "../scoreUsers";
 import { useTempHome } from "../tempHome";
 
@@ -264,12 +264,57 @@ describe("sync --all", () => {
             store.close();
         }
         expectPrivate(paths, result.stdout, result.stderr);
-        const single = await commandIn(paths, "sync", [`--user=${missingQr.uid}`], { network: {} });
+        const single = await commandIn(paths, "sync", [`--user=${missingQr.uid}`], {
+            network: {},
+            env,
+        });
         expect(results[0].error).toEqual({
             code: single.json.error.code,
             message: single.json.error.message,
             fix: single.json.error.fix,
         });
+    });
+
+    it("sends one request when two users in --all share a refresh token", async () => {
+        const paths = makeHome();
+        const players = ["fake-shared-lxns-first", "fake-shared-lxns-second"].map(uid => {
+            const player = user(uid, "Fake Shared LXNS User");
+            player.lxns = { id: lxnsId, name: "Fake Shared LXNS Binding", auth: null };
+            return player;
+        });
+        await seedScoreUsers(paths, players);
+        const expired = {
+            lxnsAccountId: lxnsId,
+            lxnsAuthorization: {
+                accessToken,
+                tokenType: "Bearer",
+                refreshToken,
+                expiresAt: NOW.getTime() - 1,
+            },
+        };
+        stageCredentials(paths, {
+            version: 1,
+            users: Object.fromEntries(players.map(player => [player.uid!, expired])),
+        }).commit();
+        const tokenUrl = `${LXNS_URL}/api/v0/oauth/token`;
+        const result = await commandIn(paths, "sync", ["--all"], {
+            env: { ...env, SALTNET_LXNS_CLIENT_ID: "FAKE-SHARED-LXNS-CLIENT" },
+            network: {
+                [tokenUrl]: () => {
+                    throw new TypeError("fake lost refresh response");
+                },
+            },
+        });
+        expect(result.requests.map(request => request.url)).toEqual([tokenUrl]);
+        expect(result.json.data.results).toMatchObject([
+            { ok: false, error: { code: "NETWORK" } },
+            {
+                ok: false,
+                error: { code: "UPSTREAM_ERROR", message: expect.stringContaining("刷新") },
+            },
+        ]);
+        expect(result.json.warnings).toMatchObject([{ code: "SOME_FAILED" }]);
+        expectPrivate(paths, result.stdout, result.stderr);
     });
 
     it("redacts transport errors and refuses to save credential echoes", async () => {
@@ -430,8 +475,11 @@ describe("sync --all", () => {
         expect(result.json.data.results).toMatchObject([
             { ok: false, error: { code: "NOT_BOUND" } },
         ]);
-        const fixes = printedCommands(result.json.data.results[0].error.fix);
-        expect(fixes.map(selectedUser)).toEqual(fixes.map(() => missing.uid));
+        expect(parsePrintedCommand(result.json.data.results[0].error.fix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: missing.uid, source: "ingame" },
+            options: { qr: "-" },
+        });
         expect(result.json.warnings).toMatchObject([{ code: "SOME_FAILED" }]);
     });
 
@@ -509,7 +557,7 @@ describe("sync --dry-run", () => {
 
         async function preview(...options: string[]) {
             const harness = createHarness({
-                env: { SALTNET_HOME: paths.home },
+                env: { SALTNET_HOME: paths.home, ...env },
                 now: NOW,
                 stdin: qr,
             });
@@ -588,7 +636,10 @@ describe("sync --dry-run", () => {
             },
         ]);
         const expiredFix = (result.data.plans.at(-1)?.error as { fix: string }).fix;
-        expect(printedCommands(expiredFix).map(selectedUser)).toEqual([expired.uid, expired.uid]);
+        expect(parsePrintedCommand(expiredFix)).toMatchObject({
+            command: "user bind",
+            positionals: { user: expired.uid, source: "lxns" },
+        });
 
         expect((await preview("--user=-fake game", "--qr", "-")).data.plans).toMatchObject([
             {
@@ -656,7 +707,7 @@ describe("sync --dry-run", () => {
             users: { [player.uid!]: { divingFishImportToken: importToken } },
         }).commit();
         const before = filesIn(paths);
-        const result = await commandIn(paths, "sync", ["--dry-run"], { network: {} });
+        const result = await commandIn(paths, "sync", ["--dry-run"], { network: {}, env });
         expect(result.code).toBe(0);
         expect(result.requests).toEqual([]);
         expect(result.json.data.plans).toMatchObject([
@@ -698,7 +749,7 @@ describe("sync --dry-run", () => {
             const before = readFileSync(paths.database);
             const wal = `${paths.database}-wal`;
             const beforeWal = readFileSync(wal);
-            const result = await commandIn(paths, "sync", ["--dry-run"], { network: {} });
+            const result = await commandIn(paths, "sync", ["--dry-run"], { network: {}, env });
             expect(result.code).toBe(0);
             expect(result.json.data.plans).toMatchObject([{ source: "ingame", mode: "fast" }]);
             expect(result.requests).toEqual([]);

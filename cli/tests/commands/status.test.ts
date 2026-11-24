@@ -1,6 +1,7 @@
 import type { User } from "@core/user/type";
 import type { PrintedOutput } from "../commandRun";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, rmdirSync, writeFileSync } from "node:fs";
+import process from "node:process";
 import { describe, expect, it } from "vitest";
 import { readCredentials } from "../../src/runtime/credentials";
 import { MIGRATIONS } from "../../src/store/migrations";
@@ -13,6 +14,33 @@ import { parsePrintedCommand } from "../printedCommand";
 import { useTempHome } from "../tempHome";
 
 const makeHome = useTempHome();
+
+it.skipIf(process.getuid?.() === 0 || process.platform === "win32").each(["present", "missing"])(
+    "explains the write-access requirement on a read-only database with a %s cache directory",
+    async cache => {
+        const paths = makeHome();
+        openStore(paths).close();
+        chmodSync(paths.database, 0o400);
+        if (cache === "present") chmodSync(paths.cache, 0o500);
+        else rmdirSync(paths.cache);
+        chmodSync(paths.home, 0o500);
+        try {
+            for (const [command, ...args] of [["status"], ["user", "list", "--limit", "1"]]) {
+                const result = await commandIn(paths, command, args);
+                expect(result.json.error).toMatchObject({
+                    code: "INTERNAL",
+                    message: expect.stringContaining(
+                        `此命令需要对数据目录 ${paths.home} 有写入权限`
+                    ),
+                });
+            }
+        } finally {
+            chmodSync(paths.home, 0o700);
+            if (cache === "present") chmodSync(paths.cache, 0o700);
+            chmodSync(paths.database, 0o600);
+        }
+    }
+);
 
 interface StatusCatalog {
     source: string;
@@ -542,7 +570,7 @@ describe("status command", () => {
         expect(res.stdout).not.toContain(fakeRefreshToken);
     });
 
-    it("fails with INTERNAL and fix when credentials.json is corrupt", async () => {
+    it("fails with INTERNAL and says what to do when credentials.json is corrupt", async () => {
         const paths = makeHome();
         mkdirSync(paths.home, { recursive: true });
         writeFileSync(paths.credentials, "{ invalid json", "utf8");
@@ -550,9 +578,8 @@ describe("status command", () => {
         const res = await commandIn(paths, "status", []);
         expect(res.code).toBe(1);
         expect(res.json.error.code).toBe("INTERNAL");
-        expect(res.json.error.fix).toBe(
-            `检查 ${paths.credentials}；修不好时可以把它移走，再重新绑定水鱼和落雪`
-        );
+        expect(res.json.error.fix).toBeUndefined();
+        expect(res.json.error.message).toContain("修不好时可以把它移走，再重新绑定水鱼和落雪");
     });
 
     it("names default user with 0 in LXNS_EXPIRING warning fix", async () => {
@@ -734,7 +761,7 @@ it.each(["2", "uid:2"])("uses exact uid references in the status fix for %s", as
     const started = await commandIn(paths, "user", splitCommandLine(fix!).slice(2), {
         env: {
             SALTNET_LXNS_CLIENT_ID: "fake-client",
-            SALTNET_LXNS_REDIRECT_URI: "https://callback.test",
+            SALTNET_LXNS_REDIRECT_URI: "https://callback.test/?lxns_auth_complete",
         },
     });
     expect(started.code).toBe(0);

@@ -14,7 +14,7 @@ import { chartRow } from "../catalog/chartRow";
 import { chartRowSchema } from "../catalog/schemas";
 import { buildSongCatalog, chartKeyOf } from "../catalog/songs";
 import { CliError } from "../errors";
-import { selectFields } from "../output/fields";
+import { prepareFields } from "../output/fields";
 import { paginate } from "../output/paging";
 import { extend, int, list, nullable, num, object, str, strEnum } from "../output/schema";
 import { buildB50RenderPayload, requestB50Image } from "../render/b50Image";
@@ -138,18 +138,6 @@ function itemOf(
     };
 }
 
-function groupOf(
-    key: B50Group["key"],
-    charts: readonly Chart[],
-    mode: B50Mode,
-    entryByKey: ReadonlyMap<string, ChartEntry>,
-    scores: Parameters<typeof chartRow>[1],
-    window: { readonly limit: number; readonly offset: number }
-): B50Group {
-    const ranked = charts.map((chart, index) => itemOf(chart, index + 1, mode, entryByKey, scores));
-    return { key, count: ranked.length, items: paginate(ranked, window).items };
-}
-
 function playCountWarning(mode: B50Mode, data: Parameters<typeof getSourceRecords>[0]): Warning[] {
     if (mode !== "pc") return [];
     const records = getSourceRecords(data, true);
@@ -270,7 +258,16 @@ export const b50 = defineCommand(
                 "--image",
                 fileWord(image),
             ];
-            outputImage = resolveOutputFile(ctx, image, args.options.overwrite, retryCommand);
+            outputImage = resolveOutputFile(
+                ctx,
+                image,
+                args.options.overwrite,
+                retryCommand,
+                "b50"
+            );
+            if (args.options.fields !== undefined) {
+                prepareFields([itemSchema], args.options.fields);
+            }
         }
 
         requireUserForScores(args, ctx);
@@ -298,17 +295,25 @@ export const b50 = defineCommand(
         const b15 = sumChartRatings(selected.newer);
         const entryByKey = new Map(entries.map(entry => [chartKeyOf(entry.chart), entry]));
 
-        const groups = [
-            groupOf("B35", selected.old, mode, entryByKey, userScores.scores, args.options),
-            groupOf("B15", selected.newer, mode, entryByKey, userScores.scores, args.options),
-        ];
+        const rankedOld = selected.old.map((chart, index) =>
+            itemOf(chart, index + 1, mode, entryByKey, userScores.scores)
+        );
+        const rankedNewer = selected.newer.map((chart, index) =>
+            itemOf(chart, index + 1, mode, entryByKey, userScores.scores)
+        );
 
-        if (image !== undefined && args.options.fields !== undefined) {
-            selectFields(
-                groups.flatMap(group => group.items),
-                args.options.fields
-            );
-        }
+        const groups = [
+            {
+                key: "B35" as const,
+                count: rankedOld.length,
+                items: paginate(rankedOld, args.options).items,
+            },
+            {
+                key: "B15" as const,
+                count: rankedNewer.length,
+                items: paginate(rankedNewer, args.options).items,
+            },
+        ];
 
         const isEmpty = selected.old.length === 0 && selected.newer.length === 0;
 

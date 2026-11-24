@@ -45,29 +45,46 @@ function toSqlError(error: unknown): unknown {
     return sqlError(error.message, { fix: unknownName ? SCHEMA_FIX : undefined, cause: error });
 }
 
+/**
+ * The statements Node prepared from text without any SQL in it. Node does not forget such a
+ * statement when it is collected, so closing the database afterwards finalizes freed memory and
+ * the process dies of a segmentation fault (about one run in eight of a query with thousands of
+ * rows did). Kept here, they stay reachable until the process ends and closing finds them intact.
+ */
+const emptyStatements: StatementSync[] = [];
+
+/** `ERR_INVALID_STATE` is what using a statement without any SQL in it throws. */
+function isEmptyStatementError(error: unknown): boolean {
+    return error instanceof Error && (error as { code?: unknown }).code === "ERR_INVALID_STATE";
+}
+
 /** Whether `text` holds anything SQLite would run: not only blanks, comments and semicolons. */
 function hasStatement(db: DatabaseSync, text: string): boolean {
+    // Nothing at all needs no statement to find that out (and leaves none behind).
+    if (text.length === 0) return false;
+    let statement: StatementSync | undefined;
     try {
-        const statement = db.prepare(text);
+        statement = db.prepare(text);
         // An empty statement is only found out when it is used.
         return statement.sourceSQL.length > 0;
     } catch (error) {
-        // `ERR_INVALID_STATE` is the empty statement; anything else is a second statement that
-        // SQLite or the authorizer does not like, which is a second statement all the same.
-        return !(
-            error instanceof Error && (error as { code?: unknown }).code === "ERR_INVALID_STATE"
-        );
+        // Anything but the empty statement is a second statement that SQLite or the authorizer
+        // does not like, which is a second statement all the same.
+        if (!isEmptyStatementError(error)) return true;
+        if (statement !== undefined) emptyStatements.push(statement);
+        return false;
     }
 }
 
 function prepareOne(db: DatabaseSync, sql: string): StatementSync {
-    let statement: StatementSync;
+    let statement: StatementSync | undefined;
     let source: string;
     try {
         statement = db.prepare(sql);
         source = statement.sourceSQL;
     } catch (error) {
-        if (error instanceof Error && (error as { code?: unknown }).code === "ERR_INVALID_STATE") {
+        if (isEmptyStatementError(error)) {
+            if (statement !== undefined) emptyStatements.push(statement);
             throw sqlError("没有要执行的语句：SQL 是空的，或者只有注释");
         }
         throw toSqlError(error);

@@ -26,7 +26,14 @@ function git(args, cwd) {
     return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
+// The command-line tool and the documents never change what the web app does.
+const nonWebDirectories = new Set(["cli", "docs"]);
+
 function isCodeFile(file) {
+    const [topLevel] = path.normalize(file).replace(/\\/g, "/").split("/");
+    if (nonWebDirectories.has(topLevel)) {
+        return false;
+    }
     return codeExtensions.has(path.extname(file).toLowerCase());
 }
 

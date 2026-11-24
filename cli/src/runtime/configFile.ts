@@ -6,12 +6,125 @@
  */
 import type { ConfigKey, ConfigValue } from "./config";
 import type { RuntimePaths } from "./paths";
-import { usageError } from "../errors";
+import {
+    existsSync,
+    mkdtempSync,
+    readdirSync,
+    renameSync,
+    rmdirSync,
+    rmSync,
+    statSync,
+    writeFileSync,
+} from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import { CliError, usageError } from "../errors";
 import { readConfigFile } from "./config";
 import { writeFileAtomic } from "./files";
 import { ensureRuntimeDirs } from "./paths";
 
 type PlainObject = Record<string, unknown>;
+
+const LOCK_TIMEOUT_MS = 5_000;
+
+function processExists(pid: number): boolean {
+    if (pid <= 0) return false;
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        return (error as NodeJS.ErrnoException).code !== "ESRCH";
+    }
+}
+
+function removeEmptyLock(lock: string): void {
+    try {
+        rmdirSync(lock);
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT" && code !== "ENOTEMPTY" && code !== "EEXIST") throw error;
+    }
+}
+
+function discardAbandonedOwner(lock: string): void {
+    let members: string[];
+    try {
+        members = readdirSync(lock);
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+        throw error;
+    }
+    for (const member of members) {
+        const owner = /^owner-(\d+)-/.exec(member);
+        if (!owner) continue;
+        const file = path.join(lock, member);
+        const stat = statSync(file, { throwIfNoEntry: false });
+        if (
+            stat &&
+            Date.now() - stat.mtimeMs >= LOCK_TIMEOUT_MS &&
+            !processExists(Number(owner[1]))
+        ) {
+            rmSync(file, { force: true });
+        }
+    }
+    removeEmptyLock(lock);
+}
+
+/** An occupied lock directory always contains a unique owner file. */
+async function withConfigLock<T>(paths: RuntimePaths, work: () => T): Promise<T> {
+    const lock = `${paths.config}.lock`;
+    try {
+        ensureRuntimeDirs(paths);
+        const candidate = mkdtempSync(`${lock}-`);
+        const owner = `owner-${process.pid}-${path.basename(candidate)}`;
+        let acquired = false;
+        const deadline = performance.now() + LOCK_TIMEOUT_MS;
+        try {
+            writeFileSync(path.join(candidate, owner), "", { mode: 0o600 });
+            while (true) {
+                try {
+                    // Publishing the nonempty directory atomically prevents a concurrent reaper
+                    // from unlinking a new owner's lock after examining an old one.
+                    renameSync(candidate, lock);
+                    acquired = true;
+                    break;
+                } catch (error) {
+                    const code = (error as NodeJS.ErrnoException).code;
+                    if (
+                        code !== "ENOTEMPTY" &&
+                        code !== "EEXIST" &&
+                        !(process.platform === "win32" && code === "EPERM" && existsSync(lock))
+                    ) {
+                        throw error;
+                    }
+                }
+                discardAbandonedOwner(lock);
+                const remaining = deadline - performance.now();
+                if (remaining <= 0) {
+                    throw new CliError(
+                        "DB_LOCKED",
+                        `配置文件 ${paths.config} 正被另一个 saltnet 进程占用；稍后再试`
+                    );
+                }
+                await new Promise(resolve => setTimeout(resolve, Math.min(remaining, 50)));
+            }
+            return work();
+        } finally {
+            if (acquired) {
+                rmSync(path.join(lock, owner), { force: true });
+                removeEmptyLock(lock);
+            } else {
+                rmSync(candidate, { recursive: true, force: true });
+            }
+        }
+    } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === "EACCES" || code === "EPERM") {
+            throw new CliError("INTERNAL", `数据目录 ${paths.home} 不可写；请检查目录权限`);
+        }
+        throw error;
+    }
+}
 
 function isPlainObject(value: unknown): value is PlainObject {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -37,9 +150,15 @@ function readEditable(paths: Pick<RuntimePaths, "config">): PlainObject {
     return file.data;
 }
 
-function write(paths: RuntimePaths, content: PlainObject): void {
-    ensureRuntimeDirs(paths);
-    writeFileAtomic(paths.config, `${JSON.stringify(content, null, 2)}\n`);
+async function editConfig(paths: RuntimePaths, edit: (content: PlainObject) => boolean) {
+    // A no-op can complete at its first read, without creating anything or needing write access.
+    if (!edit(readEditable(paths))) return { changed: false };
+    return withConfigLock(paths, () => {
+        const current = readEditable(paths);
+        const changed = edit(current);
+        if (changed) writeFileAtomic(paths.config, `${JSON.stringify(current, null, 2)}\n`);
+        return { changed };
+    });
 }
 
 function splitKey(key: ConfigKey): [group: string, name: string] {
@@ -56,16 +175,16 @@ export function setConfigEntry(
     paths: RuntimePaths,
     key: ConfigKey,
     value: ConfigValue
-): { changed: boolean } {
+): Promise<{ changed: boolean }> {
     const [group, name] = splitKey(key);
-    const content = readEditable(paths);
-    const current = content[group];
-    const members = isPlainObject(current) ? current : undefined;
-    if (members && members[name] === value) return { changed: false };
+    return editConfig(paths, content => {
+        const current = content[group];
+        const members = isPlainObject(current) ? current : undefined;
+        if (members && members[name] === value) return false;
 
-    content[group] = { ...members, [name]: value };
-    write(paths, content);
-    return { changed: true };
+        content[group] = { ...members, [name]: value };
+        return true;
+    });
 }
 
 /**
@@ -73,21 +192,24 @@ export function setConfigEntry(
  * default. A group that is not an object is removed as a whole (it was an error already). Nothing
  * is written, and no directory created, when there was nothing to remove.
  */
-export function unsetConfigEntry(paths: RuntimePaths, key: ConfigKey): { changed: boolean } {
+export function unsetConfigEntry(
+    paths: RuntimePaths,
+    key: ConfigKey
+): Promise<{ changed: boolean }> {
     const [group, name] = splitKey(key);
-    const content = readEditable(paths);
-    const current = content[group];
-    if (current === undefined) return { changed: false };
+    return editConfig(paths, content => {
+        const current = content[group];
+        if (current === undefined) return false;
 
-    if (isPlainObject(current)) {
-        if (!(name in current)) return { changed: false };
-        const rest = { ...current };
-        delete rest[name];
-        if (Object.keys(rest).length > 0) content[group] = rest;
-        else delete content[group];
-    } else {
-        delete content[group];
-    }
-    write(paths, content);
-    return { changed: true };
+        if (isPlainObject(current)) {
+            if (!(name in current)) return false;
+            const rest = { ...current };
+            delete rest[name];
+            if (Object.keys(rest).length > 0) content[group] = rest;
+            else delete content[group];
+        } else {
+            delete content[group];
+        }
+        return true;
+    });
 }

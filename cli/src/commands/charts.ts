@@ -100,7 +100,7 @@ export const charts = defineCommand(
         name: "charts",
         summary: "筛选谱面，并按曲目或成绩排序、分组和统计",
         description:
-            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection、--fav 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent、gain 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 始终是段位出场顺序。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。--sort gain 按打到目标档能获得的 B50 涨分排序，每行带 gain；--target 指定目标评级或达成率（0 到 101），默认 sss+。",
+            "列出同时满足所有条件的谱面，一行一张；每行带 --user 指定用户（不写就是默认用户）的成绩和 B50 名次。本地没有用户时，只有不读取成绩的普通查询可以运行，score 和 b50 都是 null。--level、--constant、--diff、--version、--search、--gate、--course、--plate、--collection、--fav 的写法和曲目页分类一致，所有筛选同时生效；宴谱只有写 --diff utage 才出现。--achieved 和 --missing 可接受评级、clear、combo 或 sync 条件，按「至少达到」判断，--missing 包含没有成绩的谱；和恰好一个 --plate 或 --collection 一起使用时可以省略条件，改按该收藏品对每张谱自己的要求判断。--recent 只留有成绩变化时间的谱，不写 --sort 时也按最近变化排序。--sort 可按 default、constant、achievements、rating、playcount、version、recent、gain 排；自然方向都是最大或最新在前，--asc 只反转依据，没有值的谱始终在最后。default 有成绩时先按达成率，无成绩的按游戏内顺序排后面；--course 的 default 是段位出场顺序，--asc 时倒过来。--group-by 可按 constant、version、level、difficulty、rank、combo、sync 分组，成绩状态组从最好到最差，没有状态的 null 组最后；--limit 和 --offset 对每组分别生效。--stats 统计完整筛选结果的 total、played、SSS、SSS+、FC、AP、FDX，不受分页影响，分组时每组各一份。--sort gain 按打到目标档能获得的 B50 涨分排序，每行带 gain；--target 指定目标评级或达成率（0 到 101），默认 sss+。",
         category: "catalog",
         effect: "none",
         output: "list",
@@ -225,7 +225,10 @@ export const charts = defineCommand(
             },
             { command: "charts --version 熊 --level 12..", description: "熊版本里 12 以上的谱" },
             { command: "charts --diff utage --level 13", description: "等级 13 的宴谱" },
-            { command: "charts --search 谱师名 --limit 20", description: "按文本找谱面" },
+            {
+                command: "charts --search 譜面-100号 --limit 20",
+                description: "按文本找谱面，例如谱师名",
+            },
             {
                 command: "charts --level 14.. --sort constant --limit 10",
                 description: "14 以上的谱里定数最高的十张",

@@ -6,6 +6,7 @@
  */
 import type { Chart } from "@core/music/type";
 import type { ChartEntry, Song, SongCatalog } from "../catalog/songs";
+import { toHalfWidth } from "@core/util/toHalfWidth";
 import { chartKeyOf, musicType, songCharts } from "../catalog/songs";
 import { CliError, usageError } from "../errors";
 import { echo } from "../util/echo";
@@ -85,8 +86,11 @@ export function resolveChart(catalog: SongCatalog, input: ChartRef): ChartEntry 
         );
     }
 
-    if (isMusicId(text)) {
-        const musicId = Number(text);
+    // A music id in full-width digits is the same id; read as a song reference it would be the
+    // whole song, both sides.
+    const halfWidth = toHalfWidth(text);
+    if (isMusicId(halfWidth)) {
+        const musicId = Number(halfWidth);
         if (!Number.isSafeInteger(musicId)) throw unknownMusicId(catalog, text);
         return ofType(findChart(catalog, musicId, grade), input.type);
     }

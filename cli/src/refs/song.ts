@@ -9,12 +9,14 @@ import type { Chart } from "@core/music/type";
 import type { ChartEntry, Song, SongCatalog } from "../catalog/songs";
 import type { ErrorCandidate } from "../errors";
 import { SALTMETA_DX_ID_OFFSET } from "@core/music/saltmeta";
+import { toHalfWidth } from "@core/util/toHalfWidth";
 import { NAME_MATCH_KINDS, searchSongs } from "../catalog/search";
 import { chartKey, chartKeyOf, musicType, songCharts, songType } from "../catalog/songs";
 import { CliError, usageError } from "../errors";
 import { closestItems } from "../util/closest";
 import { echo } from "../util/echo";
 import { foldName } from "../util/fold";
+import { joinCommandLine } from "../util/shell";
 import { difficultyLabel } from "./difficulty";
 
 /** How many songs an `AMBIGUOUS_REF` lists; the rest are only counted. */
@@ -27,7 +29,7 @@ const CHART_KEY = /^(\d+)-(\d+)$/;
 
 /** The music id and grade of a chart key such as `11451-3`. */
 export function parseChartKey(text: string): { musicId: number; grade: number } | undefined {
-    const match = CHART_KEY.exec(text);
+    const match = CHART_KEY.exec(toHalfWidth(text));
     if (!match) return undefined;
     const musicId = Number(match[1]);
     const grade = Number(match[2]);
@@ -61,7 +63,10 @@ export function chartCandidate(song: Song, chart: Chart): ErrorCandidate {
 
 /** `saltnet search ...` for the text, when the text is safe to repeat in a suggestion. */
 function searchFix(text: string): string | undefined {
-    return echo(text) ? `saltnet search ${text}` : undefined;
+    if (!echo(text)) return undefined;
+    return joinCommandLine(
+        text.startsWith("-") ? ["saltnet", "search", "--", text] : ["saltnet", "search", text]
+    );
 }
 
 /** No song has this music id. Songs titled with the number are what its writer most likely meant. */
@@ -70,7 +75,7 @@ export function unknownMusicId(catalog: SongCatalog, text: string): CliError {
     const add = (song: Song | undefined): void => {
         if (song && !hints.includes(song)) hints.push(song);
     };
-    const id = Number(text);
+    const id = Number(toHalfWidth(text));
     // The id of a DX song is its base id plus 10000, which is easy to leave off.
     if (Number.isSafeInteger(id)) add(catalog.songOfMusic.get(id + SALTMETA_DX_ID_OFFSET));
     (catalog.byTitle.get(text) ?? []).forEach(add);
@@ -172,8 +177,9 @@ export function resolveSong(catalog: SongCatalog, ref: string): Song {
     const text = ref.trim();
     if (!text) throw usageError("曲目引用不能为空");
 
-    if (DIGITS.test(text)) {
-        const musicId = Number(text);
+    const halfWidth = toHalfWidth(text);
+    if (isMusicId(halfWidth)) {
+        const musicId = Number(halfWidth);
         const song = Number.isSafeInteger(musicId) ? catalog.songOfMusic.get(musicId) : undefined;
         if (song) return song;
         throw unknownMusicId(catalog, text);

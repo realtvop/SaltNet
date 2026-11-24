@@ -824,13 +824,110 @@ export const PUBLIC_VIEWS: readonly PublicView[] = [
 /** The names of the views, in lower case as SQLite compares them. */
 export const PUBLIC_VIEW_NAMES: readonly string[] = PUBLIC_VIEWS.map(({ name }) => name);
 
+function stripSqlCommentsAndStrings(sql: string): string {
+    let result = "";
+    let i = 0;
+    const len = sql.length;
+
+    while (i < len) {
+        const char = sql[i];
+        const next = sql[i + 1];
+
+        if (char === "-" && next === "-") {
+            i += 2;
+            while (i < len && sql[i] !== "\n" && sql[i] !== "\r") {
+                i++;
+            }
+            result += " ";
+            continue;
+        }
+
+        if (char === "/" && next === "*") {
+            i += 2;
+            while (i < len && !(sql[i] === "*" && sql[i + 1] === "/")) {
+                i++;
+            }
+            if (i < len) i += 2;
+            result += " ";
+            continue;
+        }
+
+        if (char === "'") {
+            i++;
+            while (i < len) {
+                if (sql[i] === "'") {
+                    if (sql[i + 1] === "'") {
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            result += " ";
+            continue;
+        }
+
+        if (char === '"') {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                if (c === '"') {
+                    if (sql[i + 1] === '"') {
+                        result += sql[i + 1];
+                        i += 2;
+                    } else {
+                        i++;
+                        break;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            continue;
+        }
+
+        if (char === "[") {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                i++;
+                if (c === "]") break;
+            }
+            continue;
+        }
+
+        if (char === "`") {
+            result += char;
+            i++;
+            while (i < len) {
+                const c = sql[i];
+                result += c;
+                i++;
+                if (c === "`") break;
+            }
+            continue;
+        }
+
+        result += char;
+        i++;
+    }
+
+    return result;
+}
+
 /**
- * The views a query mentions. SQL names do not depend on case, and a name can be quoted, so this
- * looks for the name anywhere in the text; one in a string or a comment is taken for a mention too,
- * which only costs a copy that is not read. A query that does not name a view cannot read one.
+ * The views a query mentions. SQL names do not depend on case, and a name can be quoted. Single-quoted
+ * string literals and comments are skipped before matching.
  */
 export function viewsMentionedIn(sql: string): readonly PublicView[] {
-    const text = sql.toLowerCase();
+    const text = stripSqlCommentsAndStrings(sql).toLowerCase();
     return PUBLIC_VIEWS.filter(({ name }) =>
         new RegExp(`(?<![a-z0-9_])${name}(?![a-z0-9_])`).test(text)
     );

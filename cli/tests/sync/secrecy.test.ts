@@ -20,7 +20,8 @@ const uid = "fake-secrecy-user";
 const gameId = 99001001;
 const lxnsId = 9001001;
 const importToken = "FAKE-DF-IMPORT-0001";
-const refreshToken = "FAKE-LXNS-REFRESH-0001";
+const refreshToken = "FAKE-LXNS-REFRESH+/= 0001";
+const formRefresh = new URLSearchParams({ refresh_token: refreshToken }).toString();
 const qrPayload = `${"0".repeat(56)}FAKE0001`;
 const qrCode = `SGWCMAID${qrPayload}`;
 
@@ -36,6 +37,8 @@ const SECRETS_TO_CHECK = Array.from(
         importToken,
         JSON.stringify(importToken).slice(1, -1),
         refreshToken,
+        encodeURIComponent(refreshToken),
+        formRefresh.slice("refresh_token=".length),
         JSON.stringify(refreshToken).slice(1, -1),
         accessToken,
         JSON.stringify(accessToken).slice(1, -1),
@@ -53,6 +56,7 @@ const dfUpdateUserUrl = `${API_URL}/updateUserFromDF`;
 const dfRecordsUrl = "https://www.diving-fish.com/api/maimaidxprober/player/records";
 const dfUploadUrl = "https://www.diving-fish.com/api/maimaidxprober/player/update_records";
 const dfPublicUrl = "https://www.diving-fish.com/api/maimaidxprober/query/player";
+const lxnsTokenUrl = `${LXNS_URL}/api/v0/oauth/token`;
 const lxnsPlayerUrl = `${LXNS_URL}/api/v0/user/maimai/player`;
 const lxnsScoresUrl = `${LXNS_URL}/api/v0/user/maimai/player/scores`;
 
@@ -163,7 +167,7 @@ function echoRoutes(withQr: boolean): Record<string, Route> {
     };
 }
 
-async function setupFreshDirectory(paths: RuntimePaths): Promise<void> {
+async function setupFreshDirectory(paths: RuntimePaths, expired = false): Promise<void> {
     const player = user(uid, "Fake Secrecy User", {
         rating: 15000,
         updateTime: NOW.getTime(),
@@ -190,7 +194,7 @@ async function setupFreshDirectory(paths: RuntimePaths): Promise<void> {
                     accessToken,
                     refreshToken,
                     tokenType: "Bearer",
-                    expiresAt: NOW.getTime() + 3_600_000,
+                    expiresAt: expired ? NOW.getTime() - 1 : NOW.getTime() + 3_600_000,
                 },
             },
         },
@@ -221,7 +225,7 @@ function assertNoSecrets(paths: RuntimePaths, result: { stdout: string; stderr: 
 
     const combined = contents.join("\n");
     for (const secret of SECRETS_TO_CHECK) {
-        expect(combined).not.toContain(secret);
+        expect(combined.includes(secret), "fixture credential leaked").toBe(false);
     }
 
     if (existsSync(paths.credentials)) {
@@ -234,7 +238,11 @@ interface TestCase {
     command: string;
     args: string[];
     stdin?: string;
-    outcome?: "success" | "500" | "network" | "echo";
+    outcome?: "success" | "500" | "network" | "echo" | "refresh-echo";
+    expectedError?: string;
+    expectedUserError?: string;
+    requests: readonly string[];
+    uploads?: readonly string[];
 }
 
 const TEST_CASES: TestCase[] = [
@@ -245,6 +253,8 @@ const TEST_CASES: TestCase[] = [
         args: ["--source", "ingame", "--qr", "-"],
         stdin: qrCode,
         outcome: "success",
+        requests: [qrUrl, updateUrl, dfUploadUrl, lxnsScoresUrl],
+        uploads: ["diving-fish", "lxns"],
     },
     {
         name: "sync --source ingame --qr - [500]",
@@ -252,6 +262,8 @@ const TEST_CASES: TestCase[] = [
         args: ["--source", "ingame", "--qr", "-"],
         stdin: qrCode,
         outcome: "500",
+        requests: [qrUrl, updateUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source ingame --qr - [network error]",
@@ -259,6 +271,8 @@ const TEST_CASES: TestCase[] = [
         args: ["--source", "ingame", "--qr", "-"],
         stdin: qrCode,
         outcome: "network",
+        requests: [qrUrl, updateUrl],
+        expectedError: "NETWORK",
     },
 
     // 2. sync --source lxns (success, 500, network)
@@ -267,18 +281,23 @@ const TEST_CASES: TestCase[] = [
         command: "sync",
         args: ["--source", "lxns"],
         outcome: "success",
+        requests: [lxnsPlayerUrl, lxnsScoresUrl],
     },
     {
         name: "sync --source lxns [500]",
         command: "sync",
         args: ["--source", "lxns"],
         outcome: "500",
+        requests: [lxnsPlayerUrl, lxnsPlayerUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source lxns [network error]",
         command: "sync",
         args: ["--source", "lxns"],
         outcome: "network",
+        requests: [lxnsPlayerUrl, lxnsPlayerUrl],
+        expectedError: "NETWORK",
     },
 
     // 3. sync --source df-token (success, 500, network)
@@ -287,18 +306,23 @@ const TEST_CASES: TestCase[] = [
         command: "sync",
         args: ["--source", "df-token"],
         outcome: "success",
+        requests: [dfRecordsUrl],
     },
     {
         name: "sync --source df-token [500]",
         command: "sync",
         args: ["--source", "df-token"],
         outcome: "500",
+        requests: [dfRecordsUrl, dfRecordsUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source df-token [network error]",
         command: "sync",
         args: ["--source", "df-token"],
         outcome: "network",
+        requests: [dfRecordsUrl, dfRecordsUrl],
+        expectedError: "NETWORK",
     },
 
     // 4. sync --source df-name (success, 500, network)
@@ -307,18 +331,23 @@ const TEST_CASES: TestCase[] = [
         command: "sync",
         args: ["--source", "df-name"],
         outcome: "success",
+        requests: [dfUpdateUserUrl],
     },
     {
         name: "sync --source df-name [500]",
         command: "sync",
         args: ["--source", "df-name"],
         outcome: "500",
+        requests: [dfUpdateUserUrl, dfUpdateUserUrl, dfPublicUrl, dfPublicUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source df-name [network error]",
         command: "sync",
         args: ["--source", "df-name"],
         outcome: "network",
+        requests: [dfUpdateUserUrl, dfUpdateUserUrl, dfPublicUrl, dfPublicUrl],
+        expectedError: "NETWORK",
     },
 
     // 5. every source again, with upstream errors that quote the secrets back
@@ -328,36 +357,48 @@ const TEST_CASES: TestCase[] = [
         args: ["--source", "ingame", "--qr", "-"],
         stdin: qrCode,
         outcome: "echo",
+        requests: [qrUrl, updateUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source lxns [echo]",
         command: "sync",
         args: ["--source", "lxns"],
         outcome: "echo",
+        requests: [lxnsPlayerUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --source df-token [echo]",
         command: "sync",
         args: ["--source", "df-token"],
         outcome: "echo",
+        requests: [dfRecordsUrl],
+        expectedError: "NOT_BOUND",
     },
     {
         name: "sync --source df-name [echo]",
         command: "sync",
         args: ["--source", "df-name"],
         outcome: "echo",
+        requests: [dfUpdateUserUrl, dfUpdateUserUrl, dfPublicUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync [echo]",
         command: "sync",
         args: [],
         outcome: "echo",
+        requests: [updateUrl, updateUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
     {
         name: "sync --all [echo]",
         command: "sync",
         args: ["--all"],
         outcome: "echo",
+        requests: [updateUrl, updateUrl],
+        expectedUserError: "UPSTREAM_ERROR",
     },
 
     // 6. sync --all, sync --all --dry-run, sync --dry-run --qr -
@@ -366,32 +407,48 @@ const TEST_CASES: TestCase[] = [
         command: "sync",
         args: ["--all"],
         outcome: "success",
+        requests: [updateUrl, lxnsPlayerUrl, lxnsScoresUrl, dfUploadUrl, lxnsScoresUrl],
+        uploads: ["diving-fish", "lxns"],
     },
     {
         name: "sync --all --dry-run",
         command: "sync",
         args: ["--all", "--dry-run"],
+        requests: [],
     },
     {
         name: "sync --dry-run --qr -",
         command: "sync",
         args: ["--dry-run", "--qr", "-"],
+        requests: [],
         stdin: qrCode,
+    },
+
+    {
+        name: "sync --source lxns [expired token, refresh form echoed]",
+        command: "sync",
+        args: ["--source", "lxns"],
+        outcome: "refresh-echo",
+        requests: [lxnsTokenUrl],
+        expectedError: "UPSTREAM_ERROR",
     },
 
     // 7. user show, user list, status
     {
         name: "user show",
+        requests: [],
         command: "user",
         args: ["show"],
     },
     {
         name: "user list",
+        requests: [],
         command: "user",
         args: ["list"],
     },
     {
         name: "status",
+        requests: [],
         command: "status",
         args: [],
     },
@@ -399,11 +456,13 @@ const TEST_CASES: TestCase[] = [
     // 8. user unbind <user> lxns and user unbind <user> df-token
     {
         name: `user unbind ${uid} lxns`,
+        requests: [],
         command: "user",
         args: ["unbind", uid, "lxns"],
     },
     {
         name: `user unbind ${uid} df-token`,
+        requests: [],
         command: "user",
         args: ["unbind", uid, "df-token"],
     },
@@ -412,7 +471,7 @@ const TEST_CASES: TestCase[] = [
 describe("secrecy sweep across commands and outcomes", () => {
     it.each(TEST_CASES)("$name leaves no secrets in output or store", async testCase => {
         const paths = makeHome();
-        await setupFreshDirectory(paths);
+        await setupFreshDirectory(paths, testCase.outcome === "refresh-echo");
 
         let network: Record<string, Route> | undefined;
         if (testCase.outcome === "success") {
@@ -423,6 +482,21 @@ describe("secrecy sweep across commands and outcomes", () => {
             network = networkErrorRoutes();
         } else if (testCase.outcome === "echo") {
             network = echoRoutes(testCase.stdin !== undefined);
+        } else if (testCase.outcome === "refresh-echo") {
+            network = {
+                [lxnsTokenUrl]: request => {
+                    expect(new URLSearchParams(request.init?.body).get("refresh_token")).toBe(
+                        refreshToken
+                    );
+                    return jsonResponse(
+                        {
+                            error: "temporarily_unavailable",
+                            error_description: `FAKE rejected form: ${request.init?.body}; ${encodeURIComponent(refreshToken)}; ${refreshToken}`,
+                        },
+                        400
+                    );
+                },
+            };
         }
 
         const result = await commandIn(paths, testCase.command, [...testCase.args, "--verbose"], {
@@ -431,6 +505,41 @@ describe("secrecy sweep across commands and outcomes", () => {
             network,
         });
 
+        expect(result.requests.map(request => request.url)).toEqual(testCase.requests);
+        if (testCase.expectedError) {
+            expect(result.json.ok).toBe(false);
+            expect(result.json.error.code).toBe(testCase.expectedError);
+        } else {
+            expect(result.code).toBe(0);
+            expect(result.json.ok).toBe(true);
+        }
+        if (testCase.expectedUserError) {
+            expect(result.json.data.results).toMatchObject([
+                { ok: false, error: { code: testCase.expectedUserError } },
+            ]);
+        }
+        if (testCase.uploads) {
+            const sync = testCase.args.includes("--all")
+                ? result.json.data.results[0].data
+                : result.json.data;
+            expect(sync.uploads).toEqual(
+                testCase.uploads.map(target => ({ target, ok: true, error: null }))
+            );
+        }
+        if (testCase.outcome === "refresh-echo") {
+            const store = openStore(paths);
+            try {
+                expect(readRuns(store).items).toMatchObject([
+                    {
+                        outcome: "failed",
+                        errorCode: "UPSTREAM_ERROR",
+                        errorMessage: expect.stringContaining("FAKE rejected form"),
+                    },
+                ]);
+            } finally {
+                store.close();
+            }
+        }
         assertNoSecrets(paths, result);
     });
 });

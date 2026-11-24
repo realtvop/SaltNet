@@ -149,7 +149,8 @@ export const CONFIG_DEFINITIONS: readonly ConfigDefinition[] = [
     {
         key: "lxns.redirectUri",
         kind: { type: "url", allowEmpty: true },
-        description: "落雪 OAuth 的回调地址，必须和这个 client 登记的完全一致",
+        description:
+            "落雪 OAuth 的回调地址，必须和这个 client 登记的完全一致，并且带着 lxns_auth_complete 参数（回调链接靠它识别）",
         defaultValue: fromBuild(build => build.lxnsRedirectUri),
     },
     {
